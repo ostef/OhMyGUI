@@ -1,7 +1,7 @@
 #import "Basic";
 #import "Math";
 
-#load "draw.jai";
+#load "sd_shape.jai";
 #load "gl.jai";
 
 Vec2f :: Vector2;
@@ -37,7 +37,12 @@ operator* :: inline (a : Transform2D, b : Transform2D) -> Transform2D {
 }
 
 // Creates a translation matrix
-MakeTranslation2D :: inline (translation : Vec2f) -> Transform2D {
+Translate2D :: inline (x : float, y : float) -> Transform2D {
+    return Translate2D(.{x, y});
+}
+
+// Creates a translation matrix
+Translate2D :: inline (translation : Vec2f) -> Transform2D {
     return Transform2D.{
         1, 0, translation.x,
         0, 1, translation.y,
@@ -45,7 +50,7 @@ MakeTranslation2D :: inline (translation : Vec2f) -> Transform2D {
 }
 
 // Creates a counter-clockwise rotation matrix
-MakeRotation2D :: inline (angle_in_radians : float) -> Transform2D {
+Rotate2D :: inline (angle_in_radians : float) -> Transform2D {
     cost := cos(angle_in_radians);
     sint := sin(angle_in_radians);
 

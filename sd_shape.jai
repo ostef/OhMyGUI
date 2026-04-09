@@ -145,12 +145,16 @@ Transform :: inline (subshape : *SDShape, transform : Transform2D) -> *SDShape {
     return shape;
 }
 
+Move :: inline (subshape : *SDShape, x : float, y : float) -> *SDShape {
+    return Transform(subshape, Translate2D(x, y));
+}
+
 Move :: inline (subshape : *SDShape, translation : Vec2f) -> *SDShape {
-    return Transform(subshape, MakeTranslation2D(translation));
+    return Transform(subshape, Translate2D(translation));
 }
 
 Rotate :: inline (subshape : *SDShape, angle_in_radians : float) -> *SDShape {
-    return Transform(subshape, MakeRotation2D(angle_in_radians));
+    return Transform(subshape, Rotate2D(angle_in_radians));
 }
 
 DrawShape :: inline (subshape : *SDShape)  {

@@ -1,6 +1,7 @@
 #import "Basic";
 #import "Math";
 OMG :: #import,file "module.jai";
+using,only(.["*"]) OMG;
 #import "SDL";
 #import "GL";
 
@@ -49,7 +50,7 @@ main :: () {
         b := OMG.Box(.{400, 100});
         c := OMG.Inter(a, b);
         c = OMG.Rotate(c, time);
-        c = OMG.Move(c, .{200, 200});
+        c = OMG.Move(c, 200, 200);
         OMG.DrawShape(c);
 
         glClearColor(0.1, 0.1, 0.1, 1);
