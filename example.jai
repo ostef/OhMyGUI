@@ -46,12 +46,13 @@ main :: () {
             }
         }
 
-        a := OMG.Circle(100);
-        b := OMG.Box(.{400, 100});
-        c := OMG.Inter(a, b);
-        c = OMG.Rotate(c, time);
-        c = OMG.Move(c, 200, 200);
-        OMG.DrawShape(c);
+        s := OMG.Union(
+            OMG.Circle(100),
+            OMG.Box(400, 100, radius=10)
+        );
+        s = OMG.Rotate(s, time);
+        s = OMG.Move(s, 200, 200);
+        OMG.DrawShape(s);
 
         glClearColor(0.1, 0.1, 0.1, 1);
         glClear(GL_COLOR_BUFFER_BIT);

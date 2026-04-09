@@ -68,8 +68,24 @@ Circle :: inline (radius : float) -> *SDShape {
     return shape;
 }
 
+Box :: inline (width : float, height : float, radius : float = 0) -> *SDShape {
+    return Box(.{width, height}, .{radius, radius, radius, radius});
+}
+
+Box :: inline (width : float, height : float, corner_radiuses : Vec4f) -> *SDShape {
+    return Box(.{width, height}, corner_radiuses);
+}
+
+Box :: inline (width : float, height : float, tl_radius : float, tr_radius : float, bl_radius : float, br_radius : float) -> *SDShape {
+    return Box(.{width, height}, .{tl_radius, tr_radius, bl_radius, br_radius});
+}
+
 Box :: inline (size : Vec2f, radius : float = 0) -> *SDShape {
     return Box(size, .{radius, radius, radius, radius});
+}
+
+Box :: inline (size : Vec2f, tl_radius : float, tr_radius : float, bl_radius : float, br_radius : float) -> *SDShape {
+    return Box(size, .{tl_radius, tr_radius, bl_radius, br_radius});
 }
 
 Box :: inline (size : Vec2f, corner_radiuses : Vec4f) -> *SDShape {
