@@ -24,9 +24,19 @@ main :: () {
     }
     defer OMG.TerminateGL();
 
+    program_start := current_time_monotonic();
     quit := false;
+    delta_time := 1 / 60.0;
     while !quit {
         reset_temporary_storage();
+
+        frame_start := current_time_monotonic();
+        time : float = xx to_float64_seconds(frame_start - program_start);
+
+        defer {
+            frame_end := current_time_monotonic();
+            delta_time = xx to_float64_seconds(frame_end - frame_start);
+        }
 
         event : SDL_Event;
         while SDL_PollEvent(*event) {
@@ -38,7 +48,7 @@ main :: () {
         a := OMG.Circle(100);
         b := OMG.Box(.{400, 100});
         c := OMG.Inter(a, b);
-        c = OMG.Rotate(c, PI * 0.25);
+        c = OMG.Rotate(c, time);
         c = OMG.Move(c, .{200, 200});
         OMG.DrawShape(c);
 
