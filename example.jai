@@ -46,14 +46,18 @@ main :: () {
             }
         }
 
+        w, h : s32;
+        SDL_GetWindowSize(window, *w, *h);
+
         s := OMG.Union(
             OMG.Circle(100),
             OMG.Box(400, 100, radius=10)
         );
-        s = OMG.Rotate(s, time);
-        s = OMG.Move(s, 200, 200);
+        // s = OMG.Rotate(s, time);
+        s = OMG.Move(s, w * 0.5, h * 0.5);
         OMG.DrawShape(s);
 
+        glViewport(0, 0, xx w, xx h);
         glClearColor(0.1, 0.1, 0.1, 1);
         glClear(GL_COLOR_BUFFER_BIT);
 

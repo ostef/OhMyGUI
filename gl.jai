@@ -204,12 +204,10 @@ layout(location=0) out vec4 out_color;
 void main() {
     vec2 p = gl_FragCoord.xy;
     float d = EvalSDF(p);
+    float aa = length(vec2(dFdx(d), dFdy(d)));
+    float alpha = 1 - smoothstep(-aa, aa, d);
 
-    if (d < 0) {
-        out_color = vec4(1,1,1,1);
-    } else {
-        out_color = vec4(0,0,0,1);
-    }
+    out_color = vec4(1, 1, 1, alpha);
 }
 GLSL
 
@@ -427,6 +425,9 @@ RenderGL :: () {
 
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glBlendEquation(GL_FUNC_ADD);
 
     u_num_shapes := glGetUniformLocation(g_shader, "u_num_shapes");
     if u_num_shapes >= 0 {
