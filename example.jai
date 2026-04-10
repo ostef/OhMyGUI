@@ -68,7 +68,7 @@ main :: () {
         );
         s = OMG.Rotate(s, time);
         s = OMG.Move(s, w * 0.5, h * 0.5);
-        // s = OMG.Transform(s, OMG.Translate2D(w * 0.5, h * 0.5) * OMG.Rotate2D(time));
+        // OMG.DrawShape(s);
 
         for x : 0..w / 10 - 1 {
             for y : 0..h / 10 - 1 {
@@ -79,16 +79,11 @@ main :: () {
             }
         }
 
-        color := ifx OMG.IsInside(.{xx mx, xx my}, s)
-            then OMG.Vec4f.{0,1,0,1}
-            else OMG.Vec4f.{1,1,1,1};
-        OMG.DrawShape(s);
-
         glViewport(0, 0, xx w, xx h);
         glClearColor(0.1, 0.1, 0.1, 1);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        OMG.RenderGL(color);
+        OMG.RenderGL();
 
         SDL_GL_SwapWindow(window);
     }

@@ -14,6 +14,8 @@ ShaderSDInstance :: struct {
 }
 
 g_shader : GLuint;
+g_dummy_vao : GLuint;
+
 g_num_frames_in_flight : int;
 g_frame_in_flight : int;
 g_shape_buffer_size : int;
@@ -265,6 +267,8 @@ GLSL
 InitGL :: (num_frames_in_flight : int = 2, shape_buffer_size : int = 1 * 1024 * 1024) -> bool {
     g_num_frames_in_flight = num_frames_in_flight;
 
+    glCreateVertexArrays(1, *g_dummy_vao);
+
     status, log_length : GLint;
 
     vertex_shader := glCreateShader(GL_VERTEX_SHADER);
@@ -359,9 +363,13 @@ InitGL :: (num_frames_in_flight : int = 2, shape_buffer_size : int = 1 * 1024 * 
 }
 
 TerminateGL :: () {
-    glDeleteBuffers(xx g_shape_buffer_handles.count, g_shape_buffer_handles.data);
     glDeleteProgram(g_shader);
     g_shader = 0;
+
+    glDeleteVertexArrays(1, *g_dummy_vao);
+    g_dummy_vao = 0;
+
+    glDeleteBuffers(xx g_shape_buffer_handles.count, g_shape_buffer_handles.data);
 
     free(g_shape_buffer_handles.data);
     g_shape_buffer_handles = .[];
@@ -370,7 +378,7 @@ TerminateGL :: () {
     g_shape_buffer_ptrs = .[];
 }
 
-RenderGL :: (color : Vec4f) {
+RenderGL :: () {
     defer g_frame_in_flight = (g_frame_in_flight + 1) % g_num_frames_in_flight;
     defer g_shapes_to_draw.count = 0;
 
@@ -489,6 +497,7 @@ RenderGL :: (color : Vec4f) {
         instance.first_shape_index = xx num_shapes;
 
         if !PushShape(it, buffer, *buffer_offset, *num_shapes) {
+            print("Too many shapes!\n");
             break;
         }
 
@@ -499,6 +508,8 @@ RenderGL :: (color : Vec4f) {
     }
 
     shapes_size := buffer_offset - shapes_offset;
+
+    glFlushMappedNamedBufferRange(buffer_handle, 0, xx buffer_offset);
 
     glUseProgram(g_shader);
 
@@ -515,6 +526,8 @@ RenderGL :: (color : Vec4f) {
 
     glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 0, buffer_handle, xx instances_offset, xx instances_size);
     glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 1, buffer_handle, xx shapes_offset, xx shapes_size);
+
+    glBindVertexArray(g_dummy_vao);
 
     glDrawArraysInstanced(GL_TRIANGLES, 0, 6, xx num_instances);
 }
