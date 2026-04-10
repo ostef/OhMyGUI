@@ -11,6 +11,8 @@ main :: () {
     defer SDL_DestroyWindow(window);
 
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, xx SDL_GL_CONTEXT_PROFILE_CORE);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 6);
 
     gl_context := SDL_GL_CreateContext(window);
     defer SDL_GL_DeleteContext(gl_context);
@@ -46,22 +48,47 @@ main :: () {
             }
         }
 
+        wx, wy : s32;
+        SDL_GetWindowPosition(window, *wx, *wy);
+
         w, h : s32;
         SDL_GetWindowSize(window, *w, *h);
 
-        s := OMG.Union(
-            OMG.Circle(100),
-            OMG.Box(400, 100, radius=10)
+        mx, my : s32;
+        SDL_GetGlobalMouseState(*mx, *my);
+        mx -= wx;
+        my -= wy;
+
+        s := OMG.Circle(100);
+        s = OMG.Move(s, cos(time) * 100, 0);
+        s = OMG.SmoothUnion(
+            s,
+            OMG.Box(400, 100),
+            20
         );
-        // s = OMG.Rotate(s, time);
+        s = OMG.Rotate(s, time);
         s = OMG.Move(s, w * 0.5, h * 0.5);
+        // s = OMG.Transform(s, OMG.Translate2D(w * 0.5, h * 0.5) * OMG.Rotate2D(time));
+
+        for x : 0..w / 10 - 1 {
+            for y : 0..h / 10 - 1 {
+                if OMG.IsInside(.{x * 10.0, y * 10.0}, s) {
+                    px := OMG.Move(OMG.Circle(3), x * 10.0, y * 10.0);
+                    OMG.DrawShape(px);
+                }
+            }
+        }
+
+        color := ifx OMG.IsInside(.{xx mx, xx my}, s)
+            then OMG.Vec4f.{0,1,0,1}
+            else OMG.Vec4f.{1,1,1,1};
         OMG.DrawShape(s);
 
         glViewport(0, 0, xx w, xx h);
         glClearColor(0.1, 0.1, 0.1, 1);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        OMG.RenderGL();
+        OMG.RenderGL(color);
 
         SDL_GL_SwapWindow(window);
     }

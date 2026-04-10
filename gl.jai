@@ -8,6 +8,11 @@ ShaderSDShape :: struct {
     params : [8]float;
 }
 
+ShaderSDInstance :: struct {
+    first_shape_index : u32;
+    num_shapes : u32;
+}
+
 g_shader : GLuint;
 g_num_frames_in_flight : int;
 g_frame_in_flight : int;
@@ -15,10 +20,29 @@ g_shape_buffer_size : int;
 g_shape_buffer_handles : []GLuint;
 g_shape_buffer_ptrs : []*void;
 
+g_uniform_buffer_offset_alignment : s32;
+g_storage_buffer_offset_alignment : s32;
+
 Vertex_Shader :: #string GLSL
 #version 460 core
 
+struct Instance {
+    uint first_shape_index;
+    uint num_shapes;
+};
+
+layout(binding=0, std430) readonly buffer InstanceData {
+    Instance u_instances[];
+};
+
+layout(location=0) out flat uint out_first_shape_index;
+layout(location=1) out flat uint out_num_shapes;
+
 void main() {
+    Instance instance = u_instances[gl_InstanceID];
+    out_first_shape_index = instance.first_shape_index;
+    out_num_shapes = instance.num_shapes;
+
     const vec2 positions[] = vec2[](
         vec2(0, 1), vec2(1, 1), vec2(1, 0),
         vec2(0, 1), vec2(1, 0), vec2(0, 0)
@@ -39,20 +63,26 @@ struct Shape {
     vec4 params1;
 };
 
+#define Eval_Stack_Size 32
 #define Shape_CirclePrimitive 0
 #define Shape_BoxPrimitive 1
 #define Shape_TrianglePrimitive 2
-#define Shape_UnionOperation 3
-#define Shape_SubtractionOperation 4
-#define Shape_IntersectionOperation 5
-#define Shape_RoundOperation 6
-#define Shape_OnionOperation 7
-#define Shape_TransformOperation 8
+#define Shape_UnionOperation 200
+#define Shape_SmoothUnionOperation 201
+#define Shape_SubtractionOperation 202
+#define Shape_IntersectionOperation 203
+#define Shape_RoundOperation 204
+#define Shape_OnionOperation 205
+#define Shape_TransformOperation 206
 
-layout(binding=0, std430) readonly buffer DrawData {
+layout(binding=1, std430) readonly buffer ShapeData {
     Shape u_shapes[];
 };
-uniform uint u_num_shapes;
+
+layout(location=0) in flat uint in_first_shape_index;
+layout(location=1) in flat uint in_num_shapes;
+
+layout(location=0) out vec4 out_color;
 
 float PrimCircle(vec2 p, float radius) {
     return length(p) - radius;
@@ -90,6 +120,15 @@ float OpUnion(float a, float b) {
     return min(a, b);
 }
 
+// https://iquilezles.org/articles/smin/
+// Added a parameter for exponent
+float OpSmoothUnion(float a, float b, float k, float e) {
+    float e2 = 2 * e;
+    k *= e2;
+    float h = max(k - abs(a - b), 0.0) / k;
+    return min(a, b) - pow(h, e) * k * (1.0 / e2);
+}
+
 float OpIntersection(float a, float b) {
     return max(a, b);
 }
@@ -102,16 +141,17 @@ float OpRound(float a, float radius) {
     return a - radius;
 }
 
-float OpOnion(float a, float width) {
-    return abs(a) - width;
+float OpOnion(float a, float radius) {
+    return abs(a) - radius;
 }
 
 float EvalSDF(vec2 p) {
-    float values[10];
+    float values[Eval_Stack_Size];
     uint value_index = 0;
 
-    uint shape_index = 0;
-    while (shape_index < u_num_shapes && value_index < 10) {
+    uint shape_index = in_first_shape_index;
+    uint last_shape = in_first_shape_index + in_num_shapes;
+    while (shape_index < last_shape && value_index < Eval_Stack_Size) {
         Shape shape = u_shapes[shape_index];
         shape_index += 1;
 
@@ -143,6 +183,17 @@ float EvalSDF(vec2 p) {
             value_index -= 2;
 
             values[value_index] = OpUnion(a, b);
+            value_index += 1;
+        } break;
+
+        case Shape_SmoothUnionOperation: {
+            float a = values[value_index - 1];
+            float b = values[value_index - 2];
+            float k = shape.params0.x;
+            float e = shape.params0.y;
+            value_index -= 2;
+
+            values[value_index] = OpSmoothUnion(a, b, k, e);
             value_index += 1;
         } break;
 
@@ -199,15 +250,13 @@ float EvalSDF(vec2 p) {
     return values[value_index - 1];
 }
 
-layout(location=0) out vec4 out_color;
-
 void main() {
     vec2 p = gl_FragCoord.xy;
     float d = EvalSDF(p);
     float aa = length(vec2(dFdx(d), dFdy(d)));
-    float alpha = 1 - smoothstep(-aa, aa, d);
+    float alpha = clamp(1 - smoothstep(-aa, aa, d), 0, 1);
 
-    out_color = vec4(1, 1, 1, alpha);
+    out_color = vec4(1,1,1, alpha);
 }
 GLSL
 
@@ -300,6 +349,12 @@ InitGL :: (num_frames_in_flight : int = 2, shape_buffer_size : int = 1 * 1024 * 
         }
     }
 
+    glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, *g_uniform_buffer_offset_alignment);
+    assert(g_uniform_buffer_offset_alignment > 0);
+
+    glGetIntegerv(GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT, *g_storage_buffer_offset_alignment);
+    assert(g_storage_buffer_offset_alignment > 0);
+
     return true;
 }
 
@@ -315,7 +370,7 @@ TerminateGL :: () {
     g_shape_buffer_ptrs = .[];
 }
 
-RenderGL :: () {
+RenderGL :: (color : Vec4f) {
     defer g_frame_in_flight = (g_frame_in_flight + 1) % g_num_frames_in_flight;
     defer g_shapes_to_draw.count = 0;
 
@@ -343,6 +398,11 @@ RenderGL :: () {
             shshape.params[4] = shape.triangle_prim.p2.x;
             shshape.params[5] = shape.triangle_prim.p2.y;
 
+        case .SmoothUnionOperation;
+            shshape.params[0] = shape.smooth_union_op.k;
+            shshape.params[1] = shape.smooth_union_op.exponent;
+            #through;
+
         case .UnionOperation; #through;
         case .SubtractionOperation; #through;
         case .IntersectionOperation;
@@ -365,13 +425,13 @@ RenderGL :: () {
                 return false;
             }
 
-            shshape.params[0] = shape.onion_op.width;
+            shshape.params[0] = shape.onion_op.radius;
 
         case .TransformOperation;
             // For transform operations, we push 1 transformation to the coordinate
             // system, then we push the shape, then we push another transformation
             // back to the original coordinate system
-            t := InvertTransform2D(shape.transform_op.transform);
+            t := Invert(shape.transform_op.transform);
             shshape.params[0] = t.a;
             shshape.params[1] = t.b;
             shshape.params[2] = t.tx;
@@ -414,12 +474,31 @@ RenderGL :: () {
     buffer_handle := g_shape_buffer_handles[g_frame_in_flight];
     buffer := g_shape_buffer_ptrs[g_frame_in_flight];
     buffer_offset : int;
+
+    instances_offset := buffer_offset;
+    instances_size := g_shapes_to_draw.count * size_of(ShaderSDInstance);
+
+    buffer_offset += instances_size;
+    buffer_offset = align_forward(buffer_offset, g_storage_buffer_offset_alignment);
+
+    num_instances : int;
     num_shapes : int;
+    shapes_offset := buffer_offset;
     for g_shapes_to_draw {
+        instance : ShaderSDInstance;
+        instance.first_shape_index = xx num_shapes;
+
         if !PushShape(it, buffer, *buffer_offset, *num_shapes) {
             break;
         }
+
+        instance.num_shapes = xx (num_shapes - instance.first_shape_index);
+        memcpy(buffer + instances_offset + num_instances * size_of(ShaderSDInstance), *instance, size_of(ShaderSDInstance));
+
+        num_instances += 1;
     }
+
+    shapes_size := buffer_offset - shapes_offset;
 
     glUseProgram(g_shader);
 
@@ -429,12 +508,13 @@ RenderGL :: () {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glBlendEquation(GL_FUNC_ADD);
 
-    u_num_shapes := glGetUniformLocation(g_shader, "u_num_shapes");
-    if u_num_shapes >= 0 {
-        glUniform1ui(xx u_num_shapes, xx num_shapes);
-    }
+    // print("% %\n",
+    //     glGetProgramResourceIndex(g_shader, GL_SHADER_STORAGE_BLOCK, "InstanceData"),
+    //     glGetProgramResourceIndex(g_shader, GL_SHADER_STORAGE_BLOCK, "ShapeData")
+    // );
 
-    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 0, buffer_handle, 0, xx buffer_offset);
+    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 0, buffer_handle, xx instances_offset, xx instances_size);
+    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 1, buffer_handle, xx shapes_offset, xx shapes_size);
 
-    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glDrawArraysInstanced(GL_TRIANGLES, 0, 6, xx num_instances);
 }
