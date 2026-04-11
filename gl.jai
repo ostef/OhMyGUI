@@ -347,7 +347,7 @@ InitGL :: (num_frames_in_flight : int = 2, shape_buffer_size : int = 1 * 1024 * 
 
         glNamedBufferStorage(handle, xx g_shape_buffer_size, null, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
 
-        g_shape_buffer_ptrs[i] = glMapNamedBuffer(handle, GL_WRITE_ONLY);
+        g_shape_buffer_ptrs[i] = glMapNamedBufferRange(handle, 0, xx g_shape_buffer_size, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
         if g_shape_buffer_ptrs[i] == null {
             return false;
         }
@@ -509,7 +509,7 @@ RenderGL :: () {
 
     shapes_size := buffer_offset - shapes_offset;
 
-    glFlushMappedNamedBufferRange(buffer_handle, 0, xx buffer_offset);
+    // glFlushMappedNamedBufferRange(buffer_handle, 0, xx buffer_offset);
 
     glUseProgram(g_shader);
 
