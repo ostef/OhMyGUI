@@ -137,6 +137,10 @@ Union :: inline (a : *SDShape, b : *SDShape) -> *SDShape {
 }
 
 Union :: inline (a : *SDShape, b : *SDShape, k : float) -> *SDShape {
+    if k < 0.00001 {
+        return Union(a, b);
+    }
+
     shape := New(SDShape ,, temp);
     shape.kind = .SmoothUnionOperation;
     shape.smooth_union_op.shape_a = a;
