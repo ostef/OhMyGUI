@@ -7,10 +7,10 @@ Default_Shapes_Buffer_Size :: Max_Shapes * size_of(ShaderSDShape) + Max_Instance
 #scope_module
 
 ShaderSDInstance :: struct {
-    bounds : [4]float;
+    bounds : Vec4f;
+    position : Vec2f;
     first_shape_index : u32;
     num_shapes : u32;
-    padding : [2]u32;
 }
 
 ShaderSDShape :: struct {
@@ -36,6 +36,7 @@ Vertex_Shader :: #string GLSL
 
 struct Instance {
     vec4 bounds;
+    vec2 position;
     uint first_shape_index;
     uint num_shapes;
 };
@@ -47,18 +48,20 @@ uniform vec2 u_viewport_size;
 
 layout(location=0) out flat uint out_first_shape_index;
 layout(location=1) out flat uint out_num_shapes;
+layout(location=2) out vec2 out_position;
 
 void main() {
     Instance inst = u_instances[gl_InstanceID];
     out_first_shape_index = inst.first_shape_index;
     out_num_shapes = inst.num_shapes;
+    out_position = inst.position;
 
     const vec2 positions[] = vec2[](
         vec2(inst.bounds.z, inst.bounds.w), vec2(inst.bounds.x, inst.bounds.w), vec2(inst.bounds.x, inst.bounds.y),
         vec2(inst.bounds.z, inst.bounds.w), vec2(inst.bounds.x, inst.bounds.y), vec2(inst.bounds.z, inst.bounds.y)
     );
 
-    gl_Position.xy = (positions[gl_VertexID] / u_viewport_size) * 2 - vec2(1);
+    gl_Position.xy = ((positions[gl_VertexID] + inst.position) / u_viewport_size) * 2 - vec2(1);
     gl_Position.z = 0;
     gl_Position.w = 1;
 }
@@ -91,6 +94,7 @@ layout(binding=1, std430) readonly buffer ShapeData {
 
 layout(location=0) in flat uint in_first_shape_index;
 layout(location=1) in flat uint in_num_shapes;
+layout(location=2) in vec2 in_position;
 
 layout(location=0) out vec4 out_color;
 
@@ -259,7 +263,7 @@ float EvalSDF(vec2 p) {
 }
 
 void main() {
-    vec2 p = gl_FragCoord.xy;
+    vec2 p = gl_FragCoord.xy - in_position;
     float d = EvalSDF(p);
     float aa = length(vec2(dFdx(d), dFdy(d)));
     float alpha = clamp(1 - smoothstep(-aa, aa, d), 0, 1);
@@ -508,15 +512,11 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
     num_shapes : int;
     shapes_offset := buffer.count;
     for g_shapes_to_draw {
-        bounds := GetBounds(it.shape);
-
         instance : ShaderSDInstance;
         instance.first_shape_index = xx num_shapes;
         instance.num_shapes = FlattenShapes(it.shape, *buffer);
-        instance.bounds[0] = bounds.x;
-        instance.bounds[1] = bounds.y;
-        instance.bounds[2] = bounds.z;
-        instance.bounds[3] = bounds.w;
+        instance.position = it.position;
+        instance.bounds = GetBounds(it.shape);
 
         memcpy(buffer.data + instances_offset + num_instances * size_of(ShaderSDInstance), *instance, size_of(ShaderSDInstance));
 

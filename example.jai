@@ -68,8 +68,7 @@ main :: () {
             OMG.Move(OMG.Circle(100), -(cos(time) + 1) * 100, 0),
             50
         );
-        s = OMG.Move(s, w * 0.5, h * 0.5);
-        OMG.DrawShape(s);
+        OMG.DrawShape(s, .{w * 0.5, h * 0.5});
 
         if g_frame_syncs[g_frame_in_flight] {
             wait := glClientWaitSync(g_frame_syncs[g_frame_in_flight], GL_SYNC_FLUSH_COMMANDS_BIT, 2 * 1000 * 1000 * 1000);
