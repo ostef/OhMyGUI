@@ -1,3 +1,6 @@
+// https://shaderfun.com/2018/07/01/signed-distance-fields-part-7-some-simple-effects/
+// https://shaderfun.com/2018/07/23/signed-distance-fields-part-8-gradients-bevels-and-noise/
+
 Drawing :: struct {
     position : Vec2f;
     shape : *SDShape;
@@ -22,8 +25,9 @@ DrawShape :: inline (shape : *SDShape, position : Vec2f = .{}) -> *Drawing {
 
 EffectKind :: enum u8 {
     SolidColor;
-    BorderColor;
+    StrokeColor;
     OuterShadow;
+    InnerShadow;
 }
 
 // We could add a blend mode feature?
@@ -32,13 +36,18 @@ Effect :: union kind : EffectKind {
         color : Vec4f;
         blur_factor : float;
     };
-    .BorderColor ,, border_color : struct {
+    .StrokeColor ,, stroke_color : struct {
         color : Vec4f;
         blur_factor : float;
         inset : float;
         size : float;
     };
     .OuterShadow ,, outer_shadow : struct {
+        color : Vec4f;
+        offset : Vec2f;
+        blur_factor : float;
+    };
+    .InnerShadow ,, inner_shadow : struct {
         color : Vec4f;
         offset : Vec2f;
         blur_factor : float;
@@ -64,13 +73,13 @@ SolidColor :: inline (using drawing : *Drawing, color : Vec4f, blur_factor := 0.
     effect.solid_color.blur_factor = blur_factor;
 }
 
-BorderColor :: inline (using drawing : *Drawing, color : Vec4f, size : float, inset := 0.0, blur_factor := 0.0) {
+StrokeColor :: inline (using drawing : *Drawing, color : Vec4f, size : float, inset := 0.0, blur_factor := 0.0) {
     effect := PushEffect(drawing);
-    effect.kind = .BorderColor;
-    effect.border_color.color = color;
-    effect.border_color.size = size;
-    effect.border_color.inset = inset;
-    effect.border_color.blur_factor = blur_factor;
+    effect.kind = .StrokeColor;
+    effect.stroke_color.color = color;
+    effect.stroke_color.size = size;
+    effect.stroke_color.inset = inset;
+    effect.stroke_color.blur_factor = blur_factor;
 }
 
 OuterShadow :: inline (using drawing : *Drawing, offset : Vec2f, blur_factor : float, opacity : float) {
@@ -83,4 +92,16 @@ OuterShadow :: inline (using drawing : *Drawing, offset : Vec2f, blur_factor : f
     effect.outer_shadow.offset = offset;
     effect.outer_shadow.blur_factor = blur_factor;
     effect.outer_shadow.color = color;
+}
+
+InnerShadow :: inline (using drawing : *Drawing, blur_factor : float, opacity : float, offset := Vec2f.{0,0}) {
+    InnerShadow(drawing, blur_factor, .{0,0,0,opacity}, offset);
+}
+
+InnerShadow :: inline (using drawing : *Drawing, blur_factor : float, color := Vec4f.{0,0,0,1}, offset := Vec2f.{0,0}) {
+    effect := PushEffect(drawing);
+    effect.kind = .InnerShadow;
+    effect.inner_shadow.offset = offset;
+    effect.inner_shadow.blur_factor = blur_factor;
+    effect.inner_shadow.color = color;
 }

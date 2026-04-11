@@ -117,8 +117,9 @@ struct Effect {
 };
 
 #define Effect_SolidColor 0
-#define Effect_BorderColor 1
+#define Effect_StrokeColor 1
 #define Effect_OuterShadow 2
+#define Effect_InnerShadow 3
 
 layout(binding=1, std430) readonly buffer ShapeData {
     Shape u_shapes[];
@@ -342,8 +343,8 @@ float FxSolidColor(float d, float edge) {
     return clamp(a, 0, 1);
 }
 
-float FxBorderColor(float d, float edge, float size) {
-    float a = smoothstep(-edge, edge, d + size) - smoothstep(-edge, edge, d);
+float FxStrokeColor(float d, float edge, float size, float inset) {
+    float a = smoothstep(-inset - edge, -inset + edge, d + size) - smoothstep(-inset - edge, -inset + edge, d);
     return clamp(a, 0, 1);
 }
 
@@ -366,14 +367,16 @@ vec4 EvalEffects(vec2 p, float d) {
             float a = FxSolidColor(d, aa + blur_factor);
             foreground_color = mix(foreground_color, color, a);
         } break;
-        case Effect_BorderColor: {
+
+        case Effect_StrokeColor: {
             vec4 color = effect.params0;
             float blur_factor = effect.params1.x;
             float inset = effect.params1.y;
             float size = effect.params1.z;
-            float a = FxBorderColor(d, aa + blur_factor, size);
+            float a = FxStrokeColor(d, aa + blur_factor, size, inset);
             foreground_color = mix(foreground_color, color, a);
         } break;
+
         case Effect_OuterShadow: {
             vec4 color = effect.params0;
             vec2 offset = effect.params1.xy;
@@ -389,6 +392,23 @@ vec4 EvalEffects(vec2 p, float d) {
             float a = FxSolidColor(shadow, aa + blur_factor);
 
             background_color = mix(background_color, color, a);
+        } break;
+
+        case Effect_InnerShadow: {
+            vec4 color = effect.params0;
+            vec2 offset = effect.params1.xy;
+            float blur_factor = effect.params1.z;
+
+            float shadow;
+            if (offset != vec2(0)) {
+                shadow = EvalSDF(p - offset);
+            } else {
+                shadow = d;
+            }
+
+            float a = FxSolidColor(-shadow, aa + blur_factor) * FxSolidColor(d, aa);
+
+            foreground_color = mix(foreground_color, color, a);
         } break;
         }
     }
@@ -644,15 +664,16 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
                 effect.params0[3] = fx.solid_color.color.w;
                 effect.params1[0] = fx.solid_color.blur_factor;
 
-            case .BorderColor;
-                effect.params0[0] = fx.border_color.color.x;
-                effect.params0[1] = fx.border_color.color.y;
-                effect.params0[2] = fx.border_color.color.z;
-                effect.params0[3] = fx.border_color.color.w;
-                effect.params1[0] = fx.border_color.blur_factor;
-                effect.params1[1] = fx.border_color.inset;
-                effect.params1[2] = fx.border_color.size;
+            case .StrokeColor;
+                effect.params0[0] = fx.stroke_color.color.x;
+                effect.params0[1] = fx.stroke_color.color.y;
+                effect.params0[2] = fx.stroke_color.color.z;
+                effect.params0[3] = fx.stroke_color.color.w;
+                effect.params1[0] = fx.stroke_color.blur_factor;
+                effect.params1[1] = fx.stroke_color.inset;
+                effect.params1[2] = fx.stroke_color.size;
 
+            case .InnerShadow; #through;
             case .OuterShadow;
                 effect.params0[0] = fx.outer_shadow.color.x;
                 effect.params0[1] = fx.outer_shadow.color.y;
