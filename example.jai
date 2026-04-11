@@ -84,7 +84,11 @@ main :: () {
                 OMG.Move(OMG.Circle(100),  90, 1),
             );
             t = OMG.Union(t, tt, 50);
-            t = OMG.Scale(t, 1 + cos(time) * 0.2);
+
+            tt = OMG.Circle(100);
+            tt = OMG.Move(tt, cos(time * 2) * 50, sin(time * 2) * 50);
+            t = OMG.Morph(t, tt, 0.2);
+
             d := OMG.DrawShape(t, .{400, 400});
             OMG.OuterShadow(d, .{10, -10}, 10);
             OMG.SolidColor(d, .{1,1,1,1});

@@ -107,7 +107,8 @@ struct Shape {
 #define Shape_SmoothIntersectionOperation 205
 #define Shape_RoundOperation 206
 #define Shape_OnionOperation 207
-#define Shape_TransformOperation 208
+#define Shape_MorphOperation 208
+#define Shape_TransformOperation 209
 
 struct Effect {
     uint kind;
@@ -187,11 +188,11 @@ float OpSmoothIntersection(float a, float b, float k) {
 }
 
 float OpSubtraction(float a, float b) {
-    return max(-a, b);
+    return max(a, -b);
 }
 
 float OpSmoothSubtraction(float a, float b, float k) {
-    return -OpSmoothUnion(a, -b, k);
+    return -OpSmoothUnion(-a, b, k);
 }
 
 float OpRound(float a, float radius) {
@@ -235,8 +236,8 @@ float EvalSDF(vec2 p) {
         } break;
 
         case Shape_UnionOperation: {
-            float a = values[value_index - 1];
-            float b = values[value_index - 2];
+            float a = values[value_index - 2];
+            float b = values[value_index - 1];
             value_index -= 2;
 
             values[value_index] = OpUnion(a, b);
@@ -244,8 +245,8 @@ float EvalSDF(vec2 p) {
         } break;
 
         case Shape_SmoothUnionOperation: {
-            float a = values[value_index - 1];
-            float b = values[value_index - 2];
+            float a = values[value_index - 2];
+            float b = values[value_index - 1];
             float k = shape.params0.x;
             value_index -= 2;
 
@@ -254,8 +255,8 @@ float EvalSDF(vec2 p) {
         } break;
 
         case Shape_SubtractionOperation: {
-            float a = values[value_index - 1];
-            float b = values[value_index - 2];
+            float a = values[value_index - 2];
+            float b = values[value_index - 1];
             value_index -= 2;
 
             values[value_index] = OpSubtraction(a, b);
@@ -263,8 +264,8 @@ float EvalSDF(vec2 p) {
         } break;
 
         case Shape_SmoothSubtractionOperation: {
-            float a = values[value_index - 1];
-            float b = values[value_index - 2];
+            float a = values[value_index - 2];
+            float b = values[value_index - 1];
             float k = shape.params0.x;
             value_index -= 2;
 
@@ -273,8 +274,8 @@ float EvalSDF(vec2 p) {
         } break;
 
         case Shape_IntersectionOperation: {
-            float a = values[value_index - 1];
-            float b = values[value_index - 2];
+            float a = values[value_index - 2];
+            float b = values[value_index - 1];
             value_index -= 2;
 
             values[value_index] = OpIntersection(a, b);
@@ -282,8 +283,8 @@ float EvalSDF(vec2 p) {
         } break;
 
         case Shape_SmoothIntersectionOperation: {
-            float a = values[value_index - 1];
-            float b = values[value_index - 2];
+            float a = values[value_index - 2];
+            float b = values[value_index - 1];
             float k = shape.params0.x;
             value_index -= 2;
 
@@ -304,6 +305,16 @@ float EvalSDF(vec2 p) {
             value_index -= 1;
 
             values[value_index] = OpOnion(a, shape.params0.x);
+            value_index += 1;
+        } break;
+
+        case Shape_MorphOperation: {
+            float a = values[value_index - 2];
+            float b = values[value_index - 1];
+            float t = shape.params0.x;
+            value_index -= 2;
+
+            values[value_index] = mix(a, b, t);
             value_index += 1;
         } break;
 
@@ -564,6 +575,11 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
             num_shapes += FlattenShapes(shape.onion_op.shape, buffer);
 
             shshape.params[0] = shape.onion_op.radius;
+
+        case .MorphOperation;
+            shshape.params[0] = shape.morph_op.t;
+            num_shapes += FlattenShapes(shape.morph_op.shape_a, buffer);
+            num_shapes += FlattenShapes(shape.morph_op.shape_b, buffer);
 
         case .TransformOperation;
             // For transform operations, we push 1 transformation to the coordinate

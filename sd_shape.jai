@@ -11,6 +11,7 @@ SDShapeKind :: enum u8 {
     SmoothIntersectionOperation;
     RoundOperation;
     OnionOperation;
+    MorphOperation;
     TransformOperation;
 }
 
@@ -76,6 +77,12 @@ SDShape :: struct {
         .OnionOperation ,, onion_op : struct {
             shape : *SDShape;
             radius : float;
+        };
+
+        .MorphOperation ,, morph_op : struct {
+            shape_a : *SDShape;
+            shape_b : *SDShape;
+            t : float;
         };
 
         .TransformOperation ,, transform_op : struct {
@@ -235,6 +242,17 @@ Onion :: inline (subshape : *SDShape, radius : float) -> *SDShape {
     return shape;
 }
 
+Morph :: inline (a : *SDShape, b : *SDShape, t : float) -> *SDShape {
+    shape := New(SDShape ,, temp);
+    shape.kind = .MorphOperation;
+    shape.morph_op.shape_a = a;
+    shape.morph_op.shape_b = b;
+    shape.morph_op.t = t;
+    shape.bounds = GetBounds(shape);
+
+    return shape;
+}
+
 Transform :: inline (subshape : *SDShape, transform : Transform2D) -> *SDShape {
     shape := New(SDShape ,, temp);
     shape.kind = .TransformOperation;
@@ -336,13 +354,13 @@ EvalSDF :: (p : Vec2f, shape : *SDShape) -> float {
     case .SubtractionOperation;
         a := EvalSDF(p, shape.subtraction_op.shape_a);
         b := EvalSDF(p, shape.subtraction_op.shape_b);
-        return max(-a, b);
+        return max(a, -b);
 
     case .SmoothSubtractionOperation;
         a := EvalSDF(p, shape.smooth_subtraction_op.shape_a);
         b := EvalSDF(p, shape.smooth_subtraction_op.shape_b);
         k := shape.smooth_subtraction_op.k;
-        return -OpSmoothUnion(a, -b, k);
+        return -OpSmoothUnion(-a, b, k);
 
     case .IntersectionOperation;
         a := EvalSDF(p, shape.intersection_op.shape_a);
@@ -353,7 +371,7 @@ EvalSDF :: (p : Vec2f, shape : *SDShape) -> float {
         a := EvalSDF(p, shape.smooth_intersection_op.shape_a);
         b := EvalSDF(p, shape.smooth_intersection_op.shape_b);
         k := shape.smooth_intersection_op.k;
-        return -OpSmootHUnion(-a, -b, k);
+        return -OpSmoothUnion(-a, -b, k);
 
     case .RoundOperation;
         a := EvalSDF(p, shape.round_op.shape);
@@ -362,6 +380,12 @@ EvalSDF :: (p : Vec2f, shape : *SDShape) -> float {
     case .OnionOperation;
         a := EvalSDF(p, shape.onion_op.shape);
         return abs(a) - shape.onion_op.radius;
+
+    case .MorphOperation;
+        a := EvalSDF(p, shape.morph_op.shape_a);
+        b := EvalSDF(p, shape.morph_op.shape_b);
+        t := shape.morph_op.t;
+        return lerp(a, b, t);
 
     case .TransformOperation;
         p2 := TransformPoint(p, Invert(shape.transform_op.transform));
@@ -411,8 +435,11 @@ GetBounds :: (shape : *SDShape) -> Vec4f {
             zw=max(a.zw, b.zw) + .{k,k},
         };
 
+    case .MorphOperation; #through;
     case .SmoothSubtractionOperation; #through; // Not sure this is correct
-    case .SubtractionOperation;
+    case .SubtractionOperation; #through;
+    case .SmoothIntersectionOperation; #through; // Not sure this is correct
+    case .IntersectionOperation;
         // @Todo: can we find something better fitting?
         a := GetBounds(shape.subtraction_op.shape_a);
         b := GetBounds(shape.subtraction_op.shape_b);
@@ -421,27 +448,10 @@ GetBounds :: (shape : *SDShape) -> Vec4f {
             zw=max(a.zw, b.zw),
         };
 
-    case .SmoothIntersectionOperation; #through; // Not sure this is correct
-    case .IntersectionOperation;
-        // @Todo: can we find something better fitting?
-        a := GetBounds(shape.intersection_op.shape_a);
-        b := GetBounds(shape.intersection_op.shape_b);
-        return .{
-            xy=min(a.xy, b.xy),
-            zw=max(a.zw, b.zw),
-        };
-
+    case .OnionOperation; #through;
     case .RoundOperation;
         a := GetBounds(shape.round_op.shape);
         r := Vec2f.{shape.round_op.radius, shape.round_op.radius};
-        return .{
-            xy=min(a.xy - r, a.xy - r),
-            zw=max(a.zw + r, a.zw + r),
-        };
-
-    case .OnionOperation;
-        a := GetBounds(shape.onion_op.shape);
-        r := Vec2f.{shape.onion_op.radius, shape.onion_op.radius};
         return .{
             xy=min(a.xy - r, a.xy - r),
             zw=max(a.zw + r, a.zw + r),
@@ -463,7 +473,7 @@ GetBounds :: (shape : *SDShape) -> Vec4f {
     return .{};
 }
 
-IsInside :: (p : Vec2f, shape : *SDShape) -> bool {
-    v := EvalSDF(p, shape);
+IsInside :: (p : Vec2f, shape : *SDShape, offset := Vec2f.{}) -> bool {
+    v := EvalSDF(p - offset, shape);
     return v < 0;
 }
