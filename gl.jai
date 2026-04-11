@@ -1,5 +1,9 @@
 #import "GL";
 
+Max_Instances :: 10000;
+Max_Shapes :: 5 * Max_Instances;
+Default_Shapes_Buffer_Size :: Max_Shapes * size_of(ShaderSDShape) + Max_Instances * size_of(ShaderSDInstance);
+
 #scope_module
 
 ShaderSDInstance :: struct {
@@ -127,12 +131,11 @@ float OpUnion(float a, float b) {
 }
 
 // https://iquilezles.org/articles/smin/
-// Added a parameter for exponent
-float OpSmoothUnion(float a, float b, float k, float e) {
-    float e2 = 2 * e;
-    k *= e2;
+// Quadratic polynomial smooth union
+float OpSmoothUnion(float a, float b, float k) {
+    k *= 4.0;
     float h = max(k - abs(a - b), 0.0) / k;
-    return min(a, b) - pow(h, e) * k * (1.0 / e2);
+    return min(a, b) - h * h * k * (1.0 / 4.0);
 }
 
 float OpIntersection(float a, float b) {
@@ -196,10 +199,9 @@ float EvalSDF(vec2 p) {
             float a = values[value_index - 1];
             float b = values[value_index - 2];
             float k = shape.params0.x;
-            float e = shape.params0.y;
             value_index -= 2;
 
-            values[value_index] = OpSmoothUnion(a, b, k, e);
+            values[value_index] = OpSmoothUnion(a, b, k);
             value_index += 1;
         } break;
 
@@ -262,13 +264,13 @@ void main() {
     float aa = length(vec2(dFdx(d), dFdy(d)));
     float alpha = clamp(1 - smoothstep(-aa, aa, d), 0, 1);
 
-    out_color = vec4(1,1,1, alpha);
+    out_color = mix(vec4(1,1,1,1), vec4(1,0,0,1), alpha);
 }
 GLSL
 
 #scope_export
 
-InitGL :: (num_frames_in_flight : int = 2, shape_buffer_size : int = 1 * 1024 * 1024) -> bool {
+InitGL :: (num_frames_in_flight : int = 2, shape_buffer_size : int = Default_Shapes_Buffer_Size) -> bool {
     g_num_frames_in_flight = num_frames_in_flight;
 
     glCreateVertexArrays(1, *g_dummy_vao);
@@ -363,6 +365,9 @@ InitGL :: (num_frames_in_flight : int = 2, shape_buffer_size : int = 1 * 1024 * 
     glGetIntegerv(GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT, *g_storage_buffer_offset_alignment);
     assert(g_storage_buffer_offset_alignment > 0);
 
+    print("Initialized GL backend\n");
+    print("Num frames in flight: %\n", g_num_frames_in_flight);
+    print("Shapes buffer: % bytes\n", g_shape_buffer_size);
     print("GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT = %\n", g_uniform_buffer_offset_alignment);
     print("GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT = %\n", g_storage_buffer_offset_alignment);
 
@@ -439,7 +444,6 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
 
         case .SmoothUnionOperation;
             shshape.params[0] = shape.smooth_union_op.k;
-            shshape.params[1] = shape.smooth_union_op.exponent;
             #through;
 
         case .UnionOperation; #through;
@@ -525,7 +529,7 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
     buffer_handle := g_shape_buffer_handles[g_frame_in_flight];
     buffer_ptr := g_shape_buffer_ptrs[g_frame_in_flight];
     if buffer.count > g_shape_buffer_size {
-        log_error("Too many shapes to draw\n");
+        log_error("Too many shapes to draw % of % bytes, % shapes, % instances\n", buffer.count, g_shape_buffer_size, num_shapes, num_instances);
         return;
     }
 

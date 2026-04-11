@@ -63,19 +63,13 @@ main :: () {
         my -= wy;
         my = h - my;
 
-        s := OMG.Circle(100);
-        s = OMG.Move(s, cos(time) * 100, 0);
-        s = OMG.SmoothUnion(
-            s,
-            OMG.Box(400, 100),
-            20
+        s := OMG.SmoothUnion(
+            OMG.Move(OMG.Circle(100),  (cos(time) + 1) * 100, 0),
+            OMG.Move(OMG.Circle(100), -(cos(time) + 1) * 100, 0),
+            50
         );
-        s = OMG.Rotate(s, time);
         s = OMG.Move(s, w * 0.5, h * 0.5);
         OMG.DrawShape(s);
-        OMG.DrawShape(OMG.Move(s, 100, 100));
-
-        print("%\n", OMG.IsInside(.{xx mx, xx my}, s));
 
         if g_frame_syncs[g_frame_in_flight] {
             wait := glClientWaitSync(g_frame_syncs[g_frame_in_flight], GL_SYNC_FLUSH_COMMANDS_BIT, 2 * 1000 * 1000 * 1000);

@@ -42,7 +42,6 @@ SDShape :: struct {
             shape_a : *SDShape;
             shape_b : *SDShape;
             k : float;
-            exponent : float;
         };
 
         .SubtractionOperation ,, subtraction_op : struct {
@@ -143,13 +142,12 @@ Union :: inline (a : *SDShape, b : *SDShape) -> *SDShape {
     return shape;
 }
 
-SmoothUnion :: inline (a : *SDShape, b : *SDShape, k : float, exponent := 3.0) -> *SDShape {
+SmoothUnion :: inline (a : *SDShape, b : *SDShape, k : float) -> *SDShape {
     shape := New(SDShape ,, temp);
     shape.kind = .SmoothUnionOperation;
     shape.smooth_union_op.shape_a = a;
     shape.smooth_union_op.shape_b = b;
     shape.smooth_union_op.k = k;
-    shape.smooth_union_op.exponent = exponent;
     shape.bounds = GetBounds(shape);
 
     return shape;
@@ -271,13 +269,12 @@ EvalSDF :: (p : Vec2f, shape : *SDShape) -> float {
     case .SmoothUnionOperation;
         a := EvalSDF(p, shape.smooth_union_op.shape_a);
         b := EvalSDF(p, shape.smooth_union_op.shape_b);
-        e := shape.smooth_union_op.exponent;
-        e2 := e * 2;
+
         k := shape.smooth_union_op.k;
-        k *= e2;
+        k *= 4;
         h := max(k - abs(a - b), 0) / k;
 
-        return min(a, b) - pow(h, e) * k * (1 / e2);
+        return min(a, b) - h * h * k * (1 / 4.0);
 
     case .SubtractionOperation;
         a := EvalSDF(p, shape.subtraction_op.shape_a);
@@ -335,12 +332,14 @@ GetBounds :: (shape : *SDShape) -> Vec4f {
         };
 
     case .SmoothUnionOperation;
-        // @Todo: this is not correct!
         a := GetBounds(shape.smooth_union_op.shape_a);
         b := GetBounds(shape.smooth_union_op.shape_b);
+
+        k := shape.smooth_union_op.k;
+
         return .{
-            xy=min(a.xy, b.xy),
-            zw=max(a.zw, b.zw),
+            xy=min(a.xy, b.xy) - .{k,k},
+            zw=max(a.zw, b.zw) + .{k,k},
         };
 
     case .SubtractionOperation;
