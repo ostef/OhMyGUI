@@ -70,10 +70,11 @@ main :: () {
         s = OMG.Move(s, w * 0.5, h * 0.5);
         // OMG.DrawShape(s);
 
-        for x : 0..w / 10 - 1 {
-            for y : 0..h / 10 - 1 {
-                if OMG.IsInside(.{x * 10.0, y * 10.0}, s) {
-                    px := OMG.Move(OMG.Circle(3), x * 10.0, y * 10.0);
+        S :: 5;
+        for x : 0..w / S - 1 {
+            for y : 0..h / S - 1 {
+                if OMG.IsInside(.{x * cast(float, S), y * cast(float, S)}, s) {
+                    px := OMG.Move(OMG.Circle(3), x * cast(float, S), y * cast(float, S));
                     OMG.DrawShape(px);
                 }
             }

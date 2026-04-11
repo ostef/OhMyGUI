@@ -359,6 +359,9 @@ InitGL :: (num_frames_in_flight : int = 2, shape_buffer_size : int = 1 * 1024 * 
     glGetIntegerv(GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT, *g_storage_buffer_offset_alignment);
     assert(g_storage_buffer_offset_alignment > 0);
 
+    print("GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT = %\n", g_uniform_buffer_offset_alignment);
+    print("GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT = %\n", g_storage_buffer_offset_alignment);
+
     return true;
 }
 
@@ -379,10 +382,34 @@ TerminateGL :: () {
 }
 
 RenderGL :: () {
-    defer g_frame_in_flight = (g_frame_in_flight + 1) % g_num_frames_in_flight;
-    defer g_shapes_to_draw.count = 0;
+    AlignBuffer :: (buffer : *[..]u8, align : int) {
+        padding := buffer.count;
+        padding = align_forward(padding, align);
+        padding -= buffer.count;
+        for 0..padding - 1 {
+            array_add(buffer, 0);
+        }
+    }
 
-    PushShape :: (shape : *SDShape, buffer : *void, buffer_offset : *int, num_shapes : *int) -> bool {
+    PushBytes :: (buffer : *[..]u8, num_bytes : int) -> offset : int, ptr : *u8 {
+        offset := buffer.count;
+        if buffer.count + num_bytes > buffer.allocated {
+            array_reserve(buffer, buffer.count + num_bytes);
+        }
+
+        buffer.count += num_bytes;
+
+        return offset, buffer.data + offset;
+    }
+
+    Push :: (buffer : *[..]u8, value : $T) {
+        bytes := ([]u8).{count=size_of(T), data=cast(*u8, *value)};
+        array_add(buffer, ..bytes);
+    }
+
+    FlattenShapes :: (shape : *SDShape, buffer : *[..]u8) -> u32 {
+        num_shapes : u32;
+
         shshape : ShaderSDShape;
         shshape.kind = xx shape.kind;
 
@@ -414,24 +441,16 @@ RenderGL :: () {
         case .UnionOperation; #through;
         case .SubtractionOperation; #through;
         case .IntersectionOperation;
-            if !PushShape(shape.union_op.shape_a, buffer, buffer_offset, num_shapes) {
-                return false;
-            }
-            if !PushShape(shape.union_op.shape_b, buffer, buffer_offset, num_shapes) {
-                return false;
-            }
+            num_shapes += FlattenShapes(shape.union_op.shape_a, buffer);
+            num_shapes += FlattenShapes(shape.union_op.shape_b, buffer);
 
         case .RoundOperation;
-            if !PushShape(shape.round_op.shape, buffer, buffer_offset, num_shapes) {
-                return false;
-            }
+            num_shapes += FlattenShapes(shape.round_op.shape, buffer);
 
             shshape.params[0] = shape.round_op.radius;
 
         case .OnionOperation;
-            if !PushShape(shape.onion_op.shape, buffer, buffer_offset, num_shapes) {
-                return false;
-            }
+            num_shapes += FlattenShapes(shape.onion_op.shape, buffer);
 
             shshape.params[0] = shape.onion_op.radius;
 
@@ -447,17 +466,10 @@ RenderGL :: () {
             shshape.params[4] = t.d;
             shshape.params[5] = t.ty;
 
-            if buffer_offset.* + size_of(ShaderSDShape) > g_shape_buffer_size {
-                return false;
-            }
+            Push(buffer, shshape);
+            num_shapes += 1;
 
-            memcpy(buffer + buffer_offset.*, *shshape, size_of(ShaderSDShape));
-            buffer_offset.* += size_of(ShaderSDShape);
-            num_shapes.* += 1;
-
-            if !PushShape(shape.transform_op.shape, buffer, buffer_offset, num_shapes) {
-                return false;
-            }
+            num_shapes += FlattenShapes(shape.transform_op.shape, buffer);
 
             t = shape.transform_op.transform;
             shshape.params[0] = t.a;
@@ -468,48 +480,48 @@ RenderGL :: () {
             shshape.params[5] = t.ty;
         }
 
-        if buffer_offset.* + size_of(ShaderSDShape) > g_shape_buffer_size {
-            return false;
-        }
+        Push(buffer, shshape);
+        num_shapes += 1;
 
-        memcpy(buffer + buffer_offset.*, *shshape, size_of(ShaderSDShape));
-        buffer_offset.* += size_of(ShaderSDShape);
-        num_shapes.* += 1;
-
-        return true;
+        return num_shapes;
     }
 
-    buffer_handle := g_shape_buffer_handles[g_frame_in_flight];
-    buffer := g_shape_buffer_ptrs[g_frame_in_flight];
-    buffer_offset : int;
+    defer g_frame_in_flight = (g_frame_in_flight + 1) % g_num_frames_in_flight;
+    defer g_shapes_to_draw.count = 0;
 
-    instances_offset := buffer_offset;
+    buffer : [..]u8;
+    defer array_free(buffer);
+
     instances_size := g_shapes_to_draw.count * size_of(ShaderSDInstance);
-
-    buffer_offset += instances_size;
-    buffer_offset = align_forward(buffer_offset, g_storage_buffer_offset_alignment);
+    instances_offset := PushBytes(*buffer, instances_size);
+    AlignBuffer(*buffer, g_storage_buffer_offset_alignment);
 
     num_instances : int;
     num_shapes : int;
-    shapes_offset := buffer_offset;
+    shapes_offset := buffer.count;
     for g_shapes_to_draw {
         instance : ShaderSDInstance;
         instance.first_shape_index = xx num_shapes;
+        instance.num_shapes = FlattenShapes(it, *buffer);
 
-        if !PushShape(it, buffer, *buffer_offset, *num_shapes) {
-            print("Too many shapes!\n");
-            break;
-        }
+        memcpy(buffer.data + instances_offset + num_instances * size_of(ShaderSDInstance), *instance, size_of(ShaderSDInstance));
 
-        instance.num_shapes = xx (num_shapes - instance.first_shape_index);
-        memcpy(buffer + instances_offset + num_instances * size_of(ShaderSDInstance), *instance, size_of(ShaderSDInstance));
-
+        num_shapes += instance.num_shapes;
         num_instances += 1;
     }
 
-    shapes_size := buffer_offset - shapes_offset;
+    shapes_size := num_shapes * size_of(ShaderSDShape);
 
-    // glFlushMappedNamedBufferRange(buffer_handle, 0, xx buffer_offset);
+    buffer_handle := g_shape_buffer_handles[g_frame_in_flight];
+    buffer_ptr := g_shape_buffer_ptrs[g_frame_in_flight];
+    if buffer.count > g_shape_buffer_size {
+        log_error("Too many shapes to draw\n");
+        return;
+    }
+
+    memcpy(buffer_ptr, buffer.data, buffer.count);
+
+    print("% instances, % shapes, %\% buffer space\n", num_instances, num_shapes, buffer.count / cast(float, g_shape_buffer_size));
 
     glUseProgram(g_shader);
 
