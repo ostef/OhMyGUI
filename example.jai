@@ -5,6 +5,9 @@ using,only(.["*"]) OMG;
 #import "SDL";
 #import "GL";
 
+g_frame_in_flight : int;
+g_frame_syncs : [2]GLsync;
+
 main :: () {
     window_flags := SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE;
     window := SDL_CreateWindow("Oh My GUI", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1600, 900, window_flags);
@@ -69,16 +72,13 @@ main :: () {
         );
         s = OMG.Rotate(s, time);
         s = OMG.Move(s, w * 0.5, h * 0.5);
-        // OMG.DrawShape(s);
+        OMG.DrawShape(s);
 
-        S :: 5;
-        for x : 0..w / S - 1 {
-            for y : 0..h / S - 1 {
-                if OMG.IsInside(.{x * cast(float, S), y * cast(float, S)}, s) {
-                    px := OMG.Move(OMG.Circle(3), x * cast(float, S), y * cast(float, S));
-                    OMG.DrawShape(px);
-                }
-            }
+        print("%\n", OMG.IsInside(.{xx mx, xx my}, s));
+
+        if g_frame_syncs[g_frame_in_flight] != 0 {
+            wait := glClientWaitSync(g_frame_syncs[g_frame_in_flight], GL_SYNC_FLUSH_COMMANDS_BIT, 2 * 1000 * 1000 * 1000);
+            assert(wait != GL_WAIT_FAILED && wait != GL_TIMEOUT_EXPIRED, "glClientWaitSync failed");
         }
 
         glViewport(0, 0, xx w, xx h);
@@ -86,6 +86,9 @@ main :: () {
         glClear(GL_COLOR_BUFFER_BIT);
 
         OMG.RenderGL();
+        g_frame_syncs[g_frame_in_flight] = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+
+        g_frame_in_flight = (g_frame_in_flight + 1) % 2;
 
         SDL_GL_SwapWindow(window);
     }

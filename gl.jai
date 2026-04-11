@@ -521,8 +521,6 @@ RenderGL :: () {
 
     memcpy(buffer_ptr, buffer.data, buffer.count);
 
-    print("% instances, % shapes, %\% buffer space\n", num_instances, num_shapes, buffer.count / cast(float, g_shape_buffer_size));
-
     glUseProgram(g_shader);
 
     glDisable(GL_DEPTH_TEST);
