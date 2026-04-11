@@ -58,6 +58,7 @@ main :: () {
         SDL_GetGlobalMouseState(*mx, *my);
         mx -= wx;
         my -= wy;
+        my = h - my;
 
         s := OMG.Circle(100);
         s = OMG.Move(s, cos(time) * 100, 0);
