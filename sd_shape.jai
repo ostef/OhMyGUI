@@ -279,7 +279,7 @@ EvalSDF :: (p : Vec2f, shape : *SDShape) -> float {
     case .SubtractionOperation;
         a := EvalSDF(p, shape.subtraction_op.shape_a);
         b := EvalSDF(p, shape.subtraction_op.shape_b);
-        return max(a, -b);
+        return max(-a, b);
 
     case .IntersectionOperation;
         a := EvalSDF(p, shape.intersection_op.shape_a);

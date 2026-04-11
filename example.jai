@@ -63,11 +63,13 @@ main :: () {
         my -= wy;
         my = h - my;
 
-        s := OMG.SmoothUnion(
-            OMG.Move(OMG.Circle(100),  (cos(time) + 1) * 100, 0),
-            OMG.Move(OMG.Circle(100), -(cos(time) + 1) * 100, 0),
-            50
+        in := OMG.Move(OMG.Circle(80), cos(time) * 100, 0);
+        out := OMG.SmoothUnion(
+            OMG.Move(OMG.Circle(100), -100, 0),
+            OMG.Move(OMG.Circle(100),  100, 0),
+            60
         );
+        s := OMG.Sub(out, in);
         OMG.DrawShape(s, .{w * 0.5, h * 0.5});
 
         if g_frame_syncs[g_frame_in_flight] {

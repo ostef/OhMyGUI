@@ -147,7 +147,7 @@ float OpIntersection(float a, float b) {
 }
 
 float OpSubtraction(float a, float b) {
-    return max(a, -b);
+    return max(-a, b);
 }
 
 float OpRound(float a, float radius) {
@@ -268,7 +268,8 @@ void main() {
     float aa = length(vec2(dFdx(d), dFdy(d)));
     float alpha = clamp(1 - smoothstep(-aa, aa, d), 0, 1);
 
-    out_color = mix(vec4(1,1,1,1), vec4(1,0,0,1), alpha);
+    // out_color = mix(vec4(1,1,1,1), vec4(1,0,0,1), alpha);
+    out_color = vec4(1,1,1,alpha);
 }
 GLSL
 
