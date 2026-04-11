@@ -63,22 +63,41 @@ main :: () {
         my -= wy;
         my = h - my;
 
-        in := OMG.Move(OMG.Circle(80), cos(time) * 100, 0);
-        out := OMG.SmoothUnion(
-            OMG.Move(OMG.Circle(100), -100, 0),
-            OMG.Move(OMG.Circle(100),  100, 0),
-            60
-        );
-        s := OMG.Sub(out, in);
-        OMG.DrawShape(s, .{w * 0.5, h * 0.5});
+        {
+            in := OMG.Move(OMG.Circle(80), cos(time) * 100, 0);
+            out := OMG.Union(
+                OMG.Move(OMG.Circle(100), -100, 0),
+                OMG.Move(OMG.Circle(100),  100, 0),
+                60
+            );
+            s := OMG.Sub(out, in);
+
+            d := OMG.DrawShape(s, .{w * 0.5, h * 0.5});
+            OMG.OuterShadow(d, .{10, -10}, 10);
+            OMG.SolidColor(d, .{1,0,1,1});
+        }
+
+        {
+            t := OMG.Triangle(.{-100, 0}, .{100, 0}, .{0, -250});
+            tt := OMG.Union(
+                OMG.Move(OMG.Circle(100), -90, 1),
+                OMG.Move(OMG.Circle(100),  90, 1),
+            );
+            t = OMG.Union(t, tt, 50);
+            t = OMG.Scale(t, 1 + cos(time) * 0.2);
+            d := OMG.DrawShape(t, .{400, 400});
+            OMG.OuterShadow(d, .{10, -10}, 10);
+            OMG.SolidColor(d, .{1,1,1,1});
+        }
 
         if g_frame_syncs[g_frame_in_flight] {
             wait := glClientWaitSync(g_frame_syncs[g_frame_in_flight], GL_SYNC_FLUSH_COMMANDS_BIT, 2 * 1000 * 1000 * 1000);
-            assert(wait != GL_WAIT_FAILED && wait != GL_TIMEOUT_EXPIRED, "glClientWaitSync failed");
+            assert(wait != GL_TIMEOUT_EXPIRED, "GPU timeout");
+            assert(wait != GL_WAIT_FAILED, "glClientWaitSync failed");
         }
 
         glViewport(0, 0, xx w, xx h);
-        glClearColor(0.1, 0.1, 0.1, 1);
+        glClearColor(0.5, 0.5, 0.5, 1);
         glClear(GL_COLOR_BUFFER_BIT);
 
         OMG.RenderGL(xx w, xx h);

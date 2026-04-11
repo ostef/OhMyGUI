@@ -76,12 +76,6 @@ SDShapeToDraw :: struct {
     shape : *SDShape;
 }
 
-g_shapes_to_draw : [..]SDShapeToDraw;
-
-DrawShape :: inline (shape : *SDShape, position : Vec2f = .{})  {
-    array_add(*g_shapes_to_draw, .{shape=shape, position=position});
-}
-
 Circle :: inline (radius : float) -> *SDShape {
     shape := New(SDShape ,, temp);
     shape.kind = .CirclePrimitive;
@@ -142,7 +136,7 @@ Union :: inline (a : *SDShape, b : *SDShape) -> *SDShape {
     return shape;
 }
 
-SmoothUnion :: inline (a : *SDShape, b : *SDShape, k : float) -> *SDShape {
+Union :: inline (a : *SDShape, b : *SDShape, k : float) -> *SDShape {
     shape := New(SDShape ,, temp);
     shape.kind = .SmoothUnionOperation;
     shape.smooth_union_op.shape_a = a;
@@ -213,6 +207,18 @@ Move :: inline (subshape : *SDShape, translation : Vec2f) -> *SDShape {
 
 Rotate :: inline (subshape : *SDShape, angle_in_radians : float) -> *SDShape {
     return Transform(subshape, Rotate2D(angle_in_radians));
+}
+
+Scale :: inline (subshape : *SDShape, uniform_scale : float) -> *SDShape {
+    return Transform(subshape, Scale2D(uniform_scale));
+}
+
+Scale :: inline (subshape : *SDShape, x : float, y : float) -> *SDShape {
+    return Transform(subshape, Scale2D(x, y));
+}
+
+Scale :: inline (subshape : *SDShape, scale : Vec2f) -> *SDShape {
+    return Transform(subshape, Scale2D(scale));
 }
 
 EvalSDF :: (p : Vec2f, shape : *SDShape) -> float {

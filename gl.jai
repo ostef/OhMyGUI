@@ -1,8 +1,9 @@
 #import "GL";
 
-Max_Instances :: 10000;
-Max_Shapes :: 5 * Max_Instances;
-Default_Shapes_Buffer_Size :: Max_Shapes * size_of(ShaderSDShape) + Max_Instances * size_of(ShaderSDInstance);
+Approx_Max_Instances :: 10000;
+Approx_Max_Shapes :: 5 * Approx_Max_Instances;
+Approx_Max_Effects :: 5 * Approx_Max_Shapes;
+Default_Shapes_Buffer_Size :: Approx_Max_Shapes * size_of(ShaderSDShape) + Approx_Max_Instances * size_of(ShaderSDInstance) + Approx_Max_Effects * size_of(ShaderEffect);
 
 #scope_module
 
@@ -11,12 +12,22 @@ ShaderSDInstance :: struct {
     position : Vec2f;
     first_shape_index : u32;
     num_shapes : u32;
+    first_effect_index : u32;
+    num_effects : u32;
+    padding : [2]u32;
 }
 
 ShaderSDShape :: struct {
     kind : u32;
     padding : [3]u32;
     params : [8]float;
+}
+
+ShaderEffect :: struct {
+    kind : u32;
+    padding : [3]u32;
+    params0 : [4]float;
+    params1 : [4]float;
 }
 
 g_shader : GLuint;
@@ -39,6 +50,8 @@ struct Instance {
     vec2 position;
     uint first_shape_index;
     uint num_shapes;
+    uint first_effect_index;
+    uint num_effects;
 };
 
 layout(binding=0, std430) readonly buffer InstanceData {
@@ -46,15 +59,19 @@ layout(binding=0, std430) readonly buffer InstanceData {
 };
 uniform vec2 u_viewport_size;
 
-layout(location=0) out flat uint out_first_shape_index;
-layout(location=1) out flat uint out_num_shapes;
-layout(location=2) out vec2 out_position;
+layout(location=0) out vec2 out_position;
+layout(location=1) out flat uint out_first_shape_index;
+layout(location=2) out flat uint out_num_shapes;
+layout(location=3) out flat uint out_first_effect_index;
+layout(location=4) out flat uint out_num_effects;
 
 void main() {
     Instance inst = u_instances[gl_InstanceID];
+    out_position = inst.position;
     out_first_shape_index = inst.first_shape_index;
     out_num_shapes = inst.num_shapes;
-    out_position = inst.position;
+    out_first_effect_index = inst.first_effect_index;
+    out_num_effects = inst.num_effects;
 
     const vec2 positions[] = vec2[](
         vec2(inst.bounds.z, inst.bounds.w), vec2(inst.bounds.x, inst.bounds.w), vec2(inst.bounds.x, inst.bounds.y),
@@ -70,13 +87,14 @@ GLSL
 Fragment_Shader :: #string GLSL
 #version 460 core
 
+#define Eval_Stack_Size 32
+
 struct Shape {
     uint kind;
     vec4 params0;
     vec4 params1;
 };
 
-#define Eval_Stack_Size 32
 #define Shape_CirclePrimitive 0
 #define Shape_BoxPrimitive 1
 #define Shape_TrianglePrimitive 2
@@ -88,13 +106,28 @@ struct Shape {
 #define Shape_OnionOperation 205
 #define Shape_TransformOperation 206
 
+struct Effect {
+    uint kind;
+    vec4 params0;
+    vec4 params1;
+};
+
+#define Effect_SolidColor 0
+#define Effect_BorderColor 1
+#define Effect_OuterShadow 2
+
 layout(binding=1, std430) readonly buffer ShapeData {
     Shape u_shapes[];
 };
+layout(binding=2, std430) readonly buffer EffectData {
+    Effect u_effects[];
+};
 
-layout(location=0) in flat uint in_first_shape_index;
-layout(location=1) in flat uint in_num_shapes;
-layout(location=2) in vec2 in_position;
+layout(location=0) in vec2 in_position;
+layout(location=1) in flat uint in_first_shape_index;
+layout(location=2) in flat uint in_num_shapes;
+layout(location=3) in flat uint in_first_effect_index;
+layout(location=4) in flat uint in_num_effects;
 
 layout(location=0) out vec4 out_color;
 
@@ -262,14 +295,71 @@ float EvalSDF(vec2 p) {
     return values[value_index - 1];
 }
 
+float FxSolidColor(float d, float edge) {
+    float a = 1 - smoothstep(-edge, edge, d);
+    return clamp(a, 0, 1);
+}
+
+float FxBorderColor(float d, float edge, float size) {
+    float a = smoothstep(-edge, edge, d + size) - smoothstep(-edge, edge, d);
+    return clamp(a, 0, 1);
+}
+
+vec4 EvalEffects(vec2 p, float d) {
+    float aa = length(vec2(dFdx(d), dFdy(d)));
+
+    vec4 background_color = vec4(0);
+    vec4 foreground_color = vec4(0);
+
+    uint effect_index = in_first_effect_index;
+    uint last_effect = in_first_effect_index + in_num_effects;
+    while (effect_index < last_effect) {
+        Effect effect = u_effects[effect_index];
+        effect_index += 1;
+
+        switch (effect.kind) {
+        case Effect_SolidColor: {
+            vec4 color = effect.params0;
+            float blur_factor = effect.params1.x;
+            float a = FxSolidColor(d, aa + blur_factor);
+            foreground_color = mix(foreground_color, color, a);
+        } break;
+        case Effect_BorderColor: {
+            vec4 color = effect.params0;
+            float blur_factor = effect.params1.x;
+            float inset = effect.params1.y;
+            float size = effect.params1.z;
+            float a = FxBorderColor(d, aa + blur_factor, size);
+            foreground_color = mix(foreground_color, color, a);
+        } break;
+        case Effect_OuterShadow: {
+            vec4 color = effect.params0;
+            vec2 offset = effect.params1.xy;
+            float blur_factor = effect.params1.z;
+
+            float shadow;
+            if (offset != 0) {
+                shadow = EvalSDF(p - offset);
+            } else {
+                shadow = d;
+            }
+
+            float a = FxSolidColor(shadow, aa + blur_factor);
+
+            background_color = mix(background_color, color, a);
+        } break;
+        }
+    }
+
+    return mix(background_color, foreground_color, foreground_color.a);
+}
+
 void main() {
     vec2 p = gl_FragCoord.xy - in_position;
-    float d = EvalSDF(p);
-    float aa = length(vec2(dFdx(d), dFdy(d)));
-    float alpha = clamp(1 - smoothstep(-aa, aa, d), 0, 1);
 
-    // out_color = mix(vec4(1,1,1,1), vec4(1,0,0,1), alpha);
-    out_color = vec4(1,1,1,alpha);
+    float d = EvalSDF(p);
+
+    out_color = EvalEffects(p, d);
 }
 GLSL
 
@@ -396,32 +486,7 @@ TerminateGL :: () {
 }
 
 RenderGL :: (viewport_w : u32, viewport_h : u32) {
-    AlignBuffer :: (buffer : *[..]u8, align : int) {
-        padding := buffer.count;
-        padding = align_forward(padding, align);
-        padding -= buffer.count;
-        for 0..padding - 1 {
-            array_add(buffer, 0);
-        }
-    }
-
-    PushBytes :: (buffer : *[..]u8, num_bytes : int) -> offset : int, ptr : *u8 {
-        offset := buffer.count;
-        if buffer.count + num_bytes > buffer.allocated {
-            array_reserve(buffer, buffer.count + num_bytes);
-        }
-
-        buffer.count += num_bytes;
-
-        return offset, buffer.data + offset;
-    }
-
-    Push :: (buffer : *[..]u8, value : $T) {
-        bytes := ([]u8).{count=size_of(T), data=cast(*u8, *value)};
-        array_add(buffer, ..bytes);
-    }
-
-    FlattenShapes :: (shape : *SDShape, buffer : *[..]u8) -> u32 {
+    FlattenShapes :: (shape : *SDShape, buffer : *[..]ShaderSDShape) -> u32 {
         num_shapes : u32;
 
         shshape : ShaderSDShape;
@@ -479,7 +544,7 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
             shshape.params[4] = t.d;
             shshape.params[5] = t.ty;
 
-            Push(buffer, shshape);
+            array_add(buffer, shshape);
             num_shapes += 1;
 
             num_shapes += FlattenShapes(shape.transform_op.shape, buffer);
@@ -493,7 +558,7 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
             shshape.params[5] = t.ty;
         }
 
-        Push(buffer, shshape);
+        array_add(buffer, shshape);
         num_shapes += 1;
 
         return num_shapes;
@@ -502,39 +567,76 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
     defer g_frame_in_flight = (g_frame_in_flight + 1) % g_num_frames_in_flight;
     defer g_shapes_to_draw.count = 0;
 
-    buffer : [..]u8;
-    defer array_free(buffer);
+    instances_buffer : [..]ShaderSDInstance;
+    defer array_free(instances_buffer);
+    shapes_buffer : [..]ShaderSDShape;
+    defer array_free(shapes_buffer);
+    effects_buffer : [..]ShaderEffect;
+    defer array_free(effects_buffer);
 
-    instances_size := g_shapes_to_draw.count * size_of(ShaderSDInstance);
-    instances_offset := PushBytes(*buffer, instances_size);
-    AlignBuffer(*buffer, g_storage_buffer_offset_alignment);
-
-    num_instances : int;
-    num_shapes : int;
-    shapes_offset := buffer.count;
     for g_shapes_to_draw {
-        instance : ShaderSDInstance;
-        instance.first_shape_index = xx num_shapes;
-        instance.num_shapes = FlattenShapes(it.shape, *buffer);
+        instance := array_add(*instances_buffer);
         instance.position = it.position;
         instance.bounds = GetBounds(it.shape);
+        instance.first_shape_index = xx shapes_buffer.count;
+        instance.num_shapes = FlattenShapes(it.shape, *shapes_buffer);
+        instance.first_effect_index = xx effects_buffer.count;
+        instance.num_effects = xx it.effects.count;
 
-        memcpy(buffer.data + instances_offset + num_instances * size_of(ShaderSDInstance), *instance, size_of(ShaderSDInstance));
+        for fx : it.effects {
+            effect := array_add(*effects_buffer);
+            effect.kind = xx fx.kind;
 
-        num_shapes += instance.num_shapes;
-        num_instances += 1;
+            if #complete fx.kind == {
+            case .SolidColor;
+                effect.params0[0] = fx.solid_color.color.x;
+                effect.params0[1] = fx.solid_color.color.y;
+                effect.params0[2] = fx.solid_color.color.z;
+                effect.params0[3] = fx.solid_color.color.w;
+                effect.params1[0] = fx.solid_color.blur_factor;
+
+            case .BorderColor;
+                effect.params0[0] = fx.border_color.color.x;
+                effect.params0[1] = fx.border_color.color.y;
+                effect.params0[2] = fx.border_color.color.z;
+                effect.params0[3] = fx.border_color.color.w;
+                effect.params1[0] = fx.border_color.blur_factor;
+                effect.params1[1] = fx.border_color.inset;
+                effect.params1[2] = fx.border_color.size;
+
+            case .OuterShadow;
+                effect.params0[0] = fx.outer_shadow.color.x;
+                effect.params0[1] = fx.outer_shadow.color.y;
+                effect.params0[2] = fx.outer_shadow.color.z;
+                effect.params0[3] = fx.outer_shadow.color.w;
+                effect.params1[0] = fx.outer_shadow.offset.x;
+                effect.params1[1] = fx.outer_shadow.offset.y;
+                effect.params1[2] = fx.outer_shadow.blur_factor;
+            }
+        }
     }
 
-    shapes_size := num_shapes * size_of(ShaderSDShape);
+    instances_offset := 0;
+    instances_size := instances_buffer.count * size_of(ShaderSDInstance);
+
+    shapes_offset := align_forward(instances_offset + instances_size, g_storage_buffer_offset_alignment);
+    shapes_size := shapes_buffer.count * size_of(ShaderSDShape);
+
+    effects_offset := align_forward(shapes_offset + shapes_size, g_storage_buffer_offset_alignment);
+    effects_size := effects_buffer.count * size_of(ShaderEffect);
+
+    total_size := effects_offset + effects_size;
 
     buffer_handle := g_shape_buffer_handles[g_frame_in_flight];
     buffer_ptr := g_shape_buffer_ptrs[g_frame_in_flight];
-    if buffer.count > g_shape_buffer_size {
-        log_error("Too many shapes to draw % of % bytes, % shapes, % instances\n", buffer.count, g_shape_buffer_size, num_shapes, num_instances);
+    if total_size > g_shape_buffer_size {
+        log_error("Too many shapes to draw % of % bytes, % instances, % shapes, % effects\n", total_size, g_shape_buffer_size, instances_buffer.count, shapes_buffer.count, effects_buffer.count);
         return;
     }
 
-    memcpy(buffer_ptr, buffer.data, buffer.count);
+    memcpy(buffer_ptr + instances_offset, instances_buffer.data, instances_size);
+    memcpy(buffer_ptr + shapes_offset, shapes_buffer.data, shapes_size);
+    memcpy(buffer_ptr + effects_offset, effects_buffer.data, effects_size);
 
     glUseProgram(g_shader);
 
@@ -551,8 +653,9 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
 
     glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 0, buffer_handle, xx instances_offset, xx instances_size);
     glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 1, buffer_handle, xx shapes_offset, xx shapes_size);
+    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 2, buffer_handle, xx effects_offset, xx effects_size);
 
     glBindVertexArray(g_dummy_vao);
 
-    glDrawArraysInstanced(GL_TRIANGLES, 0, 6, xx num_instances);
+    glDrawArraysInstanced(GL_TRIANGLES, 0, 6, xx instances_buffer.count);
 }

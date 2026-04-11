@@ -80,7 +80,7 @@ Translate2D :: inline (x : float, y : float) -> Transform2D {
 
 // Creates a translation matrix
 Translate2D :: inline (translation : Vec2f) -> Transform2D {
-    return Transform2D.{
+    return .{
         1, 0, translation.x,
         0, 1, translation.y,
     };
@@ -91,9 +91,27 @@ Rotate2D :: inline (angle_in_radians : float) -> Transform2D {
     cost := cos(angle_in_radians);
     sint := sin(angle_in_radians);
 
-    return Transform2D.{
+    return .{
         cost, -sint, 0,
         sint,  cost, 0,
+    };
+}
+
+// Creates a uniform scale matrix
+Scale2D :: inline (uniform_scale : float) -> Transform2D {
+    return Scale2D(.{uniform_scale, uniform_scale});
+}
+
+// Creates a scale matrix
+Scale2D :: inline (x : float, y : float) -> Transform2D {
+    return Scale2D(.{x, y});
+}
+
+// Creates a scale matrix
+Scale2D :: inline (scale : Vec2f) -> Transform2D {
+    return .{
+        scale.x, 0, 0,
+        0, scale.y, 0,
     };
 }
 
