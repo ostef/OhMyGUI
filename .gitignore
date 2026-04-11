@@ -1,4 +1,6 @@
 *.o
 *.exe
+*.pdb
+*.dll
 example
 .build
