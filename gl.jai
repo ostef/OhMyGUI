@@ -2,15 +2,17 @@
 
 #scope_module
 
+ShaderSDInstance :: struct {
+    bounds : [4]float;
+    first_shape_index : u32;
+    num_shapes : u32;
+    padding : [2]u32;
+}
+
 ShaderSDShape :: struct {
     kind : u32;
     padding : [3]u32;
     params : [8]float;
-}
-
-ShaderSDInstance :: struct {
-    first_shape_index : u32;
-    num_shapes : u32;
 }
 
 g_shader : GLuint;
@@ -29,6 +31,7 @@ Vertex_Shader :: #string GLSL
 #version 460 core
 
 struct Instance {
+    vec4 bounds;
     uint first_shape_index;
     uint num_shapes;
 };
@@ -36,21 +39,22 @@ struct Instance {
 layout(binding=0, std430) readonly buffer InstanceData {
     Instance u_instances[];
 };
+uniform vec2 u_viewport_size;
 
 layout(location=0) out flat uint out_first_shape_index;
 layout(location=1) out flat uint out_num_shapes;
 
 void main() {
-    Instance instance = u_instances[gl_InstanceID];
-    out_first_shape_index = instance.first_shape_index;
-    out_num_shapes = instance.num_shapes;
+    Instance inst = u_instances[gl_InstanceID];
+    out_first_shape_index = inst.first_shape_index;
+    out_num_shapes = inst.num_shapes;
 
     const vec2 positions[] = vec2[](
-        vec2(0, 1), vec2(1, 1), vec2(1, 0),
-        vec2(0, 1), vec2(1, 0), vec2(0, 0)
+        vec2(inst.bounds.z, inst.bounds.w), vec2(inst.bounds.x, inst.bounds.w), vec2(inst.bounds.x, inst.bounds.y),
+        vec2(inst.bounds.z, inst.bounds.w), vec2(inst.bounds.x, inst.bounds.y), vec2(inst.bounds.z, inst.bounds.y)
     );
 
-    gl_Position.xy = positions[gl_VertexID] * 2 - vec2(1);
+    gl_Position.xy = (positions[gl_VertexID] / u_viewport_size) * 2 - vec2(1);
     gl_Position.z = 0;
     gl_Position.w = 1;
 }
@@ -381,7 +385,7 @@ TerminateGL :: () {
     g_shape_buffer_ptrs = .[];
 }
 
-RenderGL :: () {
+RenderGL :: (viewport_w : u32, viewport_h : u32) {
     AlignBuffer :: (buffer : *[..]u8, align : int) {
         padding := buffer.count;
         padding = align_forward(padding, align);
@@ -500,9 +504,15 @@ RenderGL :: () {
     num_shapes : int;
     shapes_offset := buffer.count;
     for g_shapes_to_draw {
+        bounds := GetBounds(it.shape);
+
         instance : ShaderSDInstance;
         instance.first_shape_index = xx num_shapes;
-        instance.num_shapes = FlattenShapes(it, *buffer);
+        instance.num_shapes = FlattenShapes(it.shape, *buffer);
+        instance.bounds[0] = bounds.x;
+        instance.bounds[1] = bounds.y;
+        instance.bounds[2] = bounds.z;
+        instance.bounds[3] = bounds.w;
 
         memcpy(buffer.data + instances_offset + num_instances * size_of(ShaderSDInstance), *instance, size_of(ShaderSDInstance));
 
@@ -523,16 +533,16 @@ RenderGL :: () {
 
     glUseProgram(g_shader);
 
+    u_viewport_size := glGetUniformLocation(g_shader, "u_viewport_size");
+    if u_viewport_size >= 0 {
+        glUniform2f(u_viewport_size, xx viewport_w, xx viewport_h);
+    }
+
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glBlendEquation(GL_FUNC_ADD);
-
-    // print("% %\n",
-    //     glGetProgramResourceIndex(g_shader, GL_SHADER_STORAGE_BLOCK, "InstanceData"),
-    //     glGetProgramResourceIndex(g_shader, GL_SHADER_STORAGE_BLOCK, "ShapeData")
-    // );
 
     glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 0, buffer_handle, xx instances_offset, xx instances_size);
     glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 1, buffer_handle, xx shapes_offset, xx shapes_size);

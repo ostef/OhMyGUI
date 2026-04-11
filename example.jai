@@ -73,6 +73,7 @@ main :: () {
         s = OMG.Rotate(s, time);
         s = OMG.Move(s, w * 0.5, h * 0.5);
         OMG.DrawShape(s);
+        OMG.DrawShape(OMG.Move(s, 100, 100));
 
         print("%\n", OMG.IsInside(.{xx mx, xx my}, s));
 
@@ -85,7 +86,7 @@ main :: () {
         glClearColor(0.1, 0.1, 0.1, 1);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        OMG.RenderGL();
+        OMG.RenderGL(xx w, xx h);
         g_frame_syncs[g_frame_in_flight] = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 
         g_frame_in_flight = (g_frame_in_flight + 1) % 2;
