@@ -74,7 +74,7 @@ main :: () {
 
             d := OMG.DrawShape(s, .{w * 0.5, h * 0.5});
             OMG.OuterShadow(d, .{10, -10}, 10);
-            OMG.SolidColor(d, .{1,0,1,1});
+            OMG.SolidColor(d, .{1,1,1,1});
         }
 
         {

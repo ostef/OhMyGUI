@@ -98,13 +98,16 @@ struct Shape {
 #define Shape_CirclePrimitive 0
 #define Shape_BoxPrimitive 1
 #define Shape_TrianglePrimitive 2
+
 #define Shape_UnionOperation 200
 #define Shape_SmoothUnionOperation 201
 #define Shape_SubtractionOperation 202
-#define Shape_IntersectionOperation 203
-#define Shape_RoundOperation 204
-#define Shape_OnionOperation 205
-#define Shape_TransformOperation 206
+#define Shape_SmoothSubtractionOperation 203
+#define Shape_IntersectionOperation 204
+#define Shape_SmoothIntersectionOperation 205
+#define Shape_RoundOperation 206
+#define Shape_OnionOperation 207
+#define Shape_TransformOperation 208
 
 struct Effect {
     uint kind;
@@ -179,8 +182,16 @@ float OpIntersection(float a, float b) {
     return max(a, b);
 }
 
+float OpSmoothIntersection(float a, float b, float k) {
+    return -OpSmoothUnion(-a, -b, k);
+}
+
 float OpSubtraction(float a, float b) {
     return max(-a, b);
+}
+
+float OpSmoothSubtraction(float a, float b, float k) {
+    return -OpSmoothUnion(a, -b, k);
 }
 
 float OpRound(float a, float radius) {
@@ -251,12 +262,32 @@ float EvalSDF(vec2 p) {
             value_index += 1;
         } break;
 
+        case Shape_SmoothSubtractionOperation: {
+            float a = values[value_index - 1];
+            float b = values[value_index - 2];
+            float k = shape.params0.x;
+            value_index -= 2;
+
+            values[value_index] = OpSmoothSubtraction(a, b, k);
+            value_index += 1;
+        } break;
+
         case Shape_IntersectionOperation: {
             float a = values[value_index - 1];
             float b = values[value_index - 2];
             value_index -= 2;
 
             values[value_index] = OpIntersection(a, b);
+            value_index += 1;
+        } break;
+
+        case Shape_SmoothIntersectionOperation: {
+            float a = values[value_index - 1];
+            float b = values[value_index - 2];
+            float k = shape.params0.x;
+            value_index -= 2;
+
+            values[value_index] = OpSmoothIntersection(a, b, k);
             value_index += 1;
         } break;
 
@@ -338,7 +369,7 @@ vec4 EvalEffects(vec2 p, float d) {
             float blur_factor = effect.params1.z;
 
             float shadow;
-            if (offset != 0) {
+            if (offset != vec2(0)) {
                 shadow = EvalSDF(p - offset);
             } else {
                 shadow = d;
@@ -512,6 +543,8 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
             shshape.params[4] = shape.triangle_prim.p2.x;
             shshape.params[5] = shape.triangle_prim.p2.y;
 
+        case .SmoothSubtractionOperation; #through;
+        case .SmoothIntersectionOperation; #through;
         case .SmoothUnionOperation;
             shshape.params[0] = shape.smooth_union_op.k;
             #through;

@@ -6,7 +6,9 @@ SDShapeKind :: enum u8 {
     UnionOperation :: 200;
     SmoothUnionOperation;
     SubtractionOperation;
+    SmoothSubtractionOperation;
     IntersectionOperation;
+    SmoothIntersectionOperation;
     RoundOperation;
     OnionOperation;
     TransformOperation;
@@ -49,9 +51,21 @@ SDShape :: struct {
             shape_b : *SDShape;
         };
 
+        .SmoothSubtractionOperation ,, smooth_subtraction_op : struct {
+            shape_a : *SDShape;
+            shape_b : *SDShape;
+            k : float;
+        };
+
         .IntersectionOperation ,, intersection_op : struct {
             shape_a : *SDShape;
             shape_b : *SDShape;
+        };
+
+        .SmoothIntersectionOperation ,, smooth_intersection_op : struct {
+            shape_a : *SDShape;
+            shape_b : *SDShape;
+            k : float;
         };
 
         .RoundOperation ,, round_op : struct {
@@ -136,8 +150,8 @@ Union :: inline (a : *SDShape, b : *SDShape) -> *SDShape {
     return shape;
 }
 
-Union :: inline (a : *SDShape, b : *SDShape, k : float) -> *SDShape {
-    if k < 0.00001 {
+Union :: inline (a : *SDShape, b : *SDShape, smoothing_factor : float) -> *SDShape {
+    if smoothing_factor < 0.00001 {
         return Union(a, b);
     }
 
@@ -145,7 +159,7 @@ Union :: inline (a : *SDShape, b : *SDShape, k : float) -> *SDShape {
     shape.kind = .SmoothUnionOperation;
     shape.smooth_union_op.shape_a = a;
     shape.smooth_union_op.shape_b = b;
-    shape.smooth_union_op.k = k;
+    shape.smooth_union_op.k = smoothing_factor;
     shape.bounds = GetBounds(shape);
 
     return shape;
@@ -161,11 +175,41 @@ Sub :: inline (a : *SDShape, b : *SDShape) -> *SDShape {
     return shape;
 }
 
+Sub :: inline (a : *SDShape, b : *SDShape, smoothing_factor : float) -> *SDShape {
+    if smoothing_factor < 0.00001 {
+        return Sub(a, b);
+    }
+
+    shape := New(SDShape ,, temp);
+    shape.kind = .SmoothSubtractionOperation;
+    shape.smooth_subtraction_op.shape_a = a;
+    shape.smooth_subtraction_op.shape_b = b;
+    shape.smooth_subtraction_op.k = smoothing_factor;
+    shape.bounds = GetBounds(shape);
+
+    return shape;
+}
+
 Inter :: inline (a : *SDShape, b : *SDShape) -> *SDShape {
     shape := New(SDShape ,, temp);
     shape.kind = .IntersectionOperation;
     shape.intersection_op.shape_a = a;
     shape.intersection_op.shape_b = b;
+    shape.bounds = GetBounds(shape);
+
+    return shape;
+}
+
+Inter :: inline (a : *SDShape, b : *SDShape, smoothing_factor : float) -> *SDShape {
+    if smoothing_factor < 0.00001 {
+        return Inter(a, b);
+    }
+
+    shape := New(SDShape ,, temp);
+    shape.kind = .SmoothIntersectionOperation;
+    shape.smooth_intersection_op.shape_a = a;
+    shape.smooth_intersection_op.shape_b = b;
+    shape.smooth_intersection_op.k = smoothing_factor;
     shape.bounds = GetBounds(shape);
 
     return shape;
@@ -226,6 +270,13 @@ Scale :: inline (subshape : *SDShape, scale : Vec2f) -> *SDShape {
 }
 
 EvalSDF :: (p : Vec2f, shape : *SDShape) -> float {
+    OpSmoothUnion :: (a : float, b : float, k : float) -> float {
+        k *= 4;
+        h := max(k - abs(a - b), 0) / k;
+
+        return min(a, b) - h * h * k * (1 / 4.0);
+    }
+
     if #complete shape.kind == {
     case .CirclePrimitive;
         return length(p) - shape.circle_prim.radius;
@@ -279,22 +330,30 @@ EvalSDF :: (p : Vec2f, shape : *SDShape) -> float {
     case .SmoothUnionOperation;
         a := EvalSDF(p, shape.smooth_union_op.shape_a);
         b := EvalSDF(p, shape.smooth_union_op.shape_b);
-
         k := shape.smooth_union_op.k;
-        k *= 4;
-        h := max(k - abs(a - b), 0) / k;
-
-        return min(a, b) - h * h * k * (1 / 4.0);
+        return OpSmoothUnion(a, b, k);
 
     case .SubtractionOperation;
         a := EvalSDF(p, shape.subtraction_op.shape_a);
         b := EvalSDF(p, shape.subtraction_op.shape_b);
         return max(-a, b);
 
+    case .SmoothSubtractionOperation;
+        a := EvalSDF(p, shape.smooth_subtraction_op.shape_a);
+        b := EvalSDF(p, shape.smooth_subtraction_op.shape_b);
+        k := shape.smooth_subtraction_op.k;
+        return -OpSmoothUnion(a, -b, k);
+
     case .IntersectionOperation;
         a := EvalSDF(p, shape.intersection_op.shape_a);
         b := EvalSDF(p, shape.intersection_op.shape_b);
         return max(a, b);
+
+    case .SmoothIntersectionOperation;
+        a := EvalSDF(p, shape.smooth_intersection_op.shape_a);
+        b := EvalSDF(p, shape.smooth_intersection_op.shape_b);
+        k := shape.smooth_intersection_op.k;
+        return -OpSmootHUnion(-a, -b, k);
 
     case .RoundOperation;
         a := EvalSDF(p, shape.round_op.shape);
@@ -352,6 +411,7 @@ GetBounds :: (shape : *SDShape) -> Vec4f {
             zw=max(a.zw, b.zw) + .{k,k},
         };
 
+    case .SmoothSubtractionOperation; #through; // Not sure this is correct
     case .SubtractionOperation;
         // @Todo: can we find something better fitting?
         a := GetBounds(shape.subtraction_op.shape_a);
@@ -361,6 +421,7 @@ GetBounds :: (shape : *SDShape) -> Vec4f {
             zw=max(a.zw, b.zw),
         };
 
+    case .SmoothIntersectionOperation; #through; // Not sure this is correct
     case .IntersectionOperation;
         // @Todo: can we find something better fitting?
         a := GetBounds(shape.intersection_op.shape_a);
