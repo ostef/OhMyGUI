@@ -6,7 +6,7 @@ Drawing :: struct {
 }
 
 g_shapes_to_draw : [..]Drawing;
-g_default_effect := Effect.{kind=.SolidColor, solid_color=.{color=.{0,1,1,1}}};
+g_default_effect := Effect.{kind=.SolidColor, solid_color=.{color=.{1,1,1,1}}};
 
 DrawShape :: inline (shape : *SDShape, position : Vec2f = .{}) -> *Drawing {
     array_add(*g_shapes_to_draw, .{shape=shape, position=position});
