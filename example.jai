@@ -76,7 +76,7 @@ main :: () {
 
         print("%\n", OMG.IsInside(.{xx mx, xx my}, s));
 
-        if g_frame_syncs[g_frame_in_flight] != 0 {
+        if g_frame_syncs[g_frame_in_flight] {
             wait := glClientWaitSync(g_frame_syncs[g_frame_in_flight], GL_SYNC_FLUSH_COMMANDS_BIT, 2 * 1000 * 1000 * 1000);
             assert(wait != GL_WAIT_FAILED && wait != GL_TIMEOUT_EXPIRED, "glClientWaitSync failed");
         }
