@@ -73,7 +73,7 @@ main :: () {
             s := OMG.Sub(out, in);
 
             d := OMG.DrawShape(s, .{w * 0.5, h * 0.5});
-            OMG.OuterShadow(d, .{10, -10}, 10);
+            OMG.OuterShadow(d, .{12, -12}, 10);
             OMG.SolidColor(d, .{1,1,1,1});
             OMG.InnerShadow(d, 10);
         }
@@ -88,12 +88,19 @@ main :: () {
 
             tt = OMG.Circle(100);
             tt = OMG.Move(tt, cos(time * 2) * 50, sin(time * 2) * 50);
-            t = OMG.Morph(t, tt, 0.2);
+            // t = OMG.Morph(t, tt, 0.2);
 
             d := OMG.DrawShape(t, .{400, 400});
             OMG.OuterShadow(d, .{12, -12}, 10);
             OMG.SolidColor(d, .{1, 0.067, 0.18,1});
             OMG.InnerShadow(d, 100);
+        }
+
+        {
+            c := OMG.Circle(100);
+            d := OMG.DrawShape(c, .{1300, 300});
+            OMG.OuterShadow(d, .{12, -12}, 10);
+            OMG.SolidColor(d, .{1,1,1,1});
         }
 
         if g_frame_syncs[g_frame_in_flight] {

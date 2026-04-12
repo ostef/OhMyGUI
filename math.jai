@@ -45,6 +45,13 @@ clamp :: inline (v : Vec4f, a : Vec4f, b : Vec4f) -> Vec4f {
     return .{clamp(v.x, a.x, b.x), clamp(v.y, a.y, b.y), clamp(v.z, a.z, b.z), clamp(v.w, a.w, b.w)};
 }
 
+InflateBounds :: inline (bounds : Vec4f, amount : Vec4f) -> Vec4f {
+    return .{
+        xy=bounds.xy - amount.xy,
+        zw=bounds.zw + amount.zw,
+    };
+}
+
 // Basically a 2x3 matrix
 Transform2D :: struct {
     a : float = 1;

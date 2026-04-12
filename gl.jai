@@ -651,9 +651,16 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
         instance.first_effect_index = xx effects_buffer.count;
         instance.num_effects = xx it.effects.count;
 
-        for fx : it.effects {
+        extended_bounds := instance.bounds;
+        for * fx : it.effects {
             effect := array_add(*effects_buffer);
             effect.kind = xx fx.kind;
+
+            new_bounds := GetBounds(instance.bounds, fx);
+            extended_bounds = .{
+                xy=min(new_bounds.xy, extended_bounds.xy),
+                zw=max(new_bounds.zw, extended_bounds.zw),
+            };
 
             if #complete fx.kind == {
             case .SolidColor;
@@ -683,6 +690,8 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
                 effect.params1[2] = fx.outer_shadow.blur_factor;
             }
         }
+
+        instance.bounds = extended_bounds;
     }
 
     instances_offset := 0;

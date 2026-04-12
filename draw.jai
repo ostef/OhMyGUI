@@ -105,3 +105,59 @@ InnerShadow :: inline (using drawing : *Drawing, blur_factor : float, color := V
     effect.inner_shadow.blur_factor = blur_factor;
     effect.inner_shadow.color = color;
 }
+
+GetBounds :: (bounds : Vec4f, effect : *Effect) -> Vec4f {
+    if effect.kind == {
+    case .OuterShadow;
+        using effect.outer_shadow;
+
+        inflate : Vec4f;
+        if blur_factor > 0 {
+            inflate.xy = max(inflate.xy, Vec2f.{blur_factor, blur_factor});
+            inflate.zw = max(inflate.zw, Vec2f.{blur_factor, blur_factor});
+        }
+        if offset.x > 0 {
+            inflate.z += offset.x;
+        }
+        if offset.y > 0 {
+            inflate.w += offset.y;
+        }
+        if offset.x < 0 {
+            inflate.x -= offset.x;
+        }
+        if offset.y < 0 {
+            inflate.y -= offset.y;
+        }
+
+        return InflateBounds(bounds, inflate);
+
+    case .StrokeColor;
+        using effect.stroke_color;
+
+        inflate : Vec4f;
+        if inset < 0 {
+            inflate.xy = max(inflate.xy, -Vec2f.{inset, inset});
+            inflate.zw = max(inflate.zw, -Vec2f.{inset, inset});
+        }
+        if blur_factor > 0 {
+            inflate.xy = max(inflate.xy, Vec2f.{blur_factor, blur_factor});
+            inflate.zw = max(inflate.zw, Vec2f.{blur_factor, blur_factor});
+        }
+
+        return InflateBounds(bounds, inflate);
+
+    case .SolidColor;
+        using effect.solid_color;
+
+        inflate : Vec4f;
+        if blur_factor > 0 {
+            inflate.xy = max(inflate.xy, Vec2f.{blur_factor, blur_factor});
+            inflate.zw = max(inflate.zw, Vec2f.{blur_factor, blur_factor});
+        }
+
+        return InflateBounds(bounds, inflate);
+
+    case;
+        return bounds;
+    }
+}
