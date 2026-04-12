@@ -104,9 +104,12 @@ main :: () {
         }
 
         if g_frame_syncs[g_frame_in_flight] {
-            wait := glClientWaitSync(g_frame_syncs[g_frame_in_flight], GL_SYNC_FLUSH_COMMANDS_BIT, 2 * 1000 * 1000 * 1000);
+            Second :: 1000 * 1000 * 1000;
+            wait := glClientWaitSync(g_frame_syncs[g_frame_in_flight], GL_SYNC_FLUSH_COMMANDS_BIT, 2 * Second);
             assert(wait != GL_TIMEOUT_EXPIRED, "GPU timeout");
             assert(wait != GL_WAIT_FAILED, "glClientWaitSync failed");
+
+            glDeleteSync(g_frame_syncs[g_frame_in_flight]);
         }
 
         glViewport(0, 0, xx w, xx h);
