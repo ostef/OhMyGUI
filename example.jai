@@ -88,7 +88,7 @@ main :: () {
 
             tt = OMG.Circle(100);
             tt = OMG.Move(tt, cos(time * 2) * 50, sin(time * 2) * 50);
-            // t = OMG.Morph(t, tt, 0.2);
+            t = OMG.Morph(t, tt, 0.2);
 
             d := OMG.DrawShape(t, .{400, 400});
             OMG.OuterShadow(d, .{12, -12}, 10);
