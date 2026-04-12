@@ -351,8 +351,7 @@ float FxStrokeColor(float d, float edge, float size, float inset) {
 vec4 EvalEffects(vec2 p, float d) {
     float aa = length(vec2(dFdx(d), dFdy(d)));
 
-    vec4 background_color = vec4(0);
-    vec4 foreground_color = vec4(0);
+    vec4 result = vec4(0);
 
     uint effect_index = in_first_effect_index;
     uint last_effect = in_first_effect_index + in_num_effects;
@@ -365,7 +364,7 @@ vec4 EvalEffects(vec2 p, float d) {
             vec4 color = effect.params0;
             float blur_factor = effect.params1.x;
             float a = FxSolidColor(d, aa + blur_factor);
-            foreground_color = mix(foreground_color, color, a);
+            result = mix(result, color, a);
         } break;
 
         case Effect_StrokeColor: {
@@ -374,7 +373,7 @@ vec4 EvalEffects(vec2 p, float d) {
             float inset = effect.params1.y;
             float size = effect.params1.z;
             float a = FxStrokeColor(d, aa + blur_factor, size, inset);
-            foreground_color = mix(foreground_color, color, a);
+            result = mix(result, color, a);
         } break;
 
         case Effect_OuterShadow: {
@@ -391,7 +390,7 @@ vec4 EvalEffects(vec2 p, float d) {
 
             float a = FxSolidColor(shadow, aa + blur_factor);
 
-            background_color = mix(background_color, color, a);
+            result = mix(result, color, a);
         } break;
 
         case Effect_InnerShadow: {
@@ -408,12 +407,12 @@ vec4 EvalEffects(vec2 p, float d) {
 
             float a = FxSolidColor(-shadow, aa + blur_factor) * FxSolidColor(d, aa);
 
-            foreground_color = mix(foreground_color, color, a);
+            result = mix(result, color, a);
         } break;
         }
     }
 
-    return mix(background_color, foreground_color, foreground_color.a);
+    return result;
 }
 
 void main() {
