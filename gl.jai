@@ -517,9 +517,11 @@ InitGL :: (num_frames_in_flight : int = 2, shape_buffer_size : int = Default_Sha
 
     glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, *g_uniform_buffer_offset_alignment);
     assert(g_uniform_buffer_offset_alignment > 0);
+    g_uniform_buffer_offset_alignment = max(g_uniform_buffer_offset_alignment, 16);
 
     glGetIntegerv(GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT, *g_storage_buffer_offset_alignment);
     assert(g_storage_buffer_offset_alignment > 0);
+    g_storage_buffer_offset_alignment = max(g_storage_buffer_offset_alignment, 16);
 
     print("Initialized GL backend\n");
     print("Num frames in flight: %\n", g_num_frames_in_flight);
