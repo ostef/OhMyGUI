@@ -3,11 +3,12 @@
 #import "SDL";
 
 #load "math.jai";
+#load "input.jai";
 #load "sd_shape.jai";
 #load "draw.jai";
 #load "gl.jai";
 #load "node.jai";
-#load "input.jai";
+#load "layout.jai";
 
 Context :: struct {
     frame_index : u64;
@@ -107,13 +108,19 @@ Render :: () {
 
     window := omg.windows;
     while window {
-        if window.root_node {
-            RemoveUndeclaredNodes(window.root_node);
-            LayoutNodes(window.root_node);
-            DrawNodeTree(window.root_node);
+        defer window = window.next;
+        if !window.root_node {
+            continue;
         }
 
-        window = window.next;
+        w, h : s32;
+        SDL_GetWindowSize(window.sdl_window, *w, *h);
+
+        SetSize(window.root_node, SizePx(xx w), SizePx(xx h));
+
+        RemoveUndeclaredNodes(window.root_node);
+        LayoutNodes(window.root_node);
+        DrawNodes(window.root_node);
     }
 
     omg.input_last_frame = omg.input;
@@ -137,33 +144,15 @@ RemoveUndeclaredNodes :: (node : *Node) {
     }
 }
 
-LayoutNodes :: (node : *Node) {
-    node.size = .{node.desired_size.x.value, node.desired_size.y.value};
-    node.relative_position = .{0,0};
-
-    absolute_position := node.relative_position;
-    if node.parent {
-        absolute_position += node.parent.rect.xy;
-    }
-
-    node.rect = .{xy=absolute_position, zw=absolute_position + node.size};
-    node.inner_rect = node.rect;
-
-    for :Children node {
-        LayoutNodes(it);
-    }
-}
-
-DrawNodeTree :: (node : *Node) {
+DrawNodes :: (node : *Node) {
     position := (node.rect.xy + node.rect.zw) * 0.5;
     size     :=  node.rect.zw - node.rect.xy;
 
     d := DrawShape(Box(size, 4), position);
-    OuterShadow(d, .{4, -4}, 10);
     SolidColor(d, .{1,1,1,1});
-    InnerShadow(d, 10);
+    StrokeColor(d, .{0,0,0,1}, 1);
 
     for :Children node {
-        DrawNodeTree(it);
+        DrawNodes(it);
     }
 }

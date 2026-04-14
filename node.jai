@@ -13,12 +13,14 @@ Node :: struct {
 
     last_used_on_frame : u64;
 
+    // User controlled properties
     align : Vec2f;
     anchor : Vec2f;
     desired_size : Size2D;
     min_size : Size2D;
     max_size : Size2D;
-
+    padding : Vec2f;
+    margin : Vec2f;
     child_layout_axis : Axis;
     child_layout_direction : LayoutDirection;
 
@@ -188,11 +190,6 @@ GetNode :: (window : *Window) -> *Node {
     }
 
     TouchNode(window.root_node);
-
-    w, h : s32;
-    SDL_GetWindowSize(window.sdl_window, *w, *h);
-
-    SetSize(window.root_node, SizePx(xx w), SizePx(xx h));
 
     return window.root_node;
 }

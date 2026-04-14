@@ -26,48 +26,6 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
         a := OMG.GetNode(root, OMG.GetID("a"));
         OMG.SetSize(a, OMG.SizePx(100), OMG.SizePx(100));
     }
-
-    return;
-
-    {
-        in := OMG.Move(OMG.Circle(80), cos(time) * 100, 0);
-        out := OMG.Union(
-            OMG.Move(OMG.Circle(100), -100, 0),
-            OMG.Move(OMG.Circle(100),  100, 0),
-            60
-        );
-        s := OMG.Sub(out, in);
-
-        d := OMG.DrawShape(s, .{w * 0.5, h * 0.5});
-        OMG.OuterShadow(d, .{12, -12}, 10);
-        OMG.SolidColor(d, .{1,1,1,1});
-        OMG.InnerShadow(d, 10);
-    }
-
-    {
-        t := OMG.Triangle(.{-100, 0}, .{100, 0}, .{0, -250});
-        tt := OMG.Union(
-            OMG.Move(OMG.Circle(100), -90, 1),
-            OMG.Move(OMG.Circle(100),  90, 1),
-        );
-        t = OMG.Union(t, tt, 50);
-
-        tt = OMG.Circle(100);
-        tt = OMG.Move(tt, cos(time * 2) * 50, sin(time * 2) * 50);
-        t = OMG.Morph(t, tt, 0.2);
-
-        d := OMG.DrawShape(t, .{400, 400});
-        OMG.OuterShadow(d, .{12, -12}, 10);
-        OMG.SolidColor(d, .{1, 0.067, 0.18,1});
-        OMG.InnerShadow(d, 100);
-    }
-
-    {
-        c := OMG.Circle(100);
-        d := OMG.DrawShape(c, .{1300, 300});
-        OMG.OuterShadow(d, .{12, -12}, 10);
-        OMG.SolidColor(d, .{1,1,1,1});
-    }
 }
 
 main :: () {
