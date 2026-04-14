@@ -435,14 +435,16 @@ GetBounds :: (shape : *SDShape) -> Vec4f {
             zw=max(a.zw, b.zw) + .{k,k},
         };
 
+    case .SubtractionOperation; #through;
+    case .SmoothIntersectionOperation; // Not sure this is correct
+        return GetBounds(shape.subtraction_op.shape_a);
+
     case .MorphOperation; #through;
     case .SmoothSubtractionOperation; #through; // Not sure this is correct
-    case .SubtractionOperation; #through;
-    case .SmoothIntersectionOperation; #through; // Not sure this is correct
     case .IntersectionOperation;
         // @Todo: can we find something better fitting?
-        a := GetBounds(shape.subtraction_op.shape_a);
-        b := GetBounds(shape.subtraction_op.shape_b);
+        a := GetBounds(shape.intersection_op.shape_a);
+        b := GetBounds(shape.intersection_op.shape_b);
         return .{
             xy=min(a.xy, b.xy),
             zw=max(a.zw, b.zw),
