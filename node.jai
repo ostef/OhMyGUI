@@ -20,18 +20,17 @@ Node :: struct {
     min_size : Size2D;
     max_size : Size2D;
     padding : Vec2f;
-    margin : Vec2f;
+    child_gap : Vec2f;
     child_layout_axis : Axis;
     child_layout_direction : LayoutDirection;
+    text : string;
 
-    // Computed at the end of the frame before drawing
+    // Computed during the layout phase at the end of the frame
     size : Vec2f;
     relative_position : Vec2f;
     rect : Vec4f;
     inner_rect : Vec4f;
     content_rect : Vec4f;
-
-    text : string;
 }
 
 // for_expansion
@@ -209,6 +208,7 @@ GetNode :: (parent : *Node, id : ID) -> *Node {
         for :Children parent {
             if it.local_id == id {
                 node = it;
+                PopChild(parent, node);
                 break;
             }
         }
@@ -219,9 +219,9 @@ GetNode :: (parent : *Node, id : ID) -> *Node {
         node.parent = parent;
         node.local_id = id;
         node.id = GetID(parent.id, id);
-        PushChild(parent, node);
     }
 
+    PushChild(parent, node);
     TouchNode(node);
 
     return node;
