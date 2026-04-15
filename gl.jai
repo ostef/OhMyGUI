@@ -79,6 +79,7 @@ void main() {
     );
 
     gl_Position.xy = ((positions[gl_VertexID] + inst.position) / u_viewport_size) * 2 - vec2(1);
+    gl_Position.y *= -1;
     gl_Position.z = 0;
     gl_Position.w = 1;
 }
@@ -127,6 +128,7 @@ layout(binding=1, std430) readonly buffer ShapeData {
 layout(binding=2, std430) readonly buffer EffectData {
     Effect u_effects[];
 };
+uniform vec2 u_viewport_size;
 
 layout(location=0) in vec2 in_position;
 layout(location=1) in flat uint in_first_shape_index;
@@ -416,7 +418,9 @@ vec4 EvalEffects(vec2 p, float d) {
 }
 
 void main() {
-    vec2 p = gl_FragCoord.xy - in_position;
+    vec2 p = gl_FragCoord.xy;
+    p.y = u_viewport_size.y - p.y;
+    p -= in_position;
 
     float d = EvalSDF(p);
 

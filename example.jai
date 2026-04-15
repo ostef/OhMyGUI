@@ -94,7 +94,6 @@ main :: () {
         SDL_GetGlobalMouseState(*mx, *my);
         mx -= wx;
         my -= wy;
-        my = h - my;
 
         g_mouse = .{xx mx, xx my};
 
