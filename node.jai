@@ -14,23 +14,20 @@ Node :: struct {
     last_used_on_frame : u64;
 
     // User controlled properties
-    align : Vec2f;
-    anchor : Vec2f;
+    offset : Vec2f; // If parent.child_layout_mode is None
     desired_size : Size2D;
-    min_size : Size2D;
-    max_size : Size2D;
-    padding : Vec2f;
-    child_gap : Vec2f;
-    child_layout_axis : Axis;
-    child_layout_direction : LayoutDirection;
+    min_size := Size2D.{.{value=0}, .{value=0}};
+    max_size := Size2D.{.{value=FLOAT32_INFINITY}, .{value=FLOAT32_INFINITY}};
+    inner_padding : Vec2f;
+    child_layout_mode := LayoutMode.LeftToRight;
+    child_gap : Vec2f; // If child_layout_mode is not None
+    child_align : Vec2f; // If child_layout_mode is not None
     text : string;
 
     // Computed during the layout phase at the end of the frame
     size : Vec2f;
     relative_position : Vec2f;
     rect : Vec4f;
-    inner_rect : Vec4f;
-    content_rect : Vec4f;
 }
 
 // for_expansion
@@ -84,7 +81,8 @@ PushChild :: (parent : *Node, node : *Node) {
 }
 
 PopChild :: (parent : *Node, node : *Node) {
-    assert(parent.last_child != node, "Should not happen");
+    assert(node.parent == parent);
+    assert(parent.last_child != node);
 
     if parent.first_child == node {
         parent.first_child = node.next_sibling;
@@ -99,54 +97,6 @@ PopChild :: (parent : *Node, node : *Node) {
 
     node.prev_sibling = null;
     node.next_sibling = null;
-}
-
-Axis :: enum u8 {
-    X;
-    Y;
-}
-
-LayoutDirection :: enum u8 {
-    Positive;
-    Negative;
-
-    LeftToRight :: Positive;
-    RightToLeft :: Negative;
-
-    BottomToTop :: Positive;
-    TopToBottom :: Negative;
-}
-
-Size1D :: struct {
-    Kind :: enum u8 {
-        Pixels;
-        FillParent;
-        FitChildren;
-        Text;
-    }
-
-    kind : Kind;
-    value : float;
-}
-
-SizePx :: inline (value : float) -> Size1D {
-    return .{.Pixels, value};
-}
-
-SizeFillParent :: inline (ratio : float) -> Size1D {
-    return .{.FillParent, ratio};
-}
-
-SizeFitChildren :: inline (ratio : float) -> Size1D {
-    return .{.FillParent, ratio};
-}
-
-Size2D :: struct {
-    x : Size1D;
-    y : Size1D;
-
-    #overlay(x)
-    axes : [2]Size1D;
 }
 
 GetID :: inline (base : ID, id : ID) -> ID {
@@ -176,9 +126,6 @@ GetID :: inline (str : string) -> ID {
 TouchNode :: (node : *Node) {
     node.last_used_on_frame = context.omg.frame_index;
     node.last_child = null;
-    if node.parent {
-        node.parent.last_child = node;
-    }
 }
 
 GetNode :: (window : *Window) -> *Node {
@@ -275,31 +222,6 @@ SetMaxSize :: inline (node : *Node, x : Size1D, y : Size1D) {
     node.max_size = .{x, y};
 }
 
-SetAlign :: inline (node : *Node, align : Vec2f) {
-    node.align = align;
-}
-
-SetAlign :: inline (node : *Node, x : float, y : float) {
-    node.align = .{x, y};
-}
-
-SetAnchor :: inline (node : *Node, anchor : Vec2f) {
-    node.anchor = anchor;
-}
-
-SetAnchor :: inline (node : *Node, x : float, y : float) {
-    node.anchor = .{x, y};
-}
-
-SetLayoutAxis :: inline (node : *Node, axis : Axis) {
-    node.child_layout_axis = axis;
-}
-
-SetLayoutDirection :: inline (node : *Node, direction : LayoutDirection) {
-    node.child_layout_direction = direction;
-}
-
-SetLayout :: inline (node : *Node, axis : Axis, direction : LayoutDirection) {
-    node.child_layout_axis = axis;
-    node.child_layout_direction = direction;
+SetLayout :: inline (node : *Node, mode : LayoutMode) {
+    node.child_layout_mode = mode;
 }
