@@ -1,6 +1,24 @@
 Vec2f :: Vector2;
 Vec4f :: Vector4;
 
+operator*[] :: inline (v : Vec2f, index : int) -> *float {
+    assert(index >= 0 && index < 2);
+    return *v.component[index];
+}
+
+operator*[] :: inline (v : Vec2f, axis : Axis) -> *float {
+    return *v.component[axis];
+}
+
+operator*[] :: inline (v : Vec4f, index : int) -> *float {
+    assert(index >= 0 && index < 4);
+    return *v.component[index];
+}
+
+operator*[] :: inline (v : Vec4f, axis : Axis) -> *float {
+    return *v.component[axis];
+}
+
 min :: inline (v : Vec2f) -> Vec2f {
     return .{min(v.x), min(v.y)};
 }
