@@ -16,8 +16,8 @@ Node :: struct {
     // User controlled properties
     offset : Vec2f; // If parent.child_layout_mode is None
     desired_size : Size2D;
-    min_size := Size2D.{.{value=0}, .{value=0}};
-    max_size := Size2D.{.{value=FLOAT32_INFINITY}, .{value=FLOAT32_INFINITY}};
+    min_size := Vec2f.{-FLOAT32_INFINITY, -FLOAT32_INFINITY};
+    max_size := Vec2f.{ FLOAT32_INFINITY,  FLOAT32_INFINITY};
     padding := Vec2f.{10,10};
     child_layout_mode := LayoutMode.LeftToRight;
     child_gap := Vec2f.{5,5}; // If child_layout_mode is not None
@@ -190,24 +190,46 @@ SetWidth :: inline (node : *Node, size : Size1D) {
     node.desired_size.x = size;
 }
 
-SetMinWidth :: inline (node : *Node, size : Size1D) {
+SetWidth :: inline (node : *Node, size : Size1D, min : float, max : float) {
+    node.desired_size.x = size;
+    node.min_size.x = min;
+    node.max_size.x = max;
+}
+
+SetMinWidth :: inline (node : *Node, size : float) {
     node.min_size.x = size;
 }
 
-SetMaxWidth :: inline (node : *Node, size : Size1D) {
+SetMaxWidth :: inline (node : *Node, size : float) {
     node.max_size.x = size;
+}
+
+SetMinMaxWidth :: inline (node : *Node, min : float, max : float) {
+    node.min_size.x = min;
+    node.max_size.x = max;
 }
 
 SetHeight :: inline (node : *Node, size : Size1D) {
     node.desired_size.y = size;
 }
 
-SetMinHeight :: inline (node : *Node, size : Size1D) {
+SetHeight :: inline (node : *Node, size : Size1D, min : float, max : float) {
+    node.desired_size.y = size;
+    node.min_size.y = min;
+    node.max_size.y = max;
+}
+
+SetMinHeight :: inline (node : *Node, size : float) {
     node.min_size.y = size;
 }
 
-SetMaxHeight :: inline (node : *Node, size : Size1D) {
+SetMaxHeight :: inline (node : *Node, size : float) {
     node.max_size.y = size;
+}
+
+SetMinMaxHeight :: inline (node : *Node, min : float, max : float) {
+    node.min_size.y = min;
+    node.max_size.y = max;
 }
 
 SetSize :: inline (node : *Node, size : Size2D) {
@@ -218,19 +240,19 @@ SetSize :: inline (node : *Node, x : Size1D, y : Size1D) {
     node.desired_size = .{x, y};
 }
 
-SetMinSize :: inline (node : *Node, size : Size2D) {
+SetMinSize :: inline (node : *Node, size : Vec2f) {
     node.min_size = size;
 }
 
-SetMinSize :: inline (node : *Node, x : Size1D, y : Size1D) {
+SetMinSize :: inline (node : *Node, x : float, y : float) {
     node.min_size = .{x, y};
 }
 
-SetMaxSize :: inline (node : *Node, size : Size2D) {
+SetMaxSize :: inline (node : *Node, size : Vec2f) {
     node.max_size = size;
 }
 
-SetMaxSize :: inline (node : *Node, x : Size1D, y : Size1D) {
+SetMaxSize :: inline (node : *Node, x : float, y : float) {
     node.max_size = .{x, y};
 }
 

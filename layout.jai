@@ -105,6 +105,15 @@ LayoutNodes :: (root : *Node) {
     root.rect.zw = root.size;
 
     LayoutPosition(root);
+
+    A :: (node : *Node) {
+        print("%: %\n", node.id, node.size);
+        for :Children node {
+            A(it);
+        }
+    }
+
+    A(root);
 }
 
 LayoutFixedAndFitSizing :: (node : *Node) {
@@ -121,13 +130,16 @@ LayoutFixedAndFitSizing :: (node : *Node) {
         if node.desired_size[axis].kind == {
         case .FitChildren;
             node.size[axis] = node.children_size[axis] + 2 * node.padding[axis];
+            node.size[axis] = clamp(node.size[axis], node.min_size[axis], node.max_size[axis]);
         case .Pixels;
             node.size[axis] = node.desired_size[axis].value;
+            node.size[axis] = clamp(node.size[axis], node.min_size[axis], node.max_size[axis]);
         }
     }
 
     if node.desired_size[axis].kind == .FitChildren {
         node.size[axis] += (node.num_children - 1) * node.child_gap[axis];
+        node.size[axis] = clamp(node.size[axis], node.min_size[axis], node.max_size[axis]);
     }
 }
 
@@ -138,52 +150,28 @@ LayoutFillSizing :: (node : *Node) {
     remaining_size := node.size[axis] - 2 * node.padding[axis]
         - node.children_size[axis]
         - (node.num_children - 1) * node.child_gap[axis];
-    while remaining_size > 0 {
-        to_add := remaining_size;
-        smallest := FLOAT32_INFINITY;
-        second_smallest := FLOAT32_INFINITY;
-        num_fill_children := 0;
-
-        for :Children node {
-            if it.desired_size[axis].kind != .FillParent {
-                continue;
-            }
-
-            if smallest == FLOAT32_INFINITY {
-                smallest = it.size[axis];
-            } else if it.size[axis] < smallest {
-                second_smallest = smallest;
-                smallest = it.size[axis];
-            } else if it.size[axis] > smallest {
-                second_smallest = min(second_smallest, it.size[axis]);
-                to_add = second_smallest - smallest;
-            }
-
-            num_fill_children += 1;
+    total_weights := 0.0;
+    num_fill_children := 0;
+    for :Children node {
+        if it.desired_size[axis].kind != .FillParent {
+            continue;
         }
 
-        if num_fill_children == 0 {
-            break;
-        }
-
-        to_add = min(to_add, remaining_size / num_fill_children);
-
-        for :Children node {
-            if it.desired_size[axis].kind != .FillParent {
-                continue;
-            }
-
-            if it.size[axis] == smallest {
-                it.size[axis] += to_add;
-                node.children_size[axis] += to_add;
-                remaining_size -= to_add;
-            }
-        }
+        total_weights += it.desired_size[axis].value;
+        num_fill_children += 1;
     }
 
     for :Children node {
+        if it.desired_size[axis].kind == .FillParent {
+            it.size[axis] = remaining_size * it.desired_size[axis].value / total_weights;
+            it.size[axis] = clamp(it.size[axis], it.min_size[axis], it.max_size[axis]);
+            node.children_size[axis] += it.size[axis];
+        }
+
         if it.desired_size[cross].kind == .FillParent {
-            it.size[cross] = node.size[cross];
+            it.size[cross] = node.size[cross] * it.desired_size[cross].value - 2 * node.padding[cross];
+            it.size[cross] = clamp(it.size[cross], node.min_size[cross], node.max_size[cross]);
+            node.children_size[cross] = max(node.children_size[cross], it.size[cross]);
         }
 
         LayoutFillSizing(it);

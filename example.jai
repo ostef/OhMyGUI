@@ -27,7 +27,8 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
     }
 
     a := OMG.GetNode(root, OMG.GetID("b"));
-    OMG.SetSize(a, OMG.SizeFillParent(1), OMG.SizePx(100));
+    OMG.SetSize(a, OMG.SizeFillParent(0.5), OMG.SizeFillParent(0.5));
+    OMG.SetMinMaxWidth(a, 128, 256);
 
     if !g_show_node {
         a := OMG.GetNode(root, OMG.GetID("a"));
