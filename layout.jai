@@ -154,14 +154,22 @@ LayoutFillSizing :: (node : *Node) {
             continue;
         }
 
-        total_weights += it.desired_size[axis].value;
+        total_weights += clamp(it.desired_size[axis].value, 0, 1);
+
+        if abs(it.size[axis] - it.min_size[axis]) < 0.00001 || abs(it.size[axis] - it.max_size[axis]) < 0.00001 {
+            continue;
+        }
+
         num_fill_children += 1;
     }
 
     remaining_size := node.size[axis] - 2 * node.padding[axis]
         - node.children_size[axis]
         - (node.num_children - 1) * node.child_gap[axis];
-    while num_fill_children > 0 && abs(remaining_size) > 0.00001 {
+    iter := 0;
+    while iter < 10 && num_fill_children > 0 && abs(remaining_size) > 0.00001 {
+        defer iter += 1;
+
         for :Children node {
             if it.desired_size[axis].kind != .FillParent {
                 continue;
@@ -172,7 +180,9 @@ LayoutFillSizing :: (node : *Node) {
             }
 
             prev_size := it.size[axis];
-            it.size[axis] += remaining_size * it.desired_size[axis].value / total_weights;
+            if total_weights > 0 {
+                it.size[axis] += remaining_size * it.desired_size[axis].value / total_weights;
+            }
             it.size[axis] = clamp(it.size[axis], it.min_size[axis], it.max_size[axis]);
 
             if abs(it.size[axis] - it.min_size[axis]) < 0.00001 || abs(it.size[axis] - it.max_size[axis]) < 0.00001 {
@@ -181,6 +191,10 @@ LayoutFillSizing :: (node : *Node) {
 
             added_size := it.size[axis] - prev_size;
             node.children_size[axis] += added_size;
+        }
+
+        if total_weights <= 0 {
+            break;
         }
 
         remaining_size = node.size[axis] - 2 * node.padding[axis]
