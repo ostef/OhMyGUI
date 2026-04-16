@@ -150,24 +150,48 @@ LayoutFillSizing :: (node : *Node) {
     remaining_size := node.size[axis] - 2 * node.padding[axis]
         - node.children_size[axis]
         - (node.num_children - 1) * node.child_gap[axis];
-    total_weights := 0.0;
-    num_fill_children := 0;
-    for :Children node {
-        if it.desired_size[axis].kind != .FillParent {
-            continue;
+    while abs(remaining_size) > 0.00001 {
+        total_weights := 0.0;
+        num_fill_children := 0;
+        for :Children node {
+            if it.desired_size[axis].kind != .FillParent {
+                continue;
+            }
+
+            if abs(it.size[axis] - it.min_size[axis]) < 0.00001 || abs(it.size[axis] - it.max_size[axis]) < 0.00001 {
+                continue;
+            }
+
+            total_weights += it.desired_size[axis].value;
+            num_fill_children += 1;
         }
 
-        total_weights += it.desired_size[axis].value;
-        num_fill_children += 1;
+        if num_fill_children == 0 {
+            break;
+        }
+
+        for :Children node {
+            if it.desired_size[axis].kind != .FillParent {
+                continue;
+            }
+
+            if abs(it.size[axis] - it.min_size[axis]) < 0.00001 || abs(it.size[axis] - it.max_size[axis]) < 0.00001 {
+                continue;
+            }
+
+            prev_size := it.size[axis];
+            it.size[axis] += remaining_size * it.desired_size[axis].value / total_weights;
+            it.size[axis] = clamp(it.size[axis], it.min_size[axis], it.max_size[axis]);
+            added_size := it.size[axis] - prev_size;
+            node.children_size[axis] += added_size;
+        }
+
+        remaining_size = node.size[axis] - 2 * node.padding[axis]
+            - node.children_size[axis]
+            - (node.num_children - 1) * node.child_gap[axis];
     }
 
     for :Children node {
-        if it.desired_size[axis].kind == .FillParent {
-            it.size[axis] = remaining_size * it.desired_size[axis].value / total_weights;
-            it.size[axis] = clamp(it.size[axis], it.min_size[axis], it.max_size[axis]);
-            node.children_size[axis] += it.size[axis];
-        }
-
         if it.desired_size[cross].kind == .FillParent {
             it.size[cross] = node.size[cross] * it.desired_size[cross].value - 2 * node.padding[cross];
             it.size[cross] = clamp(it.size[cross], node.min_size[cross], node.max_size[cross]);
