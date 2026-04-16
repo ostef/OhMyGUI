@@ -20,15 +20,15 @@ Size1D :: struct {
 }
 
 SizePx :: inline (value : float) -> Size1D {
-    return .{.Pixels, value};
+    return .{kind=.Pixels, value=value};
 }
 
 SizeFillParent :: inline (ratio : float) -> Size1D {
-    return .{.FillParent, ratio};
+    return .{kind=.FillParent, value=ratio};
 }
 
-SizeFitChildren :: inline (ratio : float) -> Size1D {
-    return .{.FitChildren, ratio};
+SizeFitChildren :: inline () -> Size1D {
+    return .{kind=.FitChildren};
 }
 
 Size2D :: struct {
@@ -37,6 +37,14 @@ Size2D :: struct {
 
     #overlay(x)
     axes : [2]Size1D;
+}
+
+operator*[] :: inline (size : Size2D, index : int) -> *Size1D {
+    return *size.axes[index];
+}
+
+operator*[] :: inline (size : Size2D, axis : Axis) -> *Size1D {
+    return *size.axes[axis];
 }
 
 LayoutMode :: enum u8 {
@@ -59,9 +67,18 @@ GetLayoutAxis :: inline (mode : LayoutMode) -> Axis {
     }
 }
 
+IsLayoutReverseDirection :: inline (node : *Node) -> bool, float {
+    reverse, sign := IsLayoutReverseDirection(node.child_layout_mode);
+    return reverse, sign;
+}
+
+IsLayoutReverseDirection :: inline (mode : LayoutMode) -> bool, float {
+    return mode == .RightToLeft || mode == .BottomToTop, cast(float, mode == .RightToLeft || mode == .BottomToTop) * 2 - 1;
+}
+
 // for_expansion
-LayoutChildren :: (node : *Node, body : Code, flags : For_Flags) #expand {
-    reverse := node.layout_mode == .RightToLeft || node.layout_mode == .BottomToTop;
+LayoutDirection :: (node : *Node, body : Code, flags : For_Flags) #expand {
+    reverse := IsLayoutReverseDirection(node);
     reverse |= flags & .REVERSE != 0;
 
     `it := ifx reverse then node.last_child else node.first_child;
@@ -75,75 +92,117 @@ LayoutChildren :: (node : *Node, body : Code, flags : For_Flags) #expand {
     }
 }
 
-CalcSize :: (parent : *Node, axis : Axis, size : Size2D) -> float, bool {
-    if size.axes[axis].kind == {
-    case .Pixels;
-        return size.axes[axis].value, true;
+LayoutNodes :: (root : *Node) {
+    assert(root.parent == null);
+    assert(root.desired_size.x.kind == .Pixels);
+    assert(root.desired_size.y.kind == .Pixels);
 
-    case .FillParent;
-        if parent {
-            return parent.size[axis] * size.axes[axis].value, true;
-        }
-    }
+    LayoutFixedAndFitSizing(root);
+    LayoutFillSizing(root);
 
-    return 0, false;
+    root.relative_position = .{0,0};
+    root.rect.xy = .{0,0};
+    root.rect.zw = root.size;
+
+    LayoutPosition(root);
 }
 
-CalcSize :: (node : *Node, axis : Axis) -> bool {
-    calculated : bool;
-    node.size[axis], calculated = CalcSize(node.parent, axis, node.desired_size);
-    if !calculated {
-        return false;
-    }
-
-    min_size := CalcSize(node.parent, axis, node.min_size);
-    max_size := CalcSize(node.parent, axis, node.max_size);
-    node.size[axis] = clamp(node.size[axis], min_size, max_size);
-
-    node.rect.zw[axis] = node.rect.xy[axis] + node.size[axis];
-
-    return true;
-}
-
-CalcSize :: inline (node : *Node) {
-    node.rect.xy = node.relative_position;
-
-    CalcSize(node, .X);
-    CalcSize(node, .Y);
-}
-
-LayoutNodes :: (node : *Node) {
-    if node.child_layout_mode == .None {
-        CalcSize(node);
-
-        for :Children node {
-            it.relative_position = it.offset;
-            LayoutNodes(it);
-        }
-
-        return;
-    }
-
-    CalcSize(node);
-
+LayoutFixedAndFitSizing :: (node : *Node) {
     axis := GetLayoutAxis(node);
     cross := GetCrossAxis(axis);
 
-    cursor := Vec2f.{};
-    max_cross_size : float;
     for :Children node {
-        it.relative_position = cursor;
-        LayoutNodes(it);
+        LayoutFixedAndFitSizing(it);
+        node.content_size[axis] += it.size[axis];
+        node.content_size[cross] = max(node.content_size[cross], it.size[cross]);
+    }
 
-        cursor[axis] += it.size[axis];
-        max_cross_size = max(max_cross_size, it.size[opposite]);
+    for axis : Axis.[.X, .Y] {
+        if node.desired_size[axis].kind == {
+        case .FitChildren;
+            node.size[axis] = node.content_size[axis];
+        case .Pixels;
+            node.size[axis] = node.desired_size[axis].value;
+        }
     }
 }
 
-MakeRectsAbsolute :: (node : *Node) {
+LayoutFillSizing :: (node : *Node) {
+    axis := GetLayoutAxis(node);
+    cross := GetCrossAxis(axis);
+
+    remaining_size := node.size[axis] - node.content_size[axis];
+    while remaining_size > 0 {
+        to_add := remaining_size;
+        smallest := FLOAT32_INFINITY;
+        second_smallest := FLOAT32_INFINITY;
+        num_fill_children := 0;
+        for :Children node {
+            if it.desired_size[axis].kind != .FillParent {
+                continue;
+            }
+
+            if smallest == FLOAT32_INFINITY {
+                smallest = it.size[axis];
+            } else if it.size[axis] < smallest {
+                second_smallest = smallest;
+                smallest = it.size[axis];
+            } else if it.size[axis] > smallest {
+                second_smallest = min(second_smallest, it.size[axis]);
+                to_add = second_smallest - smallest;
+            }
+
+            num_fill_children += 1;
+        }
+
+        if num_fill_children == 0 {
+            break;
+        }
+
+        to_add = min(to_add, remaining_size / num_fill_children);
+
+        for :Children node {
+            if it.desired_size[axis].kind != .FillParent {
+                continue;
+            }
+
+            if it.size[axis] == smallest {
+                it.size[axis] += to_add;
+                node.content_size[axis] += to_add;
+                remaining_size -= to_add;
+            }
+        }
+    }
+
     for :Children node {
-        it.rect.xy += node.rect.xy;
-        it.rect.zw += node.rect.xy;
-        MakeRectsAbsolute(it);
+        if it.desired_size[cross].kind == .FillParent {
+            it.size[cross] = node.size[cross];
+        }
+
+        LayoutFillSizing(it);
+    }
+}
+
+LayoutPosition :: (node : *Node) {
+    axis := GetLayoutAxis(node);
+    cross := GetCrossAxis(axis);
+    reverse := IsLayoutReverseDirection(node);
+
+    cursor := ifx reverse then node.size[axis] else 0;
+    for :LayoutDirection node {
+        if reverse {
+            cursor -= it.size[axis];
+        }
+
+        it.relative_position[axis] = cursor;
+
+        if !reverse {
+            cursor += it.size[axis];
+        }
+
+        it.rect.xy = node.rect.xy + it.relative_position;
+        it.rect.zw = node.rect.xy + it.relative_position + it.size;
+
+        LayoutPosition(it);
     }
 }

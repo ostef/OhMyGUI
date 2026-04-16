@@ -25,9 +25,12 @@ Node :: struct {
     text : string;
 
     // Computed during the layout phase at the end of the frame
-    size : Vec2f;
-    relative_position : Vec2f;
-    rect : Vec4f;
+    using layout_results : struct {
+        size : Vec2f;
+        content_size : Vec2f;
+        relative_position : Vec2f;
+        rect : Vec4f;
+    };
 }
 
 // for_expansion
@@ -82,10 +85,13 @@ PushChild :: (parent : *Node, node : *Node) {
 
 PopChild :: (parent : *Node, node : *Node) {
     assert(node.parent == parent);
-    assert(parent.last_child != node);
 
     if parent.first_child == node {
         parent.first_child = node.next_sibling;
+    }
+
+    if parent.last_child == node {
+        parent.last_child = node.prev_sibling;
     }
 
     if node.prev_sibling {
@@ -126,6 +132,8 @@ GetID :: inline (str : string) -> ID {
 TouchNode :: (node : *Node) {
     node.last_used_on_frame = context.omg.frame_index;
     node.last_child = null;
+
+    node.layout_results = .{};
 }
 
 GetNode :: (window : *Window) -> *Node {

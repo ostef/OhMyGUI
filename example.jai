@@ -19,7 +19,6 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
 
     if OMG.IsKeyPressed(.Space) {
         g_show_node = !g_show_node;
-        print("Show node: %\n", g_show_node);
     }
 
     if g_show_node {
@@ -28,9 +27,12 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
     }
 
     a := OMG.GetNode(root, OMG.GetID("b"));
-    OMG.SetSize(a, OMG.SizePx(100), OMG.SizePx(50));
+    OMG.SetSize(a, OMG.SizeFillParent(1), OMG.SizePx(100));
 
-    a = OMG.GetNode(a, OMG.GetID("b"));
+    a = OMG.GetNode(root, OMG.GetID("c"));
+    OMG.SetSize(a, OMG.SizeFillParent(1), OMG.SizeFitChildren());
+
+    a = OMG.GetNode(a, OMG.GetID("d"));
     OMG.SetSize(a, OMG.SizePx(25), OMG.SizePx(25));
 
     if !g_show_node {

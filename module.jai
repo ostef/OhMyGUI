@@ -120,7 +120,6 @@ Render :: () {
 
         RemoveUndeclaredNodes(window.root_node);
         LayoutNodes(window.root_node);
-        MakeRectsAbsolute(window.root_node);
         DrawNodes(window.root_node);
     }
 
