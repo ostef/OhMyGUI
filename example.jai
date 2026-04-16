@@ -29,16 +29,20 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
     a := OMG.GetNode(root, OMG.GetID("b"));
     OMG.SetSize(a, OMG.SizeFillParent(1), OMG.SizePx(100));
 
-    a = OMG.GetNode(root, OMG.GetID("c"));
-    OMG.SetSize(a, OMG.SizeFillParent(1), OMG.SizeFitChildren());
-
-    a = OMG.GetNode(a, OMG.GetID("d"));
-    OMG.SetSize(a, OMG.SizePx(25), OMG.SizePx(25));
-
     if !g_show_node {
         a := OMG.GetNode(root, OMG.GetID("a"));
         OMG.SetSize(a, OMG.SizePx(100), OMG.SizePx(100));
     }
+
+    a = OMG.GetNode(root, OMG.GetID("c"));
+    OMG.SetSize(a, OMG.SizeFillParent(1), OMG.SizeFitChildren());
+    OMG.SetLayout(a, .TopToBottom);
+
+    d := OMG.GetNode(a, OMG.GetID("d"));
+    OMG.SetSize(d, OMG.SizePx(25), OMG.SizePx(25));
+
+    d = OMG.GetNode(a, OMG.GetID("e"));
+    OMG.SetSize(d, OMG.SizePx(25), OMG.SizePx(25));
 }
 
 main :: () {

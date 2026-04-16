@@ -133,7 +133,6 @@ RemoveUndeclaredNodes :: (node : *Node) {
 
     for :Children node {
         if it.last_used_on_frame != frame_index {
-            print("Removed unused node %\n", it.id);
             PopChild(node, it);
             FreeNode(it);
         }
@@ -148,7 +147,7 @@ DrawNodes :: (node : *Node) {
     position := (node.rect.xy + node.rect.zw) * 0.5;
     size     :=  node.rect.zw - node.rect.xy;
 
-    d := DrawShape(Box(size, 4), position);
+    d := DrawShape(Box(size, 6), position);
     SolidColor(d, .{1,1,1,1});
     StrokeColor(d, .{0,0,0,1}, 1);
 

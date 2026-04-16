@@ -18,16 +18,16 @@ Node :: struct {
     desired_size : Size2D;
     min_size := Size2D.{.{value=0}, .{value=0}};
     max_size := Size2D.{.{value=FLOAT32_INFINITY}, .{value=FLOAT32_INFINITY}};
-    inner_padding : Vec2f;
+    padding := Vec2f.{10,10};
     child_layout_mode := LayoutMode.LeftToRight;
-    child_gap : Vec2f; // If child_layout_mode is not None
+    child_gap := Vec2f.{5,5}; // If child_layout_mode is not None
     child_align : Vec2f; // If child_layout_mode is not None
     text : string;
 
     // Computed during the layout phase at the end of the frame
     using layout_results : struct {
         size : Vec2f;
-        content_size : Vec2f;
+        children_size : Vec2f;
         relative_position : Vec2f;
         rect : Vec4f;
     };
