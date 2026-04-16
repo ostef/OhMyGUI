@@ -39,6 +39,9 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
     OMG.SetSize(a, OMG.SizeFillParent(1), OMG.SizeFitChildren());
     OMG.SetLayout(a, .TopToBottom);
 
+    e := OMG.GetNode(root, OMG.GetID("AA"));
+    OMG.SetSize(e, OMG.SizeFillParent(1), OMG.SizePx(100));
+
     d := OMG.GetNode(a, OMG.GetID("d"));
     OMG.SetSize(d, OMG.SizePx(25), OMG.SizePx(25));
 
