@@ -130,9 +130,13 @@ GetID :: inline (str : string) -> ID {
 }
 
 TouchNode :: (node : *Node) {
+    if node.last_used_on_frame == context.omg.frame_index {
+        return;
+    }
+
     node.last_used_on_frame = context.omg.frame_index;
     node.last_child = null;
-
+    node.num_children = 0;
     node.layout_results = .{};
 }
 
