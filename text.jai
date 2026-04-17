@@ -10,11 +10,12 @@ Font :: struct {
     glyph_map : Table(u32, Glyph);
     resolution : u32;
     ascent, descent : float;
+    space_advance : float;
     texture : GLuint;
 }
 
 FontConfig :: struct {
-    resolution : u32 = 20;
+    resolution : u32 = 64;
     glyph_ranges := GlyphRange.[.{0x20, 0x7f}];
     atlas_width : u32 = 1024;
     atlas_height : u32 = 1024;
@@ -64,8 +65,8 @@ LoadFontFromFile :: (filename : string, config : FontConfig) -> *Font {
     font.filename = filename;
     font.name = basename(filename);
     font.resolution = config.resolution;
-    font.ascent = (ft_face.size.metrics.ascender >> 6) / cast(float, config.resolution);
-    font.descent = (ft_face.size.metrics.descender >> 6) / cast(float, config.resolution);
+    font.ascent = FractToFloat(ft_face.size.metrics.ascender) / cast(float, config.resolution);
+    font.descent = FractToFloat(ft_face.size.metrics.descender) / cast(float, config.resolution);
 
     packer : RectPacker;
     packer.width = config.atlas_width;
@@ -73,6 +74,11 @@ LoadFontFromFile :: (filename : string, config : FontConfig) -> *Font {
     packer.data = xx alloc(packer.width * packer.height);
     memset(packer.data, 0, packer.width * packer.height);
     defer free(packer.data);
+
+    space_glyph := LoadGlyph(font, #char " ", ft_face, *packer);
+    if space_glyph {
+        font.space_advance = space_glyph.hori_advance;
+    }
 
     for range : config.glyph_ranges {
         for i : range.start..range.end {
@@ -91,8 +97,8 @@ LoadFontFromFile :: (filename : string, config : FontConfig) -> *Font {
     glTextureSubImage2D(font.texture, 0, 0, 0, packer.width, packer.height, GL_RED, GL_UNSIGNED_BYTE, packer.data);
     glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 
-    glTextureParameteri(font.texture, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTextureParameteri(font.texture, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTextureParameteri(font.texture, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTextureParameteri(font.texture, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     array_add(*context.omg.fonts, font);
 
@@ -165,6 +171,10 @@ BlitGlyph :: (packer : *RectPacker, bitmap_data : *u8, bitmap_x : u32, bitmap_y 
     }
 }
 
+FractToFloat :: inline (value : s64) -> float {
+    return cast(float, value) / 64.0;
+}
+
 LoadGlyph :: (font : *Font, codepoint : u32, ft_face : FT_Face, packer : *RectPacker) -> *Glyph {
     existing_glyph := table_find_pointer(*font.glyph_map, codepoint);
     if existing_glyph {
@@ -177,6 +187,7 @@ LoadGlyph :: (font : *Font, codepoint : u32, ft_face : FT_Face, packer : *RectPa
         return null;
     }
 
+    FT_Render_Glyph(ft_face.glyph, .NORMAL); // We want the SDF rendering to be based of the bitmap
     FT_Render_Glyph(ft_face.glyph, .SDF);
 
     slot := ft_face.glyph;
@@ -184,14 +195,14 @@ LoadGlyph :: (font : *Font, codepoint : u32, ft_face : FT_Face, packer : *RectPa
     glyph : Glyph;
     glyph.codepoint = codepoint;
 
-    glyph.size.x = (slot.metrics.width >> 6) / cast(float, font.resolution);
-    glyph.size.y = (slot.metrics.height >> 6) / cast(float, font.resolution);
-    glyph.hori_bearing.x = (slot.metrics.horiBearingX >> 6) / cast(float, font.resolution);
-    glyph.hori_bearing.y = (slot.metrics.horiBearingY >> 6) / cast(float, font.resolution);
-    glyph.vert_bearing.x = (slot.metrics.vertBearingX >> 6) / cast(float, font.resolution);
-    glyph.vert_bearing.y = (slot.metrics.vertBearingY >> 6) / cast(float, font.resolution);
-    glyph.hori_advance = (slot.metrics.horiAdvance >> 6) / cast(float, font.resolution);
-    glyph.vert_advance = (slot.metrics.vertAdvance >> 6) / cast(float, font.resolution);
+    glyph.size.x = slot.bitmap.width / cast(float, font.resolution);
+    glyph.size.y = slot.bitmap.rows / cast(float, font.resolution);
+    glyph.hori_bearing.x = FractToFloat(slot.metrics.horiBearingX) / cast(float, font.resolution);
+    glyph.hori_bearing.y = -FractToFloat(slot.metrics.horiBearingY) / cast(float, font.resolution);
+    glyph.vert_bearing.x = FractToFloat(slot.metrics.vertBearingX) / cast(float, font.resolution);
+    glyph.vert_bearing.y = FractToFloat(slot.metrics.vertBearingY) / cast(float, font.resolution);
+    glyph.hori_advance = FractToFloat(slot.metrics.horiAdvance) / cast(float, font.resolution);
+    glyph.vert_advance = FractToFloat(slot.metrics.vertAdvance) / cast(float, font.resolution);
 
     assert(slot.bitmap.pixel_mode == xx FT_Pixel_Mode_.GRAY);
     bitmap_width := slot.bitmap.width;
@@ -206,9 +217,64 @@ LoadGlyph :: (font : *Font, codepoint : u32, ft_face : FT_Face, packer : *RectPa
     BlitGlyph(packer, slot.bitmap.buffer, bitmap_x, bitmap_y, bitmap_width, bitmap_height, bitmap_pitch);
 
     glyph.uv_rect = .{
-        bitmap_x / cast(float, packer.width), (bitmap_y + bitmap_height) / cast(float, packer.height),
-        bitmap_width / cast(float, packer.width), -(bitmap_height / cast(float, packer.height)),
+        bitmap_x / cast(float, packer.width), bitmap_y / cast(float, packer.height),
+        bitmap_width / cast(float, packer.width), bitmap_height / cast(float, packer.height),
     };
+    glyph.uv_rect.zw += glyph.uv_rect.xy;
 
     return table_add(*font.glyph_map, codepoint, glyph);
+}
+
+#scope_export
+
+TextDrawing :: struct {
+    font : *Font;
+    position : Vec2f;
+    size : float;
+    text : string;
+}
+
+DrawText :: (font : *Font, position : Vec2f, size : float, text : string) {
+    if !font {
+        return;
+    }
+
+    array_add(*context.omg.texts_to_draw, .{font, position, size, text});
+}
+
+TextGlyphIterator :: struct {
+    font : *Font;
+    text : string;
+    size : float;
+    pen : Vec2f;
+    width : float;
+}
+
+for_expansion :: (iter : *TextGlyphIterator, body : Code, flags : For_Flags) #expand {
+    iter.pen.y = iter.font.ascent * iter.size;
+
+    for codepoint, `it_index : iter.text {
+        if codepoint == {
+        case #char "\n";
+            iter.width = max(iter.width, iter.pen.x);
+            iter.pen.x = 0;
+            iter.pen.y += (iter.font.ascent - iter.font.descent) * iter.size;
+
+        case #char "\t";
+            iter.pen.x = SnapUp(iter.pen.x + iter.font.space_advance * iter.size, iter.font.space_advance * 4 * iter.size);
+            iter.width = max(iter.width, iter.pen.x);
+
+        case;
+            glyph := GetGlyph(iter.font, codepoint);
+            if !glyph {
+                continue;
+            }
+
+            `it := glyph;
+            #insert body;
+
+            iter.pen.x += glyph.hori_advance * iter.size;
+            iter.width = max(iter.width, iter.pen.x);
+        }
+    }
 }

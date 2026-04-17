@@ -21,6 +21,10 @@ Context :: struct {
     windows : *Window;
 
     fonts : [..]*Font;
+    texts_to_draw : [..]TextDrawing;
+
+    shapes_to_draw : [..]Drawing;
+    default_effect := Effect.{kind=.SolidColor, solid_color=.{color=.{1,1,1,1}}};
 }
 
 Window :: struct {

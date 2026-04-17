@@ -30,7 +30,13 @@ ShaderEffect :: struct {
     params1 : [4]float;
 }
 
+ShaderGlyph :: struct {
+    bounds : Vec4f;
+    uvs : Vec4f;
+}
+
 g_shape_shader : GLuint;
+g_text_shader : GLuint;
 g_dummy_vao : GLuint;
 
 g_num_frames_in_flight : int;
@@ -132,6 +138,11 @@ InitGL :: (num_frames_in_flight : int = 2, shape_buffer_size : int = Default_Sha
 
     g_shape_shader = LoadShader("sd_shape.vert.glsl", "sd_shape.frag.glsl");
     if !g_shape_shader {
+        return false;
+    }
+
+    g_text_shader = LoadShader("text.vert.glsl", "text.frag.glsl");
+    if !g_text_shader {
         return false;
     }
 
@@ -276,7 +287,8 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
     }
 
     defer g_frame_in_flight = (g_frame_in_flight + 1) % g_num_frames_in_flight;
-    defer g_shapes_to_draw.count = 0;
+    defer context.omg.shapes_to_draw.count = 0;
+    defer context.omg.texts_to_draw.count = 0;
 
     instances_buffer : [..]ShaderSDInstance;
     defer array_free(instances_buffer);
@@ -284,8 +296,10 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
     defer array_free(shapes_buffer);
     effects_buffer : [..]ShaderEffect;
     defer array_free(effects_buffer);
+    glyphs_buffer : [..]ShaderGlyph;
+    defer array_free(glyphs_buffer);
 
-    for g_shapes_to_draw {
+    for context.omg.shapes_to_draw {
         instance := array_add(*instances_buffer);
         instance.position = it.position;
         instance.bounds = GetBounds(it.shape);
@@ -337,6 +351,20 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
         instance.bounds = extended_bounds;
     }
 
+    for text : context.omg.texts_to_draw {
+        iter : TextGlyphIterator;
+        iter.font = text.font;
+        iter.size = text.size;
+        iter.text = text.text;
+        for iter {
+            glyph : ShaderGlyph;
+            glyph.bounds.xy = text.position + iter.pen + it.hori_bearing * iter.size;
+            glyph.bounds.zw = glyph.bounds.xy + it.size * iter.size;
+            glyph.uvs = it.uv_rect;
+            array_add(*glyphs_buffer, glyph);
+        }
+    }
+
     instances_offset := 0;
     instances_size := instances_buffer.count * size_of(ShaderSDInstance);
 
@@ -346,7 +374,10 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
     effects_offset := align_forward(shapes_offset + shapes_size, g_storage_buffer_offset_alignment);
     effects_size := effects_buffer.count * size_of(ShaderEffect);
 
-    total_size := effects_offset + effects_size;
+    glyphs_offset := align_forward(effects_offset + effects_size, g_storage_buffer_offset_alignment);
+    glyphs_size := glyphs_buffer.count * size_of(ShaderGlyph);
+
+    total_size := glyphs_offset + glyphs_size;
 
     buffer_handle := g_shape_buffer_handles[g_frame_in_flight];
     buffer_ptr := g_shape_buffer_ptrs[g_frame_in_flight];
@@ -358,13 +389,7 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
     memcpy(buffer_ptr + instances_offset, instances_buffer.data, instances_size);
     memcpy(buffer_ptr + shapes_offset, shapes_buffer.data, shapes_size);
     memcpy(buffer_ptr + effects_offset, effects_buffer.data, effects_size);
-
-    glUseProgram(g_shape_shader);
-
-    u_viewport_size := glGetUniformLocation(g_shape_shader, "u_viewport_size");
-    if u_viewport_size >= 0 {
-        glUniform2f(u_viewport_size, xx viewport_w, xx viewport_h);
-    }
+    memcpy(buffer_ptr + glyphs_offset, glyphs_buffer.data, glyphs_size);
 
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
@@ -372,11 +397,34 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glBlendEquation(GL_FUNC_ADD);
 
-    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 0, buffer_handle, xx instances_offset, xx instances_size);
-    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 1, buffer_handle, xx shapes_offset, xx shapes_size);
-    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 2, buffer_handle, xx effects_offset, xx effects_size);
-
     glBindVertexArray(g_dummy_vao);
 
-    glDrawArraysInstanced(GL_TRIANGLES, 0, 6, xx instances_buffer.count);
+    if instances_buffer.count > 0 {
+        glUseProgram(g_shape_shader);
+
+        u_viewport_size := glGetUniformLocation(g_shape_shader, "u_viewport_size");
+        if u_viewport_size >= 0 {
+            glUniform2f(u_viewport_size, xx viewport_w, xx viewport_h);
+        }
+
+        glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 0, buffer_handle, xx instances_offset, xx instances_size);
+        glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 1, buffer_handle, xx shapes_offset, xx shapes_size);
+        glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 2, buffer_handle, xx effects_offset, xx effects_size);
+
+        glDrawArraysInstanced(GL_TRIANGLES, 0, 6, xx instances_buffer.count);
+    }
+
+    if glyphs_buffer.count > 0 {
+        glUseProgram(g_text_shader);
+
+        u_viewport_size := glGetUniformLocation(g_text_shader, "u_viewport_size");
+        if u_viewport_size >= 0 {
+            glUniform2f(u_viewport_size, xx viewport_w, xx viewport_h);
+        }
+
+        glBindTextureUnit(0, context.omg.fonts[0].texture);
+        glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 0, buffer_handle, xx glyphs_offset, xx glyphs_size);
+
+        glDrawArraysInstanced(GL_TRIANGLES, 0, 6, xx glyphs_buffer.count);
+    }
 }

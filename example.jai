@@ -47,6 +47,9 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
 
     d = OMG.GetNode(a, "e");
     OMG.SetSize(d, OMG.SizePx(25), OMG.SizePx(25));
+
+    font := OMG.GetFont("Roboto-Regular");
+    OMG.DrawText(font, .{100, 100}, (cos(time) + 2) * 50, "Hello Sailor!\nWhat a lovely day");
 }
 
 main :: () {

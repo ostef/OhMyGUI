@@ -177,3 +177,23 @@ TransformPoint :: inline (p : Vec2f, t : Transform2D) -> Vec2f {
         t.c * p.x + t.d * p.y + t.ty,
     };
 }
+
+Round :: inline (value : float) -> float {
+    if value < 0 {
+        return cast(float, cast(int, value - 0.5));
+    }
+
+    return cast(float, cast(int, value + 0.5));
+}
+
+SnapDown :: inline (value : float, grid_size : float) -> float {
+    return floor(value / grid_size) * grid_size;
+}
+
+Snap :: (value : float, grid_size : float) -> float {
+    return Round(value / grid_size) * grid_size;
+}
+
+SnapUp :: (value : float, grid_size : float) -> float {
+    return ceil(value / grid_size) * grid_size;
+}

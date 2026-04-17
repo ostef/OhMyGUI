@@ -8,16 +8,13 @@ Drawing :: struct {
     should_override_default_effect : bool;
 }
 
-g_shapes_to_draw : [..]Drawing;
-g_default_effect := Effect.{kind=.SolidColor, solid_color=.{color=.{1,1,1,1}}};
+DrawShape :: (shape : *SDShape, position : Vec2f = .{}) -> *Drawing {
+    array_add(*context.omg.shapes_to_draw, .{shape=shape, position=position});
 
-DrawShape :: inline (shape : *SDShape, position : Vec2f = .{}) -> *Drawing {
-    array_add(*g_shapes_to_draw, .{shape=shape, position=position});
-
-    drawing := *g_shapes_to_draw[g_shapes_to_draw.count - 1];
+    drawing := *context.omg.shapes_to_draw[context.omg.shapes_to_draw.count - 1];
     drawing.effects.allocator = temp;
 
-    array_add(*drawing.effects, g_default_effect);
+    array_add(*drawing.effects, context.omg.default_effect);
     drawing.should_override_default_effect = true;
 
     return drawing;
