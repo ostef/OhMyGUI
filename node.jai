@@ -161,6 +161,10 @@ GetNode :: (window : *SDL_Window) -> *Node {
     return GetNode(w);
 }
 
+GetNode :: inline (parent : *Node, str_id : string) -> *Node {
+    return GetNode(parent, GetID(str_id));
+}
+
 GetNode :: (parent : *Node, id : ID) -> *Node {
     node : *Node;
     if parent {

@@ -105,15 +105,6 @@ LayoutNodes :: (root : *Node) {
     root.rect.zw = root.size;
 
     LayoutPosition(root);
-
-    A :: (node : *Node) {
-        print("%: %\n", node.id, node.size);
-        for :Children node {
-            A(it);
-        }
-    }
-
-    A(root);
 }
 
 LayoutFixedAndFitSizing :: (node : *Node) {

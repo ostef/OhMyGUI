@@ -22,30 +22,30 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
     }
 
     if g_show_node {
-        a := OMG.GetNode(root, OMG.GetID("a"));
+        a := OMG.GetNode(root, "a");
         OMG.SetSize(a, OMG.SizePx(100), OMG.SizePx(100));
     }
 
-    a := OMG.GetNode(root, OMG.GetID("b"));
+    a := OMG.GetNode(root, "b");
     OMG.SetSize(a, OMG.SizeFillParent(0.5), OMG.SizeFillParent(0.5));
     OMG.SetMinMaxWidth(a, 128, 256);
 
     if !g_show_node {
-        a := OMG.GetNode(root, OMG.GetID("a"));
+        a := OMG.GetNode(root, "a");
         OMG.SetSize(a, OMG.SizePx(100), OMG.SizePx(100));
     }
 
-    a = OMG.GetNode(root, OMG.GetID("c"));
+    a = OMG.GetNode(root, "c");
     OMG.SetSize(a, OMG.SizeFillParent(1), OMG.SizeFitChildren());
     OMG.SetLayout(a, .TopToBottom);
 
-    e := OMG.GetNode(root, OMG.GetID("AA"));
+    e := OMG.GetNode(root, "AA");
     OMG.SetSize(e, OMG.SizeFillParent(1), OMG.SizePx(100));
 
-    d := OMG.GetNode(a, OMG.GetID("d"));
+    d := OMG.GetNode(a, "d");
     OMG.SetSize(d, OMG.SizePx(25), OMG.SizePx(25));
 
-    d = OMG.GetNode(a, OMG.GetID("e"));
+    d = OMG.GetNode(a, "e");
     OMG.SetSize(d, OMG.SizePx(25), OMG.SizePx(25));
 }
 
@@ -70,6 +70,9 @@ main :: () {
         exit(1);
     }
     defer OMG.TerminateGL();
+
+    font_config : OMG.FontConfig;
+    font := OMG.LoadFontFromFile("Roboto-Regular.ttf", font_config);
 
     program_start := current_time_monotonic();
     quit := false;

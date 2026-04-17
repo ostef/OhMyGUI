@@ -5,6 +5,7 @@
 #load "math.jai";
 #load "input.jai";
 #load "sd_shape.jai";
+#load "text.jai";
 #load "draw.jai";
 #load "gl.jai";
 #load "node.jai";
@@ -18,6 +19,8 @@ Context :: struct {
     input_last_frame : InputContext;
 
     windows : *Window;
+
+    fonts : [..]*Font;
 }
 
 Window :: struct {
