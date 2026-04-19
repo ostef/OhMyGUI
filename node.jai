@@ -9,6 +9,7 @@ NodeFlags :: enum_flags u32 {
 Node :: struct {
     id : ID;
     local_id : ID;
+    index : Bucket_Locator;
 
     parent : *Node;
 
@@ -93,12 +94,21 @@ PrevFrameChildren :: (node : *Node, body : Code, flags : For_Flags) #expand {
     }
 }
 
+AllocNode :: () -> *Node {
+    node, index := find_and_occupy_empty_slot(*context.omg.node_pool);
+    node.index = index;
+
+    return node;
+}
+
 FreeNode :: (node : *Node) {
     for :PrevFrameChildren node {
         FreeNode(it);
     }
 
-    free(node);
+    index := node.index;
+    node.index = .{};
+    bucket_array_remove(*context.omg.node_pool, index);
 }
 
 PushChild :: (parent : *Node, node : *Node) {
@@ -160,7 +170,7 @@ TouchNode :: (node : *Node) {
 
 GetNode :: (window : *Window) -> *Node {
     if !window.root_node {
-        window.root_node = New(Node);
+        window.root_node = AllocNode();
         window.root_node.local_id = GetID(cast(u64, window), "Root");
         window.root_node.id = window.root_node.local_id;
     }
@@ -201,7 +211,7 @@ GetNode :: (parent : *Node, id : ID) -> *Node {
     }
 
     if !node {
-        node = New(Node);
+        node = AllocNode();
         node.parent = parent;
         node.local_id = id;
         node.id = GetID(parent.id, id);

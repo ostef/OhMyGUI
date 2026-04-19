@@ -1,6 +1,7 @@
 #import "Basic";
 #import "Math";
 #import "SDL";
+#import "Bucket_Array";
 
 #load "math.jai";
 #load "input.jai";
@@ -20,6 +21,7 @@ Context :: struct {
 
     windows : *Window;
     fonts : *Font;
+    node_pool : Bucket_Array(Node, 1000);
 
     texts_to_draw : [..]TextDrawing;
 
@@ -91,6 +93,7 @@ Terminate :: () {
         DestroyFont(context.omg.fonts);
     }
 
+    bucket_array_reset(*context.omg.node_pool);
     array_free(context.omg.texts_to_draw);
     array_free(context.omg.shapes_to_draw);
 
