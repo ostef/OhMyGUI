@@ -2,7 +2,7 @@
 
 ID :: u64;
 
-NodeFlags :: enum_flags u32 {
+NodeFlags :: enum_flags u8 {
     TextNode;
 }
 
@@ -13,13 +13,15 @@ Node :: struct {
 
     parent : *Node;
 
+    last_used_on_frame : u64;
+
     // Computed during the layout phase at the end of the frame
     using layout : struct {
         first_child : *Node;
         last_child : *Node; // Reset when declaring the node
         next_sibling : *Node;
         prev_sibling : *Node;
-        num_children : int;
+        num_children : s32;
 
         size : Vec2f;
         children_size : Vec2f;
@@ -29,23 +31,21 @@ Node :: struct {
 
     layout_last_frame : type_of(layout);
 
-    last_used_on_frame : u64;
-
     // User controlled properties
     using properties : struct {
-        flags : NodeFlags;
+        font : *Font;
+        text : string;
+        text_size : float;
+
         offset : Vec2f; // If parent.child_layout_mode is None
         desired_size := Size2D.{.{kind=.FitChildren}, .{kind=.FitChildren}};
         min_size := Vec2f.{-FLOAT32_INFINITY, -FLOAT32_INFINITY};
         max_size := Vec2f.{ FLOAT32_INFINITY,  FLOAT32_INFINITY};
         padding : Vec2f;
-        child_layout_mode := LayoutMode.LeftToRight;
         child_gap : Vec2f; // If child_layout_mode is not None
         child_align : Vec2f; // If child_layout_mode is not None
-
-        font : *Font;
-        text : string;
-        text_size : float;
+        child_layout_mode := LayoutMode.LeftToRight;
+        flags : NodeFlags;
     };
 }
 
