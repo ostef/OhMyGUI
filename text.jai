@@ -238,7 +238,7 @@ TextDrawing :: struct {
     text : string;
 }
 
-DrawText :: (font : *Font, position : Vec2f, size : float, text : string, color : Vec4f) {
+DrawText :: (font : *Font, position : Vec2f, size : float, text : string, color : Vec4f, clip_shape : *SDShape = null) {
     if !font || color.w == 0 {
         return;
     }
@@ -253,6 +253,7 @@ DrawText :: (font : *Font, position : Vec2f, size : float, text : string, color 
 
         s := SDTexture(font.texture, it.size * iter.size, it.uv_rect, .{0.5, -0.5});
         d := DrawShape(s, glyph_position);
+        Clip(d, clip_shape);
         SolidColor(d, color);
     }
 }

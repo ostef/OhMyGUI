@@ -150,24 +150,26 @@ RemoveUndeclaredNodes :: (node : *Node) {
     }
 }
 
-DrawNodes :: (node : *Node) {
+DrawNodes :: (node : *Node, clip_shape : *SDShape = null) {
     position := (node.rect.xy + node.rect.zw) * 0.5;
-    size     :=  node.rect.zw - node.rect.xy;
 
     if !(node.flags & .TextNode) {
-        d := DrawShape(Box(size, 6), position);
+        d := DrawShape(Box(node.size, 6), position);
         SolidColor(d, .{1,1,1,1});
         StrokeColor(d, .{0,0,0,1}, 1);
-    } else {
-        // d := DrawShape(Box(size), position);
-        // StrokeColor(d, .{1,0,0,1}, 1.5);
+        Clip(d, clip_shape);
     }
 
-    for :Children node {
-        DrawNodes(it);
+    if node.num_children > 0 {
+        my_clip := Move(Box(node.size - node.padding * 2), position);
+        clip_shape = ifx clip_shape then Inter(clip_shape, my_clip) else my_clip;
+
+        for :Children node {
+            DrawNodes(it, clip_shape);
+        }
     }
 
     if node.flags & .TextNode && node.text {
-        DrawText(node.font, node.rect.xy, node.text_size, node.text, .{0,0,0,1});
+        DrawText(node.font, node.rect.xy, node.text_size, node.text, .{0,0,0,1}, clip_shape);
     }
 }

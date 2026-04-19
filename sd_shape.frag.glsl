@@ -49,6 +49,8 @@ layout(location=1) in flat uint in_first_shape_index;
 layout(location=2) in flat uint in_num_shapes;
 layout(location=3) in flat uint in_first_effect_index;
 layout(location=4) in flat uint in_num_effects;
+layout(location=5) in flat uint in_first_clip_shape_index;
+layout(location=6) in flat uint in_num_clip_shapes;
 
 layout(location=0) out vec4 out_color;
 
@@ -124,12 +126,12 @@ float InverseLerp(float a, float b, float t) {
     return (t - a) / (b - a);
 }
 
-float EvalSDF(vec2 p) {
+float EvalSDF(vec2 p, uint first_shape_index, uint num_shapes) {
     float values[Eval_Stack_Size];
     uint value_index = 0;
 
-    uint shape_index = in_first_shape_index;
-    uint last_shape = in_first_shape_index + in_num_shapes;
+    uint shape_index = first_shape_index;
+    uint last_shape = first_shape_index + num_shapes;
     while (shape_index < last_shape && value_index < Eval_Stack_Size) {
         Shape shape = u_shapes[shape_index];
         shape_index += 1;
@@ -270,7 +272,7 @@ float EvalSDF(vec2 p) {
     }
 
     if (value_index == 0) {
-        return 1.0e9;
+        return 0;
     }
 
     return values[value_index - 1];
@@ -321,7 +323,7 @@ vec4 EvalEffects(vec2 p, float d) {
 
             float shadow;
             if (offset != vec2(0)) {
-                shadow = EvalSDF(p - offset);
+                shadow = EvalSDF(p - offset, in_first_shape_index, in_num_shapes);
             } else {
                 shadow = d;
             }
@@ -338,7 +340,7 @@ vec4 EvalEffects(vec2 p, float d) {
 
             float shadow;
             if (offset != vec2(0)) {
-                shadow = EvalSDF(p - offset);
+                shadow = EvalSDF(p - offset, in_first_shape_index, in_num_shapes);
             } else {
                 shadow = d;
             }
@@ -356,9 +358,15 @@ vec4 EvalEffects(vec2 p, float d) {
 void main() {
     vec2 p = gl_FragCoord.xy;
     p.y = u_viewport_size.y - p.y;
-    p -= in_position;
 
-    float d = EvalSDF(p);
+    float d = EvalSDF(p - in_position, in_first_shape_index, in_num_shapes);
 
-    out_color = EvalEffects(p, d);
+    out_color = EvalEffects(p - in_position, d);
+
+    float clip = EvalSDF(p, in_first_clip_shape_index, in_num_clip_shapes);
+    float clip_aa = length(vec2(dFdx(clip), dFdy(clip)));
+    float clip_a = 1 - smoothstep(-clip_aa, clip_aa, clip);
+    clip_a = clamp(clip_a, 0, 1);
+
+    out_color.a *= clip_a;
 }

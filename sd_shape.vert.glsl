@@ -7,6 +7,8 @@ struct Instance {
     uint num_shapes;
     uint first_effect_index;
     uint num_effects;
+    uint first_clip_shape_index;
+    uint num_clip_shapes;
 };
 
 layout(binding=0, std430) readonly buffer InstanceData {
@@ -19,6 +21,8 @@ layout(location=1) out flat uint out_first_shape_index;
 layout(location=2) out flat uint out_num_shapes;
 layout(location=3) out flat uint out_first_effect_index;
 layout(location=4) out flat uint out_num_effects;
+layout(location=5) out flat uint out_first_clip_shape_index;
+layout(location=6) out flat uint out_num_clip_shapes;
 
 void main() {
     Instance inst = u_instances[gl_InstanceID];
@@ -27,6 +31,8 @@ void main() {
     out_num_shapes = inst.num_shapes;
     out_first_effect_index = inst.first_effect_index;
     out_num_effects = inst.num_effects;
+    out_first_clip_shape_index = inst.first_clip_shape_index;
+    out_num_clip_shapes = inst.num_clip_shapes;
 
     const vec2 positions[] = vec2[](
         vec2(inst.bounds.z, inst.bounds.w), vec2(inst.bounds.x, inst.bounds.w), vec2(inst.bounds.x, inst.bounds.y),

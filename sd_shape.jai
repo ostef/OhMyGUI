@@ -100,11 +100,6 @@ SDShape :: struct {
     }
 }
 
-SDShapeToDraw :: struct {
-    position : Vec2f;
-    shape : *SDShape;
-}
-
 Circle :: inline (radius : float) -> *SDShape {
     shape := New(SDShape ,, temp);
     shape.kind = .CirclePrimitive;

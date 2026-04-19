@@ -6,6 +6,7 @@ TextureHandle :: u64;
 Drawing :: struct {
     position : Vec2f;
     shape : *SDShape;
+    clip_shape : *SDShape;
     effects : [..]Effect;
     should_override_default_effect : bool;
 }
@@ -20,6 +21,10 @@ DrawShape :: (shape : *SDShape, position : Vec2f = .{}) -> *Drawing {
     drawing.should_override_default_effect = true;
 
     return drawing;
+}
+
+Clip :: inline (drawing : *Drawing, shape : *SDShape) {
+    drawing.clip_shape = shape;
 }
 
 EffectKind :: enum u8 {

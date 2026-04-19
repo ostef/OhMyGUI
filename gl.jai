@@ -14,7 +14,8 @@ ShaderSDInstance :: struct {
     num_shapes : u32;
     first_effect_index : u32;
     num_effects : u32;
-    padding : [2]u32;
+    first_clip_shape_index : u32;
+    num_clip_shapes : u32;
 }
 
 ShaderSDShape :: struct {
@@ -303,6 +304,10 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
         instance.num_shapes = FlattenShapes(it.shape, *shapes_buffer);
         instance.first_effect_index = xx effects_buffer.count;
         instance.num_effects = xx it.effects.count;
+        if it.clip_shape {
+            instance.first_clip_shape_index = xx shapes_buffer.count;
+            instance.num_clip_shapes = FlattenShapes(it.clip_shape, *shapes_buffer);
+        }
 
         extended_bounds := instance.bounds;
         for * fx : it.effects {
