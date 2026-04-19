@@ -46,7 +46,7 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
     OMG.SetSize(d, OMG.SizeFit(), OMG.SizeFit());
 
     t := OMG.GetNode(d, "text");
-    OMG.SetText(t, OMG.GetFont("Roboto-Regular"), 16, "Hello Sailor!\nWhat a lovely day");
+    OMG.SetText(t, OMG.GetFont("Roboto-Regular"), (cos(time) + 2) * 16, "Hello Sailor!\nWhat a lovely day");
 
     t = OMG.GetNode(d, "text2");
     OMG.SetText(t, OMG.GetFont("Roboto-Regular"), 16, "Some more text\n\n\n\nMany newlines");
