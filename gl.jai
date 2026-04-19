@@ -288,7 +288,6 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
 
     defer g_frame_in_flight = (g_frame_in_flight + 1) % g_num_frames_in_flight;
     defer context.omg.shapes_to_draw.count = 0;
-    defer context.omg.texts_to_draw.count = 0;
 
     DrawCall :: struct {
         texture : GLuint;
@@ -404,7 +403,8 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
     glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    // We already multiply RGB with the alpha in the shaders, so use ONE for the RGB factor
+    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
     glBlendEquation(GL_FUNC_ADD);
 
     glBindVertexArray(g_dummy_vao);
