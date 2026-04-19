@@ -107,7 +107,7 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
                     entity_inspector := Panel(right_side, "entity_inspector", "Entity Inspector");
 
                     some_text := OMG.GetNode(OMG.GetNode(entity_outliner, "title_bar"));
-                    OMG.SetText(some_text, OMG.GetFont("JetBrainsMono-Regular"), 16, "Some text with another font");
+                    OMG.SetText(some_text, OMG.GetFont("JetBrainsMono-Regular"), 14, "Some text with another font");
                 }
             }
         }

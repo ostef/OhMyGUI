@@ -166,6 +166,9 @@ TouchNode :: (node : *Node) {
     node.last_used_on_frame = context.omg.frame_index;
     node.properties = .{};
     node.layout = .{};
+    if node.parent {
+        PushChild(node.parent, node);
+    }
 }
 
 GetNode :: (window : *Window) -> *Node {
@@ -200,12 +203,23 @@ GetNode :: inline (parent : *Node, str_id : string) -> *Node {
 GetNode :: (parent : *Node, id : ID) -> *Node {
     assert(id != 0);
 
+    was_added_this_frame := false;
     node : *Node;
     if parent {
         for :PrevFrameChildren parent {
             if it.local_id == id {
                 node = it;
                 break;
+            }
+        }
+
+        if !node {
+            for :Children parent {
+                if it.local_id == id {
+                    was_added_this_frame = true;
+                    node = it;
+                    break;
+                }
             }
         }
     }
@@ -218,7 +232,6 @@ GetNode :: (parent : *Node, id : ID) -> *Node {
     }
 
     TouchNode(node);
-    PushChild(parent, node);
 
     return node;
 }
