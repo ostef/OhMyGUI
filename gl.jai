@@ -190,7 +190,7 @@ TerminateGL :: () {
 }
 
 RenderGL :: (viewport_w : u32, viewport_h : u32) {
-    FlattenShapes :: (shape : *SDShape, buffer : *[..]ShaderSDShape) -> u32 {
+    FlattenShapes :: (shape : *SDShape, buffer : *[..]ShaderSDShape, textures : *[..]GLuint) -> u32 {
         num_shapes : u32;
 
         shshape : ShaderSDShape;
@@ -217,6 +217,7 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
             shshape.params[5] = shape.triangle_prim.p2.y;
 
         case .TexturePrimitive;
+            array_add_if_unique(textures, xx shape.texture_prim.texture);
             shshape.params[0] = shape.texture_prim.uvs.x;
             shshape.params[1] = shape.texture_prim.uvs.y;
             shshape.params[2] = shape.texture_prim.uvs.z;
@@ -235,23 +236,23 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
         case .UnionOperation; #through;
         case .SubtractionOperation; #through;
         case .IntersectionOperation;
-            num_shapes += FlattenShapes(shape.union_op.shape_a, buffer);
-            num_shapes += FlattenShapes(shape.union_op.shape_b, buffer);
+            num_shapes += FlattenShapes(shape.union_op.shape_a, buffer, textures);
+            num_shapes += FlattenShapes(shape.union_op.shape_b, buffer, textures);
 
         case .RoundOperation;
-            num_shapes += FlattenShapes(shape.round_op.shape, buffer);
+            num_shapes += FlattenShapes(shape.round_op.shape, buffer, textures);
 
             shshape.params[0] = shape.round_op.radius;
 
         case .OnionOperation;
-            num_shapes += FlattenShapes(shape.onion_op.shape, buffer);
+            num_shapes += FlattenShapes(shape.onion_op.shape, buffer, textures);
 
             shshape.params[0] = shape.onion_op.radius;
 
         case .MorphOperation;
             shshape.params[0] = shape.morph_op.t;
-            num_shapes += FlattenShapes(shape.morph_op.shape_a, buffer);
-            num_shapes += FlattenShapes(shape.morph_op.shape_b, buffer);
+            num_shapes += FlattenShapes(shape.morph_op.shape_a, buffer, textures);
+            num_shapes += FlattenShapes(shape.morph_op.shape_b, buffer, textures);
 
         case .TransformOperation;
             // For transform operations, we push 1 transformation to the coordinate
@@ -268,7 +269,7 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
             array_add(buffer, shshape);
             num_shapes += 1;
 
-            num_shapes += FlattenShapes(shape.transform_op.shape, buffer);
+            num_shapes += FlattenShapes(shape.transform_op.shape, buffer, textures);
 
             t = shape.transform_op.transform;
             shshape.params[0] = t.a;
@@ -289,24 +290,48 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
     defer context.omg.shapes_to_draw.count = 0;
     defer context.omg.texts_to_draw.count = 0;
 
+    DrawCall :: struct {
+        texture : GLuint;
+        base_instance : u32;
+        num_instances : u32;
+    }
+
+    push_allocator(temp);
+
     instances_buffer : [..]ShaderSDInstance;
-    defer array_free(instances_buffer);
     shapes_buffer : [..]ShaderSDShape;
-    defer array_free(shapes_buffer);
     effects_buffer : [..]ShaderEffect;
-    defer array_free(effects_buffer);
+    draw_calls : [..]DrawCall;
+    textures : [..]GLuint;
 
     for context.omg.shapes_to_draw {
-        instance := array_add(*instances_buffer);
+        last_call := ifx draw_calls.count > 0 then *draw_calls[draw_calls.count - 1];
+        textures.count = 0;
+
+        instance : ShaderSDInstance;
         instance.position = it.position;
         instance.bounds = GetBounds(it.shape);
         instance.first_shape_index = xx shapes_buffer.count;
-        instance.num_shapes = FlattenShapes(it.shape, *shapes_buffer);
+        instance.num_shapes = FlattenShapes(it.shape, *shapes_buffer, *textures);
         instance.first_effect_index = xx effects_buffer.count;
         instance.num_effects = xx it.effects.count;
         if it.clip_shape {
             instance.first_clip_shape_index = xx shapes_buffer.count;
-            instance.num_clip_shapes = FlattenShapes(it.clip_shape, *shapes_buffer);
+            instance.num_clip_shapes = FlattenShapes(it.clip_shape, *shapes_buffer, *textures);
+        }
+
+        if textures.count > 1 {
+            log_error("Too many textures on shape");
+            continue;
+        }
+
+        if !last_call || (last_call.texture != 0 && textures.count > 0 && textures[0] != last_call.texture)  {
+            last_call = array_add(*draw_calls);
+            last_call.base_instance = xx instances_buffer.count;
+        }
+
+        if textures.count > 0 {
+            last_call.texture = textures[0];
         }
 
         extended_bounds := instance.bounds;
@@ -350,6 +375,8 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
         }
 
         instance.bounds = extended_bounds;
+        array_add(*instances_buffer, instance);
+        last_call.num_instances += 1;
     }
 
     instances_offset := 0;
@@ -390,11 +417,14 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
             glUniform2f(u_viewport_size, xx viewport_w, xx viewport_h);
         }
 
-        glBindTextureUnit(0, context.omg.fonts.texture);
         glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 0, buffer_handle, xx instances_offset, xx instances_size);
         glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 1, buffer_handle, xx shapes_offset, xx shapes_size);
         glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 2, buffer_handle, xx effects_offset, xx effects_size);
 
-        glDrawArraysInstanced(GL_TRIANGLES, 0, 6, xx instances_buffer.count);
+        for draw_calls {
+            glBindTextureUnit(0, it.texture);
+
+            glDrawArraysInstancedBaseInstance(GL_TRIANGLES, 0, 6, it.num_instances, it.base_instance);
+        }
     }
 }

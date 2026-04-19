@@ -25,7 +25,7 @@ layout(location=5) out flat uint out_first_clip_shape_index;
 layout(location=6) out flat uint out_num_clip_shapes;
 
 void main() {
-    Instance inst = u_instances[gl_InstanceID];
+    Instance inst = u_instances[gl_InstanceID + gl_BaseInstance];
     out_position = inst.position;
     out_first_shape_index = inst.first_shape_index;
     out_num_shapes = inst.num_shapes;
