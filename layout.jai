@@ -234,6 +234,4 @@ LayoutPosition :: (node : *Node) {
 
         LayoutPosition(it);
     }
-
-    node.prev_frame_layout = node.layout;
 }

@@ -26,7 +26,7 @@ Node :: struct {
         rect : Vec4f;
     };
 
-    prev_frame_layout : type_of(layout);
+    layout_last_frame : type_of(layout);
 
     last_used_on_frame : u64;
 
@@ -73,18 +73,18 @@ Children :: (node : *Node, body : Code, flags : For_Flags) #expand {
 
 PrevFrameChildren :: (node : *Node, body : Code, flags : For_Flags) #expand {
     #if flags & .REVERSE {
-        `it := node.prev_frame_layout.last_child;
-        `it_index := node.prev_frame_layout.num_children - 1;
+        `it := node.layout_last_frame.last_child;
+        `it_index := node.layout_last_frame.num_children - 1;
     } else {
-        `it := node.prev_frame_layout.first_child;
+        `it := node.layout_last_frame.first_child;
         `it_index := 0;
     }
 
     while it {
         #if flags & .REVERSE {
-            next := it.prev_frame_layout.prev_sibling;
+            next := it.layout_last_frame.prev_sibling;
         } else {
-            next := it.prev_frame_layout.next_sibling;
+            next := it.layout_last_frame.next_sibling;
         }
 
         defer it = next;
@@ -94,7 +94,7 @@ PrevFrameChildren :: (node : *Node, body : Code, flags : For_Flags) #expand {
 }
 
 FreeNode :: (node : *Node) {
-    for :Children node {
+    for :PrevFrameChildren node {
         FreeNode(it);
     }
 
@@ -120,46 +120,13 @@ PushChild :: (parent : *Node, node : *Node) {
     parent.num_children += 1;
 }
 
-PopChild :: (parent : *Node, node : *Node) {
-    assert(node.parent == parent);
-
-    if parent.first_child == node {
-        parent.first_child = node.next_sibling;
-    }
-
-    if parent.last_child == node {
-        parent.last_child = node.prev_sibling;
-    }
-
-    if node.prev_sibling {
-        node.prev_sibling.next_sibling = node.next_sibling;
-    }
-    if node.next_sibling {
-        node.next_sibling.next_sibling = node.prev_sibling;
-    }
-
-    node.prev_sibling = null;
-    node.next_sibling = null;
-}
-
 GetID :: inline (base : ID, id : ID) -> ID {
-    if !id {
-        return 0;
-    }
-    if !base {
-        return id;
-    }
-
     return fnv1a_hash(id, base);
 }
 
 GetID :: inline (base : ID, str : string) -> ID {
     if !str {
         return 0;
-    }
-
-    if !base {
-        return GetID(str);
     }
 
     return fnv1a_hash(str.data, str.count, h=base);
@@ -173,14 +140,20 @@ GetID :: inline (str : string) -> ID {
     return fnv1a_hash(str.data, str.count);
 }
 
+GetID :: inline (loc : Source_Code_Location) -> ID {
+    h := fnv1a_hash(loc.fully_pathed_filename.data, loc.fully_pathed_filename.count);
+    h = fnv1a_hash(cast,no_check(u64, loc.line_number), h=h);
+    h = fnv1a_hash(cast,no_check(u64, loc.character_number), h=h);
+
+    return h;
+}
+
 TouchNode :: (node : *Node) {
     if node.last_used_on_frame == context.omg.frame_index {
         return;
     }
 
     node.last_used_on_frame = context.omg.frame_index;
-    node.last_child = null;
-    node.num_children = 0;
     node.properties = .{};
     node.layout = .{};
 }
@@ -206,8 +179,8 @@ GetNode :: (window : *SDL_Window) -> *Node {
     return GetNode(w);
 }
 
-GetNode :: inline (parent : *Node) -> *Node {
-    return GetNode(parent, 0);
+GetNode :: inline (parent : *Node, location := #caller_location) -> *Node {
+    return GetNode(parent, GetID(location));
 }
 
 GetNode :: inline (parent : *Node, str_id : string) -> *Node {
@@ -215,8 +188,10 @@ GetNode :: inline (parent : *Node, str_id : string) -> *Node {
 }
 
 GetNode :: (parent : *Node, id : ID) -> *Node {
+    assert(id != 0);
+
     node : *Node;
-    if parent && id != 0 {
+    if parent {
         for :PrevFrameChildren parent {
             if it.local_id == id {
                 node = it;
@@ -232,8 +207,8 @@ GetNode :: (parent : *Node, id : ID) -> *Node {
         node.id = GetID(parent.id, id);
     }
 
-    PushChild(parent, node);
     TouchNode(node);
+    PushChild(parent, node);
 
     return node;
 }

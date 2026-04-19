@@ -82,7 +82,27 @@ Init :: () {
 }
 
 Terminate :: () {
+    window := context.omg.windows;
+    while window {
+        next := window.next;
+
+        FreeNode(window.root_node);
+        free(window);
+
+        window = next;
+    }
+
+    while context.omg.fonts.count > 0 {
+        DestroyFont(context.omg.fonts[0]);
+    }
+
+    array_free(context.omg.fonts);
+
+    array_free(context.omg.texts_to_draw);
+    array_free(context.omg.shapes_to_draw);
+
     free(context.omg);
+    context.omg = null;
 }
 
 HandleEvent :: (event : SDL_Event) {
@@ -125,8 +145,8 @@ Render :: () {
 
         SetSize(window.root_node, SizePx(xx w), SizePx(xx h));
 
-        RemoveUndeclaredNodes(window.root_node);
         LayoutNodes(window.root_node);
+        PostLayout(window.root_node);
         DrawNodes(window.root_node);
     }
 
@@ -135,19 +155,18 @@ Render :: () {
 
 #scope_file
 
-RemoveUndeclaredNodes :: (node : *Node) {
+PostLayout :: (node : *Node) {
     frame_index := context.omg.frame_index;
 
-    for :Children node {
+    for :PrevFrameChildren node {
         if it.last_used_on_frame != frame_index {
-            PopChild(node, it);
             FreeNode(it);
+        } else {
+            PostLayout(it);
         }
     }
 
-    for :Children node {
-        RemoveUndeclaredNodes(it);
-    }
+    node.layout_last_frame = node.layout;
 }
 
 DrawNodes :: (node : *Node, clip_shape : *SDShape = null) {

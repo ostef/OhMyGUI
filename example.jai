@@ -1,4 +1,6 @@
-#import "Basic";
+Memory_Debugger :: false;
+
+#import "Basic"()(MEMORY_DEBUGGER=Memory_Debugger);
 #import "Math";
 OMG :: #import,file "module.jai";
 using,only(.["*"]) OMG;
@@ -95,7 +97,7 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
                 OMG.SetHeight(content_browser, OMG.SizeFill(0.9));
             }
 
-            if content.prev_frame_layout.size.x > 500 {
+            if content.layout_last_frame.size.x > 500 {
                 right_side := OMG.GetNode(content, "right_side");
                 {
                     OMG.SetSize(right_side, OMG.SizePx(400), OMG.SizeFill());
@@ -110,6 +112,10 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
 }
 
 main :: () {
+    #if Memory_Debugger {
+        defer report_memory_leaks();
+    }
+
     window_flags := SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE;
     g_window = SDL_CreateWindow("Oh My GUI", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1600, 900, window_flags);
     defer SDL_DestroyWindow(g_window);

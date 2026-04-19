@@ -109,6 +109,20 @@ LoadFontFromFile :: (filename : string, config : FontConfig) -> *Font {
     return font;
 }
 
+DestroyFont :: (font : *Font) {
+    glDeleteTextures(1, *font.texture);
+
+    deinit(*font.glyph_map);
+
+    for context.omg.fonts {
+        if it == font {
+            remove it;
+        }
+    }
+
+    free(font);
+}
+
 GetFont :: (name : string) -> *Font {
     for context.omg.fonts {
         if it.name == name {
