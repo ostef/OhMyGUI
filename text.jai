@@ -252,8 +252,6 @@ TextGlyphIterator :: struct {
     size : float;
     pen : Vec2f;
     bounds : Vec2f;
-    width : float;
-    height : float;
 }
 
 Newline :: (iter : *TextGlyphIterator) {
