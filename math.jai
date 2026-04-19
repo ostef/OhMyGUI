@@ -186,6 +186,13 @@ Round :: inline (value : float) -> float {
     return cast(float, cast(int, value + 0.5));
 }
 
+Round :: inline (value : Vec2f) -> Vec2f {
+    return .{
+        ifx value.x < 0 then cast(float, cast(int, value.x - 0.5)) else cast(float, cast(int, value.x + 0.5)),
+        ifx value.y < 0 then cast(float, cast(int, value.y - 0.5)) else cast(float, cast(int, value.y + 0.5)),
+    };
+}
+
 SnapDown :: inline (value : float, grid_size : float) -> float {
     return floor(value / grid_size) * grid_size;
 }

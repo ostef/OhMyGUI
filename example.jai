@@ -93,6 +93,10 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
                 OMG.SetLayout(left_side, .TopToBottom);
 
                 main_viewport := Panel(left_side, "main_viewport", "Main Viewport");
+                the_quick := OMG.GetNode(main_viewport);
+                OMG.SetText(the_quick, font, (cos(time) + 2) * 10, "The quick brown fox jumps over the lazy dog!");
+                // OMG.SetText(the_quick, font, xx font.resolution, "The quick brown fox jumps over the lazy dog!");
+
                 content_browser := Panel(left_side, "content_browser", "Content Browser");
                 OMG.SetHeight(content_browser, OMG.SizeFill(0.9));
             }

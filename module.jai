@@ -23,8 +23,6 @@ Context :: struct {
     fonts : *Font;
     node_pool : Bucket_Array(Node, 1000);
 
-    texts_to_draw : [..]TextDrawing;
-
     shapes_to_draw : [..]Drawing;
     default_effect := Effect.{kind=.SolidColor, solid_color=.{color=.{1,1,1,1}}};
 }
@@ -94,7 +92,6 @@ Terminate :: () {
     }
 
     bucket_array_reset(*context.omg.node_pool);
-    array_free(context.omg.texts_to_draw);
     array_free(context.omg.shapes_to_draw);
 
     free(context.omg);
@@ -166,12 +163,15 @@ PostLayout :: (node : *Node) {
 }
 
 DrawNodes :: (node : *Node, clip_shape : *SDShape = null) {
+    Border :: Vec4f.{0,0,0,1};
+    Fill :: Vec4f.{1,1,1,1};
+
     position := (node.rect.xy + node.rect.zw) * 0.5;
 
     if !(node.flags & .TextNode) {
         d := DrawShape(Box(node.size, 6), position);
-        SolidColor(d, .{1,1,1,1});
-        StrokeColor(d, .{0,0,0,1}, 1);
+        SolidColor(d, Fill);
+        StrokeColor(d, Border, 1);
         Clip(d, clip_shape);
     }
 
@@ -185,6 +185,6 @@ DrawNodes :: (node : *Node, clip_shape : *SDShape = null) {
     }
 
     if node.flags & .TextNode && node.text {
-        DrawText(node.font, node.rect.xy, node.text_size, node.text, .{0,0,0,1}, clip_shape);
+        DrawText(node.font, node.rect.xy, node.text_size, node.text, Border, clip_shape);
     }
 }

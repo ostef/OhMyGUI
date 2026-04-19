@@ -1,8 +1,15 @@
-#import "freetype";
+#import,dir "freetype";
 #import "Hash_Table";
 #import "String";
 
 // https://freetype.org/freetype2/docs/glyphs/glyphs-3.html
+
+#scope_file
+
+FT_Property_Set :: (lib : FT_Library, module_name : *u8, property_name : *u8, value : *void) -> FT_Error #foreign freetype;
+FT_Property_Get :: (lib : FT_Library, module_name : *u8, property_name : *u8, value : *void) -> FT_Error #foreign freetype;
+
+#scope_export
 
 Font :: struct {
     prev : *Font;
@@ -14,6 +21,7 @@ Font :: struct {
     resolution : u32;
     ascent, descent : float;
     space_advance : float;
+    sdf_range : float;
     texture : GLuint;
 }
 
@@ -106,6 +114,12 @@ LoadFontFromFile :: (filename : string, config : FontConfig) -> *Font {
 
     glTextureParameteri(font.texture, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTextureParameteri(font.texture, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    spread : s32 = 2;
+    FT_Property_Set(g_ft_lib, "sdf", "spread", *spread);
+    FT_Property_Get(g_ft_lib, "sdf", "spread", *spread);
+
+    font.sdf_range = xx spread;
 
     font.next = context.omg.fonts;
     if font.next {
@@ -260,17 +274,12 @@ LoadGlyph :: (font : *Font, codepoint : u32, ft_face : FT_Face, packer : *RectPa
 
 #scope_export
 
-TextDrawing :: struct {
-    font : *Font;
-    position : Vec2f;
-    size : float;
-    text : string;
-}
-
 DrawText :: (font : *Font, position : Vec2f, size : float, text : string, color : Vec4f, clip_shape : *SDShape = null) {
     if !font || color.w == 0 {
         return;
     }
+
+    sdf_range := font.sdf_range * size / font.resolution;
 
     iter : TextGlyphIterator;
     iter.font = font;
@@ -280,8 +289,8 @@ DrawText :: (font : *Font, position : Vec2f, size : float, text : string, color 
         glyph_position := position + iter.pen + it.hori_bearing * iter.size;
         glyph_position += it.size * iter.size * 0.5;
 
-        s := SDTexture(font.texture, it.size * iter.size, it.uv_rect, .{0.5, -0.5});
-        d := DrawShape(s, glyph_position);
+        s := SDTexture(font.texture, it.size * iter.size, it.uv_rect, .{sdf_range, -sdf_range});
+        d := DrawShape(s, glyph_position + Vec2f.{0.5, 0.5});
         Clip(d, clip_shape);
         SolidColor(d, color);
     }
