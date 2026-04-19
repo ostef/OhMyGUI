@@ -11,6 +11,7 @@ struct Shape {
 #define Shape_CirclePrimitive 0
 #define Shape_BoxPrimitive 1
 #define Shape_TrianglePrimitive 2
+#define Shape_TexturePrimitive 3
 
 #define Shape_UnionOperation 200
 #define Shape_SmoothUnionOperation 201
@@ -27,7 +28,6 @@ struct Effect {
     uint kind;
     vec4 params0;
     vec4 params1;
-
 };
 
 #define Effect_SolidColor 0
@@ -42,6 +42,7 @@ layout(binding=2, std430) readonly buffer EffectData {
     Effect u_effects[];
 };
 uniform vec2 u_viewport_size;
+uniform sampler2D u_texture;
 
 layout(location=0) in vec2 in_position;
 layout(location=1) in flat uint in_first_shape_index;
@@ -119,6 +120,10 @@ float OpOnion(float a, float radius) {
     return abs(a) - radius;
 }
 
+float InverseLerp(float a, float b, float t) {
+    return (t - a) / (b - a);
+}
+
 float EvalSDF(vec2 p) {
     float values[Eval_Stack_Size];
     uint value_index = 0;
@@ -148,6 +153,24 @@ float EvalSDF(vec2 p) {
             vec2 p1 = shape.params0.zw;
             vec2 p2 = shape.params1.xy;
             values[value_index] = PrimTriangle(p, p0, p1, p2);
+            value_index += 1;
+        } break;
+
+        case Shape_TexturePrimitive: {
+            vec4 uvs = shape.params0;
+            vec2 size = shape.params1.xy;
+            vec2 dist_range = shape.params1.zw;
+            vec2 uv = vec2(
+                InverseLerp(-size.x * 0.5, size.x * 0.5, p.x),
+                InverseLerp(-size.y * 0.5, size.y * 0.5, p.y)
+            );
+            uv = clamp(uv, 0, 1);
+            uv = vec2(
+                mix(uvs.x, uvs.z, uv.x),
+                mix(uvs.y, uvs.w, uv.y)
+            );
+
+            values[value_index] = mix(dist_range.x, dist_range.y, texture(u_texture, uv).x);
             value_index += 1;
         } break;
 

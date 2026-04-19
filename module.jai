@@ -168,6 +168,6 @@ DrawNodes :: (node : *Node) {
     }
 
     if node.flags & .TextNode && node.text {
-        DrawText(node.font, node.rect.xy, node.text_size, node.text);
+        DrawText(node.font, node.rect.xy, node.text_size, node.text, .{0,0,0,1});
     }
 }

@@ -238,12 +238,23 @@ TextDrawing :: struct {
     text : string;
 }
 
-DrawText :: (font : *Font, position : Vec2f, size : float, text : string) {
-    if !font {
+DrawText :: (font : *Font, position : Vec2f, size : float, text : string, color : Vec4f) {
+    if !font || color.w == 0 {
         return;
     }
 
-    array_add(*context.omg.texts_to_draw, .{font, position, size, text});
+    iter : TextGlyphIterator;
+    iter.font = font;
+    iter.size = size;
+    iter.text = text;
+    for iter {
+        glyph_position := position + iter.pen + it.hori_bearing * iter.size;
+        glyph_position += it.size * iter.size * 0.5;
+
+        s := SDTexture(font.texture, it.size * iter.size, it.uv_rect, .{0.5, -0.5});
+        d := DrawShape(s, glyph_position);
+        SolidColor(d, color);
+    }
 }
 
 TextGlyphIterator :: struct {

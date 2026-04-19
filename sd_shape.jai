@@ -2,6 +2,7 @@ SDShapeKind :: enum u8 {
     CirclePrimitive :: 0;
     BoxPrimitive;
     TrianglePrimitive;
+    TexturePrimitive;
 
     UnionOperation :: 200;
     SmoothUnionOperation;
@@ -34,6 +35,13 @@ SDShape :: struct {
             p0 : Vec2f;
             p1 : Vec2f;
             p2 : Vec2f;
+        };
+
+        .TexturePrimitive ,, texture_prim : struct {
+            texture : TextureHandle;
+            uvs : Vec4f;
+            size : Vec2f;
+            dist_range : Vec2f;
         };
 
         .UnionOperation ,, union_op : struct {
@@ -142,6 +150,18 @@ Triangle :: inline (p0 : Vec2f, p1 : Vec2f, p2 : Vec2f) -> *SDShape {
     shape.triangle_prim.p0 = p0;
     shape.triangle_prim.p1 = p1;
     shape.triangle_prim.p2 = p2;
+    shape.bounds = GetBounds(shape);
+
+    return shape;
+}
+
+SDTexture :: inline (texture : TextureHandle, size : Vec2f, uvs := Vec4f.{0,0,1,1}, dist_range := Vec2f.{-1, 1}) -> *SDShape {
+    shape := New(SDShape ,, temp);
+    shape.kind = .TexturePrimitive;
+    shape.texture_prim.texture = texture;
+    shape.texture_prim.uvs = uvs;
+    shape.texture_prim.size = size;
+    shape.texture_prim.dist_range = dist_range;
     shape.bounds = GetBounds(shape);
 
     return shape;
@@ -340,6 +360,9 @@ EvalSDF :: (p : Vec2f, shape : *SDShape) -> float {
 
         return -sqrt(d.x) * sign(d.y);
 
+    case .TexturePrimitive; // Can't do much here!
+        return 0;
+
     case .UnionOperation;
         a := EvalSDF(p, shape.union_op.shape_a);
         b := EvalSDF(p, shape.union_op.shape_b);
@@ -415,6 +438,13 @@ GetBounds :: (shape : *SDShape) -> Vec4f {
     case .TrianglePrimitive;
         using shape.triangle_prim;
         return .{xy=min(p0, min(p1, p2)), zw=max(p0, max(p1, p2))};
+
+    case .TexturePrimitive;
+        using shape.texture_prim;
+        return .{
+            -size.x * 0.5, -size.y * 0.5,
+             size.x * 0.5,  size.y * 0.5,
+        };
 
     case .UnionOperation;
         a := GetBounds(shape.union_op.shape_a);

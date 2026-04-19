@@ -1,6 +1,8 @@
 // https://shaderfun.com/2018/07/01/signed-distance-fields-part-7-some-simple-effects/
 // https://shaderfun.com/2018/07/23/signed-distance-fields-part-8-gradients-bevels-and-noise/
 
+TextureHandle :: u64;
+
 Drawing :: struct {
     position : Vec2f;
     shape : *SDShape;
