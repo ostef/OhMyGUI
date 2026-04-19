@@ -390,7 +390,7 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
             glUniform2f(u_viewport_size, xx viewport_w, xx viewport_h);
         }
 
-        glBindTextureUnit(0, context.omg.fonts[0].texture);
+        glBindTextureUnit(0, context.omg.fonts.texture);
         glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 0, buffer_handle, xx instances_offset, xx instances_size);
         glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 1, buffer_handle, xx shapes_offset, xx shapes_size);
         glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 2, buffer_handle, xx effects_offset, xx effects_size);

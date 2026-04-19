@@ -5,6 +5,9 @@
 // https://freetype.org/freetype2/docs/glyphs/glyphs-3.html
 
 Font :: struct {
+    prev : *Font;
+    next : *Font;
+
     filename : string;
     name : string;
     glyph_map : Table(u32, Glyph);
@@ -104,30 +107,42 @@ LoadFontFromFile :: (filename : string, config : FontConfig) -> *Font {
     glTextureParameteri(font.texture, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTextureParameteri(font.texture, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    array_add(*context.omg.fonts, font);
+    font.next = context.omg.fonts;
+    if font.next {
+        font.next.prev = font;
+    }
+    context.omg.fonts = font;
 
     return font;
 }
 
 DestroyFont :: (font : *Font) {
+    if font.prev {
+        font.prev.next = font.next;
+    }
+    if font.next {
+        font.next.prev = font.prev;
+    }
+
+    if context.omg.fonts == font {
+        context.omg.fonts = font.next;
+    }
+
     glDeleteTextures(1, *font.texture);
 
     deinit(*font.glyph_map);
-
-    for context.omg.fonts {
-        if it == font {
-            remove it;
-        }
-    }
 
     free(font);
 }
 
 GetFont :: (name : string) -> *Font {
-    for context.omg.fonts {
-        if it.name == name {
-            return it;
+    font := context.omg.fonts;
+    while font {
+        if font.name == name {
+            return font;
         }
+
+        font = font.next;
     }
 
     return null;

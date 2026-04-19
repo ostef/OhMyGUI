@@ -19,8 +19,8 @@ Context :: struct {
     input_last_frame : InputContext;
 
     windows : *Window;
+    fonts : *Font;
 
-    fonts : [..]*Font;
     texts_to_draw : [..]TextDrawing;
 
     shapes_to_draw : [..]Drawing;
@@ -72,6 +72,7 @@ DestroyWindow :: (window : *Window) {
         context.omg.windows = window.next;
     }
 
+    FreeNode(window.root_node);
     free(window);
 }
 
@@ -82,21 +83,13 @@ Init :: () {
 }
 
 Terminate :: () {
-    window := context.omg.windows;
-    while window {
-        next := window.next;
-
-        FreeNode(window.root_node);
-        free(window);
-
-        window = next;
+    while context.omg.windows {
+        DestroyWindow(context.omg.windows);
     }
 
-    while context.omg.fonts.count > 0 {
-        DestroyFont(context.omg.fonts[0]);
+    while context.omg.fonts {
+        DestroyFont(context.omg.fonts);
     }
-
-    array_free(context.omg.fonts);
 
     array_free(context.omg.texts_to_draw);
     array_free(context.omg.shapes_to_draw);
