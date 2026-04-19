@@ -9,50 +9,104 @@ g_window : *SDL_Window;
 g_mouse : Vector2;
 g_frame_in_flight : int;
 g_frame_syncs : [2]GLsync;
-g_show_node := true;
 
 DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
     OMG.NewFrame(delta_time);
     defer OMG.Render();
 
+    font := OMG.GetFont("Roboto-Regular");
+
     root := OMG.GetNode(g_window);
+    {
+        OMG.SetLayout(root, .TopToBottom);
 
-    if OMG.IsKeyPressed(.Space) {
-        g_show_node = !g_show_node;
+        title_bar := OMG.GetNode(root, "title_bar");
+        {
+            OMG.SetPadding(title_bar, 4, 4);
+            OMG.SetChildGap(title_bar, 4, 4);
+            OMG.SetWidth(title_bar, OMG.SizeFill());
+            OMG.SetHeight(title_bar, OMG.SizeFit());
+
+            title_text := OMG.GetNode(title_bar);
+            OMG.SetText(title_text, font, 14, tprint("OMG Engine (% FPS)", cast(int, 1 / delta_time)));
+
+            MenuButton :: (menu : *OMG.Node, str_id : string, font : *OMG.Font, text : string) -> *OMG.Node {
+                button := OMG.GetNode(menu, str_id);
+                {
+                    OMG.SetPadding(button, 4, 4);
+                    OMG.SetSize(button, OMG.SizeFit(), OMG.SizeFill());
+
+                    text_node := OMG.GetNode(button);
+                    OMG.SetText(text_node, font, 14, text);
+                }
+
+                return button;
+            }
+
+            title_menu := OMG.GetNode(title_bar);
+            OMG.SetSize(title_menu, OMG.SizeFill());
+
+            file_menu := MenuButton(title_menu, "file_menu", font, "File");
+            edit_menu := MenuButton(title_menu, "edit_menu", font, "Edit");
+            entities_menu := MenuButton(title_menu, "entities_menu", font, "Entities");
+            window_menu := MenuButton(title_menu, "window_menu", font, "Window");
+            help_menu := MenuButton(title_menu, "help_menu", font, "Help");
+
+            title_mini := OMG.GetNode(title_bar, "minimize");
+            OMG.SetSize(title_mini, OMG.SizePx(25));
+
+            title_maxi := OMG.GetNode(title_bar, "maximize");
+            OMG.SetSize(title_maxi, OMG.SizePx(25));
+
+            title_close := OMG.GetNode(title_bar, "close");
+            OMG.SetSize(title_close, OMG.SizePx(25));
+        }
+
+        content := OMG.GetNode(root, "content");
+        {
+            OMG.SetSize(content, OMG.SizeFill());
+
+            Panel :: (parent : *OMG.Node, str_id : string, title : string) -> *OMG.Node {
+                panel := OMG.GetNode(parent, str_id);
+                {
+                    OMG.SetLayout(panel, .TopToBottom);
+                    OMG.SetSize(panel, OMG.SizeFill());
+
+                    title_bar := OMG.GetNode(panel, "title_bar");
+                    {
+                        OMG.SetSize(title_bar, OMG.SizeFill(), OMG.SizePx(32));
+                        OMG.SetPadding(title_bar, 4, 4);
+
+                        text := OMG.GetNode(title_bar);
+                        OMG.SetText(text, OMG.GetFont("Roboto-Regular"), 14, title);
+                    }
+                }
+
+                return panel;
+            }
+
+            left_side := OMG.GetNode(content, "left_side");
+            {
+                OMG.SetSize(left_side, OMG.SizeFill());
+                OMG.SetLayout(left_side, .TopToBottom);
+
+                main_viewport := Panel(left_side, "main_viewport", "Main Viewport");
+                content_browser := Panel(left_side, "content_browser", "Content Browser");
+                OMG.SetHeight(content_browser, OMG.SizeFill(0.9));
+            }
+
+            if content.prev_frame_layout.size.x > 500 {
+                right_side := OMG.GetNode(content, "right_side");
+                {
+                    OMG.SetSize(right_side, OMG.SizePx(400), OMG.SizeFill());
+                    OMG.SetLayout(right_side, .TopToBottom);
+
+                    entity_outliner := Panel(right_side, "entity_outliner", "Entity Outliner");
+                    entity_inspector := Panel(right_side, "entity_inspector", "Entity Inspector");
+                }
+            }
+        }
     }
-
-    if g_show_node {
-        a := OMG.GetNode(root, "a");
-        OMG.SetSize(a, OMG.SizePx(100), OMG.SizePx(100));
-    }
-
-    a := OMG.GetNode(root, "b");
-    OMG.SetSize(a, OMG.SizeFill(0.5), OMG.SizeFill(0.5));
-    OMG.SetMinMaxWidth(a, 128, 256);
-
-    if !g_show_node {
-        a := OMG.GetNode(root, "a");
-        OMG.SetSize(a, OMG.SizePx(100), OMG.SizePx(100));
-    }
-
-    a = OMG.GetNode(root, "c");
-    OMG.SetSize(a, OMG.SizeFill(1), OMG.SizeFit());
-    OMG.SetLayout(a, .TopToBottom);
-
-    e := OMG.GetNode(root, "AA");
-    OMG.SetSize(e, OMG.SizeFill(1), OMG.SizePx(100));
-
-    d := OMG.GetNode(a, "d");
-    OMG.SetSize(d, OMG.SizeFit(), OMG.SizeFit());
-
-    t := OMG.GetNode(d, "text");
-    OMG.SetText(t, OMG.GetFont("Roboto-Regular"), (cos(time) + 2) * 16, "Hello Sailor!\nWhat a lovely day");
-
-    t = OMG.GetNode(d, "text2");
-    OMG.SetText(t, OMG.GetFont("Roboto-Regular"), 16, "Some more text\n\n\n\nMany newlines");
-
-    d = OMG.GetNode(a, "e");
-    OMG.SetSize(d, OMG.SizePx(25), OMG.SizePx(25));
 }
 
 main :: () {

@@ -22,7 +22,7 @@ SizePx :: inline (value : float) -> Size1D {
     return .{kind=.Pixels, value=value};
 }
 
-SizeFill :: inline (ratio : float) -> Size1D {
+SizeFill :: inline (ratio := 1.0) -> Size1D {
     return .{kind=.FillParent, value=ratio};
 }
 
@@ -234,4 +234,6 @@ LayoutPosition :: (node : *Node) {
 
         LayoutPosition(it);
     }
+
+    node.prev_frame_layout = node.layout;
 }
