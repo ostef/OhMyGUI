@@ -36,6 +36,8 @@ Glyph :: struct {
     uv_rect : Vec4f;
 }
 
+Unicode_Replacement :: 0xfffd;
+
 g_ft_lib : FT_Library;
 
 LoadFontFromFile :: (filename : string, config : FontConfig) -> *Font {
@@ -66,7 +68,7 @@ LoadFontFromFile :: (filename : string, config : FontConfig) -> *Font {
     font.name = basename(filename);
     font.resolution = config.resolution;
     font.ascent = FractToFloat(ft_face.size.metrics.ascender) / cast(float, config.resolution);
-    font.descent = FractToFloat(ft_face.size.metrics.descender) / cast(float, config.resolution);
+    font.descent = -FractToFloat(ft_face.size.metrics.descender) / cast(float, config.resolution);
 
     packer : RectPacker;
     packer.width = config.atlas_width;
@@ -79,6 +81,8 @@ LoadFontFromFile :: (filename : string, config : FontConfig) -> *Font {
     if space_glyph {
         font.space_advance = space_glyph.hori_advance;
     }
+
+    LoadGlyph(font, Unicode_Replacement, ft_face, *packer);
 
     for range : config.glyph_ranges {
         for i : range.start..range.end {
@@ -187,7 +191,7 @@ LoadGlyph :: (font : *Font, codepoint : u32, ft_face : FT_Face, packer : *RectPa
         return null;
     }
 
-    FT_Render_Glyph(ft_face.glyph, .NORMAL); // We want the SDF rendering to be based of the bitmap
+    FT_Render_Glyph(ft_face.glyph, .NORMAL); // We want the SDF rendering to be based off the bitmap
     FT_Render_Glyph(ft_face.glyph, .SDF);
 
     slot := ft_face.glyph;
@@ -197,10 +201,10 @@ LoadGlyph :: (font : *Font, codepoint : u32, ft_face : FT_Face, packer : *RectPa
 
     glyph.size.x = slot.bitmap.width / cast(float, font.resolution);
     glyph.size.y = slot.bitmap.rows / cast(float, font.resolution);
-    glyph.hori_bearing.x = FractToFloat(slot.metrics.horiBearingX) / cast(float, font.resolution);
+    glyph.hori_bearing.x =  FractToFloat(slot.metrics.horiBearingX) / cast(float, font.resolution);
     glyph.hori_bearing.y = -FractToFloat(slot.metrics.horiBearingY) / cast(float, font.resolution);
-    glyph.vert_bearing.x = FractToFloat(slot.metrics.vertBearingX) / cast(float, font.resolution);
-    glyph.vert_bearing.y = FractToFloat(slot.metrics.vertBearingY) / cast(float, font.resolution);
+    glyph.vert_bearing.x =  FractToFloat(slot.metrics.vertBearingX) / cast(float, font.resolution);
+    glyph.vert_bearing.y = -FractToFloat(slot.metrics.vertBearingY) / cast(float, font.resolution);
     glyph.hori_advance = FractToFloat(slot.metrics.horiAdvance) / cast(float, font.resolution);
     glyph.vert_advance = FractToFloat(slot.metrics.vertAdvance) / cast(float, font.resolution);
 
@@ -247,7 +251,18 @@ TextGlyphIterator :: struct {
     text : string;
     size : float;
     pen : Vec2f;
+    bounds : Vec2f;
     width : float;
+    height : float;
+}
+
+Newline :: (iter : *TextGlyphIterator) {
+    iter.bounds.x = max(iter.bounds.x, iter.pen.x);
+
+    iter.pen.x = 0;
+    iter.pen.y += (iter.font.ascent + iter.font.descent) * iter.size;
+
+    iter.bounds.y = max(iter.bounds.y, iter.pen.y);
 }
 
 for_expansion :: (iter : *TextGlyphIterator, body : Code, flags : For_Flags) #expand {
@@ -256,25 +271,38 @@ for_expansion :: (iter : *TextGlyphIterator, body : Code, flags : For_Flags) #ex
     for codepoint, `it_index : iter.text {
         if codepoint == {
         case #char "\n";
-            iter.width = max(iter.width, iter.pen.x);
-            iter.pen.x = 0;
-            iter.pen.y += (iter.font.ascent - iter.font.descent) * iter.size;
+            Newline(iter);
 
         case #char "\t";
             iter.pen.x = SnapUp(iter.pen.x + iter.font.space_advance * iter.size, iter.font.space_advance * 4 * iter.size);
-            iter.width = max(iter.width, iter.pen.x);
+            iter.bounds.x = max(iter.bounds.x, iter.pen.x);
 
         case;
             glyph := GetGlyph(iter.font, codepoint);
             if !glyph {
-                continue;
+                glyph = GetGlyph(iter.font, Unicode_Replacement);
+                if !glyph {
+                    continue;
+                }
             }
 
             `it := glyph;
             #insert body;
 
+            glyph_end := iter.pen + (glyph.hori_bearing + glyph.size) * iter.size;
+            iter.bounds = max(iter.bounds, glyph_end);
+
             iter.pen.x += glyph.hori_advance * iter.size;
-            iter.width = max(iter.width, iter.pen.x);
         }
     }
+}
+
+CalculateTextSize :: (font : *Font, size : float, text : string) -> Vec2f {
+    iter : TextGlyphIterator;
+    iter.font = font;
+    iter.size = size;
+    iter.text = text;
+    for iter {}
+
+    return iter.bounds;
 }

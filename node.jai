@@ -1,5 +1,9 @@
 ID :: u64;
 
+NodeFlags :: enum_flags u32 {
+    TextNode;
+}
+
 Node :: struct {
     id : ID;
     local_id : ID;
@@ -14,15 +18,21 @@ Node :: struct {
     last_used_on_frame : u64;
 
     // User controlled properties
-    offset : Vec2f; // If parent.child_layout_mode is None
-    desired_size : Size2D;
-    min_size := Vec2f.{-FLOAT32_INFINITY, -FLOAT32_INFINITY};
-    max_size := Vec2f.{ FLOAT32_INFINITY,  FLOAT32_INFINITY};
-    padding := Vec2f.{10,10};
-    child_layout_mode := LayoutMode.LeftToRight;
-    child_gap := Vec2f.{5,5}; // If child_layout_mode is not None
-    child_align : Vec2f; // If child_layout_mode is not None
-    text : string;
+    using properties : struct {
+        flags : NodeFlags;
+        offset : Vec2f; // If parent.child_layout_mode is None
+        desired_size := Size2D.{.{kind=.FitChildren}, .{kind=.FitChildren}};
+        min_size := Vec2f.{-FLOAT32_INFINITY, -FLOAT32_INFINITY};
+        max_size := Vec2f.{ FLOAT32_INFINITY,  FLOAT32_INFINITY};
+        padding := Vec2f.{10,10};
+        child_layout_mode := LayoutMode.LeftToRight;
+        child_gap := Vec2f.{5,5}; // If child_layout_mode is not None
+        child_align : Vec2f; // If child_layout_mode is not None
+
+        font : *Font;
+        text : string;
+        text_size : float;
+    };
 
     // Computed during the layout phase at the end of the frame
     using layout_results : struct {
@@ -137,6 +147,7 @@ TouchNode :: (node : *Node) {
     node.last_used_on_frame = context.omg.frame_index;
     node.last_child = null;
     node.num_children = 0;
+    node.properties = .{};
     node.layout_results = .{};
 }
 
@@ -262,4 +273,11 @@ SetMaxSize :: inline (node : *Node, x : float, y : float) {
 
 SetLayout :: inline (node : *Node, mode : LayoutMode) {
     node.child_layout_mode = mode;
+}
+
+SetText :: inline (node : *Node, font : *Font, size : float, text : string) {
+    node.flags |= .TextNode;
+    node.font = font;
+    node.text = text;
+    node.text_size = size;
 }

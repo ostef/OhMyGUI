@@ -27,7 +27,7 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
     }
 
     a := OMG.GetNode(root, "b");
-    OMG.SetSize(a, OMG.SizeFillParent(0.5), OMG.SizeFillParent(0.5));
+    OMG.SetSize(a, OMG.SizeFill(0.5), OMG.SizeFill(0.5));
     OMG.SetMinMaxWidth(a, 128, 256);
 
     if !g_show_node {
@@ -36,20 +36,20 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
     }
 
     a = OMG.GetNode(root, "c");
-    OMG.SetSize(a, OMG.SizeFillParent(1), OMG.SizeFitChildren());
+    OMG.SetSize(a, OMG.SizeFill(1), OMG.SizeFit());
     OMG.SetLayout(a, .TopToBottom);
 
     e := OMG.GetNode(root, "AA");
-    OMG.SetSize(e, OMG.SizeFillParent(1), OMG.SizePx(100));
+    OMG.SetSize(e, OMG.SizeFill(1), OMG.SizePx(100));
 
     d := OMG.GetNode(a, "d");
-    OMG.SetSize(d, OMG.SizePx(25), OMG.SizePx(25));
+    OMG.SetSize(d, OMG.SizeFit(), OMG.SizeFit());
+
+    t := OMG.GetNode(d, "text");
+    OMG.SetText(t, OMG.GetFont("Roboto-Regular"), 16, "Hello Sailor!\nWhat a lovely day");
 
     d = OMG.GetNode(a, "e");
     OMG.SetSize(d, OMG.SizePx(25), OMG.SizePx(25));
-
-    font := OMG.GetFont("Roboto-Regular");
-    OMG.DrawText(font, .{100, 100}, (cos(time) + 2) * 50, "Hello Sailor!\nWhat a lovely day");
 }
 
 main :: () {
@@ -75,7 +75,8 @@ main :: () {
     defer OMG.TerminateGL();
 
     font_config : OMG.FontConfig;
-    font := OMG.LoadFontFromFile("Roboto-Regular.ttf", font_config);
+    OMG.LoadFontFromFile("Roboto-Regular.ttf", font_config);
+    OMG.LoadFontFromFile("JetBrainsMono-Regular.ttf", font_config);
 
     program_start := current_time_monotonic();
     quit := false;

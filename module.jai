@@ -154,11 +154,20 @@ DrawNodes :: (node : *Node) {
     position := (node.rect.xy + node.rect.zw) * 0.5;
     size     :=  node.rect.zw - node.rect.xy;
 
-    d := DrawShape(Box(size, 6), position);
-    SolidColor(d, .{1,1,1,1});
-    StrokeColor(d, .{0,0,0,1}, 1);
+    if !(node.flags & .TextNode) {
+        d := DrawShape(Box(size, 6), position);
+        SolidColor(d, .{1,1,1,1});
+        StrokeColor(d, .{0,0,0,1}, 1);
+    } else {
+        // d := DrawShape(Box(size), position);
+        // StrokeColor(d, .{1,0,0,1}, 1.5);
+    }
 
     for :Children node {
         DrawNodes(it);
+    }
+
+    if node.flags & .TextNode && node.text {
+        DrawText(node.font, node.rect.xy, node.text_size, node.text);
     }
 }

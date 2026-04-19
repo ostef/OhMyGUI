@@ -12,7 +12,6 @@ Size1D :: struct {
         Pixels;
         FillParent;
         FitChildren;
-        Text;
     }
 
     kind : Kind;
@@ -23,11 +22,11 @@ SizePx :: inline (value : float) -> Size1D {
     return .{kind=.Pixels, value=value};
 }
 
-SizeFillParent :: inline (ratio : float) -> Size1D {
+SizeFill :: inline (ratio : float) -> Size1D {
     return .{kind=.FillParent, value=ratio};
 }
 
-SizeFitChildren :: inline () -> Size1D {
+SizeFit :: inline () -> Size1D {
     return .{kind=.FitChildren};
 }
 
@@ -117,6 +116,11 @@ LayoutFixedAndFitSizing :: (node : *Node) {
         node.children_size[cross] = max(node.children_size[cross], it.size[cross]);
     }
 
+    if node.flags & .TextNode {
+        node.size = CalculateTextSize(node.font, node.text_size, node.text);
+        return;
+    }
+
     for axis : Axis.[.X, .Y] {
         if node.desired_size[axis].kind == {
         case .FitChildren;
@@ -141,7 +145,7 @@ LayoutFillSizing :: (node : *Node) {
     total_weights := 0.0;
     num_fill_children := 0;
     for :Children node {
-        if it.desired_size[axis].kind != .FillParent {
+        if it.desired_size[axis].kind != .FillParent || it.flags & .TextNode {
             continue;
         }
 
@@ -162,7 +166,7 @@ LayoutFillSizing :: (node : *Node) {
         defer iter += 1;
 
         for :Children node {
-            if it.desired_size[axis].kind != .FillParent {
+            if it.desired_size[axis].kind != .FillParent || it.flags & .TextNode  {
                 continue;
             }
 
@@ -194,7 +198,7 @@ LayoutFillSizing :: (node : *Node) {
     }
 
     for :Children node {
-        if it.desired_size[cross].kind == .FillParent {
+        if it.desired_size[cross].kind == .FillParent && !(it.flags & .TextNode) {
             it.size[cross] = node.size[cross] * it.desired_size[cross].value - 2 * node.padding[cross];
             it.size[cross] = clamp(it.size[cross], node.min_size[cross], node.max_size[cross]);
             node.children_size[cross] = max(node.children_size[cross], it.size[cross]);
