@@ -15,6 +15,7 @@
 Context :: struct {
     frame_index : u64;
     delta_time : float;
+    layout_time_last_frame : float;
 
     input : InputContext;
     input_last_frame : InputContext;
@@ -125,6 +126,7 @@ NewFrame :: (delta_time : float) {
 
 Render :: () {
     omg := context.omg;
+    omg.layout_time_last_frame = 0;
 
     window := omg.windows;
     while window {
@@ -138,8 +140,13 @@ Render :: () {
 
         SetSize(window.root_node, SizePx(xx w), SizePx(xx h));
 
+        layout_start := current_time_monotonic();
         LayoutNodes(window.root_node);
         PostLayout(window.root_node);
+        layout_end := current_time_monotonic();
+
+        omg.layout_time_last_frame = xx to_float64_seconds(layout_end - layout_start);
+
         DrawNodes(window.root_node);
     }
 

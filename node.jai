@@ -336,3 +336,4 @@ SetText :: inline (node : *Node, font : *Font, size : float, text : string) {
     node.text = text;
     node.text_size = size;
 }
+
