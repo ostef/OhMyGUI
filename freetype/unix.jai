@@ -8340,10 +8340,6 @@ FT_Get_CMap_Language_ID :: (charmap: FT_CharMap) -> FT_ULong #foreign freetype;
 */
 FT_Get_CMap_Format :: (charmap: FT_CharMap) -> FT_Long #foreign freetype;
 
-#scope_file
-
-#scope_file
-
 #if OS == .LINUX {
     freetype :: #library "linux/freetype";
 } else #if OS == .MACOS {
