@@ -213,7 +213,13 @@ LayoutPosition :: (node : *Node) {
     cross := GetCrossAxis(axis);
     reverse := IsLayoutReverseDirection(node);
 
-    cursor := ifx reverse then node.size[axis] - node.padding[axis] else node.padding[axis];
+    remaining_size := node.size[axis] - 2 * node.padding[axis]
+            - node.children_size[axis]
+            - (node.num_children - 1) * node.child_gap[axis];
+    axis_align_offset := remaining_size * node.child_align[axis];
+    cross_size := node.size[cross] - 2 * node.padding[cross];
+
+    cursor := ifx reverse then node.size[axis] - node.padding[axis] - axis_align_offset else node.padding[axis] + axis_align_offset;
     first := true;
     for :LayoutDirection node {
         defer first = false;
@@ -223,7 +229,7 @@ LayoutPosition :: (node : *Node) {
         }
 
         it.relative_position[axis] = cursor;
-        it.relative_position[cross] = node.padding[cross];
+        it.relative_position[cross] = node.padding[cross] + (cross_size - it.size[cross]) * node.child_align[cross];
 
         if !reverse {
             cursor += it.size[axis] + node.child_gap[axis];
