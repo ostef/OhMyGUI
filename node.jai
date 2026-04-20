@@ -18,7 +18,7 @@ Node :: struct {
     // Computed during the layout phase at the end of the frame
     using layout : struct {
         first_child : *Node;
-        last_child : *Node; // Reset when declaring the node
+        last_child : *Node;
         next_sibling : *Node;
         prev_sibling : *Node;
         num_children : s32;
