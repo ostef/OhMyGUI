@@ -15,7 +15,6 @@ Node :: struct {
 
     last_used_on_frame : u64;
 
-    // Computed during the layout phase at the end of the frame
     using layout : struct {
         first_child : *Node;
         last_child : *Node;
@@ -23,6 +22,7 @@ Node :: struct {
         prev_sibling : *Node;
         num_children : s32;
 
+        // Computed during the layout phase at the end of the frame
         size : Vec2f;
         children_size : Vec2f;
         relative_position : Vec2f;
@@ -31,7 +31,7 @@ Node :: struct {
 
     layout_last_frame : type_of(layout);
 
-    // User controlled properties
+    // User controlled properties, reset each frame
     using properties : struct {
         font : *Font;
         text : string;
