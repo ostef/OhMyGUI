@@ -24,6 +24,8 @@ Context :: struct {
     fonts : *Font;
     node_pool : Bucket_Array(Node, 1000);
 
+    id_offset_stack : [..]int;
+
     shapes_to_draw : [..]Drawing;
     default_effect := Effect.{kind=.SolidColor, solid_color=.{color=.{1,1,1,1}}};
 }
@@ -128,6 +130,11 @@ Render :: () {
     omg := context.omg;
     omg.layout_time_last_frame = 0;
 
+    if omg.id_offset_stack.count > 0 {
+        log_error("Mismatching number of push/pop for ID offset stack");
+        omg.id_offset_stack.count = 0;
+    }
+
     window := omg.windows;
     while window {
         defer window = window.next;
@@ -144,7 +151,6 @@ Render :: () {
         LayoutNodes(window.root_node);
         PostLayout(window.root_node);
         layout_end := current_time_monotonic();
-
         omg.layout_time_last_frame = xx to_float64_seconds(layout_end - layout_start);
 
         DrawNodes(window.root_node);

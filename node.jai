@@ -11,9 +11,9 @@ Node :: struct {
     local_id : ID;
     index : Bucket_Locator;
 
-    parent : *Node;
-
     last_used_on_frame : u64;
+
+    parent : *Node;
 
     using layout : struct {
         first_child : *Node;
@@ -130,32 +130,50 @@ PushChild :: (parent : *Node, node : *Node) {
     parent.num_children += 1;
 }
 
-GetID :: inline (base : ID, id : ID) -> ID {
-    return fnv1a_hash(id, base);
+PushIDOffset :: inline (offset : int) {
+    array_add(*context.omg.id_offset_stack, offset);
 }
 
-GetID :: inline (base : ID, str : string) -> ID {
+PopIDOffset :: inline () {
+    pop(*context.omg.id_offset_stack);
+}
+
+GetIDOffset :: inline () -> int {
+    if context.omg.id_offset_stack.count <= 0 {
+        return 0;
+    }
+
+    return context.omg.id_offset_stack[context.omg.id_offset_stack.count - 1];
+}
+
+GetID :: inline (id : ID, base : ID) -> ID {
+    return fnv1a_hash(id, h=base);
+}
+
+GetID :: inline (str : string, apply_offset := true) -> ID {
     if !str {
         return 0;
     }
 
-    return fnv1a_hash(str.data, str.count, h=base);
-}
+    id := fnv1a_hash(str.data, str.count);
 
-GetID :: inline (str : string) -> ID {
-    if !str {
-        return 0;
+    if apply_offset {
+        id += xx,no_check GetIDOffset();
     }
 
-    return fnv1a_hash(str.data, str.count);
+    return id;
 }
 
-GetID :: inline (loc : Source_Code_Location) -> ID {
-    h := fnv1a_hash(loc.fully_pathed_filename.data, loc.fully_pathed_filename.count);
-    h = fnv1a_hash(cast,no_check(u64, loc.line_number), h=h);
-    h = fnv1a_hash(cast,no_check(u64, loc.character_number), h=h);
+GetID :: inline (loc : Source_Code_Location, apply_offset := true) -> ID {
+    id := fnv1a_hash(loc.fully_pathed_filename.data, loc.fully_pathed_filename.count);
+    id = fnv1a_hash(cast,no_check(u64, loc.line_number), h=id);
+    id = fnv1a_hash(cast,no_check(u64, loc.character_number), h=id);
 
-    return h;
+    if apply_offset {
+        id += xx,no_check GetIDOffset();
+    }
+
+    return id;
 }
 
 TouchNode :: (node : *Node) {
@@ -174,8 +192,8 @@ TouchNode :: (node : *Node) {
 GetNode :: (window : *Window) -> *Node {
     if !window.root_node {
         window.root_node = AllocNode();
-        window.root_node.local_id = GetID(cast(u64, window), "Root");
-        window.root_node.id = window.root_node.local_id;
+        window.root_node.local_id = GetID("Root");
+        window.root_node.id = GetID(window.root_node.local_id, cast(u64, window));
     }
 
     TouchNode(window.root_node);
@@ -228,7 +246,7 @@ GetNode :: (parent : *Node, id : ID) -> *Node {
         node = AllocNode();
         node.parent = parent;
         node.local_id = id;
-        node.id = GetID(parent.id, id);
+        node.id = GetID(id, base=parent.id);
     }
 
     TouchNode(node);
