@@ -58,6 +58,13 @@ LoadFontFromFile :: (filename : string, config : FontConfig) -> *Font {
             log_error("Could not initialize FreeType");
             return null;
         }
+
+        // @Todo: setting this works (get returns the value we passed) but does not change the resulting SDF
+        // Find what's wrong
+        // ft_err = FT_Property_Set(g_ft_lib, "sdf", "spread", *sdf_spread);
+        // if ft_err != xx FT_Err.Ok {
+        //     log_error("Could not set spread");
+        // }
     }
 
     if config.resolution == 0 {
@@ -115,11 +122,9 @@ LoadFontFromFile :: (filename : string, config : FontConfig) -> *Font {
     glTextureParameteri(font.texture, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTextureParameteri(font.texture, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    spread : s32 = 2;
-    FT_Property_Set(g_ft_lib, "sdf", "spread", *spread);
-    FT_Property_Get(g_ft_lib, "sdf", "spread", *spread);
-
-    font.sdf_range = xx spread;
+    sdf_spread : s32;
+    FT_Property_Get(g_ft_lib, "sdf", "spread", *sdf_spread);
+    font.sdf_range = sdf_spread / cast(float, font.resolution);
 
     font.next = context.omg.fonts;
     if font.next {
@@ -279,7 +284,7 @@ DrawText :: (font : *Font, position : Vec2f, size : float, text : string, color 
         return;
     }
 
-    sdf_range := font.sdf_range * size / font.resolution;
+    sdf_range := font.sdf_range * size;
 
     iter : TextGlyphIterator;
     iter.font = font;

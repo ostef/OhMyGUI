@@ -42,6 +42,7 @@ layout(binding=2, std430) readonly buffer EffectData {
     Effect u_effects[];
 };
 uniform vec2 u_viewport_size;
+uniform float u_anti_aliasing_factor;
 uniform sampler2D u_texture;
 
 layout(location=0) in vec2 in_position;
@@ -278,19 +279,17 @@ float EvalSDF(vec2 p, uint first_shape_index, uint num_shapes) {
     return values[value_index - 1];
 }
 
-float FxSolidColor(float d, float edge) {
-    float a = 1 - smoothstep(-edge, edge, d);
+float FxSolidColor(float d, float blur) {
+    float a = 1 - smoothstep(-u_anti_aliasing_factor, u_anti_aliasing_factor, d);
     return clamp(a, 0, 1);
 }
 
-float FxStrokeColor(float d, float edge, float size, float inset) {
-    float a = smoothstep(-inset - edge, -inset + edge, d + size) - smoothstep(-inset - edge, -inset + edge, d);
+float FxStrokeColor(float d, float blur, float size, float inset) {
+    float a = FxSolidColor(-(d + inset + size), blur) * FxSolidColor(d + inset, blur);
     return clamp(a, 0, 1);
 }
 
 vec4 EvalEffects(vec2 p, float d) {
-    float aa = length(vec2(dFdx(d), dFdy(d)));
-
     vec4 result = vec4(0);
 
     uint effect_index = in_first_effect_index;
@@ -303,7 +302,7 @@ vec4 EvalEffects(vec2 p, float d) {
         case Effect_SolidColor: {
             vec4 color = effect.params0;
             float blur_factor = effect.params1.x;
-            float a = FxSolidColor(d, aa + blur_factor);
+            float a = FxSolidColor(d, blur_factor);
             result = mix(result, color, a);
         } break;
 
@@ -312,7 +311,7 @@ vec4 EvalEffects(vec2 p, float d) {
             float blur_factor = effect.params1.x;
             float inset = effect.params1.y;
             float size = effect.params1.z;
-            float a = FxStrokeColor(d, aa + blur_factor, size, inset);
+            float a = FxStrokeColor(d, blur_factor, size, inset);
             result = mix(result, color, a);
         } break;
 
@@ -328,7 +327,7 @@ vec4 EvalEffects(vec2 p, float d) {
                 shadow = d;
             }
 
-            float a = FxSolidColor(shadow, aa + blur_factor);
+            float a = FxSolidColor(shadow, blur_factor);
 
             result = mix(result, color, a);
         } break;
@@ -345,7 +344,7 @@ vec4 EvalEffects(vec2 p, float d) {
                 shadow = d;
             }
 
-            float a = FxSolidColor(-shadow, aa + blur_factor) * FxSolidColor(d, aa);
+            float a = FxSolidColor(-shadow, blur_factor) * FxSolidColor(d, 0);
 
             result = mix(result, color, a);
         } break;
@@ -364,9 +363,7 @@ void main() {
     out_color = EvalEffects(p - in_position, d);
 
     float clip = EvalSDF(p, in_first_clip_shape_index, in_num_clip_shapes);
-    float clip_aa = length(vec2(dFdx(clip), dFdy(clip)));
-    float clip_a = 1 - smoothstep(-clip_aa, clip_aa, clip);
-    clip_a = clamp(clip_a, 0, 1);
+    float clip_a = FxSolidColor(clip, 0);
 
     out_color.a *= clip_a;
 }

@@ -16,6 +16,15 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
     OMG.NewFrame(delta_time);
     defer OMG.Render();
 
+    if OMG.GetMouseWheel().y < 0 {
+        OMG.g_anti_aliasing_factor -= 0.1;
+    }
+    if OMG.GetMouseWheel().y > 0 {
+        OMG.g_anti_aliasing_factor += 0.1;
+    }
+
+    OMG.g_anti_aliasing_factor = clamp(OMG.g_anti_aliasing_factor, 0, 10);
+
     font := OMG.GetFont("Roboto-Regular");
 
     root := OMG.GetNode(g_window);
@@ -95,6 +104,9 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
                 main_viewport := Panel(left_side, "main_viewport", "Main Viewport");
                 layout_time := OMG.GetNode(main_viewport);
                 OMG.SetText(layout_time, font, 16, tprint("Layout: % us", cast(int, context.omg.layout_time_last_frame * 1000 * 1000)));
+
+                aa_factor := OMG.GetNode(main_viewport);
+                OMG.SetText(aa_factor, font, 16, tprint("Anti-aliasing: %", OMG.g_anti_aliasing_factor));
 
                 the_quick := OMG.GetNode(main_viewport);
                 OMG.SetText(the_quick, font, (cos(time) + 2) * 10, "The quick brown fox jumps over the lazy dog!");
@@ -186,7 +198,27 @@ main :: () {
 
         g_mouse = .{xx mx, xx my};
 
-        DoOneFrame(xx w, xx h, time, delta_time);
+        frame := true;
+        if frame {
+            DoOneFrame(xx w, xx h, time, delta_time);
+        } else {
+            the_quick := "The quick brown fox jumps over the lazy dog!";
+            font := OMG.GetFont("Roboto-Regular");
+            OMG.DrawText(font, .{10, 10}, 12, the_quick, .{0,0,0,1});
+            OMG.DrawText(font, .{10, 30}, 16, the_quick, .{0,0,0,1});
+            OMG.DrawText(font, .{10, 50}, 25, the_quick, .{0,0,0,1});
+            OMG.DrawText(font, .{10, 70}, 50, the_quick, .{0,0,0,1});
+            OMG.DrawText(font, .{10, 120}, xx font.resolution, the_quick, .{0,0,0,1});
+
+            font = OMG.GetFont("JetBrainsMono-Regular");
+            OMG.DrawText(font, .{10, 300+10}, 12, the_quick, .{0,0,0,1});
+            OMG.DrawText(font, .{10, 300+30}, 16, the_quick, .{0,0,0,1});
+            OMG.DrawText(font, .{10, 300+50}, 25, the_quick, .{0,0,0,1});
+            OMG.DrawText(font, .{10, 300+70}, 50, the_quick, .{0,0,0,1});
+            OMG.DrawText(font, .{10, 300+120}, xx font.resolution, the_quick, .{0,0,0,1});
+
+            OMG.DrawText(font, .{10, 650}, 10 + (cos(time * 0.5) + 1) * 60, the_quick, .{0,0,0,1});
+        }
 
         if g_frame_syncs[g_frame_in_flight] {
             Second :: 1000 * 1000 * 1000;
@@ -198,7 +230,7 @@ main :: () {
         }
 
         glViewport(0, 0, xx w, xx h);
-        glClearColor(0.5, 0.5, 0.5, 1);
+        glClearColor(1,1,1, 1);
         glClear(GL_COLOR_BUFFER_BIT);
 
         OMG.RenderGL(xx w, xx h);

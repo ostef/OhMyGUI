@@ -5,6 +5,8 @@ Approx_Max_Shapes :: 5 * Approx_Max_Instances;
 Approx_Max_Effects :: 5 * Approx_Max_Shapes;
 Default_Shapes_Buffer_Size :: Approx_Max_Shapes * size_of(ShaderSDShape) + Approx_Max_Instances * size_of(ShaderSDInstance) + Approx_Max_Effects * size_of(ShaderEffect);
 
+g_anti_aliasing_factor := 1.0;
+
 #scope_module
 
 ShaderSDInstance :: struct {
@@ -29,6 +31,11 @@ ShaderEffect :: struct {
     padding : [3]u32;
     params : [8]float;
 }
+
+g_color_texture : GLuint;
+g_color_framebuffer : GLuint;
+g_color_texture_width : u32;
+g_color_texture_height : u32;
 
 g_shape_shader : GLuint;
 g_dummy_vao : GLuint;
@@ -286,6 +293,25 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
         return num_shapes;
     }
 
+    if g_color_texture_width != viewport_w || g_color_texture_height != viewport_h {
+        glDeleteTextures(1, *g_color_texture);
+        glDeleteFramebuffers(1, *g_color_framebuffer);
+
+        glCreateTextures(GL_TEXTURE_2D, 1, *g_color_texture);
+        glTextureStorage2D(g_color_texture, 1, GL_RGBA16F, viewport_w, viewport_h);
+        g_color_texture_width = viewport_w;
+        g_color_texture_height = viewport_h;
+
+        glCreateFramebuffers(1, *g_color_framebuffer);
+        glNamedFramebufferTexture(g_color_framebuffer, GL_COLOR_ATTACHMENT0, g_color_texture, 0);
+        draw_buffer : GLenum = GL_COLOR_ATTACHMENT0;
+        glNamedFramebufferDrawBuffers(g_color_framebuffer, 1, *draw_buffer);
+
+        status := glCheckNamedFramebufferStatus(g_color_framebuffer, GL_DRAW_FRAMEBUFFER);
+        assert(status == GL_FRAMEBUFFER_COMPLETE, "Failed to create framebuffer (%)", status);
+
+    }
+
     defer g_frame_in_flight = (g_frame_in_flight + 1) % g_num_frames_in_flight;
     defer context.omg.shapes_to_draw.count = 0;
 
@@ -400,6 +426,10 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
     memcpy(buffer_ptr + shapes_offset, shapes_buffer.data, shapes_size);
     memcpy(buffer_ptr + effects_offset, effects_buffer.data, effects_size);
 
+    glBindFramebuffer(GL_FRAMEBUFFER, g_color_framebuffer);
+
+    glClear(GL_COLOR_BUFFER_BIT);
+
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
     glEnable(GL_BLEND);
@@ -417,6 +447,11 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
             glUniform2f(u_viewport_size, xx viewport_w, xx viewport_h);
         }
 
+        u_anti_aliasing_factor := glGetUniformLocation(g_shape_shader, "u_anti_aliasing_factor");
+        if u_anti_aliasing_factor >= 0 {
+            glUniform1f(u_anti_aliasing_factor, xx g_anti_aliasing_factor);
+        }
+
         glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 0, buffer_handle, xx instances_offset, xx instances_size);
         glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 1, buffer_handle, xx shapes_offset, xx shapes_size);
         glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 2, buffer_handle, xx effects_offset, xx effects_size);
@@ -427,4 +462,8 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
             glDrawArraysInstancedBaseInstance(GL_TRIANGLES, 0, 6, it.num_instances, it.base_instance);
         }
     }
+
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    glBlitFramebuffer(0, 0, xx viewport_w, xx viewport_h, 0, 0, xx viewport_w, xx viewport_h, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 }
