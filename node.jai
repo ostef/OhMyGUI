@@ -344,6 +344,14 @@ SetChildGap :: inline (node : *Node, x : float, y : float) {
     node.child_gap = .{x, y};
 }
 
+SetChildAlign :: inline (node : *Node, align : Vec2f) {
+    node.child_align = align;
+}
+
+SetChildAlign :: inline (node : *Node, x : float, y : float) {
+    node.child_align = .{x, y};
+}
+
 SetLayout :: inline (node : *Node, mode : LayoutMode) {
     node.child_layout_mode = mode;
 }
