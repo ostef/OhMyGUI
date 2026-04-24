@@ -31,6 +31,13 @@ GetMousePosition :: inline () -> Vec2f {
     return context.omg.input.mouse_position;
 }
 
+GetMousePosition :: inline (window : *Window) -> Vec2f {
+    wx, wy : s32;
+    SDL_GetWindowPosition(window.sdl_window, *wx, *wy);
+
+    return context.omg.input.mouse_position - Vec2f.{xx wx, xx wy};
+}
+
 GetMouseDelta :: inline () -> Vec2f {
     return context.omg.input.mouse_delta - context.omg.input_last_frame.mouse_position;
 }

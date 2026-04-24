@@ -4,6 +4,27 @@ ID :: u64;
 
 NodeFlags :: enum_flags u8 {
     TextNode;
+    Focusable;
+    Scrollable;
+}
+
+NodeState :: enum u8 {
+    Active;
+    Focused;
+    Hot;
+    Disabled;
+}
+
+NodeStateFlags :: enum_flags u8 {
+    Active   :: 1 << NodeState.Active;
+    Focused  :: 1 << NodeState.Focused;
+    Hot      :: 1 << NodeState.Hot;
+    Disabled :: 1 << NodeState.Disabled;
+
+    ActiveLastFrame   :: 1 << (NodeState.Active + 4);
+    FocusedLastFrame  :: 1 << (NodeState.Focused + 4);
+    HotLastFrame      :: 1 << (NodeState.Hot + 4);
+    DisabledLastFrame :: 1 << (NodeState.Disabled + 4);
 }
 
 Node :: struct {
@@ -27,6 +48,7 @@ Node :: struct {
         children_size : Vec2f;
         relative_position : Vec2f;
         rect : Vec4f;
+        clipped_rect : Vec4f;
     };
 
     layout_last_frame : type_of(layout);
@@ -47,6 +69,8 @@ Node :: struct {
         child_layout_mode := LayoutMode.LeftToRight;
         flags : NodeFlags;
     };
+
+    state_flags : NodeStateFlags;
 }
 
 // for_expansion
@@ -187,6 +211,8 @@ TouchNode :: (node : *Node) {
     if node.parent {
         PushChild(node.parent, node);
     }
+
+    node.state_flags <<= 4;
 }
 
 GetNode :: (window : *Window) -> *Node {

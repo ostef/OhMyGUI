@@ -11,6 +11,7 @@
 #load "gl.jai";
 #load "node.jai";
 #load "layout.jai";
+#load "interaction.jai";
 
 Context :: struct {
     frame_index : u64;
@@ -25,6 +26,13 @@ Context :: struct {
     node_pool : Bucket_Array(Node, 1000);
 
     id_offset_stack : [..]int;
+
+    mouse_is_over_node : bool;
+    mouse_hovered_node : *Node;
+    mouse_focused_node : *Node;
+    mouse_interacting_node : *Node;
+    scroll_focused_node : *Node;
+    interacted_this_frame : bool;
 
     shapes_to_draw : [..]Drawing;
     default_effect := Effect.{kind=.SolidColor, solid_color=.{color=.{1,1,1,1}}};
@@ -124,6 +132,21 @@ NewFrame :: (delta_time : float) {
     mx, my : s32;
     SDL_GetGlobalMouseState(*mx, *my);
     omg.input.mouse_position = .{xx mx, xx my};
+
+    omg.mouse_hovered_node = null;
+    omg.mouse_is_over_node = false;
+    SetMouseFocus(null);
+    SetScrollFocus(null);
+
+    window := omg.windows;
+    while window {
+        defer window = window.next;
+        if !window.root_node {
+            continue;
+        }
+
+        FindMouseFocus(window.root_node, window);
+    }
 }
 
 Render :: () {
@@ -134,6 +157,11 @@ Render :: () {
         log_error("Mismatching number of push/pop for ID offset stack");
         omg.id_offset_stack.count = 0;
     }
+
+    if !omg.interacted_this_frame {
+        omg.mouse_interacting_node = null;
+    }
+    omg.interacted_this_frame = false;
 
     window := omg.windows;
     while window {
@@ -185,7 +213,11 @@ DrawNodes :: (node : *Node, clip_shape : *SDShape = null) {
 
     if !(node.flags & .TextNode) {
         d := DrawShape(Box(node.size, 6), position);
-        SolidColor(d, Fill);
+        if context.omg.mouse_focused_node == node {
+            SolidColor(d, .{1,0,0,1});
+        } else {
+            SolidColor(d, Fill);
+        }
         StrokeColor(d, Border, 1);
         Clip(d, clip_shape);
     }

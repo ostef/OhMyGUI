@@ -102,6 +102,7 @@ LayoutNodes :: (root : *Node) {
     root.relative_position = .{0,0};
     root.rect.xy = .{0,0};
     root.rect.zw = root.size;
+    root.clipped_rect = root.rect;
 
     LayoutPosition(root);
 }
@@ -237,6 +238,7 @@ LayoutPosition :: (node : *Node) {
 
         it.rect.xy = node.rect.xy + it.relative_position;
         it.rect.zw = node.rect.xy + it.relative_position + it.size;
+        it.clipped_rect = ClipRect(it.rect, node.rect);
 
         LayoutPosition(it);
     }

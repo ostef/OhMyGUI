@@ -70,6 +70,17 @@ InflateBounds :: inline (bounds : Vec4f, amount : Vec4f) -> Vec4f {
     };
 }
 
+IsInsideRect :: inline (p : Vec2f, rect : Vec4f) -> bool {
+    return p.x > rect.x && p.x < rect.z && p.y > rect.y && p.y < rect.w;
+}
+
+ClipRect :: inline (rect : Vec4f, clip_by : Vec4f) -> Vec4f {
+    return .{
+        xy=max(rect.xy, clip_by.xy),
+        zw=min(rect.zw, clip_by.zw),
+    };
+}
+
 // Basically a 2x3 matrix
 Transform2D :: struct {
     a : float = 1;
