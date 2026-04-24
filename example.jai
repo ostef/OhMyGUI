@@ -23,6 +23,11 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
         OMG.g_anti_aliasing_factor += 0.1;
     }
 
+    Text :: (parent : *OMG.Node, font : *OMG.Font, size : float, text : string, location := #caller_location) {
+        node := OMG.GetNode(parent, location);
+        OMG.SetText(node, font, size, text);
+    }
+
     OMG.g_anti_aliasing_factor = clamp(OMG.g_anti_aliasing_factor, 0, 10);
 
     font := OMG.GetFont("Roboto-Regular");
@@ -38,8 +43,7 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
             OMG.SetWidth(title_bar, OMG.SizeFill());
             OMG.SetHeight(title_bar, OMG.SizeFit());
 
-            title_text := OMG.GetNode(title_bar);
-            OMG.SetText(title_text, font, 14, tprint("OMG Engine (% FPS)", cast(int, 1 / delta_time)));
+            Text(title_bar, font, 14, tprint("OMG Engine (% FPS)", cast(int, 1 / delta_time)));
 
             MenuButton :: (menu : *OMG.Node, str_id : string, font : *OMG.Font, text : string) -> *OMG.Node {
                 button := OMG.GetNode(menu, str_id);
@@ -47,8 +51,7 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
                     OMG.SetPadding(button, 4, 4);
                     OMG.SetSize(button, OMG.SizeFit(), OMG.SizeFill());
 
-                    text_node := OMG.GetNode(button);
-                    OMG.SetText(text_node, font, 14, text);
+                    Text(button, font, 14, text);
                 }
 
                 return button;
@@ -88,8 +91,7 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
                         OMG.SetSize(title_bar, OMG.SizeFill(), OMG.SizePx(32));
                         OMG.SetPadding(title_bar, 4, 4);
 
-                        text := OMG.GetNode(title_bar);
-                        OMG.SetText(text, OMG.GetFont("Roboto-Regular"), 14, title);
+                        Text(title_bar, OMG.GetFont("Roboto-Regular"), 14, title);
                     }
                 }
 
@@ -102,14 +104,10 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
                 OMG.SetLayout(left_side, .TopToBottom);
 
                 main_viewport := Panel(left_side, "main_viewport", "Main Viewport");
-                layout_time := OMG.GetNode(main_viewport);
-                OMG.SetText(layout_time, font, 16, tprint("Layout: % us", cast(int, context.omg.layout_time_last_frame * 1000 * 1000)));
-
-                aa_factor := OMG.GetNode(main_viewport);
-                OMG.SetText(aa_factor, font, 16, tprint("Anti-aliasing: %", OMG.g_anti_aliasing_factor));
-
-                the_quick := OMG.GetNode(main_viewport);
-                OMG.SetText(the_quick, font, (cos(time) + 2) * 10, "The quick brown fox jumps over the lazy dog!");
+                Text(main_viewport, font, 16, tprint("Layout: % us", cast(int, context.omg.layout_time_last_frame * 1000 * 1000)));
+                Text(main_viewport, font, 16, tprint("Anti-aliasing: %", OMG.g_anti_aliasing_factor));
+                Text(main_viewport, OMG.GetFont("JetBrainsMono-Regular"), 14, "Some text with another font");
+                Text(main_viewport, font, (cos(time) + 2) * 10, "The quick brown fox jumps over the lazy dog!");
 
                 content_browser := Panel(left_side, "content_browser", "Content Browser");
                 OMG.SetHeight(content_browser, OMG.SizeFill(0.9));
@@ -123,9 +121,6 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
 
                     entity_outliner := Panel(right_side, "entity_outliner", "Entity Outliner");
                     entity_inspector := Panel(right_side, "entity_inspector", "Entity Inspector");
-
-                    some_text := OMG.GetNode(OMG.GetNode(entity_outliner, "title_bar"));
-                    OMG.SetText(some_text, OMG.GetFont("JetBrainsMono-Regular"), 14, "Some text with another font");
                 }
             }
         }
