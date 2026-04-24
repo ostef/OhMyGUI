@@ -157,6 +157,8 @@ Render :: () {
     }
 
     omg.input_last_frame = omg.input;
+
+    omg.input.mouse_wheel = .{};
 }
 
 #scope_file
