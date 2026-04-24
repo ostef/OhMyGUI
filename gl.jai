@@ -5,8 +5,6 @@ Approx_Max_Shapes :: 5 * Approx_Max_Instances;
 Approx_Max_Effects :: 5 * Approx_Max_Shapes;
 Default_Shapes_Buffer_Size :: Approx_Max_Shapes * size_of(ShaderSDShape) + Approx_Max_Instances * size_of(ShaderSDInstance) + Approx_Max_Effects * size_of(ShaderEffect);
 
-g_anti_aliasing_factor := 1.0;
-
 #scope_module
 
 ShaderSDInstance :: struct {
@@ -445,11 +443,6 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
         u_viewport_size := glGetUniformLocation(g_shape_shader, "u_viewport_size");
         if u_viewport_size >= 0 {
             glUniform2f(u_viewport_size, xx viewport_w, xx viewport_h);
-        }
-
-        u_anti_aliasing_factor := glGetUniformLocation(g_shape_shader, "u_anti_aliasing_factor");
-        if u_anti_aliasing_factor >= 0 {
-            glUniform1f(u_anti_aliasing_factor, xx g_anti_aliasing_factor);
         }
 
         glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 0, buffer_handle, xx instances_offset, xx instances_size);

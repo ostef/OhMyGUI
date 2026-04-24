@@ -16,19 +16,10 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
     OMG.NewFrame(delta_time);
     defer OMG.Render();
 
-    if OMG.GetMouseWheel().y < 0 {
-        OMG.g_anti_aliasing_factor -= 0.1;
-    }
-    if OMG.GetMouseWheel().y > 0 {
-        OMG.g_anti_aliasing_factor += 0.1;
-    }
-
     Text :: (parent : *OMG.Node, font : *OMG.Font, size : float, text : string, location := #caller_location) {
         node := OMG.GetNode(parent, location);
         OMG.SetText(node, font, size, text);
     }
-
-    OMG.g_anti_aliasing_factor = clamp(OMG.g_anti_aliasing_factor, 0, 10);
 
     font := OMG.GetFont("Roboto-Regular");
 
@@ -105,7 +96,6 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
 
                 main_viewport := Panel(left_side, "main_viewport", "Main Viewport");
                 Text(main_viewport, font, 16, tprint("Layout: % us", cast(int, context.omg.layout_time_last_frame * 1000 * 1000)));
-                Text(main_viewport, font, 16, tprint("Anti-aliasing: %", OMG.g_anti_aliasing_factor));
                 Text(main_viewport, OMG.GetFont("JetBrainsMono-Regular"), 14, "Some text with another font");
                 Text(main_viewport, font, (cos(time) + 2) * 10, "The quick brown fox jumps over the lazy dog!");
 
