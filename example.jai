@@ -31,6 +31,7 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
         {
             OMG.SetPadding(title_bar, 4, 4);
             OMG.SetChildGap(title_bar, 4, 4);
+            OMG.SetChildAlign(title_bar, 0.5, 0.5);
             OMG.SetWidth(title_bar, OMG.SizeFill());
             OMG.SetHeight(title_bar, OMG.SizeFit());
 
@@ -39,8 +40,10 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
             MenuButton :: (menu : *OMG.Node, str_id : string, font : *OMG.Font, text : string) -> *OMG.Node {
                 button := OMG.GetNode(menu, str_id);
                 {
+                    button.flags |= .Focusable;
                     OMG.SetPadding(button, 4, 4);
-                    OMG.SetSize(button, OMG.SizeFit(), OMG.SizeFill());
+                    OMG.SetSize(button, OMG.SizeFit(), OMG.SizeFit());
+                    OMG.SetChildAlign(button, 0.5, 0.5);
 
                     Text(button, font, 14, text);
                 }
@@ -49,7 +52,7 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
             }
 
             title_menu := OMG.GetNode(title_bar);
-            OMG.SetSize(title_menu, OMG.SizeFill());
+            OMG.SetSize(title_menu, OMG.SizeFill(), OMG.SizeFit());
 
             file_menu := MenuButton(title_menu, "file_menu", font, "File");
             edit_menu := MenuButton(title_menu, "edit_menu", font, "Edit");
@@ -81,6 +84,7 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
                     {
                         OMG.SetSize(title_bar, OMG.SizeFill(), OMG.SizePx(32));
                         OMG.SetPadding(title_bar, 4, 4);
+                        OMG.SetChildAlign(title_bar, 0, 0.5);
 
                         Text(title_bar, OMG.GetFont("Roboto-Regular"), 14, title);
                     }

@@ -39,6 +39,7 @@ GlyphRange :: struct {
 
 Glyph :: struct {
     codepoint : u32;
+    texture_size : Vec2f;
     size : Vec2f;
     hori_bearing : Vec2f;
     vert_bearing : Vec2f;
@@ -88,6 +89,10 @@ LoadFontFromFile :: (filename : string, config : FontConfig) -> *Font {
     font.ascent = FractToFloat(ft_face.size.metrics.ascender) / cast(float, config.resolution);
     font.descent = -FractToFloat(ft_face.size.metrics.descender) / cast(float, config.resolution);
 
+    sdf_spread : s32;
+    FT_Property_Get(g_ft_lib, "sdf", "spread", *sdf_spread);
+    font.sdf_range = sdf_spread / cast(float, font.resolution);
+
     packer : RectPacker;
     packer.width = config.atlas_width;
     packer.height = config.atlas_height;
@@ -121,10 +126,6 @@ LoadFontFromFile :: (filename : string, config : FontConfig) -> *Font {
 
     glTextureParameteri(font.texture, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTextureParameteri(font.texture, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    sdf_spread : s32;
-    FT_Property_Get(g_ft_lib, "sdf", "spread", *sdf_spread);
-    font.sdf_range = sdf_spread / cast(float, font.resolution);
 
     font.next = context.omg.fonts;
     if font.next {
@@ -239,6 +240,7 @@ LoadGlyph :: (font : *Font, codepoint : u32, ft_face : FT_Face, packer : *RectPa
         return null;
     }
 
+
     FT_Render_Glyph(ft_face.glyph, .NORMAL); // We want the SDF rendering to be based off the bitmap
     FT_Render_Glyph(ft_face.glyph, .SDF);
 
@@ -247,8 +249,10 @@ LoadGlyph :: (font : *Font, codepoint : u32, ft_face : FT_Face, packer : *RectPa
     glyph : Glyph;
     glyph.codepoint = codepoint;
 
-    glyph.size.x = slot.bitmap.width / cast(float, font.resolution);
-    glyph.size.y = slot.bitmap.rows / cast(float, font.resolution);
+    glyph.texture_size.x = slot.bitmap.width / cast(float, font.resolution);
+    glyph.texture_size.y = slot.bitmap.rows / cast(float, font.resolution);
+    glyph.size.x = FractToFloat(slot.metrics.width) / cast(float, font.resolution);
+    glyph.size.y = FractToFloat(slot.metrics.height) / cast(float, font.resolution);
     glyph.hori_bearing.x =  FractToFloat(slot.metrics.horiBearingX) / cast(float, font.resolution);
     glyph.hori_bearing.y = -FractToFloat(slot.metrics.horiBearingY) / cast(float, font.resolution);
     glyph.vert_bearing.x =  FractToFloat(slot.metrics.vertBearingX) / cast(float, font.resolution);
@@ -294,8 +298,8 @@ DrawText :: (font : *Font, position : Vec2f, size : float, text : string, color 
         glyph_position := position + iter.pen + it.hori_bearing * iter.size;
         glyph_position += it.size * iter.size * 0.5;
 
-        s := SDTexture(font.texture, it.size * iter.size, it.uv_rect, .{sdf_range, -sdf_range});
-        d := DrawShape(s, glyph_position + Vec2f.{0.5, 0.5});
+        s := SDTexture(font.texture, it.texture_size * iter.size, it.uv_rect, .{sdf_range, -sdf_range});
+        d := DrawShape(s, glyph_position);
         Clip(d, clip_shape);
         SolidColor(d, color);
     }
@@ -313,9 +317,9 @@ Newline :: (iter : *TextGlyphIterator) {
     iter.bounds.x = max(iter.bounds.x, iter.pen.x);
 
     iter.pen.x = 0;
-    iter.pen.y += (iter.font.ascent + iter.font.descent) * iter.size;
+    iter.pen.y += (iter.font.descent + iter.font.ascent) * iter.size;
 
-    iter.bounds.y = max(iter.bounds.y, iter.pen.y);
+    iter.bounds.y = max(iter.bounds.y, iter.pen.y + iter.font.descent * iter.size);
 }
 
 for_expansion :: (iter : *TextGlyphIterator, body : Code, flags : For_Flags) #expand {
@@ -329,6 +333,7 @@ for_expansion :: (iter : *TextGlyphIterator, body : Code, flags : For_Flags) #ex
         case #char "\t";
             iter.pen.x = SnapUp(iter.pen.x + iter.font.space_advance * iter.size, iter.font.space_advance * 4 * iter.size);
             iter.bounds.x = max(iter.bounds.x, iter.pen.x);
+            iter.bounds.y = max(iter.bounds.y, iter.pen.y + iter.font.descent * iter.size);
 
         case;
             glyph := GetGlyph(iter.font, codepoint);
@@ -342,11 +347,11 @@ for_expansion :: (iter : *TextGlyphIterator, body : Code, flags : For_Flags) #ex
             `it := glyph;
             #insert body;
 
-            glyph_end := iter.pen + (glyph.hori_bearing + glyph.size) * iter.size;
-            iter.bounds = max(iter.bounds, glyph_end);
+            iter.bounds.x = max(iter.bounds.x, iter.pen.x + glyph.hori_advance * iter.size, iter.pen.x + (glyph.hori_bearing.x + glyph.size.x) * iter.size);
+            iter.bounds.y = max(iter.bounds.y, iter.pen.y + iter.font.descent * iter.size);
 
             iter.pen.x += glyph.hori_advance * iter.size;
-        }
+       }
     }
 }
 
