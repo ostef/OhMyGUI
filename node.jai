@@ -34,6 +34,7 @@ Node :: struct {
 
     last_used_on_frame : u64;
 
+    window : *Window;
     parent : *Node;
 
     using layout : struct {
@@ -218,6 +219,7 @@ TouchNode :: (node : *Node) {
 GetNode :: (window : *Window) -> *Node {
     if !window.root_node {
         window.root_node = AllocNode();
+        window.root_node.window = window;
         window.root_node.local_id = GetID("Root");
         window.root_node.id = GetID(window.root_node.local_id, cast(u64, window));
     }
@@ -270,6 +272,7 @@ GetNode :: (parent : *Node, id : ID) -> *Node {
 
     if !node {
         node = AllocNode();
+        node.window = parent.window;
         node.parent = parent;
         node.local_id = id;
         node.id = GetID(id, base=parent.id);
