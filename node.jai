@@ -11,20 +11,19 @@ NodeFlags :: enum_flags u8 {
 NodeState :: enum u8 {
     Active;
     Focused;
-    Hot;
     Disabled;
 }
+
+Num_Node_States :: #run type_info(NodeState).values.count;
 
 NodeStateFlags :: enum_flags u8 {
     Active   :: 1 << NodeState.Active;
     Focused  :: 1 << NodeState.Focused;
-    Hot      :: 1 << NodeState.Hot;
     Disabled :: 1 << NodeState.Disabled;
 
-    ActiveLastFrame   :: 1 << (NodeState.Active + 4);
-    FocusedLastFrame  :: 1 << (NodeState.Focused + 4);
-    HotLastFrame      :: 1 << (NodeState.Hot + 4);
-    DisabledLastFrame :: 1 << (NodeState.Disabled + 4);
+    ActiveLastFrame :: Active << Num_Node_States;
+    FocusedLastFrame :: Focused << Num_Node_States;
+    DisabledLastFrame :: Disabled << Num_Node_States;
 }
 
 Node :: struct {
@@ -69,6 +68,8 @@ Node :: struct {
         child_align : Vec2f; // If child_layout_mode is not None
         child_layout_mode := LayoutMode.LeftToRight;
         flags : NodeFlags;
+
+        color := Vec4f.{1,1,1,1};
     };
 
     state_flags : NodeStateFlags;
@@ -131,9 +132,7 @@ FreeNode :: (node : *Node) {
         FreeNode(it);
     }
 
-    index := node.index;
-    node.index = .{};
-    bucket_array_remove(*context.omg.node_pool, index);
+    bucket_array_remove(*context.omg.node_pool, node.index);
 }
 
 PushChild :: (parent : *Node, node : *Node) {
@@ -212,8 +211,6 @@ TouchNode :: (node : *Node) {
     if node.parent {
         PushChild(node.parent, node);
     }
-
-    node.state_flags <<= 4;
 }
 
 GetNode :: (window : *Window) -> *Node {

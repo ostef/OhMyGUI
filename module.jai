@@ -30,9 +30,9 @@ Context :: struct {
     mouse_is_over_node : bool;
     mouse_hovered_node : *Node;
     mouse_focused_node : *Node;
-    mouse_interacting_node : *Node;
+    mouse_capturing_node : *Node;
+    mouse_captured_this_frame : bool;
     scroll_focused_node : *Node;
-    interacted_this_frame : bool;
 
     shapes_to_draw : [..]Drawing;
     default_effect := Effect.{kind=.SolidColor, solid_color=.{color=.{1,1,1,1}}};
@@ -135,8 +135,12 @@ NewFrame :: (delta_time : float) {
 
     omg.mouse_hovered_node = null;
     omg.mouse_is_over_node = false;
-    SetMouseFocus(null);
-    SetScrollFocus(null);
+    omg.mouse_focused_node = null;
+    omg.scroll_focused_node = null;
+
+    for * omg.node_pool {
+        it.state_flags <<= Num_Node_States;
+    }
 
     window := omg.windows;
     while window {
@@ -146,6 +150,10 @@ NewFrame :: (delta_time : float) {
         }
 
         FindMouseFocus(window.root_node, window);
+    }
+
+    if omg.mouse_focused_node {
+        omg.mouse_focused_node.state_flags |= .Focused;
     }
 }
 
@@ -158,10 +166,10 @@ Render :: () {
         omg.id_offset_stack.count = 0;
     }
 
-    if !omg.interacted_this_frame {
-        omg.mouse_interacting_node = null;
+    if !omg.mouse_captured_this_frame {
+        omg.mouse_capturing_node = null;
     }
-    omg.interacted_this_frame = false;
+    omg.mouse_captured_this_frame = false;
 
     window := omg.windows;
     while window {
@@ -213,11 +221,7 @@ DrawNodes :: (node : *Node, clip_shape : *SDShape = null) {
 
     if !(node.flags & .TextNode) {
         d := DrawShape(Box(node.size, 6), position);
-        if context.omg.mouse_focused_node == node {
-            SolidColor(d, .{1,0,0,1});
-        } else {
-            SolidColor(d, Fill);
-        }
+        SolidColor(d, node.color);
         StrokeColor(d, Border, 1);
         Clip(d, clip_shape);
     }

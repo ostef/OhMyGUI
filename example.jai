@@ -45,6 +45,19 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
                     OMG.SetSize(button, OMG.SizeFit(), OMG.SizeFit());
                     OMG.SetChildAlign(button, 0.5, 0.5);
 
+                    clicked := OMG.ButtonBehavior(button);
+                    if clicked {
+                        print("Clicked %!\n", text);
+                    }
+
+                    print("%: %\n", text, button.state_flags);
+
+                    if button.state_flags & .Active {
+                        button.color = .{1,0,0,1};
+                    } else if button.state_flags & .Focused {
+                        button.color = .{0,1,0,1};
+                    }
+
                     Text(button, font, 14, text);
                 }
 
@@ -99,6 +112,10 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
                 OMG.SetLayout(left_side, .TopToBottom);
 
                 main_viewport := Panel(left_side, "main_viewport", "Main Viewport");
+
+                Text(main_viewport, font, 16, tprint("Mouse focus: %", context.omg.mouse_focused_node));
+                Text(main_viewport, font, 16, tprint("Mouse capture: %", context.omg.mouse_capturing_node));
+
                 Text(main_viewport, font, 16, tprint("Layout: % us", cast(int, context.omg.layout_time_last_frame * 1000 * 1000)));
                 Text(main_viewport, OMG.GetFont("JetBrainsMono-Regular"), 14, "Some text with another font");
                 Text(main_viewport, font, (cos(time) + 2) * 10, "The quick brown fox jumps over the lazy dog!");
