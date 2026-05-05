@@ -20,10 +20,12 @@ NodeStateFlags :: enum_flags u8 {
     Active   :: 1 << NodeState.Active;
     Focused  :: 1 << NodeState.Focused;
     Disabled :: 1 << NodeState.Disabled;
+    CurrentFrame :: Disabled | Focused | Active;
 
     ActiveLastFrame :: Active << Num_Node_States;
     FocusedLastFrame :: Focused << Num_Node_States;
     DisabledLastFrame :: Disabled << Num_Node_States;
+    LastFrame :: DisabledLastFrame | FocusedLastFrame | ActiveLastFrame;
 }
 
 Node :: struct {

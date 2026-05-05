@@ -50,8 +50,6 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
                         print("Clicked %!\n", text);
                     }
 
-                    print("%: %\n", text, button.state_flags);
-
                     if button.state_flags & .Active {
                         button.color = .{1,0,0,1};
                     } else if button.state_flags & .Focused {

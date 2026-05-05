@@ -139,7 +139,7 @@ NewFrame :: (delta_time : float) {
     omg.scroll_focused_node = null;
 
     for * omg.node_pool {
-        it.state_flags <<= Num_Node_States;
+        it.state_flags = (it.state_flags & .CurrentFrame) << Num_Node_States;
     }
 
     window := omg.windows;
