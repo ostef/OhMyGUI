@@ -28,12 +28,19 @@ NodeStateFlags :: enum_flags u8 {
     LastFrame :: DisabledLastFrame | FocusedLastFrame | ActiveLastFrame;
 }
 
+NodeUserData :: struct {
+    next : *NodeUserData;
+    id : ID;
+}
+
 Node :: struct {
     id : ID;
     local_id : ID;
     index : Bucket_Locator;
 
     last_used_on_frame : u64;
+
+    user_data : *NodeUserData;
 
     window : *Window;
     parent : *Node;
@@ -100,6 +107,7 @@ Children :: (node : *Node, body : Code, flags : For_Flags) #expand {
     }
 }
 
+// for_expansion
 PrevFrameChildren :: (node : *Node, body : Code, flags : For_Flags) #expand {
     #if flags & .REVERSE {
         `it := node.layout_last_frame.last_child;
@@ -122,6 +130,52 @@ PrevFrameChildren :: (node : *Node, body : Code, flags : For_Flags) #expand {
     }
 }
 
+// for_expansion
+UserData :: (node : *Node, body : Code, flags : For_Flags) #expand {
+    `it := node.user_data;
+    `it_index := 0;
+
+    while it {
+        next := it.next;
+        defer it = next;
+
+        #insert body;
+    }
+}
+
+GetUserData :: inline (node : *Node, $T : Type) -> *T {
+    return GetUserData(node, cast(ID, T), T);
+}
+
+GetUserData :: inline (node : *Node, str_id : string, $T : Type) -> *T {
+    return GetUserData(node, GetID(str_id, false), T);
+}
+
+GetUserData :: inline (node : *Node, id : ID, $T : Type) -> *T {
+    return GetUserData(node, id, size_of(T));
+}
+
+GetUserData :: (node : *Node, id : ID, size : int) -> *void {
+    for :UserData node {
+        if it.id == id {
+            return it;
+        }
+    }
+
+    ptr := alloc(size + size_of(NodeUserData));
+
+    list_node := cast(*NodeUserData, ptr);
+    list_node.id = id;
+
+    list_node.next = node.user_data;
+    node.user_data = list_node;
+
+    user_data := cast(*void, list_node + 1);
+    user_data.* = .{};
+
+    return user_data;
+}
+
 AllocNode :: () -> *Node {
     node, index := find_and_occupy_empty_slot(*context.omg.node_pool);
     node.index = index;
@@ -132,6 +186,10 @@ AllocNode :: () -> *Node {
 FreeNode :: (node : *Node) {
     for :PrevFrameChildren node {
         FreeNode(it);
+    }
+
+    for :UserData node {
+        free(it);
     }
 
     bucket_array_remove(*context.omg.node_pool, node.index);
