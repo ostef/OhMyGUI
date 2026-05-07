@@ -1,5 +1,13 @@
-ButtonBehavior :: (node : *Node, ) -> bool {
+IsHovered :: (node : *Node) -> bool {
+    mouse := GetMousePosition(node.window);
+
+    return IsInsideRect(mouse, node.layout_last_frame.clipped_rect);
+}
+
+ButtonBehavior :: (node : *Node) -> bool {
     omg := context.omg;
+
+    node.flags |= .Focusable;
 
     if (IsMouseButtonReleased(.Left) || IsMouseButtonDown(.Left)) && omg.mouse_capturing_node == node {
         SetMouseCapture(node);
@@ -12,7 +20,13 @@ ButtonBehavior :: (node : *Node, ) -> bool {
         node.state_flags |= .Active;
     }
 
-    return omg.mouse_capturing_node == node && IsMouseButtonReleased(.Left);
+    if node.state_flags & .Active {
+        node.color = .{1,0,0,1};
+    } else if node.state_flags & .Focused {
+        node.color = .{0,1,0,1};
+    }
+
+    return node.state_flags & .Active && IsHovered(node) && IsMouseButtonReleased(.Left);
 }
 
 SetMouseFocus :: inline (node : *Node) {
@@ -36,9 +50,9 @@ SetMouseCapture :: inline (node : *Node) {
     context.omg.mouse_captured_this_frame = true;
 }
 
-FindMouseFocus :: (node : *Node, window : *Window) {
+FindMouseFocus :: (node : *Node) {
     omg := context.omg;
-    mouse := GetMousePosition(window);
+    mouse := GetMousePosition(node.window);
 
     if node.parent && IsInsideRect(mouse, node.clipped_rect) {
         omg.mouse_is_over_node = true;
@@ -58,6 +72,6 @@ FindMouseFocus :: (node : *Node, window : *Window) {
     }
 
     for :Children node {
-        FindMouseFocus(it, window);
+        FindMouseFocus(it);
     }
 }

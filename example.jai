@@ -40,7 +40,6 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
             MenuButton :: (menu : *OMG.Node, str_id : string, font : *OMG.Font, text : string) -> *OMG.Node {
                 button := OMG.GetNode(menu, str_id);
                 {
-                    button.flags |= .Focusable;
                     OMG.SetPadding(button, 4, 4);
                     OMG.SetSize(button, OMG.SizeFit(), OMG.SizeFit());
                     OMG.SetChildAlign(button, 0.5, 0.5);
@@ -48,12 +47,6 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
                     clicked := OMG.ButtonBehavior(button);
                     if clicked {
                         print("Clicked %!\n", text);
-                    }
-
-                    if button.state_flags & .Active {
-                        button.color = .{1,0,0,1};
-                    } else if button.state_flags & .Focused {
-                        button.color = .{0,1,0,1};
                     }
 
                     Text(button, font, 14, text);
@@ -74,11 +67,23 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
             title_mini := OMG.GetNode(title_bar, "minimize");
             OMG.SetSize(title_mini, OMG.SizePx(25));
 
+            if OMG.ButtonBehavior(title_mini) {
+                SDL_MinimizeWindow(g_window);
+            }
+
             title_maxi := OMG.GetNode(title_bar, "maximize");
             OMG.SetSize(title_maxi, OMG.SizePx(25));
 
+            if OMG.ButtonBehavior(title_maxi) {
+                SDL_MaximizeWindow(g_window);
+            }
+
             title_close := OMG.GetNode(title_bar, "close");
             OMG.SetSize(title_close, OMG.SizePx(25));
+
+            if OMG.ButtonBehavior(title_close) {
+                SDL_Quit();
+            }
         }
 
         content := OMG.GetNode(root, "content");

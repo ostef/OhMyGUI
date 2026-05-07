@@ -149,7 +149,7 @@ NewFrame :: (delta_time : float) {
             continue;
         }
 
-        FindMouseFocus(window.root_node, window);
+        FindMouseFocus(window.root_node);
     }
 
     if omg.mouse_focused_node {
