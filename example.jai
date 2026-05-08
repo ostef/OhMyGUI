@@ -104,9 +104,39 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
 
                         Text(title_bar, OMG.GetFont("Roboto-Regular"), 14, title);
                     }
-                }
 
-                return panel;
+                    content_and_scrollbar := OMG.GetNode(panel, "content_and_scrollbar");
+                    {
+                        OMG.SetLayout(content_and_scrollbar, .LeftToRight);
+                        OMG.SetSize(content_and_scrollbar, OMG.SizeFill());
+
+                        content := OMG.GetNode(content_and_scrollbar, "content");
+                        {
+                            OMG.SetLayout(content, .TopToBottom);
+                            OMG.SetSize(content, OMG.SizeFill());
+
+                            OMG.ScrollViewBehavior(content, .Y);
+                        }
+
+                        if content.layout_last_frame.children_size.y > content.layout_last_frame.size.y {
+                            scrollbar := OMG.GetNode(content_and_scrollbar, "scrollbar.y");
+                            {
+                                OMG.SetSize(scrollbar, OMG.SizePx(15), OMG.SizeFill());
+
+                                handle := OMG.GetNode(scrollbar, "handle");
+                                {
+                                    ratio := content.layout_last_frame.size.y / content.layout_last_frame.children_size.y;
+                                    OMG.SetSize(handle, OMG.SizeFill(), OMG.SizeFill(ratio));
+
+                                    OMG.ScrollBehavior(handle);
+                                    OMG.ButtonBehavior(handle);
+                                }
+                            }
+                        }
+
+                        return content;
+                    }
+                }
             }
 
             left_side := OMG.GetNode(content, "left_side");
@@ -118,6 +148,7 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
 
                 Text(main_viewport, font, 16, tprint("Mouse focus: %", context.omg.mouse_focused_node));
                 Text(main_viewport, font, 16, tprint("Mouse capture: %", context.omg.mouse_capturing_node));
+                Text(main_viewport, font, 16, tprint("Scroll focuse: %", context.omg.scroll_focused_node));
 
                 Text(main_viewport, font, 16, tprint("Layout: % us", cast(int, context.omg.layout_time_last_frame * 1000 * 1000)));
                 Text(main_viewport, OMG.GetFont("JetBrainsMono-Regular"), 14, "Some text with another font");
@@ -134,6 +165,18 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
                     OMG.SetLayout(right_side, .TopToBottom);
 
                     entity_outliner := Panel(right_side, "entity_outliner", "Entity Outliner");
+                    for i : 0..25 {
+                        OMG.PushIDOffset(i);
+                        defer OMG.PopIDOffset();
+
+                        entry := OMG.GetNode(entity_outliner);
+                        OMG.SetPadding(entry, 2, 2);
+                        OMG.SetSize(entry, OMG.SizeFill(), OMG.SizeFit());
+                        OMG.ButtonBehavior(entry);
+
+                        Text(entry, font, 16, tprint("Entry %", i));
+                    }
+
                     entity_inspector := Panel(right_side, "entity_inspector", "Entity Inspector");
                 }
             }
@@ -219,7 +262,7 @@ main :: () {
         }
 
         glViewport(0, 0, xx w, xx h);
-        glClearColor(1,1,1, 1);
+        glClearColor(0,0,0,1);
         glClear(GL_COLOR_BUFFER_BIT);
 
         OMG.RenderGL(xx w, xx h);

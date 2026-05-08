@@ -284,7 +284,11 @@ LoadGlyph :: (font : *Font, codepoint : u32, ft_face : FT_Face, packer : *RectPa
 #scope_export
 
 DrawText :: (font : *Font, position : Vec2f, size : float, text : string, color : Vec4f, clip_shape : *SDShape = null) {
-    if !font || color.w == 0 {
+    DrawText(font, position ,size, text, ColorU32(color), clip_shape);
+}
+
+DrawText :: (font : *Font, position : Vec2f, size : float, text : string, color : u32, clip_shape : *SDShape = null) {
+    if !font || (color & 0xff) == 0 {
         return;
     }
 

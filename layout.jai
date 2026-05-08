@@ -3,6 +3,11 @@ Axis :: enum u8 {
     Y;
 }
 
+AxisFlags :: enum_flags u8 {
+    X;
+    Y;
+}
+
 GetCrossAxis :: inline (axis : Axis) -> Axis {
     return ifx axis == .X then .Y else .X;
 }
@@ -221,6 +226,7 @@ LayoutPosition :: (node : *Node) {
     cross_size := node.size[cross] - 2 * node.padding[cross];
 
     cursor := ifx reverse then node.size[axis] - node.padding[axis] - axis_align_offset else node.padding[axis] + axis_align_offset;
+    cursor += node.scroll[axis];
     first := true;
     for :LayoutDirection node {
         defer first = false;
@@ -235,6 +241,8 @@ LayoutPosition :: (node : *Node) {
         if !reverse {
             cursor += it.size[axis] + node.child_gap[axis];
         }
+
+        it.relative_position += it.offset;
 
         it.rect.xy = node.rect.xy + it.relative_position;
         it.rect.zw = node.rect.xy + it.relative_position + it.size;

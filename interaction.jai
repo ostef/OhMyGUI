@@ -21,12 +21,41 @@ ButtonBehavior :: (node : *Node) -> bool {
     }
 
     if node.state_flags & .Active {
-        node.color = .{1,0,0,1};
+        SetBackgroundColor(node, 1, 0, 0, 1);
     } else if node.state_flags & .Focused {
-        node.color = .{0,1,0,1};
+        SetBackgroundColor(node, 0, 1, 0, 1);
+    } else {
+        SetBackgroundColor(node, 1, 1, 1, 1);
     }
 
     return node.state_flags & .Active && IsHovered(node) && IsMouseButtonReleased(.Left);
+}
+
+ScrollBehavior :: (node : *Node) -> Vec2f {
+    node.flags |= .Scrollable;
+
+    if context.omg.scroll_focused_node == node {
+        return GetMouseWheel();
+    }
+
+    return .{};
+}
+
+ScrollViewBehavior :: (node : *Node, axis : AxisFlags) {
+    scroll := ScrollBehavior(node);
+    if axis & .X {
+        node.scroll.x += scroll.x;
+
+        avail_scroll := node.layout_last_frame.children_size.x - node.layout_last_frame.size.x;
+        node.scroll.x = clamp(node.scroll.y, -avail_scroll, 0);
+    }
+
+    if axis & .Y {
+        node.scroll.y += scroll.y;
+
+        avail_scroll := node.layout_last_frame.children_size.y - node.layout_last_frame.size.y;
+        node.scroll.y = clamp(node.scroll.y, -avail_scroll, 0);
+    }
 }
 
 SetMouseFocus :: inline (node : *Node) {

@@ -26,8 +26,8 @@ ShaderSDShape :: struct {
 
 ShaderEffect :: struct {
     kind : u32;
-    padding : [3]u32;
-    params : [8]float;
+    params0 : [3]u32;
+    params1 : [4]float;
 }
 
 g_color_texture : GLuint;
@@ -370,30 +370,21 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
 
             if #complete fx.kind == {
             case .SolidColor;
-                effect.params[0] = fx.solid_color.color.x;
-                effect.params[1] = fx.solid_color.color.y;
-                effect.params[2] = fx.solid_color.color.z;
-                effect.params[3] = fx.solid_color.color.w;
-                effect.params[4] = fx.solid_color.blur_factor;
+                effect.params0[0] = fx.solid_color.color;
+                effect.params1[0] = fx.solid_color.blur_factor;
 
             case .StrokeColor;
-                effect.params[0] = fx.stroke_color.color.x;
-                effect.params[1] = fx.stroke_color.color.y;
-                effect.params[2] = fx.stroke_color.color.z;
-                effect.params[3] = fx.stroke_color.color.w;
-                effect.params[4] = fx.stroke_color.blur_factor;
-                effect.params[5] = fx.stroke_color.inset;
-                effect.params[6] = fx.stroke_color.size;
+                effect.params0[0] = fx.stroke_color.color;
+                effect.params1[0] = fx.stroke_color.blur_factor;
+                effect.params1[1] = fx.stroke_color.inset;
+                effect.params1[2] = fx.stroke_color.size;
 
             case .InnerShadow; #through;
             case .OuterShadow;
-                effect.params[0] = fx.outer_shadow.color.x;
-                effect.params[1] = fx.outer_shadow.color.y;
-                effect.params[2] = fx.outer_shadow.color.z;
-                effect.params[3] = fx.outer_shadow.color.w;
-                effect.params[4] = fx.outer_shadow.offset.x;
-                effect.params[5] = fx.outer_shadow.offset.y;
-                effect.params[6] = fx.outer_shadow.blur_factor;
+                effect.params0[0] = fx.outer_shadow.color;
+                effect.params1[0] = fx.outer_shadow.offset.x;
+                effect.params1[1] = fx.outer_shadow.offset.y;
+                effect.params1[2] = fx.outer_shadow.blur_factor;
             }
         }
 

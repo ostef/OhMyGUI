@@ -62,13 +62,14 @@ Node :: struct {
 
     layout_last_frame : type_of(layout);
 
-    // User controlled properties, reset each frame
+    // User controlled properties mostly related to layout, reset each frame
     using properties : struct {
         font : *Font;
         text : string;
         text_size : float;
 
         offset : Vec2f; // If parent.child_layout_mode is None
+        scroll : Vec2f; // NOT reset each frame
         desired_size := Size2D.{.{kind=.FitChildren}, .{kind=.FitChildren}};
         min_size := Vec2f.{-FLOAT32_INFINITY, -FLOAT32_INFINITY};
         max_size := Vec2f.{ FLOAT32_INFINITY,  FLOAT32_INFINITY};
@@ -77,8 +78,19 @@ Node :: struct {
         child_align : Vec2f; // If child_layout_mode is not None
         child_layout_mode := LayoutMode.LeftToRight;
         flags : NodeFlags;
+    };
 
-        color := Vec4f.{1,1,1,1};
+    // Styling properties, NOT reset each frame
+    using styling : struct {
+        corner_radiuses : Vec4f;
+        background_color : u32 = 0xffffffff;
+        text_color : u32 = 0x000000ff;
+        border_color : u32 = 0x000000ff;
+        border_size : float = 1;
+        border_inset : float;
+        outer_shadow_blur : float;
+        outer_shadow_offset : Vec2f;
+        outer_shadow_color : u32;
     };
 
     state_flags : NodeStateFlags;
@@ -266,7 +278,9 @@ TouchNode :: (node : *Node) {
     }
 
     node.last_used_on_frame = context.omg.frame_index;
+    scroll := node.scroll;
     node.properties = .{};
+    node.scroll = scroll;
     node.layout = .{};
     if node.parent {
         PushChild(node.parent, node);
@@ -449,3 +463,66 @@ SetText :: inline (node : *Node, font : *Font, size : float, text : string) {
     node.text_size = size;
 }
 
+SetCornerRadius :: inline (node : *Node, radius : float) {
+    node.corner_radiuses = .{radius, radius, radius, radius};
+}
+
+SetCornerRadiuses :: inline (node : *Node, top_left : float, top_right : float, bottom_left : float, bottom_right : float) {
+    node.corner_radiuses = .{top_left, top_right, bottom_left, bottom_right};
+}
+
+SetCornerRadiuses :: inline (node : *Node, radiuses : Vec4f) {
+    node.corner_radiuses = radiuses;
+}
+
+SetBackgroundColor :: inline (node : *Node, r : float, g : float, b : float, a : float) {
+    node.background_color = ColorU32(r, g, b, a);
+}
+
+SetBackgroundColor :: inline (node : *Node, color : Vec4f) {
+    node.background_color = ColorU32(color);
+}
+
+SetTextColor :: inline (node : *Node, r : float, g : float, b : float, a : float) {
+    node.text_color = ColorU32(r, g, b, a);
+}
+
+SetTextColor :: inline (node : *Node, color : Vec4f) {
+    node.text_color = ColorU32(color);
+}
+
+SetBorderColor :: inline (node : *Node, r : float, g : float, b : float, a : float) {
+    node.border_color = ColorU32(r, g, b, a);
+}
+
+SetBorderColor :: inline (node : *Node, color : Vec4f) {
+    node.border_color = ColorU32(color);
+}
+
+SetBorderSize :: inline (node : *Node, size : float) {
+    node.border_size = size;
+}
+
+SetBorderInset :: inline (node : *Node, inset : float) {
+    node.border_inset = inset;
+}
+
+SetOuterShadowOffset :: inline (node : *Node, x : float, y : float) {
+    node.outer_shadow_offset = .{x,y};
+}
+
+SetOuterShadowOffset :: inline (node : *Node, offset : Vec2f) {
+    node.outer_shadow_offset = offset;
+}
+
+SetOuterShadowColor :: inline (node : *Node, r : float, g : float, b : float, a : float) {
+    node.outer_shadow_color = ColorU32(r, g, b, a);
+}
+
+SetOuterShadowColor :: inline (node : *Node, color : Vec4f) {
+    node.outer_shadow_color = ColorU32(color);
+}
+
+SetOuterShadowOpacity :: inline (node : *Node, alpha : float) {
+    node.outer_shadow_color.w = alpha;
+}

@@ -35,7 +35,7 @@ Context :: struct {
     scroll_focused_node : *Node;
 
     shapes_to_draw : [..]Drawing;
-    default_effect := Effect.{kind=.SolidColor, solid_color=.{color=.{1,1,1,1}}};
+    default_effect := Effect.{kind=.SolidColor, solid_color=.{color=0xffffffff}};
 }
 
 Window :: struct {
@@ -214,16 +214,44 @@ PostLayout :: (node : *Node) {
 }
 
 DrawNodes :: (node : *Node, clip_shape : *SDShape = null) {
-    Border :: Vec4f.{0,0,0,1};
-    Fill :: Vec4f.{1,1,1,1};
+    DrawBox :: inline (node : *Node, clip_shape : *SDShape) {
+        has_background := (node.background_color & 0xff) > 0;
+        has_border := (node.border_color & 0xff) > 0 && node.border_size > 0;
+        has_shadow := (node.outer_shadow_color & 0xff) > 0;
+
+        if !has_background && !has_border && !has_shadow {
+            return;
+        }
+
+        position := (node.rect.xy + node.rect.zw) * 0.5;
+
+        d := DrawShape(Box(node.size, node.corner_radiuses), position);
+
+        if has_shadow {
+            OuterShadow(d, node.outer_shadow_offset, node.outer_shadow_blur, node.outer_shadow_color);
+        }
+        if has_background {
+            SolidColor(d, node.background_color);
+        }
+        if has_border {
+            StrokeColor(d, node.border_color, node.border_size, node.border_inset);
+        }
+
+        Clip(d, clip_shape);
+    }
+
+    DrawText :: (node : *Node, clip_shape : *SDShape) {
+        if !node.font || node.text_size <= 0 || !node.text || (node.text_color & 0xff) == 0 {
+            return;
+        }
+
+        DrawText(node.font, node.rect.xy, node.text_size, node.text, node.text_color, clip_shape);
+    }
 
     position := (node.rect.xy + node.rect.zw) * 0.5;
 
     if !(node.flags & .TextNode) {
-        d := DrawShape(Box(node.size, 6), position);
-        SolidColor(d, node.color);
-        StrokeColor(d, Border, 1);
-        Clip(d, clip_shape);
+        DrawBox(node, clip_shape);
     }
 
     if node.num_children > 0 {
@@ -235,7 +263,7 @@ DrawNodes :: (node : *Node, clip_shape : *SDShape = null) {
         }
     }
 
-    if node.flags & .TextNode && node.text {
-        DrawText(node.font, node.rect.xy, node.text_size, node.text, Border, clip_shape);
+    if node.flags & .TextNode {
+        DrawText(node, clip_shape);
     }
 }

@@ -26,7 +26,9 @@ struct Shape {
 
 struct Effect {
     uint kind;
-    vec4 params0;
+    uint params00;
+    uint params01;
+    uint params02;
     vec4 params1;
 };
 
@@ -54,6 +56,15 @@ layout(location=5) in flat uint in_first_clip_shape_index;
 layout(location=6) in flat uint in_num_clip_shapes;
 
 layout(location=0) out vec4 out_color;
+
+vec4 ColorVec4(uint rgba) {
+    float r = float((rgba >> 24) & 0xff);
+    float g = float((rgba >> 16) & 0xff);
+    float b = float((rgba >> 8)  & 0xff);
+    float a = float((rgba >> 0)  & 0xff);
+
+    return vec4(r, g, b, a) * (1 / 255.0);
+}
 
 float PrimCircle(vec2 p, float radius) {
     return length(p) - radius;
@@ -302,14 +313,14 @@ vec4 EvalEffects(vec2 p, float d) {
 
         switch (effect.kind) {
         case Effect_SolidColor: {
-            vec4 color = effect.params0;
+            vec4 color = ColorVec4(effect.params00);
             float blur_factor = effect.params1.x;
             float a = FxSolidColor(d, aa + blur_factor);
             result = mix(result, color, a);
         } break;
 
         case Effect_StrokeColor: {
-            vec4 color = effect.params0;
+            vec4 color = ColorVec4(effect.params00);
             float blur_factor = effect.params1.x;
             float inset = effect.params1.y;
             float size = effect.params1.z;
@@ -318,7 +329,7 @@ vec4 EvalEffects(vec2 p, float d) {
         } break;
 
         case Effect_OuterShadow: {
-            vec4 color = effect.params0;
+            vec4 color = ColorVec4(effect.params00);
             vec2 offset = effect.params1.xy;
             float blur_factor = effect.params1.z;
 
@@ -335,7 +346,7 @@ vec4 EvalEffects(vec2 p, float d) {
         } break;
 
         case Effect_InnerShadow: {
-            vec4 color = effect.params0;
+            vec4 color = ColorVec4(effect.params00);
             vec2 offset = effect.params1.xy;
             float blur_factor = effect.params1.z;
 
