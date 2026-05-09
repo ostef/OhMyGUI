@@ -39,7 +39,7 @@ GetMousePosition :: inline (window : *Window) -> Vec2f {
 }
 
 GetMouseDelta :: inline () -> Vec2f {
-    return context.omg.input.mouse_delta - context.omg.input_last_frame.mouse_position;
+    return context.omg.input.mouse_position - context.omg.input_last_frame.mouse_position;
 }
 
 GetMouseWheel :: inline () -> Vec2f {

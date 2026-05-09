@@ -44,7 +44,7 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
                     OMG.SetSize(button, OMG.SizeFit(), OMG.SizeFit());
                     OMG.SetChildAlign(button, 0.5, 0.5);
 
-                    clicked := OMG.ButtonBehavior(button);
+                    clicked := OMG.ButtonBehavior(button).released;
                     if clicked {
                         print("Clicked %!\n", text);
                     }
@@ -67,21 +67,21 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
             title_mini := OMG.GetNode(title_bar, "minimize");
             OMG.SetSize(title_mini, OMG.SizePx(25));
 
-            if OMG.ButtonBehavior(title_mini) {
+            if OMG.ButtonBehavior(title_mini).released {
                 SDL_MinimizeWindow(g_window);
             }
 
             title_maxi := OMG.GetNode(title_bar, "maximize");
             OMG.SetSize(title_maxi, OMG.SizePx(25));
 
-            if OMG.ButtonBehavior(title_maxi) {
+            if OMG.ButtonBehavior(title_maxi).released {
                 SDL_MaximizeWindow(g_window);
             }
 
             title_close := OMG.GetNode(title_bar, "close");
             OMG.SetSize(title_close, OMG.SizePx(25));
 
-            if OMG.ButtonBehavior(title_close) {
+            if OMG.ButtonBehavior(title_close).released {
                 SDL_Quit();
             }
         }
@@ -123,13 +123,34 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
                             {
                                 OMG.SetSize(scrollbar, OMG.SizePx(15), OMG.SizeFill());
 
+                                OMG.ScrollViewBehavior(scrollbar, content, .Y);
+
                                 handle := OMG.GetNode(scrollbar, "handle");
                                 {
                                     ratio := content.layout_last_frame.size.y / content.layout_last_frame.children_size.y;
                                     OMG.SetSize(handle, OMG.SizeFill(), OMG.SizeFill(ratio));
 
-                                    OMG.ScrollBehavior(handle);
-                                    OMG.ButtonBehavior(handle);
+                                    // offset = (scroll / scrollable) * offset_max
+                                    // offset / offset_max = scroll / scrollable
+                                    // => scroll = (offset / offset_max) * scrollable
+
+                                    scrollable := content.layout_last_frame.size.y - content.layout_last_frame.children_size.y;
+                                    offset_max := scrollbar.layout_last_frame.size.y - handle.layout_last_frame.size.y;
+
+                                    handle_result := OMG.ButtonBehavior(handle);
+                                    if handle_result.pressed {
+                                        context.omg.mouse_captured_node_value = .{0, (content.scroll.y / scrollable) * offset_max};
+                                    }
+
+                                    if handle_result.held {
+                                        new_offset := OMG.GetMousePosition().y - context.omg.mouse_captured_at.y;
+                                        new_offset += context.omg.mouse_captured_node_value.y;
+                                        new_scroll := (new_offset / offset_max) * scrollable;
+
+                                        OMG.SetContentScrollY(content, new_scroll);
+                                    }
+
+                                    handle.offset.y = (content.scroll.y / scrollable) * offset_max;
                                 }
                             }
                         }

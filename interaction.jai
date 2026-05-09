@@ -4,7 +4,13 @@ IsHovered :: (node : *Node) -> bool {
     return IsInsideRect(mouse, node.layout_last_frame.clipped_rect);
 }
 
-ButtonBehavior :: (node : *Node) -> bool {
+ButtonResult :: struct {
+    pressed : bool;
+    held : bool;
+    released : bool;
+}
+
+ButtonBehavior :: (node : *Node) -> ButtonResult {
     omg := context.omg;
 
     node.flags |= .Focusable;
@@ -28,7 +34,28 @@ ButtonBehavior :: (node : *Node) -> bool {
         SetBackgroundColor(node, 1, 1, 1, 1);
     }
 
-    return node.state_flags & .Active && IsHovered(node) && IsMouseButtonReleased(.Left);
+    result : ButtonResult;
+    if node.state_flags & .Active {
+        result.held = true;
+        result.pressed = IsHovered(node) && IsMouseButtonPressed(.Left);
+        result.released = IsHovered(node) && IsMouseButtonReleased(.Left);
+    }
+
+    return result;
+}
+
+SetContentScrollX :: inline (node : *Node, value : float) {
+    node.scroll.x = value;
+
+    avail_scroll := node.layout_last_frame.size.x - node.layout_last_frame.children_size.x;
+    node.scroll.x = clamp(node.scroll.x, avail_scroll, 0);
+}
+
+SetContentScrollY :: inline (node : *Node, value : float) {
+    node.scroll.y = value;
+
+    avail_scroll := node.layout_last_frame.size.y - node.layout_last_frame.children_size.y;
+    node.scroll.y = clamp(node.scroll.y, avail_scroll, 0);
 }
 
 ScrollBehavior :: (node : *Node) -> Vec2f {
@@ -42,19 +69,17 @@ ScrollBehavior :: (node : *Node) -> Vec2f {
 }
 
 ScrollViewBehavior :: (node : *Node, axis : AxisFlags) {
+    ScrollViewBehavior(node, node, axis);
+}
+
+ScrollViewBehavior :: (node : *Node, target : *Node, axis : AxisFlags) {
     scroll := ScrollBehavior(node);
     if axis & .X {
-        node.scroll.x += scroll.x;
-
-        avail_scroll := node.layout_last_frame.children_size.x - node.layout_last_frame.size.x;
-        node.scroll.x = clamp(node.scroll.y, -avail_scroll, 0);
+        SetContentScrollX(target, target.scroll.x + scroll.x);
     }
 
     if axis & .Y {
-        node.scroll.y += scroll.y;
-
-        avail_scroll := node.layout_last_frame.children_size.y - node.layout_last_frame.size.y;
-        node.scroll.y = clamp(node.scroll.y, -avail_scroll, 0);
+        SetContentScrollY(target, target.scroll.y + scroll.y);
     }
 }
 
@@ -75,8 +100,31 @@ SetScrollFocus :: inline (node : *Node) {
 }
 
 SetMouseCapture :: inline (node : *Node) {
+    SetMouseCapture(node, .{});
+}
+
+SetMouseCapture :: inline (node : *Node, node_value : Vec2f) {
+    if context.omg.mouse_capturing_node != node {
+        context.omg.mouse_captured_at = GetMousePosition();
+        context.omg.mouse_captured_node_value = node_value;
+    }
+
     context.omg.mouse_capturing_node = node;
     context.omg.mouse_captured_this_frame = true;
+}
+
+ScreenToWindow :: (window : *Window, point : Vec2f) -> Vec2f {
+    wx, wy : s32;
+    SDL_GetWindowPosition(window.sdl_window, *wx, *wy);
+
+    return point - Vec2f.{xx wx, xx wy};
+}
+
+WindowToScreen :: (window : *Window, point : Vec2f) -> Vec2f {
+    wx, wy : s32;
+    SDL_GetWindowPosition(window.sdl_window, *wx, *wy);
+
+    return point + Vec2f.{xx wx, xx wy};
 }
 
 FindMouseFocus :: (node : *Node) {
