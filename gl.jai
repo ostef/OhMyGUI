@@ -7,29 +7,6 @@ Default_Shapes_Buffer_Size :: Approx_Max_Shapes * size_of(ShaderSDShape) + Appro
 
 #scope_module
 
-ShaderSDInstance :: struct {
-    bounds : Vec4f;
-    position : Vec2f;
-    first_shape_index : u32;
-    num_shapes : u32;
-    first_effect_index : u32;
-    num_effects : u32;
-    first_clip_shape_index : u32;
-    num_clip_shapes : u32;
-}
-
-ShaderSDShape :: struct {
-    kind : u32;
-    padding : [3]u32;
-    params : [8]float;
-}
-
-ShaderEffect :: struct {
-    kind : u32;
-    params0 : [3]u32;
-    params1 : [4]float;
-}
-
 g_color_texture : GLuint;
 g_color_framebuffer : GLuint;
 g_color_texture_width : u32;
@@ -195,101 +172,6 @@ TerminateGL :: () {
 }
 
 RenderGL :: (viewport_w : u32, viewport_h : u32) {
-    FlattenShapes :: (shape : *SDShape, buffer : *[..]ShaderSDShape, textures : *[..]GLuint) -> u32 {
-        num_shapes : u32;
-
-        shshape : ShaderSDShape;
-        shshape.kind = xx shape.kind;
-
-        if #complete shape.kind == {
-        case .CirclePrimitive;
-            shshape.params[0] = shape.circle_prim.radius;
-
-        case .BoxPrimitive;
-            shshape.params[0] = shape.box_prim.size.x;
-            shshape.params[1] = shape.box_prim.size.y;
-            shshape.params[2] = shape.box_prim.corner_radiuses.x;
-            shshape.params[3] = shape.box_prim.corner_radiuses.y;
-            shshape.params[4] = shape.box_prim.corner_radiuses.z;
-            shshape.params[5] = shape.box_prim.corner_radiuses.w;
-
-        case .TrianglePrimitive;
-            shshape.params[0] = shape.triangle_prim.p0.x;
-            shshape.params[1] = shape.triangle_prim.p0.y;
-            shshape.params[2] = shape.triangle_prim.p1.x;
-            shshape.params[3] = shape.triangle_prim.p1.y;
-            shshape.params[4] = shape.triangle_prim.p2.x;
-            shshape.params[5] = shape.triangle_prim.p2.y;
-
-        case .TexturePrimitive;
-            array_add_if_unique(textures, xx shape.texture_prim.texture);
-            shshape.params[0] = shape.texture_prim.uvs.x;
-            shshape.params[1] = shape.texture_prim.uvs.y;
-            shshape.params[2] = shape.texture_prim.uvs.z;
-            shshape.params[3] = shape.texture_prim.uvs.w;
-            shshape.params[4] = shape.texture_prim.size.x;
-            shshape.params[5] = shape.texture_prim.size.y;
-            shshape.params[6] = shape.texture_prim.dist_range.x;
-            shshape.params[7] = shape.texture_prim.dist_range.y;
-
-        case .SmoothSubtractionOperation; #through;
-        case .SmoothIntersectionOperation; #through;
-        case .SmoothUnionOperation;
-            shshape.params[0] = shape.smooth_union_op.k;
-            #through;
-
-        case .UnionOperation; #through;
-        case .SubtractionOperation; #through;
-        case .IntersectionOperation;
-            num_shapes += FlattenShapes(shape.union_op.shape_a, buffer, textures);
-            num_shapes += FlattenShapes(shape.union_op.shape_b, buffer, textures);
-
-        case .RoundOperation;
-            num_shapes += FlattenShapes(shape.round_op.shape, buffer, textures);
-
-            shshape.params[0] = shape.round_op.radius;
-
-        case .OnionOperation;
-            num_shapes += FlattenShapes(shape.onion_op.shape, buffer, textures);
-
-            shshape.params[0] = shape.onion_op.radius;
-
-        case .MorphOperation;
-            shshape.params[0] = shape.morph_op.t;
-            num_shapes += FlattenShapes(shape.morph_op.shape_a, buffer, textures);
-            num_shapes += FlattenShapes(shape.morph_op.shape_b, buffer, textures);
-
-        case .TransformOperation;
-            // For transform operations, we push 1 transformation to the coordinate
-            // system, then we push the shape, then we push another transformation
-            // back to the original coordinate system
-            t := Invert(shape.transform_op.transform);
-            shshape.params[0] = t.a;
-            shshape.params[1] = t.b;
-            shshape.params[2] = t.tx;
-            shshape.params[3] = t.c;
-            shshape.params[4] = t.d;
-            shshape.params[5] = t.ty;
-
-            array_add(buffer, shshape);
-            num_shapes += 1;
-
-            num_shapes += FlattenShapes(shape.transform_op.shape, buffer, textures);
-
-            t = shape.transform_op.transform;
-            shshape.params[0] = t.a;
-            shshape.params[1] = t.b;
-            shshape.params[2] = t.tx;
-            shshape.params[3] = t.c;
-            shshape.params[4] = t.d;
-            shshape.params[5] = t.ty;
-        }
-
-        array_add(buffer, shshape);
-        num_shapes += 1;
-
-        return num_shapes;
-    }
 
     if g_color_texture_width != viewport_w || g_color_texture_height != viewport_h {
         glDeleteTextures(1, *g_color_texture);
@@ -313,85 +195,14 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
     defer g_frame_in_flight = (g_frame_in_flight + 1) % g_num_frames_in_flight;
     defer context.omg.shapes_to_draw.count = 0;
 
-    DrawCall :: struct {
-        texture : GLuint;
-        base_instance : u32;
-        num_instances : u32;
-    }
-
     push_allocator(temp);
 
     instances_buffer : [..]ShaderSDInstance;
     shapes_buffer : [..]ShaderSDShape;
     effects_buffer : [..]ShaderEffect;
     draw_calls : [..]DrawCall;
-    textures : [..]GLuint;
 
-    for context.omg.shapes_to_draw {
-        last_call := ifx draw_calls.count > 0 then *draw_calls[draw_calls.count - 1];
-        textures.count = 0;
-
-        instance : ShaderSDInstance;
-        instance.position = it.position;
-        instance.bounds = GetBounds(it.shape);
-        instance.first_shape_index = xx shapes_buffer.count;
-        instance.num_shapes = FlattenShapes(it.shape, *shapes_buffer, *textures);
-        instance.first_effect_index = xx effects_buffer.count;
-        instance.num_effects = xx it.effects.count;
-        if it.clip_shape {
-            instance.first_clip_shape_index = xx shapes_buffer.count;
-            instance.num_clip_shapes = FlattenShapes(it.clip_shape, *shapes_buffer, *textures);
-        }
-
-        if textures.count > 1 {
-            log_error("Too many textures on shape");
-            continue;
-        }
-
-        if !last_call || (last_call.texture != 0 && textures.count > 0 && textures[0] != last_call.texture)  {
-            last_call = array_add(*draw_calls);
-            last_call.base_instance = xx instances_buffer.count;
-        }
-
-        if textures.count > 0 {
-            last_call.texture = textures[0];
-        }
-
-        extended_bounds := instance.bounds;
-        for * fx : it.effects {
-            effect := array_add(*effects_buffer);
-            effect.kind = xx fx.kind;
-
-            new_bounds := GetBounds(instance.bounds, fx);
-            extended_bounds = .{
-                xy=min(new_bounds.xy, extended_bounds.xy),
-                zw=max(new_bounds.zw, extended_bounds.zw),
-            };
-
-            if #complete fx.kind == {
-            case .SolidColor;
-                effect.params0[0] = fx.solid_color.color;
-                effect.params1[0] = fx.solid_color.blur_factor;
-
-            case .StrokeColor;
-                effect.params0[0] = fx.stroke_color.color;
-                effect.params1[0] = fx.stroke_color.blur_factor;
-                effect.params1[1] = fx.stroke_color.inset;
-                effect.params1[2] = fx.stroke_color.size;
-
-            case .InnerShadow; #through;
-            case .OuterShadow;
-                effect.params0[0] = fx.outer_shadow.color;
-                effect.params1[0] = fx.outer_shadow.offset.x;
-                effect.params1[1] = fx.outer_shadow.offset.y;
-                effect.params1[2] = fx.outer_shadow.blur_factor;
-            }
-        }
-
-        instance.bounds = extended_bounds;
-        array_add(*instances_buffer, instance);
-        last_call.num_instances += 1;
-    }
+    PrepareRenderingBuffers(*instances_buffer, *shapes_buffer, *effects_buffer, *draw_calls);
 
     instances_offset := 0;
     instances_size := instances_buffer.count * size_of(ShaderSDInstance);
@@ -441,7 +252,7 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
         glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 2, buffer_handle, xx effects_offset, xx effects_size);
 
         for draw_calls {
-            glBindTextureUnit(0, it.texture);
+            glBindTextureUnit(0, xx it.texture);
 
             glDrawArraysInstancedBaseInstance(GL_TRIANGLES, 0, 6, it.num_instances, it.base_instance);
         }

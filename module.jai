@@ -6,8 +6,8 @@
 #load "math.jai";
 #load "input.jai";
 #load "sd_shape.jai";
+#load "sd_draw.jai";
 #load "text.jai";
-#load "draw.jai";
 #load "gl.jai";
 #load "node.jai";
 #load "layout.jai";
