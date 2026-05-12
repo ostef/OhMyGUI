@@ -12,7 +12,7 @@ SDShapeKind :: enum u8 {
     SmoothSubtractionOperation;
     IntersectionOperation;
     SmoothIntersectionOperation;
-    RoundOperation;
+    InflateOperation;
     OnionOperation;
     MorphOperation;
     TransformOperation;
@@ -79,7 +79,7 @@ SDShape :: struct {
             k : float;
         };
 
-        .RoundOperation ,, round_op : struct {
+        .InflateOperation ,, inflate_op : struct {
             shape : *SDShape;
             radius : float;
         };
@@ -239,11 +239,11 @@ Inter :: inline (a : *SDShape, b : *SDShape, smoothing_factor : float) -> *SDSha
     return shape;
 }
 
-Round :: inline (subshape : *SDShape, radius : float) -> *SDShape {
+Inflate :: inline (subshape : *SDShape, amount : float) -> *SDShape {
     shape := New(SDShape ,, temp);
-    shape.kind = .RoundOperation;
-    shape.round_op.shape = subshape;
-    shape.round_op.radius = radius;
+    shape.kind = .InflateOperation;
+    shape.inflate_op.shape = subshape;
+    shape.inflate_op.amount = amount;
     shape.bounds = GetBounds(shape);
 
     return shape;
@@ -393,9 +393,9 @@ EvalSDF :: (p : Vec2f, shape : *SDShape) -> float {
         k := shape.smooth_intersection_op.k;
         return -OpSmoothUnion(-a, -b, k);
 
-    case .RoundOperation;
-        a := EvalSDF(p, shape.round_op.shape);
-        return a - shape.round_op.radius;
+    case .InflateOperation;
+        a := EvalSDF(p, shape.inflate_op.shape);
+        return a - shape.inflate_op.radius;
 
     case .OnionOperation;
         a := EvalSDF(p, shape.onion_op.shape);
@@ -478,9 +478,9 @@ GetBounds :: (shape : *SDShape) -> Vec4f {
         };
 
     case .OnionOperation; #through;
-    case .RoundOperation;
-        a := GetBounds(shape.round_op.shape);
-        r := Vec2f.{shape.round_op.radius, shape.round_op.radius};
+    case .InflateOperation;
+        a := GetBounds(shape.inflate_op.shape);
+        r := Vec2f.{shape.inflate_op.radius, shape.inflate_op.radius};
         return .{
             xy=min(a.xy - r, a.xy - r),
             zw=max(a.zw + r, a.zw + r),
@@ -793,10 +793,10 @@ FlattenShapes :: (shape : *SDShape, buffer : *[..]ShaderSDShape, textures : *[..
         num_shapes += FlattenShapes(shape.union_op.shape_a, buffer, textures);
         num_shapes += FlattenShapes(shape.union_op.shape_b, buffer, textures);
 
-    case .RoundOperation;
-        num_shapes += FlattenShapes(shape.round_op.shape, buffer, textures);
+    case .InflateOperation;
+        num_shapes += FlattenShapes(shape.inflate_op.shape, buffer, textures);
 
-        shshape.params[0] = shape.round_op.radius;
+        shshape.params[0] = shape.inflate_op.radius;
 
     case .OnionOperation;
         num_shapes += FlattenShapes(shape.onion_op.shape, buffer, textures);

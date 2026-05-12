@@ -19,7 +19,7 @@ struct Shape {
 #define Shape_SmoothSubtractionOperation 203
 #define Shape_IntersectionOperation 204
 #define Shape_SmoothIntersectionOperation 205
-#define Shape_RoundOperation 206
+#define Shape_InflateOperation 206
 #define Shape_OnionOperation 207
 #define Shape_MorphOperation 208
 #define Shape_TransformOperation 209
@@ -245,7 +245,7 @@ float EvalSDF(vec2 p, uint first_shape_index, uint num_shapes) {
             value_index += 1;
         } break;
 
-        case Shape_RoundOperation: {
+        case Shape_InflateOperation: {
             float a = values[value_index - 1];
             value_index -= 1;
 
