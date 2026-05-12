@@ -62,7 +62,7 @@ Node :: struct {
 
     layout_last_frame : type_of(layout);
 
-    // User controlled properties mostly related to layout, reset each frame
+    // User controlled properties mostly related to layout, reset each frame except for scroll
     using properties : struct {
         font : *Font;
         text : string;

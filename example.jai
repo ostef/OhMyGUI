@@ -119,40 +119,7 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
                         }
 
                         if content.layout_last_frame.children_size.y > content.layout_last_frame.size.y {
-                            scrollbar := OMG.GetNode(content_and_scrollbar, "scrollbar.y");
-                            {
-                                OMG.SetSize(scrollbar, OMG.SizePx(15), OMG.SizeFill());
-
-                                OMG.ScrollViewBehavior(scrollbar, content, .Y);
-
-                                handle := OMG.GetNode(scrollbar, "handle");
-                                {
-                                    ratio := content.layout_last_frame.size.y / content.layout_last_frame.children_size.y;
-                                    OMG.SetSize(handle, OMG.SizeFill(), OMG.SizeFill(ratio));
-
-                                    // offset = (scroll / scrollable) * offset_max
-                                    // offset / offset_max = scroll / scrollable
-                                    // => scroll = (offset / offset_max) * scrollable
-
-                                    scrollable := content.layout_last_frame.size.y - content.layout_last_frame.children_size.y;
-                                    offset_max := scrollbar.layout_last_frame.size.y - handle.layout_last_frame.size.y;
-
-                                    handle_result := OMG.ButtonBehavior(handle);
-                                    if handle_result.pressed {
-                                        context.omg.mouse_captured_node_value = .{0, (content.scroll.y / scrollable) * offset_max};
-                                    }
-
-                                    if handle_result.held {
-                                        new_offset := OMG.GetMousePosition().y - context.omg.mouse_captured_at.y;
-                                        new_offset += context.omg.mouse_captured_node_value.y;
-                                        new_scroll := (new_offset / offset_max) * scrollable;
-
-                                        OMG.SetContentScrollY(content, new_scroll);
-                                    }
-
-                                    handle.offset.y = (content.scroll.y / scrollable) * offset_max;
-                                }
-                            }
+                            OMG.Scrollbar(content_and_scrollbar, content, .Y);
                         }
 
                         return content;

@@ -44,6 +44,14 @@ ButtonBehavior :: (node : *Node) -> ButtonResult {
     return result;
 }
 
+SetContentScroll :: inline (node : *Node, axis : Axis, value : float) {
+    if axis == .X {
+        SetContentScrollX(node, value);
+    } else {
+        SetContentScrollY(node, value);
+    }
+}
+
 SetContentScrollX :: inline (node : *Node, value : float) {
     node.scroll.x = value;
 
