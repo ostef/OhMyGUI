@@ -5,6 +5,10 @@ Approx_Max_Shapes :: 5 * Approx_Max_Instances;
 Approx_Max_Effects :: 5 * Approx_Max_Shapes;
 Default_Shapes_Buffer_Size :: Approx_Max_Shapes * size_of(ShaderSDShape) + Approx_Max_Instances * size_of(ShaderSDInstance) + Approx_Max_Effects * size_of(ShaderEffect);
 
+GetLastFrameGPUTime :: inline () -> float {
+    return g_last_frame_gpu_time;
+}
+
 #scope_module
 
 g_color_texture : GLuint;
@@ -20,9 +24,12 @@ g_frame_in_flight : int;
 g_shape_buffer_size : int;
 g_shape_buffer_handles : []GLuint;
 g_shape_buffer_ptrs : []*void;
+g_timestamp_queries : [][2]GLuint;
 
 g_uniform_buffer_offset_alignment : s32;
 g_storage_buffer_offset_alignment : s32;
+
+g_last_frame_gpu_time : float;
 
 LoadShader :: (vertex_filename : string, fragment_filename : string) -> GLuint {
     #import "File";
@@ -146,6 +153,19 @@ InitGL :: (num_frames_in_flight : int = 2, shape_buffer_size : int = Default_Sha
     assert(g_storage_buffer_offset_alignment > 0);
     g_storage_buffer_offset_alignment = max(g_storage_buffer_offset_alignment, 16);
 
+    g_timestamp_queries = NewArray(num_frames_in_flight, [2]GLuint);
+    glGenQueries(xx (g_timestamp_queries.count * 2), xx g_timestamp_queries.data);
+
+    // Make first query result not cause an error
+    for queries, query_backbuffer_index : g_timestamp_queries {
+        for queries {
+            glQueryCounter(it, GL_TIMESTAMP);
+
+            name := tprint("Query 'Frame Time %, Backbuffer %'", ifx it_index == 0 then "Start" else "End", query_backbuffer_index);
+            glObjectLabel(GL_QUERY, it, xx name.count, name.data);
+        }
+    }
+
     print("Initialized GL backend\n");
     print("Num frames in flight: %\n", g_num_frames_in_flight);
     print("Shapes buffer: % bytes\n", g_shape_buffer_size);
@@ -156,6 +176,9 @@ InitGL :: (num_frames_in_flight : int = 2, shape_buffer_size : int = Default_Sha
 }
 
 TerminateGL :: () {
+    glDeleteQueries(xx (g_timestamp_queries.count * 2), xx g_timestamp_queries.data);
+    free(g_timestamp_queries.data);
+
     glDeleteProgram(g_shape_shader);
     g_shape_shader = 0;
 
@@ -172,6 +195,19 @@ TerminateGL :: () {
 }
 
 RenderGL :: (viewport_w : u32, viewport_h : u32) {
+    last_query_index := g_frame_in_flight - (g_num_frames_in_flight - 1);
+    if last_query_index < 0 {
+        last_query_index += g_num_frames_in_flight;
+    }
+
+    start_time, end_time : s64;
+    glGetQueryObjecti64v(g_timestamp_queries[last_query_index][0], GL_QUERY_RESULT, *start_time);
+    glGetQueryObjecti64v(g_timestamp_queries[last_query_index][1], GL_QUERY_RESULT, *end_time);
+
+    elapsed := end_time - start_time;
+    g_last_frame_gpu_time = cast(float, elapsed / 1_000_000_000.0);
+
+    glQueryCounter(g_timestamp_queries[g_frame_in_flight][0], GL_TIMESTAMP);
 
     if g_color_texture_width != viewport_w || g_color_texture_height != viewport_h {
         glDeleteTextures(1, *g_color_texture);
@@ -261,4 +297,6 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
     glBlitFramebuffer(0, 0, xx viewport_w, xx viewport_h, 0, 0, xx viewport_w, xx viewport_h, GL_COLOR_BUFFER_BIT, GL_NEAREST);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
+    glQueryCounter(g_timestamp_queries[g_frame_in_flight][1], GL_TIMESTAMP);
 }
