@@ -2,6 +2,7 @@
 #import "Math";
 #import "SDL";
 #import "Bucket_Array";
+#import "Print_Vars";
 
 #load "math.jai";
 #load "input.jai";

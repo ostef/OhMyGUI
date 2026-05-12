@@ -1,9 +1,9 @@
-Scrollbar :: (parent : *Node, target : *Node, axis : Axis, location := #caller_location) -> background : *Node, handle : *Node {
+Scrollbar :: (parent : *Node, target : *Node, axis : Axis, width := 10.0, location := #caller_location) -> background : *Node, handle : *Node {
     background, handle : *Node;
 
     background = GetNode(parent, location=location);
     {
-        SetSize(background, SizePx(15), SizeFill());
+        SetSize(background, SizePx(width), SizeFill());
 
         ScrollViewBehavior(background, target, xx (1 << axis));
 
@@ -19,7 +19,24 @@ Scrollbar :: (parent : *Node, target : *Node, axis : Axis, location := #caller_l
             scrollable := target.layout_last_frame.size[axis] - target.layout_last_frame.children_size[axis];
             offset_max := background.layout_last_frame.size[axis] - handle.layout_last_frame.size[axis];
 
+            // Allow the user to click on the background to interact with the scrollbar
+            background.flags |= .Focusable;
+
             handle_result := ButtonBehavior(handle);
+
+            if background.state_flags & .Focused && IsMouseButtonPressed(.Left) {
+                SetMouseCapture(handle);
+                SetMouseFocus(handle);
+                handle_result.pressed = true;
+                handle_result.held = true;
+
+                mouse := GetMousePosition(background.window)[axis];
+                new_offset := mouse - background.layout_last_frame.rect.xy[axis] - handle.layout_last_frame.size[axis] * 0.5;
+                new_scroll := (new_offset / offset_max) * scrollable;
+
+                SetContentScroll(target, axis, new_scroll);
+            }
+
             if handle_result.pressed {
                 context.omg.mouse_captured_node_value = .{};
                 context.omg.mouse_captured_node_value[axis] = (target.scroll[axis] / scrollable) * offset_max;
