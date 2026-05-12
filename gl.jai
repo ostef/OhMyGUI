@@ -112,7 +112,7 @@ LoadShader :: (vertex_filename : string, fragment_filename : string) -> GLuint {
 InitGL :: (num_frames_in_flight : int = 2, shape_buffer_size : int = Default_Shapes_Buffer_Size) -> bool {
     g_num_frames_in_flight = num_frames_in_flight;
 
-    g_shape_shader = LoadShader("sd_shape.vert.glsl", "sd_shape.frag.glsl");
+    g_shape_shader = LoadShader("sdf.vert.glsl", "sdf.frag.glsl");
     if !g_shape_shader {
         return false;
     }

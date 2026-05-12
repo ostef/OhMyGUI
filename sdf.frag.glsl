@@ -378,5 +378,5 @@ void main() {
     float clip = EvalSDF(p, in_first_clip_shape_index, in_num_clip_shapes);
     float clip_a = FxSolidColor(clip, 0);
 
-    out_color.a *= clip_a;
+    out_color *= clip_a;
 }
