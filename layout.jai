@@ -124,13 +124,15 @@ LayoutFixedAndFitSizing :: (node : *Node) {
 
     if node.flags & .TextNode {
         node.size = CalculateTextSize(node.font, node.text_size, node.text);
+        node.size.x = ceil(node.size.x);
+        node.size.y = ceil(node.size.y);
         return;
     }
 
     for axis : Axis.[.X, .Y] {
         if node.desired_size[axis].kind == {
         case .FitChildren;
-            node.size[axis] = node.children_size[axis] + 2 * node.padding[axis];
+            node.size[axis] = ceil(node.children_size[axis] + 2 * node.padding[axis]);
             node.size[axis] = clamp(node.size[axis], node.min_size[axis], node.max_size[axis]);
         case .Pixels;
             node.size[axis] = node.desired_size[axis].value;
@@ -139,7 +141,7 @@ LayoutFixedAndFitSizing :: (node : *Node) {
     }
 
     if node.desired_size[axis].kind == .FitChildren {
-        node.size[axis] += (node.num_children - 1) * node.child_gap[axis];
+        node.size[axis] += ceil((node.num_children - 1) * node.child_gap[axis]);
         node.size[axis] = clamp(node.size[axis], node.min_size[axis], node.max_size[axis]);
     }
 }
@@ -167,6 +169,7 @@ LayoutFillSizing :: (node : *Node) {
     remaining_size := node.size[axis] - 2 * node.padding[axis]
         - node.children_size[axis]
         - (node.num_children - 1) * node.child_gap[axis];
+    remaining_size = floor(remaining_size);
     iter := 0;
     while iter < 10 && num_fill_children > 0 && abs(remaining_size) > 0.00001 {
         defer iter += 1;
@@ -182,7 +185,7 @@ LayoutFillSizing :: (node : *Node) {
 
             prev_size := it.size[axis];
             if total_weights > 0 {
-                it.size[axis] += remaining_size * it.desired_size[axis].value / total_weights;
+                it.size[axis] += floor(remaining_size * it.desired_size[axis].value / total_weights);
             }
             it.size[axis] = clamp(it.size[axis], it.min_size[axis], it.max_size[axis]);
 
@@ -201,11 +204,12 @@ LayoutFillSizing :: (node : *Node) {
         remaining_size = node.size[axis] - 2 * node.padding[axis]
             - node.children_size[axis]
             - (node.num_children - 1) * node.child_gap[axis];
+        remaining_size = floor(remaining_size);
     }
 
     for :Children node {
         if it.desired_size[cross].kind == .FillParent && !(it.flags & .TextNode) {
-            it.size[cross] = node.size[cross] * it.desired_size[cross].value - 2 * node.padding[cross];
+            it.size[cross] = floor(node.size[cross] * it.desired_size[cross].value - 2 * node.padding[cross]);
             it.size[cross] = clamp(it.size[cross], node.min_size[cross], node.max_size[cross]);
             node.children_size[cross] = max(node.children_size[cross], it.size[cross]);
         }
@@ -225,24 +229,25 @@ LayoutPosition :: (node : *Node) {
     axis_align_offset := remaining_size * node.child_align[axis];
     cross_size := node.size[cross] - 2 * node.padding[cross];
 
-    cursor := ifx reverse then node.size[axis] - node.padding[axis] - axis_align_offset else node.padding[axis] + axis_align_offset;
-    cursor += node.scroll[axis];
+    cursor := ifx reverse then floor(node.size[axis] - node.padding[axis] - axis_align_offset + node.scroll[axis]) else ceil(node.padding[axis] + axis_align_offset + node.scroll[axis]);
     first := true;
     for :LayoutDirection node {
         defer first = false;
 
         if reverse {
             cursor -= it.size[axis] + node.child_gap[axis] * cast(float, !first);
+            cursor = floor(cursor);
         }
 
         it.relative_position[axis] = cursor;
-        it.relative_position[cross] = node.padding[cross] + (cross_size - it.size[cross]) * node.child_align[cross];
+        it.relative_position[cross] = ceil(node.padding[cross] + (cross_size - it.size[cross]) * node.child_align[cross]);
 
         if !reverse {
             cursor += it.size[axis] + node.child_gap[axis];
+            cursor = ceil(cursor);
         }
 
-        it.relative_position += it.offset;
+        it.relative_position += Round(it.offset);
 
         it.rect.xy = node.rect.xy + it.relative_position;
         it.rect.zw = node.rect.xy + it.relative_position + it.size;
