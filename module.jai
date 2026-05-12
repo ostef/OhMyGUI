@@ -251,6 +251,10 @@ DrawNodes :: (node : *Node, clip_shape : *SDShape = null) {
         DrawText(node.font, node.rect.xy, node.text_size, node.text, node.text_color, clip_shape);
     }
 
+    if node.clipped_rect.x >= node.clipped_rect.z || node.clipped_rect.y >= node.clipped_rect.w {
+        return;
+    }
+
     position := (node.rect.xy + node.rect.zw) * 0.5;
 
     if !(node.flags & .TextNode) {
