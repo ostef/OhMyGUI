@@ -18,7 +18,7 @@ ButtonBehavior :: (node : *Node) -> ButtonResult {
     if (IsMouseButtonReleased(.Left) || IsMouseButtonDown(.Left)) && omg.mouse_capturing_node == node {
         SetMouseCapture(node);
         SetMouseFocus(node);
-    } else if node.state_flags & .Focused && IsMouseButtonDown(.Left) {
+    } else if node.state_flags & .Focused && IsMouseButtonPressed(.Left) {
         SetMouseCapture(node);
     }
 
