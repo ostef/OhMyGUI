@@ -156,21 +156,23 @@ UserData :: (node : *Node, body : Code, flags : For_Flags) #expand {
     }
 }
 
-GetUserData :: inline (node : *Node, $T : Type, destroy : type_of(NodeUserData.destroy) = null, create := true) -> *T {
-    return GetUserData(node, cast(ID, type_info(T)), T, destroy, create);
+GetUserData :: inline (node : *Node, $T : Type, destroy : type_of(NodeUserData.destroy) = null, create := true) -> *T, is_new : bool {
+    ptr, is_new := GetUserData(node, cast(ID, type_info(T)), T, destroy, create);
+    return ptr, is_new;
 }
 
-GetUserData :: inline (node : *Node, str_id : string, $T : Type, destroy : type_of(NodeUserData.destroy) = null, create := true) -> *T {
-    return GetUserData(node, GetID(str_id, false), T, destroy, create);
+GetUserData :: inline (node : *Node, str_id : string, $T : Type, destroy : type_of(NodeUserData.destroy) = null, create := true) -> *T, is_new : bool {
+    ptr, is_new := GetUserData(node, GetID(str_id, false), T, destroy, create);
+    return ptr, is_new;
 }
 
-GetUserData :: inline (node : *Node, id : ID, $T : Type, destroy : type_of(NodeUserData.destroy) = null, create := true) -> *T {
+GetUserData :: inline (node : *Node, id : ID, $T : Type, destroy : type_of(NodeUserData.destroy) = null, create := true) -> *T, is_new : bool {
     ptr, is_new := GetUserData(node, id, size_of(T), destroy, create);
     if is_new {
         cast(*T, ptr).* = .{};
     }
 
-    return xx ptr;
+    return xx ptr, is_new;
 }
 
 GetUserData :: (node : *Node, id : ID, size : int, destroy : type_of(NodeUserData.destroy) = null, create := true) -> *void, is_new : bool {
@@ -184,7 +186,7 @@ GetUserData :: (node : *Node, id : ID, size : int, destroy : type_of(NodeUserDat
         return null, false;
     }
 
-    ptr := alloc(size + size_of(NodeUserData));
+    ptr := alloc(size + size_of(NodeUserData) ,, context.omg.general_purpose_allocator);
 
     list_node := cast(*NodeUserData, ptr);
     list_node.destroy = destroy;
@@ -213,7 +215,7 @@ FreeNode :: (node : *Node) {
             it.destroy(node, cast(*void, it + 1));
         }
 
-        free(it);
+        free(it ,, context.omg.general_purpose_allocator);
     }
 
     bucket_array_remove(*context.omg.node_pool, node.index);

@@ -20,6 +20,8 @@ Context :: struct {
     delta_time : float;
     layout_time_last_frame : float;
 
+    general_purpose_allocator : Allocator;
+
     input : InputContext;
     input_last_frame : InputContext;
 
@@ -95,6 +97,7 @@ DestroyWindow :: (window : *Window) {
 
 Init :: () {
     context.omg = New(Context);
+    context.omg.general_purpose_allocator = context.allocator;
 }
 
 Terminate :: () {
