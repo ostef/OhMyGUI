@@ -23,10 +23,10 @@ ButtonBehavior :: (node : *Node) -> ButtonResult {
     }
 
     if omg.mouse_capturing_node == node {
-        node.state_flags |= .Active;
+        node.state_flags |= .Hot;
     }
 
-    if node.state_flags & .Active {
+    if node.state_flags & .Hot {
         SetBackgroundColor(node, 1, 0, 0, 1);
     } else if node.state_flags & .Focused {
         SetBackgroundColor(node, 0, 1, 0, 1);
@@ -35,13 +35,67 @@ ButtonBehavior :: (node : *Node) -> ButtonResult {
     }
 
     result : ButtonResult;
-    if node.state_flags & .Active {
+    if node.state_flags & .Hot {
         result.held = true;
         result.pressed = IsHovered(node) && IsMouseButtonPressed(.Left);
         result.released = IsHovered(node) && IsMouseButtonReleased(.Left);
     }
 
     return result;
+}
+
+TextInputData :: struct {
+    buffer : [..]u32;
+}
+
+DestroyTextInputData :: (node : *Node, data : *void) {
+    using _ := cast(*TextInputData, data);
+    array_free(buffer);
+}
+
+GetTextInputResultUtf32 :: (node : *Node) -> []u32 {
+    data := GetUserData(node, TextInputData, create=false);
+    if !data {
+        return .[];
+    }
+
+    return array_copy(data.buffer);
+}
+
+GetTextInputResult :: (node : *Node) -> string {
+    data := GetUserData(node, TextInputData, create=false);
+    if !data {
+        return "";
+    }
+
+    return EncodeStringAsUtf8(data.buffer);
+}
+
+TextInputBehavior :: (node : *Node) -> *TextInputData {
+    input, is_new := GetUserData(node, TextInputData, DestroyTextInputData);
+    if is_new {
+        input.buffer.allocator = context.omg.general_purpose_allocator;
+    }
+
+    should_deactivate := !(node.state_flags & .Focused) && IsMouseButtonPressed(.Left);
+    should_deactivate |= IsKeyPressed(.Escape);
+
+    button_result := ButtonBehavior(node);
+    if !should_deactivate && (button_result.released || node.state_flags & .ActiveLastFrame) {
+        node.state_flags |= .Active;
+    }
+
+    if node.state_flags & .Active {
+        for context.omg.input.text {
+            array_add(*input.buffer, it);
+        }
+
+        if IsKeyPressed(.Backspace) && input.buffer.count > 0 {
+            pop(*input.buffer);
+        }
+    }
+
+    return input;
 }
 
 SetContentScroll :: inline (node : *Node, axis : Axis, value : float) {

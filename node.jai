@@ -10,6 +10,7 @@ NodeFlags :: enum_flags u8 {
 
 NodeState :: enum u8 {
     Active;
+    Hot;
     Focused;
     Disabled;
 }
@@ -18,14 +19,16 @@ Num_Node_States :: #run type_info(NodeState).values.count;
 
 NodeStateFlags :: enum_flags u8 {
     Active   :: 1 << NodeState.Active;
+    Hot      :: 1 << NodeState.Hot;
     Focused  :: 1 << NodeState.Focused;
     Disabled :: 1 << NodeState.Disabled;
-    CurrentFrame :: Disabled | Focused | Active;
+    CurrentFrame :: Disabled | Focused | Hot | Active;
 
-    ActiveLastFrame :: Active << Num_Node_States;
-    FocusedLastFrame :: Focused << Num_Node_States;
+    ActiveLastFrame   :: Active   << Num_Node_States;
+    HotLastFrame      :: Hot      << Num_Node_States;
+    FocusedLastFrame  :: Focused  << Num_Node_States;
     DisabledLastFrame :: Disabled << Num_Node_States;
-    LastFrame :: DisabledLastFrame | FocusedLastFrame | ActiveLastFrame;
+    LastFrame :: DisabledLastFrame | FocusedLastFrame | HotLastFrame | ActiveLastFrame;
 }
 
 NodeUserData :: struct {
