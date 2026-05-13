@@ -56,3 +56,68 @@ Scrollbar :: (parent : *Node, target : *Node, axis : Axis, width := 10.0, locati
 
     return background, handle;
 }
+
+TextInputData :: struct {
+    buffer : [..]u32;
+}
+
+DestroyTextInputData :: (node : *Node, data : *void) {
+    using _ := cast(*TextInputData, data);
+    array_free(buffer);
+}
+
+GetTextInputResultUtf32 :: (node : *Node) -> []u32 {
+    data := GetUserData(node, TextInputData, create=false);
+    if !data {
+        return .[];
+    }
+
+    return array_copy(data.buffer);
+}
+
+GetTextInputResult :: (node : *Node) -> string {
+    data := GetUserData(node, TextInputData, create=false);
+    if !data {
+        return "";
+    }
+
+    return EncodeStringAsUtf8(data.buffer);
+}
+
+TextInput :: (parent : *Node, location := #caller_location) -> *Node {
+    input_field := GetNode(parent, location=location);
+    {
+        SetChildAlign(input_field, 0, 0.5);
+
+        input := GetUserData(input_field, TextInputData, DestroyTextInputData);
+
+        button_result := ButtonBehavior(input_field);
+        if !(input_field.state_flags & .Focused) && IsMouseButtonPressed(.Left) {
+            input_field.state_flags &= ~.Active;
+        } else if button_result.released || input_field.state_flags & .ActiveLastFrame {
+            input_field.state_flags |= .Active;
+        }
+
+        if input_field.state_flags & .Active {
+            input_field.border_color = ColorU32(0, 1, 0, 1);
+            input_field.border_size = 4;
+            input_field.border_inset = -4;
+        } else {
+            input_field.border_color = ColorU32(0, 0, 0, 1);
+            input_field.border_size = 1;
+            input_field.border_inset = 0;
+        }
+
+        if input_field.state_flags & .Active {
+            for context.omg.input.text {
+                array_add(*input.buffer, it);
+            }
+        }
+
+        text_node := GetNode(input_field, "text");
+        text := EncodeStringAsUtf8(input.buffer ,, temp);
+        SetText(text_node, context.omg.fonts, 16, text);
+    }
+
+    return input_field;
+}

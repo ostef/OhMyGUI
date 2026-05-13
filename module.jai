@@ -5,6 +5,7 @@
 #import "Print_Vars";
 
 #load "math.jai";
+#load "unicode.jai";
 #load "input.jai";
 #load "sdf.jai";
 #load "text.jai";
@@ -105,6 +106,9 @@ Terminate :: () {
         DestroyFont(context.omg.fonts);
     }
 
+    array_free(context.omg.input_last_frame.text);
+    array_free(context.omg.input.text);
+
     bucket_array_reset(*context.omg.node_pool);
     array_free(context.omg.shapes_to_draw);
 
@@ -195,9 +199,47 @@ Render :: () {
         DrawNodes(window.root_node);
     }
 
+    text := omg.input_last_frame.text;
     omg.input_last_frame = omg.input;
+    omg.input.text = text;
+    omg.input.text.count = 0;
 
     omg.input.mouse_wheel = .{};
+}
+
+DrawList :: struct {
+    drawings : [..]*Drawing;
+    clip_shapes : [..]*SDShape;
+}
+
+PushClipShape :: (draw_list : *DrawList, shape : *SDShape) {
+    array_add(*draw_list.clip_shapes, shape);
+}
+
+PopClipShape :: (draw_list : *DrawList) -> *SDShape {
+    assert(draw_list.clip_shapes.count > 0);
+
+    shape := GetClipShape(draw_list);
+    pop(*draw_list.clip_shapes);
+
+    return shape;
+}
+
+GetClipShape :: inline (draw_list : *DrawList) -> *SDShape {
+    if draw_list.clip_shapes.count <= 0 {
+        return null;
+    }
+
+    return draw_list.clip_shapes[draw_list.clip_shapes.count - 1];
+}
+
+PushShape :: (draw_list : *DrawList, shape : *SDShape, position : Vec2f) -> *Drawing {
+    drawing := DrawShape(shape, position);
+    drawing.clip_shape = GetClipShape(draw_list);
+
+    array_add(*draw_list.drawings, drawing);
+
+    return drawing;
 }
 
 #scope_file

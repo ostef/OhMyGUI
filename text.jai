@@ -48,8 +48,6 @@ Glyph :: struct {
     uv_rect : Vec4f;
 }
 
-Unicode_Replacement :: 0xfffd;
-
 g_ft_lib : FT_Library;
 
 LoadFontFromFile :: (filename : string, config : FontConfig) -> *Font {

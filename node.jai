@@ -30,6 +30,7 @@ NodeStateFlags :: enum_flags u8 {
 
 NodeUserData :: struct {
     next : *NodeUserData;
+    destroy : (*Node, *void);
     id : ID;
 }
 
@@ -155,37 +156,44 @@ UserData :: (node : *Node, body : Code, flags : For_Flags) #expand {
     }
 }
 
-GetUserData :: inline (node : *Node, $T : Type) -> *T {
-    return GetUserData(node, cast(ID, T), T);
+GetUserData :: inline (node : *Node, $T : Type, destroy : type_of(NodeUserData.destroy) = null, create := true) -> *T {
+    return GetUserData(node, cast(ID, type_info(T)), T, destroy, create);
 }
 
-GetUserData :: inline (node : *Node, str_id : string, $T : Type) -> *T {
-    return GetUserData(node, GetID(str_id, false), T);
+GetUserData :: inline (node : *Node, str_id : string, $T : Type, destroy : type_of(NodeUserData.destroy) = null, create := true) -> *T {
+    return GetUserData(node, GetID(str_id, false), T, destroy, create);
 }
 
-GetUserData :: inline (node : *Node, id : ID, $T : Type) -> *T {
-    return GetUserData(node, id, size_of(T));
+GetUserData :: inline (node : *Node, id : ID, $T : Type, destroy : type_of(NodeUserData.destroy) = null, create := true) -> *T {
+    ptr, is_new := GetUserData(node, id, size_of(T), destroy, create);
+    if is_new {
+        cast(*T, ptr).* = .{};
+    }
+
+    return xx ptr;
 }
 
-GetUserData :: (node : *Node, id : ID, size : int) -> *void {
+GetUserData :: (node : *Node, id : ID, size : int, destroy : type_of(NodeUserData.destroy) = null, create := true) -> *void, is_new : bool {
     for :UserData node {
         if it.id == id {
-            return it;
+            return cast(*void, it + 1), false;
         }
+    }
+
+    if !create {
+        return null, false;
     }
 
     ptr := alloc(size + size_of(NodeUserData));
 
     list_node := cast(*NodeUserData, ptr);
+    list_node.destroy = destroy;
     list_node.id = id;
 
     list_node.next = node.user_data;
     node.user_data = list_node;
 
-    user_data := cast(*void, list_node + 1);
-    user_data.* = .{};
-
-    return user_data;
+    return cast(*void, list_node + 1), true;
 }
 
 AllocNode :: () -> *Node {
@@ -201,6 +209,10 @@ FreeNode :: (node : *Node) {
     }
 
     for :UserData node {
+        if it.destroy {
+            it.destroy(node, cast(*void, it + 1));
+        }
+
         free(it);
     }
 

@@ -3,6 +3,7 @@ InputContext :: struct {
     mouse_wheel : Vec2f;
     mouse_buttons : MouseButtonFlags;
     keys_down : [KeyCode.Count]bool;
+    text : [..]u32;
 }
 
 MouseButton :: enum u8 {
@@ -288,6 +289,16 @@ HandleInputEvent :: (event : SDL_Event) {
         } else {
             omg.input.mouse_wheel.x = xx event.wheel.x;
             omg.input.mouse_wheel.y = xx event.wheel.y;
+        }
+
+    case SDL_TEXTINPUT;
+        text := to_string(cast(*u8, event.text.text.data));
+
+        offset := 0;
+        while offset < text.count {
+            codepoint, size := DecodeUtf8Character(xx text, offset);
+            array_add(*omg.input.text, codepoint);
+            offset += size;
         }
     }
 }

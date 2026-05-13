@@ -140,6 +140,10 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
 
                 Text(main_viewport, font, 16, tprint("Layout: % us", cast(int, context.omg.layout_time_last_frame * 1000 * 1000)));
                 Text(main_viewport, font, 16, tprint("Render: % ms", OMG.GetLastFrameGPUTime() * 1000));
+
+                text_input := OMG.TextInput(main_viewport);
+                OMG.SetSize(text_input, OMG.SizePx(300), OMG.SizePx(32));
+
                 Text(main_viewport, OMG.GetFont("JetBrainsMono-Regular"), 14, "Some text with another font");
                 Text(main_viewport, font, (cos(time) + 2) * 10, "The quick brown fox jumps over the lazy dog!");
 
