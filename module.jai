@@ -40,7 +40,6 @@ Context :: struct {
     mouse_captured_node_value : Vec2f = .{FLOAT32_NAN, FLOAT32_NAN}; // Value that nodes can specify upon capturing the mouse
     scroll_focused_node : *Node;
 
-    shapes_to_draw : [..]Drawing;
     default_effect := Effect.{kind=.SolidColor, solid_color=.{color=0xffffffff}};
 }
 
@@ -50,6 +49,7 @@ Window :: struct {
     next : *Window;
 
     root_node : *Node;
+    draw_list : DrawList;
 }
 
 GetWindow :: (window : *SDL_Window, create := true) -> *Window {
@@ -89,6 +89,8 @@ DestroyWindow :: (window : *Window) {
         context.omg.windows = window.next;
     }
 
+    DestroyDrawList(*window.draw_list);
+
     FreeNode(window.root_node);
     free(window);
 }
@@ -113,7 +115,6 @@ Terminate :: () {
     array_free(context.omg.input.text);
 
     bucket_array_reset(*context.omg.node_pool);
-    array_free(context.omg.shapes_to_draw);
 
     free(context.omg);
     context.omg = null;
@@ -211,8 +212,13 @@ Render :: () {
 }
 
 DrawList :: struct {
-    drawings : [..]*Drawing;
+    drawings : [..]Drawing;
     clip_shapes : [..]*SDShape;
+}
+
+DestroyDrawList :: (draw_list : *DrawList) {
+    array_free(draw_list.drawings);
+    array_free(draw_list.clip_shapes);
 }
 
 PushClipShape :: (draw_list : *DrawList, shape : *SDShape) {
@@ -236,11 +242,15 @@ GetClipShape :: inline (draw_list : *DrawList) -> *SDShape {
     return draw_list.clip_shapes[draw_list.clip_shapes.count - 1];
 }
 
-PushShape :: (draw_list : *DrawList, shape : *SDShape, position : Vec2f) -> *Drawing {
-    drawing := DrawShape(shape, position);
+DrawShape :: (draw_list : *DrawList, shape : *SDShape, position : Vec2f) -> *Drawing {
+    array_add(*draw_list.drawings, .{shape=shape, position=position});
+
+    drawing := *draw_list.drawings[draw_list.drawings.count - 1];
+    drawing.effects.allocator = temp;
     drawing.clip_shape = GetClipShape(draw_list);
 
-    array_add(*draw_list.drawings, drawing);
+    array_add(*drawing.effects, context.omg.default_effect);
+    drawing.should_override_default_effect = true;
 
     return drawing;
 }
@@ -273,7 +283,7 @@ DrawNodes :: (node : *Node, clip_shape : *SDShape = null) {
 
         position := (node.rect.xy + node.rect.zw) * 0.5;
 
-        d := DrawShape(Box(node.size, node.corner_radiuses), position);
+        d := DrawShape(*node.window.draw_list, Box(node.size, node.corner_radiuses), position);
 
         if has_shadow {
             OuterShadow(d, node.outer_shadow_offset, node.outer_shadow_blur, node.outer_shadow_color);
@@ -285,7 +295,7 @@ DrawNodes :: (node : *Node, clip_shape : *SDShape = null) {
             StrokeColor(d, node.border_color, node.border_size, node.border_inset);
         }
 
-        Clip(d, clip_shape);
+        SetClipShape(d, clip_shape);
     }
 
     DrawText :: (node : *Node, clip_shape : *SDShape) {
@@ -293,7 +303,7 @@ DrawNodes :: (node : *Node, clip_shape : *SDShape = null) {
             return;
         }
 
-        DrawText(node.font, node.rect.xy, node.text_size, node.text, node.text_color, clip_shape);
+        DrawText(*node.window.draw_list, node.font, node.rect.xy, node.text_size, node.text, node.text_color, clip_shape);
     }
 
     if node.clipped_rect.x >= node.clipped_rect.z || node.clipped_rect.y >= node.clipped_rect.w {

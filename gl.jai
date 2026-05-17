@@ -229,7 +229,6 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
     }
 
     defer g_frame_in_flight = (g_frame_in_flight + 1) % g_num_frames_in_flight;
-    defer context.omg.shapes_to_draw.count = 0;
 
     push_allocator(temp);
 

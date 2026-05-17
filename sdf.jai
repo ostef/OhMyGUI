@@ -520,19 +520,7 @@ Drawing :: struct {
     should_override_default_effect : bool;
 }
 
-DrawShape :: (shape : *SDShape, position : Vec2f = .{}) -> *Drawing {
-    array_add(*context.omg.shapes_to_draw, .{shape=shape, position=position});
-
-    drawing := *context.omg.shapes_to_draw[context.omg.shapes_to_draw.count - 1];
-    drawing.effects.allocator = temp;
-
-    array_add(*drawing.effects, context.omg.default_effect);
-    drawing.should_override_default_effect = true;
-
-    return drawing;
-}
-
-Clip :: inline (drawing : *Drawing, shape : *SDShape) {
+SetClipShape :: inline (drawing : *Drawing, shape : *SDShape) {
     drawing.clip_shape = shape;
 }
 
@@ -844,69 +832,78 @@ PrepareRenderingBuffers :: (instances : *[..]ShaderSDInstance, shapes : *[..]Sha
     textures : [..]TextureHandle;
     defer array_free(textures);
 
-    for context.omg.shapes_to_draw {
-        last_call := ifx draw_calls.count > 0 then *draw_calls.*[draw_calls.count - 1];
-        textures.count = 0;
-
-        instance : ShaderSDInstance;
-        instance.position = it.position;
-        instance.bounds = GetBounds(it.shape);
-        instance.first_shape_index = xx shapes.count;
-        instance.num_shapes = FlattenShapes(it.shape, shapes, *textures);
-        instance.first_effect_index = xx effects.count;
-        instance.num_effects = xx it.effects.count;
-        if it.clip_shape {
-            instance.first_clip_shape_index = xx shapes.count;
-            instance.num_clip_shapes = FlattenShapes(it.clip_shape, shapes, *textures);
+    window := context.omg.windows;
+    while window {
+        defer {
+            window.draw_list.drawings.count = 0;
+            window.draw_list.clip_shapes.count = 0;
+            window = window.next;
         }
 
-        if textures.count > 1 {
-            log_error("Too many textures on shape");
-            continue;
-        }
+        for window.draw_list.drawings {
+            last_call := ifx draw_calls.count > 0 then *draw_calls.*[draw_calls.count - 1];
+            textures.count = 0;
 
-        if !last_call || (last_call.texture != 0 && textures.count > 0 && textures[0] != last_call.texture)  {
-            last_call = array_add(draw_calls);
-            last_call.base_instance = xx instances.count;
-        }
-
-        if textures.count > 0 {
-            last_call.texture = textures[0];
-        }
-
-        extended_bounds := instance.bounds;
-        for * fx : it.effects {
-            effect := array_add(effects);
-            effect.kind = xx fx.kind;
-
-            new_bounds := GetBounds(instance.bounds, fx);
-            extended_bounds = .{
-                xy=min(new_bounds.xy, extended_bounds.xy),
-                zw=max(new_bounds.zw, extended_bounds.zw),
-            };
-
-            if #complete fx.kind == {
-            case .SolidColor;
-                effect.params0[0] = fx.solid_color.color;
-                effect.params1[0] = fx.solid_color.blur_factor;
-
-            case .StrokeColor;
-                effect.params0[0] = fx.stroke_color.color;
-                effect.params1[0] = fx.stroke_color.blur_factor;
-                effect.params1[1] = fx.stroke_color.inset;
-                effect.params1[2] = fx.stroke_color.size;
-
-            case .InnerShadow; #through;
-            case .OuterShadow;
-                effect.params0[0] = fx.outer_shadow.color;
-                effect.params1[0] = fx.outer_shadow.offset.x;
-                effect.params1[1] = fx.outer_shadow.offset.y;
-                effect.params1[2] = fx.outer_shadow.blur_factor;
+            instance : ShaderSDInstance;
+            instance.position = it.position;
+            instance.bounds = GetBounds(it.shape);
+            instance.first_shape_index = xx shapes.count;
+            instance.num_shapes = FlattenShapes(it.shape, shapes, *textures);
+            instance.first_effect_index = xx effects.count;
+            instance.num_effects = xx it.effects.count;
+            if it.clip_shape {
+                instance.first_clip_shape_index = xx shapes.count;
+                instance.num_clip_shapes = FlattenShapes(it.clip_shape, shapes, *textures);
             }
-        }
 
-        instance.bounds = extended_bounds;
-        array_add(instances, instance);
-        last_call.num_instances += 1;
+            if textures.count > 1 {
+                log_error("Too many textures on shape");
+                continue;
+            }
+
+            if !last_call || (last_call.texture != 0 && textures.count > 0 && textures[0] != last_call.texture)  {
+                last_call = array_add(draw_calls);
+                last_call.base_instance = xx instances.count;
+            }
+
+            if textures.count > 0 {
+                last_call.texture = textures[0];
+            }
+
+            extended_bounds := instance.bounds;
+            for * fx : it.effects {
+                effect := array_add(effects);
+                effect.kind = xx fx.kind;
+
+                new_bounds := GetBounds(instance.bounds, fx);
+                extended_bounds = .{
+                    xy=min(new_bounds.xy, extended_bounds.xy),
+                    zw=max(new_bounds.zw, extended_bounds.zw),
+                };
+
+                if #complete fx.kind == {
+                case .SolidColor;
+                    effect.params0[0] = fx.solid_color.color;
+                    effect.params1[0] = fx.solid_color.blur_factor;
+
+                case .StrokeColor;
+                    effect.params0[0] = fx.stroke_color.color;
+                    effect.params1[0] = fx.stroke_color.blur_factor;
+                    effect.params1[1] = fx.stroke_color.inset;
+                    effect.params1[2] = fx.stroke_color.size;
+
+                case .InnerShadow; #through;
+                case .OuterShadow;
+                    effect.params0[0] = fx.outer_shadow.color;
+                    effect.params1[0] = fx.outer_shadow.offset.x;
+                    effect.params1[1] = fx.outer_shadow.offset.y;
+                    effect.params1[2] = fx.outer_shadow.blur_factor;
+                }
+            }
+
+            instance.bounds = extended_bounds;
+            array_add(instances, instance);
+            last_call.num_instances += 1;
+        }
     }
 }
