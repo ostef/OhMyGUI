@@ -1,3 +1,10 @@
+Text :: (parent : *Node, font : *Font, size : float, text : string, location := #caller_location) -> *Node {
+    node := GetNode(parent, location);
+    SetText(node, font, size, text);
+
+    return node;
+}
+
 Scrollbar :: (parent : *Node, target : *Node, axis : Axis, width := 10.0, location := #caller_location) -> background : *Node, handle : *Node {
     background, handle : *Node;
 
