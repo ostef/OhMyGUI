@@ -161,17 +161,37 @@ UserData :: (node : *Node, body : Code, flags : For_Flags) #expand {
     }
 }
 
-GetUserData :: inline (node : *Node, $T : Type, destroy : type_of(NodeUserData.destroy) = null, create := true) -> *T, is_new : bool {
+AddUserData :: inline (node : *Node, $T : Type, destroy : type_of(NodeUserData.destroy) = null) -> *T, is_new : bool {
+    ptr, is_new := GetUserData(node, T, destroy, true);
+    return ptr, is_new;
+}
+
+AddUserData :: inline (node : *Node, str_id : string, $T : Type, destroy : type_of(NodeUserData.destroy) = null) -> *T, is_new : bool {
+    ptr, is_new := GetUserData(node, str_id, T, destroy, true);
+    return ptr, is_new;
+}
+
+AddUserData :: inline (node : *Node, id : ID, $T : Type, destroy : type_of(NodeUserData.destroy) = null) -> *T, is_new : bool {
+    ptr, is_new := GetUserData(node, id, T, destroy, true);
+    return ptr, is_new;
+}
+
+AddUserData :: (node : *Node, id : ID, size : int, destroy : type_of(NodeUserData.destroy) = null) -> *void, is_new : bool {
+    ptr, is_new := AddUserData(node, id, size, destroy, true);
+    return ptr, is_new;
+}
+
+GetUserData :: inline (node : *Node, $T : Type, destroy : type_of(NodeUserData.destroy) = null, create := false) -> *T, is_new : bool {
     ptr, is_new := GetUserData(node, cast(ID, type_info(T)), T, destroy, create);
     return ptr, is_new;
 }
 
-GetUserData :: inline (node : *Node, str_id : string, $T : Type, destroy : type_of(NodeUserData.destroy) = null, create := true) -> *T, is_new : bool {
+GetUserData :: inline (node : *Node, str_id : string, $T : Type, destroy : type_of(NodeUserData.destroy) = null, create := false) -> *T, is_new : bool {
     ptr, is_new := GetUserData(node, GetID(str_id, false), T, destroy, create);
     return ptr, is_new;
 }
 
-GetUserData :: inline (node : *Node, id : ID, $T : Type, destroy : type_of(NodeUserData.destroy) = null, create := true) -> *T, is_new : bool {
+GetUserData :: inline (node : *Node, id : ID, $T : Type, destroy : type_of(NodeUserData.destroy) = null, create := false) -> *T, is_new : bool {
     ptr, is_new := GetUserData(node, id, size_of(T), destroy, create);
     if is_new {
         cast(*T, ptr).* = .{};
@@ -180,7 +200,7 @@ GetUserData :: inline (node : *Node, id : ID, $T : Type, destroy : type_of(NodeU
     return xx ptr, is_new;
 }
 
-GetUserData :: (node : *Node, id : ID, size : int, destroy : type_of(NodeUserData.destroy) = null, create := true) -> *void, is_new : bool {
+GetUserData :: (node : *Node, id : ID, size : int, destroy : type_of(NodeUserData.destroy) = null, create := false) -> *void, is_new : bool {
     for :UserData node {
         if it.id == id {
             return cast(*void, it + 1), false;

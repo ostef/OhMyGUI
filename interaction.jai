@@ -54,7 +54,7 @@ DestroyTextInputData :: (node : *Node, data : *void) {
 }
 
 GetTextInputResultUtf32 :: (node : *Node) -> []u32 {
-    data := GetUserData(node, TextInputData, create=false);
+    data := GetUserData(node, TextInputData);
     if !data {
         return .[];
     }
@@ -63,7 +63,7 @@ GetTextInputResultUtf32 :: (node : *Node) -> []u32 {
 }
 
 GetTextInputResult :: (node : *Node) -> string {
-    data := GetUserData(node, TextInputData, create=false);
+    data := GetUserData(node, TextInputData);
     if !data {
         return "";
     }
@@ -72,7 +72,7 @@ GetTextInputResult :: (node : *Node) -> string {
 }
 
 TextInputBehavior :: (node : *Node) -> *TextInputData {
-    input, is_new := GetUserData(node, TextInputData, DestroyTextInputData);
+    input, is_new := AddUserData(node, TextInputData, DestroyTextInputData);
     if is_new {
         input.buffer.allocator = context.omg.general_purpose_allocator;
     }
