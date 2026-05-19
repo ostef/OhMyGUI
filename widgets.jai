@@ -94,3 +94,60 @@ TextInput :: (parent : *Node, location := #caller_location) -> *Node {
 
     return input_field;
 }
+
+Slider :: (parent : *Node, value : *float, min : float, max : float, step : float, handle_size := 10.0, height := 10.0, location := #caller_location) -> background : *Node, handle : *Node {
+    dummy_value : float;
+    if !value {
+        value = *dummy_value;
+    }
+
+    background, handle : *Node;
+
+    background = GetNode(parent, location=location);
+    {
+        SetSize(background, SizeFill(), SizePx(height));
+
+        handle = GetNode(background, "handle");
+        {
+            SetSize(handle, SizePx(handle_size), SizePx(handle_size));
+
+            range := max - min;
+            offset_max := background.layout_last_frame.size[Axis.X] - handle_size;
+
+            // Allow the user to click on the background to interact with the scrollbar
+            background.flags |= .Focusable;
+
+            handle_result := ButtonBehavior(handle);
+
+            if background.state_flags & .Focused && IsMouseButtonPressed(.Left) {
+                SetMouseCapture(handle);
+                SetMouseFocus(handle);
+                handle_result.pressed = true;
+                handle_result.held = true;
+
+                mouse := GetMousePosition(background.window)[Axis.X];
+                new_offset := mouse - background.layout_last_frame.rect.xy[Axis.X] - handle_size * 0.5;
+                new_value := (new_offset / offset_max) * range;
+
+                value.* = Snap(clamp(new_value, min, max), step);
+            }
+
+            if handle_result.pressed {
+                context.omg.mouse_captured_node_value = .{};
+                context.omg.mouse_captured_node_value[Axis.X] = (value.* / range) * offset_max;
+            }
+
+            if handle_result.held {
+                new_offset := GetMousePosition()[Axis.X] - context.omg.mouse_captured_at[Axis.X];
+                new_offset += context.omg.mouse_captured_node_value[Axis.X];
+                new_value := (new_offset / offset_max) * range;
+
+                value.* = Snap(clamp(new_value, min, max), step);
+            }
+
+            handle.offset[Axis.X] = (value.* / range) * offset_max;
+        }
+    }
+
+    return background, handle;
+}

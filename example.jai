@@ -12,6 +12,8 @@ g_mouse : Vector2;
 g_frame_in_flight : int;
 g_frame_syncs : [2]GLsync;
 
+g_slider_value : float;
+
 DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
     OMG.NewFrame(delta_time);
     defer OMG.Render();
@@ -138,6 +140,10 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
 
                 text_input := OMG.TextInput(main_viewport);
                 OMG.SetSize(text_input, OMG.SizePx(300), OMG.SizePx(32));
+
+                OMG.Text(main_viewport, font, 16, tprint("Value: %", g_slider_value));
+                slider := OMG.Slider(main_viewport, *g_slider_value, 0, 1, 0.1);
+                OMG.SetWidth(slider, OMG.SizeFill(0.2));
 
                 OMG.Text(main_viewport, OMG.GetFont("JetBrainsMono-Regular"), 14, "Some text with another font");
                 OMG.Text(main_viewport, font, (cos(time) + 2) * 10, "The quick brown fox jumps over the lazy dog!");

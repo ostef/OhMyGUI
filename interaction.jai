@@ -107,17 +107,13 @@ SetContentScroll :: inline (node : *Node, axis : Axis, value : float) {
 }
 
 SetContentScrollX :: inline (node : *Node, value : float) {
-    node.scroll.x = value;
-
     avail_scroll := node.layout_last_frame.size.x - node.layout_last_frame.children_size.x;
-    node.scroll.x = clamp(node.scroll.x, avail_scroll, 0);
+    node.scroll.x = clamp(value, avail_scroll, 0);
 }
 
 SetContentScrollY :: inline (node : *Node, value : float) {
-    node.scroll.y = value;
-
     avail_scroll := node.layout_last_frame.size.y - node.layout_last_frame.children_size.y;
-    node.scroll.y = clamp(node.scroll.y, avail_scroll, 0);
+    node.scroll.y = clamp(value, avail_scroll, 0);
 }
 
 ScrollBehavior :: (node : *Node) -> Vec2f {
