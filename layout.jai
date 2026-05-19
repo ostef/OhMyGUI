@@ -133,7 +133,7 @@ LayoutFixedAndFitSizing :: (node : *Node) {
             if node.flags & .TextNode {
                 node.size[axis] = ceil(text_size[axis]);
             } else {
-                node.size[axis] = ceil(node.children_size[axis] + 2 * node.padding[axis]);
+                node.size[axis] = ceil(node.children_size[axis] + node.padding.xy[axis] + node.padding.zw[axis]);
             }
             node.size[axis] = clamp(node.size[axis], node.min_size[axis], node.max_size[axis]);
         case .Pixels;
@@ -168,7 +168,7 @@ LayoutFillSizing :: (node : *Node) {
         num_fill_children += 1;
     }
 
-    remaining_size := node.size[axis] - 2 * node.padding[axis]
+    remaining_size := node.size[axis] - node.padding.xy[axis] - node.padding.zw[axis]
         - node.children_size[axis]
         - (node.num_children - 1) * node.child_gap[axis];
     remaining_size = floor(remaining_size);
@@ -203,7 +203,7 @@ LayoutFillSizing :: (node : *Node) {
             break;
         }
 
-        remaining_size = node.size[axis] - 2 * node.padding[axis]
+        remaining_size = node.size[axis] - node.padding.xy[axis] - node.padding.zw[axis]
             - node.children_size[axis]
             - (node.num_children - 1) * node.child_gap[axis];
         remaining_size = floor(remaining_size);
@@ -211,7 +211,7 @@ LayoutFillSizing :: (node : *Node) {
 
     for :Children node {
         if it.desired_size[cross].kind == .FillParent {
-            it.size[cross] = floor(node.size[cross] * it.desired_size[cross].value - 2 * node.padding[cross]);
+            it.size[cross] = floor(node.size[cross] * it.desired_size[cross].value - node.padding.xy[cross] - node.padding.zw[cross]);
             it.size[cross] = clamp(it.size[cross], node.min_size[cross], node.max_size[cross]);
             node.children_size[cross] = max(node.children_size[cross], it.size[cross]);
         }
@@ -225,13 +225,13 @@ LayoutPosition :: (node : *Node) {
     cross := GetCrossAxis(axis);
     reverse := IsLayoutReverseDirection(node);
 
-    remaining_size := node.size[axis] - 2 * node.padding[axis]
+    remaining_size := node.size[axis] - node.padding.xy[axis] - node.padding.zw[axis]
             - node.children_size[axis]
             - (node.num_children - 1) * node.child_gap[axis];
     axis_align_offset := remaining_size * node.child_align[axis];
-    cross_size := node.size[cross] - 2 * node.padding[cross];
+    cross_size := node.size[cross] - node.padding.xy[cross] - node.padding.zw[cross];
 
-    cursor := ifx reverse then floor(node.size[axis] - node.padding[axis] - axis_align_offset + node.scroll[axis]) else ceil(node.padding[axis] + axis_align_offset + node.scroll[axis]);
+    cursor := ifx reverse then floor(node.size[axis] - node.padding.zw[axis] - axis_align_offset + node.scroll[axis]) else ceil(node.padding.xy[axis] + axis_align_offset + node.scroll[axis]);
     first := true;
     for :LayoutDirection node {
         defer first = false;
@@ -242,7 +242,7 @@ LayoutPosition :: (node : *Node) {
         }
 
         it.relative_position[axis] = cursor;
-        it.relative_position[cross] = ceil(node.padding[cross] + (cross_size - it.size[cross]) * node.child_align[cross]);
+        it.relative_position[cross] = ceil(node.padding.xy[cross] + (cross_size - it.size[cross]) * node.child_align[cross]);
 
         if !reverse {
             cursor += it.size[axis] + node.child_gap[axis];

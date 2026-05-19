@@ -130,6 +130,8 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
                 OMG.SetLayout(left_side, .TopToBottom);
 
                 main_viewport := Panel(left_side, "main_viewport", "Main Viewport");
+                OMG.SetPadding(main_viewport, 12, 12);
+                OMG.SetChildGap(main_viewport, 4, 4);
 
                 OMG.Text(main_viewport, font, 16, tprint("Mouse focus: %", context.omg.mouse_focused_node));
                 OMG.Text(main_viewport, font, 16, tprint("Mouse capture: %", context.omg.mouse_capturing_node));
@@ -148,7 +150,6 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
                     OMG.SetLayout(label_and_slider, .LeftToRight);
                     OMG.SetChildAlign(label_and_slider, 0, 0.5);
                     OMG.SetChildGap(label_and_slider, 10, 0);
-                    OMG.SetPadding(label_and_slider, 0, 10);
 
                     label := OMG.Text(label_and_slider, font, 16, tprint("Value: %", g_slider_value));
                     OMG.SetWidth(label, OMG.SizeFill(0.5));

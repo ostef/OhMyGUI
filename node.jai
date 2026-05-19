@@ -79,7 +79,7 @@ Node :: struct {
         desired_size := Size2D.{.{kind=.FitChildren}, .{kind=.FitChildren}};
         min_size := Vec2f.{-FLOAT32_INFINITY, -FLOAT32_INFINITY};
         max_size := Vec2f.{ FLOAT32_INFINITY,  FLOAT32_INFINITY};
-        padding : Vec2f;
+        padding : Vec4f;
         child_gap : Vec2f; // If child_layout_mode is not None
         child_align : Vec2f; // If child_layout_mode is not None
         child_layout_mode := LayoutMode.LeftToRight;
@@ -474,12 +474,16 @@ SetMaxSize :: inline (node : *Node, x : float, y : float) {
     node.max_size = .{x, y};
 }
 
-SetPadding :: inline (node : *Node, padding : Vec2f) {
+SetPadding :: inline (node : *Node, padding : Vec4f) {
     node.padding = padding;
 }
 
 SetPadding :: inline (node : *Node, x : float, y : float) {
-    node.padding = .{x, y};
+    node.padding = .{x, y, x, y};
+}
+
+SetPadding :: inline (node : *Node, left : float, top : float, right : float, bottom : float) {
+    node.padding = .{left, top, right, bottom};
 }
 
 SetChildGap :: inline (node : *Node, gap : Vec2f) {
