@@ -141,9 +141,20 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
                 text_input := OMG.TextInput(main_viewport);
                 OMG.SetSize(text_input, OMG.SizePx(300), OMG.SizePx(32));
 
-                OMG.Text(main_viewport, font, 16, tprint("Value: %", g_slider_value));
-                slider := OMG.Slider(main_viewport, *g_slider_value, 0, 1, 0.1);
-                OMG.SetWidth(slider, OMG.SizeFill(0.2));
+                label_and_slider := OMG.GetNode(main_viewport);
+                {
+                    OMG.NoDraw(label_and_slider);
+                    OMG.SetSize(label_and_slider, OMG.SizeFill(0.3), OMG.SizeFit());
+                    OMG.SetLayout(label_and_slider, .LeftToRight);
+                    OMG.SetChildAlign(label_and_slider, 0, 0.5);
+                    OMG.SetChildGap(label_and_slider, 10, 0);
+                    OMG.SetPadding(label_and_slider, 0, 10);
+
+                    OMG.Text(label_and_slider, font, 16, tprint("Value: %", g_slider_value));
+
+                    slider := OMG.Slider(label_and_slider, *g_slider_value, 0, 10, 1);
+                    OMG.SetWidth(slider, OMG.SizeFill(0.2));
+                }
 
                 OMG.Text(main_viewport, OMG.GetFont("JetBrainsMono-Regular"), 14, "Some text with another font");
                 OMG.Text(main_viewport, font, (cos(time) + 2) * 10, "The quick brown fox jumps over the lazy dog!");

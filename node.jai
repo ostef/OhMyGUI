@@ -396,6 +396,10 @@ GetNode :: (parent : *Node, id : ID) -> *Node {
     return node;
 }
 
+NoDraw :: inline (node : *Node) {
+    node.draw = null;
+}
+
 SetWidth :: inline (node : *Node, size : Size1D) {
     node.desired_size.x = size;
 }

@@ -95,10 +95,14 @@ TextInput :: (parent : *Node, location := #caller_location) -> *Node {
     return input_field;
 }
 
-Slider :: (parent : *Node, value : *float, min : float, max : float, step : float, handle_size := 10.0, height := 10.0, location := #caller_location) -> background : *Node, handle : *Node {
-    dummy_value : float;
-    if !value {
-        value = *dummy_value;
+Slider :: (parent : *Node, value : *$T, min : T, max : T, step : T, handle_size := 10.0, height := 10.0, location := #caller_location) -> background : *Node, handle : *Node {
+    fvalue := ifx value then cast(float, value.*);
+    fmin := cast(float, min);
+    fmax := cast(float, max);
+    fstep := cast(float, step);
+
+    defer if value {
+        value.* = xx fvalue;
     }
 
     background, handle : *Node;
@@ -111,7 +115,7 @@ Slider :: (parent : *Node, value : *float, min : float, max : float, step : floa
         {
             SetSize(handle, SizePx(handle_size), SizePx(handle_size));
 
-            range := max - min;
+            range := fmax - fmin;
             offset_max := background.layout_last_frame.size[Axis.X] - handle_size;
 
             // Allow the user to click on the background to interact with the scrollbar
@@ -129,12 +133,12 @@ Slider :: (parent : *Node, value : *float, min : float, max : float, step : floa
                 new_offset := mouse - background.layout_last_frame.rect.xy[Axis.X] - handle_size * 0.5;
                 new_value := (new_offset / offset_max) * range;
 
-                value.* = Snap(clamp(new_value, min, max), step);
+                fvalue = Snap(clamp(new_value, fmin, fmax), fstep);
             }
 
             if handle_result.pressed {
                 context.omg.mouse_captured_node_value = .{};
-                context.omg.mouse_captured_node_value[Axis.X] = (value.* / range) * offset_max;
+                context.omg.mouse_captured_node_value[Axis.X] = (fvalue / range) * offset_max;
             }
 
             if handle_result.held {
@@ -142,10 +146,10 @@ Slider :: (parent : *Node, value : *float, min : float, max : float, step : floa
                 new_offset += context.omg.mouse_captured_node_value[Axis.X];
                 new_value := (new_offset / offset_max) * range;
 
-                value.* = Snap(clamp(new_value, min, max), step);
+                fvalue = Snap(clamp(new_value, fmin, fmax), fstep);
             }
 
-            handle.offset[Axis.X] = (value.* / range) * offset_max;
+            handle.offset[Axis.X] = (fvalue / range) * offset_max;
         }
     }
 
