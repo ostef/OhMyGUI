@@ -84,8 +84,12 @@ TextInput :: (parent : *Node, location := #caller_location) -> *Node {
         }
 
         text_node := GetNode(input_field, "text");
-        text := EncodeStringAsUtf8(input.buffer ,, temp);
-        SetText(text_node, context.omg.fonts, 16, text);
+        {
+            text := EncodeStringAsUtf8(input.buffer ,, temp);
+            SetText(text_node, context.omg.fonts, 16, text);
+            SetBackgroundColor(text_node, 0, 0, 0, 0);
+            SetBorderColor(text_node, 0, 0, 0, 0);
+        }
     }
 
     return input_field;
