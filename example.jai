@@ -150,10 +150,11 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
                     OMG.SetChildGap(label_and_slider, 10, 0);
                     OMG.SetPadding(label_and_slider, 0, 10);
 
-                    OMG.Text(label_and_slider, font, 16, tprint("Value: %", g_slider_value));
+                    label := OMG.Text(label_and_slider, font, 16, tprint("Value: %", g_slider_value));
+                    OMG.SetWidth(label, OMG.SizeFill(0.5));
 
                     slider := OMG.Slider(label_and_slider, *g_slider_value, 0, 1, 0);
-                    OMG.SetWidth(slider, OMG.SizeFill(0.2));
+                    OMG.SetWidth(slider, OMG.SizeFill());
                 }
 
                 OMG.Text(main_viewport, OMG.GetFont("JetBrainsMono-Regular"), 14, "Some text with another font");

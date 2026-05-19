@@ -122,17 +122,19 @@ LayoutFixedAndFitSizing :: (node : *Node) {
         node.children_size[cross] = max(node.children_size[cross], it.size[cross]);
     }
 
-    if node.flags & .TextNode {
-        node.size = CalculateTextSize(node.font, node.text_size, node.text);
-        node.size.x = ceil(node.size.x);
-        node.size.y = ceil(node.size.y);
-        return;
+    text_size : Vec2f;
+    if node.flags & .TextNode && (node.desired_size.x.kind == .FitChildren || node.desired_size.y.kind == .FitChildren) {
+        text_size = CalculateTextSize(node.font, node.text_size, node.text);
     }
 
     for axis : Axis.[.X, .Y] {
         if node.desired_size[axis].kind == {
         case .FitChildren;
-            node.size[axis] = ceil(node.children_size[axis] + 2 * node.padding[axis]);
+            if node.flags & .TextNode {
+                node.size[axis] = ceil(text_size[axis]);
+            } else {
+                node.size[axis] = ceil(node.children_size[axis] + 2 * node.padding[axis]);
+            }
             node.size[axis] = clamp(node.size[axis], node.min_size[axis], node.max_size[axis]);
         case .Pixels;
             node.size[axis] = node.desired_size[axis].value;
@@ -140,7 +142,7 @@ LayoutFixedAndFitSizing :: (node : *Node) {
         }
     }
 
-    if node.desired_size[axis].kind == .FitChildren {
+    if node.desired_size[axis].kind == .FitChildren && !(node.flags & .TextNode) {
         node.size[axis] += ceil((node.num_children - 1) * node.child_gap[axis]);
         node.size[axis] = clamp(node.size[axis], node.min_size[axis], node.max_size[axis]);
     }
@@ -153,7 +155,7 @@ LayoutFillSizing :: (node : *Node) {
     total_weights := 0.0;
     num_fill_children := 0;
     for :Children node {
-        if it.desired_size[axis].kind != .FillParent || it.flags & .TextNode {
+        if it.desired_size[axis].kind != .FillParent {
             continue;
         }
 
@@ -175,7 +177,7 @@ LayoutFillSizing :: (node : *Node) {
         defer iter += 1;
 
         for :Children node {
-            if it.desired_size[axis].kind != .FillParent || it.flags & .TextNode  {
+            if it.desired_size[axis].kind != .FillParent  {
                 continue;
             }
 
@@ -208,7 +210,7 @@ LayoutFillSizing :: (node : *Node) {
     }
 
     for :Children node {
-        if it.desired_size[cross].kind == .FillParent && !(it.flags & .TextNode) {
+        if it.desired_size[cross].kind == .FillParent {
             it.size[cross] = floor(node.size[cross] * it.desired_size[cross].value - 2 * node.padding[cross]);
             it.size[cross] = clamp(it.size[cross], node.min_size[cross], node.max_size[cross]);
             node.children_size[cross] = max(node.children_size[cross], it.size[cross]);
