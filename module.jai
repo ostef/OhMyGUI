@@ -8,6 +8,7 @@
 #load "unicode.jai";
 #load "input.jai";
 #load "sdf.jai";
+#load "draw.jai";
 #load "text.jai";
 #load "gl.jai";
 #load "node.jai";
@@ -209,50 +210,6 @@ Render :: () {
     omg.input.text.count = 0;
 
     omg.input.mouse_wheel = .{};
-}
-
-DrawList :: struct {
-    drawings : [..]Drawing;
-    clip_shapes : [..]*SDShape;
-}
-
-DestroyDrawList :: (draw_list : *DrawList) {
-    array_free(draw_list.drawings);
-    array_free(draw_list.clip_shapes);
-}
-
-PushClipShape :: (draw_list : *DrawList, shape : *SDShape) {
-    array_add(*draw_list.clip_shapes, shape);
-}
-
-PopClipShape :: (draw_list : *DrawList) -> *SDShape {
-    assert(draw_list.clip_shapes.count > 0);
-
-    shape := GetClipShape(draw_list);
-    pop(*draw_list.clip_shapes);
-
-    return shape;
-}
-
-GetClipShape :: inline (draw_list : *DrawList) -> *SDShape {
-    if draw_list.clip_shapes.count <= 0 {
-        return null;
-    }
-
-    return draw_list.clip_shapes[draw_list.clip_shapes.count - 1];
-}
-
-DrawShape :: (draw_list : *DrawList, shape : *SDShape, position : Vec2f) -> *Drawing {
-    array_add(*draw_list.drawings, .{shape=shape, position=position});
-
-    drawing := *draw_list.drawings[draw_list.drawings.count - 1];
-    drawing.effects.allocator = temp;
-    drawing.clip_shape = GetClipShape(draw_list);
-
-    array_add(*drawing.effects, context.omg.default_effect);
-    drawing.should_override_default_effect = true;
-
-    return drawing;
 }
 
 #scope_file

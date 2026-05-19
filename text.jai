@@ -281,32 +281,6 @@ LoadGlyph :: (font : *Font, codepoint : u32, ft_face : FT_Face, packer : *RectPa
 
 #scope_export
 
-DrawText :: (draw_list : *DrawList, font : *Font, position : Vec2f, size : float, text : string, color : Vec4f, clip_shape : *SDShape = null) {
-    DrawText(draw_list, font, position ,size, text, ColorU32(color), clip_shape);
-}
-
-DrawText :: (draw_list : *DrawList, font : *Font, position : Vec2f, size : float, text : string, color : u32, clip_shape : *SDShape = null) {
-    if !font || (color & 0xff) == 0 {
-        return;
-    }
-
-    sdf_range := font.sdf_range * size;
-
-    iter : TextGlyphIterator;
-    iter.font = font;
-    iter.size = size;
-    iter.text = text;
-    for iter {
-        glyph_position := position + iter.pen + it.hori_bearing * iter.size;
-        glyph_position += it.size * iter.size * 0.5;
-
-        s := SDTexture(font.texture, it.texture_size * iter.size, it.uv_rect, .{sdf_range, -sdf_range});
-        d := DrawShape(draw_list, s, glyph_position);
-        SetClipShape(d, clip_shape);
-        SolidColor(d, color);
-    }
-}
-
 TextGlyphIterator :: struct {
     font : *Font;
     text : string;

@@ -43,6 +43,7 @@ Node :: struct {
     index : Bucket_Locator;
 
     last_used_on_frame : u64;
+    depth : u32;
 
     user_data : *NodeUserData;
 
@@ -301,6 +302,9 @@ TouchNode :: (node : *Node) {
     node.layout = .{};
     if node.parent {
         PushChild(node.parent, node);
+        node.depth = node.parent.depth + 1;
+    } else {
+        node.depth = 0;
     }
 }
 
