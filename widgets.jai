@@ -1,6 +1,8 @@
 Text :: (parent : *Node, font : *Font, size : float, text : string, location := #caller_location) -> *Node {
     node := GetNode(parent, location);
     SetText(node, font, size, text);
+    SetBackgroundColor(node, 0, 0, 0, 0);
+    SetBorderColor(node, 0, 0, 0, 0);
 
     return node;
 }

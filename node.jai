@@ -45,6 +45,7 @@ Node :: struct {
     last_used_on_frame : u64;
     depth : u32;
 
+    draw : (node : *Node, clip_shape : *SDShape) = DrawNodeDefault;
     user_data : *NodeUserData;
 
     window : *Window;

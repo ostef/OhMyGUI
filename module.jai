@@ -229,38 +229,8 @@ PostLayout :: (node : *Node) {
 }
 
 DrawNodes :: (node : *Node, clip_shape : *SDShape = null) {
-    DrawBox :: inline (node : *Node, clip_shape : *SDShape) {
-        has_background := (node.background_color & 0xff) > 0;
-        has_border := (node.border_color & 0xff) > 0 && node.border_size > 0;
-        has_shadow := (node.outer_shadow_color & 0xff) > 0;
-
-        if !has_background && !has_border && !has_shadow {
-            return;
-        }
-
-        position := (node.rect.xy + node.rect.zw) * 0.5;
-
-        d := DrawShape(*node.window.draw_list, Box(node.size, node.corner_radiuses), position);
-
-        if has_shadow {
-            OuterShadow(d, node.outer_shadow_offset, node.outer_shadow_blur, node.outer_shadow_color);
-        }
-        if has_background {
-            SolidColor(d, node.background_color);
-        }
-        if has_border {
-            StrokeColor(d, node.border_color, node.border_size, node.border_inset);
-        }
-
-        SetClipShape(d, clip_shape);
-    }
-
-    DrawText :: (node : *Node, clip_shape : *SDShape) {
-        if !node.font || node.text_size <= 0 || !node.text || (node.text_color & 0xff) == 0 {
-            return;
-        }
-
-        DrawText(*node.window.draw_list, node.font, node.rect.xy, node.text_size, node.text, node.text_color, clip_shape);
+    if node.draw {
+        node.draw(node, clip_shape);
     }
 
     if node.clipped_rect.x >= node.clipped_rect.z || node.clipped_rect.y >= node.clipped_rect.w {
@@ -268,11 +238,6 @@ DrawNodes :: (node : *Node, clip_shape : *SDShape = null) {
     }
 
     position := (node.rect.xy + node.rect.zw) * 0.5;
-
-    if !(node.flags & .TextNode) {
-        DrawBox(node, clip_shape);
-    }
-
     if node.num_children > 0 {
         my_clip := Move(Box(node.size - node.padding * 2), position);
         clip_shape = ifx clip_shape then Inter(clip_shape, my_clip) else my_clip;
@@ -282,7 +247,4 @@ DrawNodes :: (node : *Node, clip_shape : *SDShape = null) {
         }
     }
 
-    if node.flags & .TextNode {
-        DrawText(node, clip_shape);
-    }
 }

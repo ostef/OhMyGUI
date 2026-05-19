@@ -262,6 +262,45 @@ DrawText :: (draw_list : *DrawList, font : *Font, position : Vec2f, size : float
     }
 }
 
+DrawNodeDefault :: (node : *Node, clip_shape : *SDShape) {
+    DrawBox :: inline (node : *Node, clip_shape : *SDShape) {
+        has_background := (node.background_color & 0xff) > 0;
+        has_border := (node.border_color & 0xff) > 0 && node.border_size > 0;
+        has_shadow := (node.outer_shadow_color & 0xff) > 0;
+
+        if !has_background && !has_border && !has_shadow {
+            return;
+        }
+
+        position := (node.rect.xy + node.rect.zw) * 0.5;
+
+        d := DrawShape(*node.window.draw_list, Box(node.size, node.corner_radiuses), position);
+
+        if has_shadow {
+            OuterShadow(d, node.outer_shadow_offset, node.outer_shadow_blur, node.outer_shadow_color);
+        }
+        if has_background {
+            SolidColor(d, node.background_color);
+        }
+        if has_border {
+            StrokeColor(d, node.border_color, node.border_size, node.border_inset);
+        }
+
+        SetClipShape(d, clip_shape);
+    }
+
+    DrawText :: (node : *Node, clip_shape : *SDShape) {
+        if !node.font || node.text_size <= 0 || !node.text || (node.text_color & 0xff) == 0 {
+            return;
+        }
+
+        DrawText(*node.window.draw_list, node.font, node.rect.xy, node.text_size, node.text, node.text_color, clip_shape);
+    }
+
+    DrawBox(node, clip_shape);
+    DrawText(node, clip_shape);
+}
+
 #scope_module
 
 ShaderSDInstance :: struct {
