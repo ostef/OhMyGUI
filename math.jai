@@ -205,13 +205,22 @@ Round :: inline (value : Vec2f) -> Vec2f {
 }
 
 SnapDown :: inline (value : float, grid_size : float) -> float {
+    if grid_size == 0 {
+        return value;
+    }
     return floor(value / grid_size) * grid_size;
 }
 
 Snap :: (value : float, grid_size : float) -> float {
+    if grid_size == 0 {
+        return value;
+    }
     return Round(value / grid_size) * grid_size;
 }
 
 SnapUp :: (value : float, grid_size : float) -> float {
+    if grid_size == 0 {
+        return value;
+    }
     return ceil(value / grid_size) * grid_size;
 }

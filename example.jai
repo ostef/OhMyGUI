@@ -152,7 +152,7 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
 
                     OMG.Text(label_and_slider, font, 16, tprint("Value: %", g_slider_value));
 
-                    slider := OMG.Slider(label_and_slider, *g_slider_value, 0, 10, 1);
+                    slider := OMG.Slider(label_and_slider, *g_slider_value, 0, 1, 0);
                     OMG.SetWidth(slider, OMG.SizeFill(0.2));
                 }
 
