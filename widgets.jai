@@ -113,30 +113,27 @@ DrawTextInputText :: (node : *Node, clip_shape : *SDShape) {
     cursor_position.x = ceil(cursor_position.x);
     cursor_position.y = ceil(cursor_position.y);
 
-    if node.parent.state_flags & .Active {
-        if fmod_cycling(input.cursor_blink_time, 1) < 0.5 || input.cursor_blink_time > 5 {
-            cursor_size := Vec2f.{1, node.rect.w - node.rect.y};
-            print_vars(cursor_position, cursor_size);
+    if node.parent.state_flags & .Active && (fmod_cycling(input.cursor_blink_time, 1) < 0.5 || input.cursor_blink_time > 5) {
+        cursor_size := Vec2f.{1, node.rect.w - node.rect.y};
 
-            d := DrawShape(*node.window.draw_list, Box(cursor_size), cursor_position + cursor_size * 0.5);
-            SetClipShape(d, clip_shape);
-            SolidColor(d, node.text_color);
-        }
+        d := DrawShape(*node.window.draw_list, Box(cursor_size), cursor_position + cursor_size * 0.5);
+        SetClipShape(d, clip_shape);
+        SolidColor(d, node.text_color);
+    }
 
-        if input.selection != 0 {
-            selection_size := Vec2f.{abs(cursor_position.x - selection_position.x), node.rect.w - node.rect.y};
-            selection_size.x = ceil(selection_size.x);
-            selection_size.y = ceil(selection_size.y);
+    if selection_drawing {
+        selection_size := Vec2f.{abs(cursor_position.x - selection_position.x), node.rect.w - node.rect.y};
+        selection_size.x = ceil(selection_size.x);
+        selection_size.y = ceil(selection_size.y);
 
-            selection_position = min(cursor_position, selection_position);
-            selection_position.x = floor(selection_position.x);
-            selection_position.y = floor(selection_position.y);
+        selection_position = min(cursor_position, selection_position);
+        selection_position.x = floor(selection_position.x);
+        selection_position.y = floor(selection_position.y);
 
-            selection_drawing.shape = Box(selection_size);
-            selection_drawing.position = selection_position + selection_size * 0.5;
-            SetClipShape(selection_drawing, clip_shape);
-            SolidColor(selection_drawing, ColorU32(0.1, 0.2, 0.6, 0.5));
-        }
+        selection_drawing.shape = Box(selection_size);
+        selection_drawing.position = selection_position + selection_size * 0.5;
+        SetClipShape(selection_drawing, clip_shape);
+        SolidColor(selection_drawing, ColorU32(0.1, 0.2, 0.6, 0.5));
     }
 }
 
