@@ -289,6 +289,14 @@ TextGlyphIterator :: struct {
     bounds : Vec2f;
 }
 
+IterText :: inline (node : *Node) -> TextGlyphIterator {
+    return .{
+        font=node.font,
+        text=node.text,
+        size=node.text_size,
+    };
+}
+
 Newline :: (iter : *TextGlyphIterator) {
     iter.bounds.x = max(iter.bounds.x, iter.pen.x);
 
@@ -299,6 +307,10 @@ Newline :: (iter : *TextGlyphIterator) {
 }
 
 for_expansion :: (iter : *TextGlyphIterator, body : Code, flags : For_Flags) #expand {
+    if !iter.font {
+        return;
+    }
+
     iter.pen.y = iter.font.ascent * iter.size;
 
     for codepoint, `it_index : iter.text {

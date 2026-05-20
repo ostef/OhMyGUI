@@ -46,6 +46,10 @@ ButtonBehavior :: (node : *Node) -> ButtonResult {
 
 TextInputData :: struct {
     buffer : [..]u32;
+    selection_start : s32;
+    selection_end : s32;
+    cursor : s32;
+    cursor_blink_time : float;
 }
 
 DestroyTextInputData :: (node : *Node, data : *void) {
@@ -71,6 +75,54 @@ GetTextInputResult :: (node : *Node) -> string {
     return EncodeStringAsUtf8(data.buffer);
 }
 
+Insert :: (input : *TextInputData, utf32 : []u32) {
+    input.cursor_blink_time = 0;
+
+    for utf32 {
+        array_insert_at(*input.buffer, it, input.cursor);
+        input.cursor += 1;
+    }
+}
+
+Backspace :: (input : *TextInputData) -> bool {
+    if !MoveCursorLeft(input) {
+        return false;
+    }
+
+    return Delete(input);
+}
+
+Delete :: (input : *TextInputData) -> bool {
+    if input.cursor == input.buffer.count {
+        return false;
+    }
+
+    array_ordered_remove_by_index(*input.buffer, input.cursor);
+    return true;
+}
+
+MoveCursorLeft :: inline (input : *TextInputData) -> bool {
+    input.cursor_blink_time = 0;
+
+    if input.cursor == 0 {
+        return false;
+    }
+
+    input.cursor -= 1;
+    return true;
+}
+
+MoveCursorRight :: inline (input : *TextInputData) -> bool {
+    input.cursor_blink_time = 0;
+
+    if input.cursor == input.buffer.count {
+        return false;
+    }
+
+    input.cursor += 1;
+    return true;
+}
+
 TextInputBehavior :: (node : *Node) -> *TextInputData {
     input, is_new := AddUserData(node, TextInputData, DestroyTextInputData);
     if is_new {
@@ -86,12 +138,31 @@ TextInputBehavior :: (node : *Node) -> *TextInputData {
     }
 
     if node.state_flags & .Active {
-        for context.omg.input.text {
-            array_add(*input.buffer, it);
+        if node.state_flags & .ActiveLastFrame {
+            input.cursor_blink_time += context.omg.delta_time;
+        } else {
+            input.cursor = xx input.buffer.count;
+            input.cursor_blink_time = 0;
         }
 
-        if IsKeyPressed(.Backspace) && input.buffer.count > 0 {
-            pop(*input.buffer);
+        if context.omg.input.text.count > 0 {
+            Insert(input, context.omg.input.text);
+        }
+
+        if IsKeyPressed(.Backspace) {
+            Backspace(input);
+        }
+
+        if IsKeyPressed(.Delete) {
+            Delete(input);
+        }
+
+        if IsKeyPressed(.Left) {
+            MoveCursorLeft(input);
+        }
+
+        if IsKeyPressed(.Right) {
+            MoveCursorRight(input);
         }
     }
 

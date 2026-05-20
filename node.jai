@@ -161,66 +161,69 @@ UserData :: (node : *Node, body : Code, flags : For_Flags) #expand {
     }
 }
 
-AddUserData :: inline (node : *Node, $T : Type, destroy : type_of(NodeUserData.destroy) = null) -> *T, is_new : bool {
-    ptr, is_new := GetUserData(node, T, destroy, true);
-    return ptr, is_new;
+AddUserData :: inline (node : *Node, $T : Type, destroy : type_of(NodeUserData.destroy) = null) -> *T, is_new : bool, *NodeUserData {
+    ptr, is_new, node := GetUserData(node, T, true);
+    node.destroy = destroy;
+    return ptr, is_new, node;
 }
 
-AddUserData :: inline (node : *Node, str_id : string, $T : Type, destroy : type_of(NodeUserData.destroy) = null) -> *T, is_new : bool {
-    ptr, is_new := GetUserData(node, str_id, T, destroy, true);
-    return ptr, is_new;
+AddUserData :: inline (node : *Node, str_id : string, $T : Type, destroy : type_of(NodeUserData.destroy) = null) -> *T, is_new : bool, *NodeUserData {
+    ptr, is_new, node := GetUserData(node, str_id, T, true);
+    node.destroy = destroy;
+    return ptr, is_new, node;
 }
 
-AddUserData :: inline (node : *Node, id : ID, $T : Type, destroy : type_of(NodeUserData.destroy) = null) -> *T, is_new : bool {
-    ptr, is_new := GetUserData(node, id, T, destroy, true);
-    return ptr, is_new;
+AddUserData :: inline (node : *Node, id : ID, $T : Type, destroy : type_of(NodeUserData.destroy) = null) -> *T, is_new : bool, *NodeUserData {
+    ptr, is_new, node := GetUserData(node, id, T, true);
+    node.destroy = destroy;
+    return ptr, is_new, node;
 }
 
-AddUserData :: (node : *Node, id : ID, size : int, destroy : type_of(NodeUserData.destroy) = null) -> *void, is_new : bool {
-    ptr, is_new := AddUserData(node, id, size, destroy, true);
-    return ptr, is_new;
+AddUserData :: (node : *Node, id : ID, size : int, destroy : type_of(NodeUserData.destroy) = null) -> *void, is_new : bool, *NodeUserData {
+    ptr, is_new, node := GetUserData(node, id, size, true);
+    node.destroy = destroy;
+    return ptr, is_new, node;
 }
 
-GetUserData :: inline (node : *Node, $T : Type, destroy : type_of(NodeUserData.destroy) = null, create := false) -> *T, is_new : bool {
-    ptr, is_new := GetUserData(node, cast(ID, type_info(T)), T, destroy, create);
-    return ptr, is_new;
+GetUserData :: inline (node : *Node, $T : Type, create := false) -> *T, is_new : bool, *NodeUserData {
+    ptr, is_new, node := GetUserData(node, cast(ID, type_info(T)), T, create);
+    return ptr, is_new, node;
 }
 
-GetUserData :: inline (node : *Node, str_id : string, $T : Type, destroy : type_of(NodeUserData.destroy) = null, create := false) -> *T, is_new : bool {
-    ptr, is_new := GetUserData(node, GetID(str_id, false), T, destroy, create);
-    return ptr, is_new;
+GetUserData :: inline (node : *Node, str_id : string, $T : Type, create := false) -> *T, is_new : bool, *NodeUserData {
+    ptr, is_new, node := GetUserData(node, GetID(str_id, false), T, create);
+    return ptr, is_new, node;
 }
 
-GetUserData :: inline (node : *Node, id : ID, $T : Type, destroy : type_of(NodeUserData.destroy) = null, create := false) -> *T, is_new : bool {
-    ptr, is_new := GetUserData(node, id, size_of(T), destroy, create);
+GetUserData :: inline (node : *Node, id : ID, $T : Type, create := false) -> *T, is_new : bool, *NodeUserData {
+    ptr, is_new, node := GetUserData(node, id, size_of(T), create);
     if is_new {
         cast(*T, ptr).* = .{};
     }
 
-    return xx ptr, is_new;
+    return xx ptr, is_new, node;
 }
 
-GetUserData :: (node : *Node, id : ID, size : int, destroy : type_of(NodeUserData.destroy) = null, create := false) -> *void, is_new : bool {
+GetUserData :: (node : *Node, id : ID, size : int, create := false) -> *void, is_new : bool, *NodeUserData {
     for :UserData node {
         if it.id == id {
-            return cast(*void, it + 1), false;
+            return cast(*void, it + 1), false, it;
         }
     }
 
     if !create {
-        return null, false;
+        return null, false, null;
     }
 
     ptr := alloc(size + size_of(NodeUserData) ,, context.omg.general_purpose_allocator);
 
     list_node := cast(*NodeUserData, ptr);
-    list_node.destroy = destroy;
     list_node.id = id;
 
     list_node.next = node.user_data;
     node.user_data = list_node;
 
-    return cast(*void, list_node + 1), true;
+    return cast(*void, list_node + 1), true, list_node;
 }
 
 AllocNode :: () -> *Node {
