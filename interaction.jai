@@ -46,8 +46,7 @@ ButtonBehavior :: (node : *Node) -> ButtonResult {
 
 TextInputData :: struct {
     buffer : [..]u32;
-    selection_start : s32;
-    selection_end : s32;
+    selection : s32;
     cursor : s32;
     cursor_blink_time : float;
 }
@@ -75,6 +74,18 @@ GetTextInputResult :: (node : *Node) -> string {
     return EncodeStringAsUtf8(data.buffer);
 }
 
+Activate :: (input : *TextInputData) {
+    input.cursor_blink_time = 0;
+    input.cursor = xx input.buffer.count;
+    input.selection = 0;
+}
+
+SelectAll :: (input : *TextInputData) {
+    input.cursor_blink_time = 0;
+    input.cursor = xx input.buffer.count;
+    input.selection = -input.cursor;
+}
+
 Insert :: (input : *TextInputData, utf32 : []u32) {
     input.cursor_blink_time = 0;
 
@@ -85,6 +96,10 @@ Insert :: (input : *TextInputData, utf32 : []u32) {
 }
 
 Backspace :: (input : *TextInputData) -> bool {
+    if input.selection != 0 {
+        return Delete(input);
+    }
+
     if !MoveCursorLeft(input) {
         return false;
     }
@@ -93,6 +108,20 @@ Backspace :: (input : *TextInputData) -> bool {
 }
 
 Delete :: (input : *TextInputData) -> bool {
+    if input.selection != 0 {
+        while input.selection > 0 {
+            input.selection -= 1;
+            array_ordered_remove_by_index(*input.buffer, input.cursor);
+        }
+        while input.selection < 0 {
+            input.selection += 1;
+            input.cursor -= 1;
+            array_ordered_remove_by_index(*input.buffer, input.cursor);
+        }
+
+        return true;
+    }
+
     if input.cursor == input.buffer.count {
         return false;
     }
@@ -101,22 +130,46 @@ Delete :: (input : *TextInputData) -> bool {
     return true;
 }
 
-MoveCursorLeft :: inline (input : *TextInputData) -> bool {
+MoveCursorLeft :: (input : *TextInputData, select := false) -> bool {
     input.cursor_blink_time = 0;
+
+    if !select {
+        defer input.selection = 0;
+
+        if input.selection != 0 {
+            return false;
+        }
+    }
 
     if input.cursor == 0 {
         return false;
+    }
+
+    if select {
+        input.selection += 1;
     }
 
     input.cursor -= 1;
     return true;
 }
 
-MoveCursorRight :: inline (input : *TextInputData) -> bool {
+MoveCursorRight :: (input : *TextInputData, select := false) -> bool {
     input.cursor_blink_time = 0;
+
+    if !select {
+        defer input.selection = 0;
+
+        if input.selection != 0 {
+            return false;
+        }
+    }
 
     if input.cursor == input.buffer.count {
         return false;
+    }
+
+    if select {
+        input.selection -= 1;
     }
 
     input.cursor += 1;
@@ -141,8 +194,7 @@ TextInputBehavior :: (node : *Node) -> *TextInputData {
         if node.state_flags & .ActiveLastFrame {
             input.cursor_blink_time += context.omg.delta_time;
         } else {
-            input.cursor = xx input.buffer.count;
-            input.cursor_blink_time = 0;
+            Activate(input);
         }
 
         if context.omg.input.text.count > 0 {
@@ -158,11 +210,15 @@ TextInputBehavior :: (node : *Node) -> *TextInputData {
         }
 
         if IsKeyPressed(.Left) {
-            MoveCursorLeft(input);
+            MoveCursorLeft(input, GetModState() == .Shift);
         }
 
         if IsKeyPressed(.Right) {
-            MoveCursorRight(input);
+            MoveCursorRight(input, GetModState() == .Shift);
+        }
+
+        if IsKeyPressed(.A) && GetModState() == .Ctrl {
+            SelectAll(input);
         }
     }
 

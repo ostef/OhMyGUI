@@ -254,6 +254,27 @@ IsKeyReleased :: inline (key : KeyCode) -> bool {
     return WasKeyDown(key) && !IsKeyDown(key);
 }
 
+ModState :: enum_flags {
+    Shift;
+    Ctrl;
+    Alt;
+}
+
+GetModState :: inline () -> ModState {
+    state : ModState;
+    if IsKeyDown(.Shift) {
+        state |= .Shift;
+    }
+    if IsKeyDown(.Ctrl) {
+        state |= .Ctrl;
+    }
+    if IsKeyDown(.Alt) {
+        state |= .Alt;
+    }
+
+    return state;
+}
+
 HandleInputEvent :: (event : SDL_Event) {
     omg := context.omg;
 
@@ -262,9 +283,29 @@ HandleInputEvent :: (event : SDL_Event) {
         key_code := SDLScancodeToKeyCode(event.key.keysym.scancode);
         omg.input.keys_down[key_code] = true;
 
+        if key_code == .LeftShift || key_code == .RightShift {
+            omg.input.keys_down[KeyCode.Shift] = true;
+        }
+        if key_code == .LeftCtrl || key_code == .RightCtrl {
+            omg.input.keys_down[KeyCode.Ctrl] = true;
+        }
+        if key_code == .LeftAlt || key_code == .RightAlt {
+            omg.input.keys_down[KeyCode.Alt] = true;
+        }
+
     case SDL_KEYUP;
         key_code := SDLScancodeToKeyCode(event.key.keysym.scancode);
         omg.input.keys_down[key_code] = false;
+
+        if key_code == .LeftShift || key_code == .RightShift {
+            omg.input.keys_down[KeyCode.Shift] = false;
+        }
+        if key_code == .LeftCtrl || key_code == .RightCtrl {
+            omg.input.keys_down[KeyCode.Ctrl] = false;
+        }
+        if key_code == .LeftAlt || key_code == .RightAlt {
+            omg.input.keys_down[KeyCode.Alt] = false;
+        }
 
     case SDL_MOUSEBUTTONDOWN;
         if event.button.button > 2 {

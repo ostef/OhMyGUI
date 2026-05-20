@@ -339,8 +339,10 @@ for_expansion :: (iter : *TextGlyphIterator, body : Code, flags : For_Flags) #ex
             iter.bounds.y = max(iter.bounds.y, iter.pen.y + iter.font.descent * iter.size);
 
             iter.pen.x += glyph.hori_advance * iter.size;
-       }
+        }
     }
+
+    iter.bounds.y = max(iter.bounds.y, iter.pen.y + iter.font.descent * iter.size);
 }
 
 CalculateTextSize :: (font : *Font, size : float, text : string) -> Vec2f {

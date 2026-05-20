@@ -80,6 +80,10 @@ DrawTextInputText :: (node : *Node, clip_shape : *SDShape) {
 
     sdf_range := node.font.sdf_range * node.text_size;
 
+    selection_drawing := ifx node.parent.state_flags & .Active && input.selection != 0
+        then DrawShape(*node.window.draw_list, null, .{});
+
+    selection_position := node.rect.xy;
     cursor_position := node.rect.xy;
     iter := IterText(node);
     for iter {
@@ -94,28 +98,52 @@ DrawTextInputText :: (node : *Node, clip_shape : *SDShape) {
         if it_index == input.cursor {
             cursor_position += Vec2f.{iter.pen.x, iter.pen.y - iter.font.ascent * iter.size};
         }
+        if it_index == input.cursor + input.selection {
+            selection_position += Vec2f.{iter.pen.x, iter.pen.y - iter.font.ascent * iter.size};
+        }
     }
 
     if input.cursor == input.buffer.count {
         cursor_position += Vec2f.{iter.pen.x, iter.pen.y - iter.font.ascent * iter.size};
     }
+    if input.cursor + input.selection == input.buffer.count {
+        selection_position += Vec2f.{iter.pen.x, iter.pen.y - iter.font.ascent * iter.size};
+    }
 
-    draw_cursor := node.parent.state_flags & .Active && (fmod_cycling(input.cursor_blink_time, 1) < 0.5 || input.cursor_blink_time > 5);
-    if draw_cursor {
-        cursor_size := Vec2f.{1, node.rect.w - node.rect.y};
-        cursor_position.x = ceil(cursor_position.x);
-        cursor_position.y = ceil(cursor_position.y);
-        cursor_position += cursor_size * 0.5;
+    cursor_position.x = ceil(cursor_position.x);
+    cursor_position.y = ceil(cursor_position.y);
 
-        draw_cursor := DrawShape(*node.window.draw_list, Box(cursor_size), cursor_position);
-        SetClipShape(draw_cursor, clip_shape);
-        SolidColor(draw_cursor, node.text_color);
+    if node.parent.state_flags & .Active {
+        if fmod_cycling(input.cursor_blink_time, 1) < 0.5 || input.cursor_blink_time > 5 {
+            cursor_size := Vec2f.{1, node.rect.w - node.rect.y};
+            print_vars(cursor_position, cursor_size);
+
+            d := DrawShape(*node.window.draw_list, Box(cursor_size), cursor_position + cursor_size * 0.5);
+            SetClipShape(d, clip_shape);
+            SolidColor(d, node.text_color);
+        }
+
+        if input.selection != 0 {
+            selection_size := Vec2f.{abs(cursor_position.x - selection_position.x), node.rect.w - node.rect.y};
+            selection_size.x = ceil(selection_size.x);
+            selection_size.y = ceil(selection_size.y);
+
+            selection_position = min(cursor_position, selection_position);
+            selection_position.x = floor(selection_position.x);
+            selection_position.y = floor(selection_position.y);
+
+            selection_drawing.shape = Box(selection_size);
+            selection_drawing.position = selection_position + selection_size * 0.5;
+            SetClipShape(selection_drawing, clip_shape);
+            SolidColor(selection_drawing, ColorU32(0.1, 0.2, 0.6, 0.5));
+        }
     }
 }
 
 TextInput :: (parent : *Node, location := #caller_location) -> *Node {
     input_field := GetNode(parent, location=location);
     {
+        SetPadding(input_field, 5, 2);
         SetChildAlign(input_field, 0, 0.5);
 
         input := TextInputBehavior(input_field);
@@ -132,6 +160,7 @@ TextInput :: (parent : *Node, location := #caller_location) -> *Node {
 
             text := EncodeStringAsUtf8(input.buffer ,, temp);
             SetText(text_node, context.omg.fonts, 16, text);
+
             SetBackgroundColor(text_node, 0, 0, 0, 0);
             SetBorderColor(text_node, 0, 0, 0, 0);
         }
