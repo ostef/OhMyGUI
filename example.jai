@@ -145,7 +145,7 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
 
                 label_and_slider := OMG.GetNode(main_viewport);
                 {
-                    OMG.NoDraw(label_and_slider);
+                    OMG.SetDraw(label_and_slider, null);
                     OMG.SetSize(label_and_slider, OMG.SizeFill(0.3), OMG.SizeFit());
                     OMG.SetLayout(label_and_slider, .LeftToRight);
                     OMG.SetChildAlign(label_and_slider, 0, 0.5);

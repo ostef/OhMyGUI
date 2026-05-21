@@ -74,14 +74,14 @@ Node :: struct {
         text : string;
         text_size : float;
 
-        offset : Vec2f; // If parent.child_layout_mode is None
+        offset : Vec2f;
         scroll : Vec2f; // NOT reset each frame
         desired_size := Size2D.{.{kind=.FitChildren}, .{kind=.FitChildren}};
         min_size := Vec2f.{-FLOAT32_INFINITY, -FLOAT32_INFINITY};
         max_size := Vec2f.{ FLOAT32_INFINITY,  FLOAT32_INFINITY};
         padding : Vec4f;
-        child_gap : Vec2f; // If child_layout_mode is not None
-        child_align : Vec2f; // If child_layout_mode is not None
+        child_gap : Vec2f;
+        child_align : Vec2f;
         child_layout_mode := LayoutMode.LeftToRight;
         flags : NodeFlags;
     };
@@ -399,8 +399,8 @@ GetNode :: (parent : *Node, id : ID) -> *Node {
     return node;
 }
 
-NoDraw :: inline (node : *Node) {
-    node.draw = null;
+SetDraw :: inline (node : *Node, draw : type_of(Node.draw)) {
+    node.draw = draw;
 }
 
 SetWidth :: inline (node : *Node, size : Size1D) {

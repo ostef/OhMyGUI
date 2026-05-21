@@ -153,13 +153,32 @@ TextInput :: (parent : *Node, location := #caller_location) -> *Node {
 
         text_node := GetNode(input_field, "text");
         {
-            text_node.draw = DrawTextInputText;
+            SetDraw(text_node, DrawTextInputText);
+
+            SetBackgroundColor(text_node, 0, 0, 0, 0);
+            SetBorderColor(text_node, 0, 0, 0, 0);
 
             text := EncodeStringAsUtf8(input.buffer ,, temp);
             SetText(text_node, context.omg.fonts, 16, text);
 
-            SetBackgroundColor(text_node, 0, 0, 0, 0);
-            SetBorderColor(text_node, 0, 0, 0, 0);
+            if input_field.state_flags & .Active {
+                cursor_position : Vec2f;
+
+                iter := IterText(text_node);
+                for iter {
+                    if it_index == input.cursor {
+                        cursor_position = .{iter.pen.x, iter.pen.y - iter.font.ascent * iter.size};
+                    }
+                }
+                if input.cursor == input.buffer.count {
+                    cursor_position = .{iter.pen.x, iter.pen.y - iter.font.ascent * iter.size};
+                }
+
+                avail := input_field.layout_last_frame.size.x - input_field.padding.x - input_field.padding.z - iter.font.space_advance * iter.size;
+                if cursor_position.x > avail {
+                    text_node.offset.x = avail - cursor_position.x;
+                }
+            }
         }
     }
 
