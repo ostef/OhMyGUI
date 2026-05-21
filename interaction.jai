@@ -130,6 +130,46 @@ Delete :: (input : *TextInputData) -> bool {
     return true;
 }
 
+MoveCursorLeftByWord :: (input : *TextInputData, select := false) -> bool {
+    // @Todo: correctly handle non ascii characters
+    IsAlpha :: (codepoint : u32) -> bool {
+        return codepoint < 127 && is_alpha(xx codepoint);
+    }
+
+    input.cursor_blink_time = 0;
+
+    if !MoveCursorLeft(input, select) {
+        return false;
+    }
+
+    start_char := input.buffer[input.cursor];
+    while input.cursor > 0 && IsAlpha(start_char) == IsAlpha(input.buffer[input.cursor - 1]) {
+        MoveCursorLeft(input, select);
+    }
+
+    return true;
+}
+
+MoveCursorRightByWord :: (input : *TextInputData, select := false) -> bool {
+    // @Todo: correctly handle non ascii characters
+    IsAlpha :: (codepoint : u32) -> bool {
+        return codepoint < 127 && is_alpha(xx codepoint);
+    }
+
+    input.cursor_blink_time = 0;
+
+    start_char := ifx input.cursor < input.buffer.count then input.buffer[input.cursor];
+    if !MoveCursorRight(input, select) {
+        return false;
+    }
+
+    while input.cursor < input.buffer.count && IsAlpha(start_char) == IsAlpha(input.buffer[input.cursor]) {
+        MoveCursorRight(input, select);
+    }
+
+    return true;
+}
+
 MoveCursorLeft :: (input : *TextInputData, select := false) -> bool {
     input.cursor_blink_time = 0;
 
@@ -209,12 +249,22 @@ TextInputBehavior :: (node : *Node) -> *TextInputData {
             Delete(input);
         }
 
-        if IsKeyPressed(.Left) {
-            MoveCursorLeft(input, GetModState() == .Shift);
+        if IsKeyPressed(.Left) && !(GetModState() & .Alt) {
+            select := GetModState() & .Shift != 0;
+            if GetModState() & .Ctrl {
+                MoveCursorLeftByWord(input, select);
+            } else {
+                MoveCursorLeft(input, select);
+            }
         }
 
-        if IsKeyPressed(.Right) {
-            MoveCursorRight(input, GetModState() == .Shift);
+        if IsKeyPressed(.Right) && !(GetModState() & .Alt) {
+            select := GetModState() & .Shift != 0;
+            if GetModState() & .Ctrl {
+                MoveCursorRightByWord(input, select);
+            } else {
+                MoveCursorRight(input, select);
+            }
         }
 
         if IsKeyPressed(.A) && GetModState() == .Ctrl {
