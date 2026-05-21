@@ -89,6 +89,10 @@ SelectAll :: (input : *TextInputData) {
 Insert :: (input : *TextInputData, utf32 : []u32) {
     input.cursor_blink_time = 0;
 
+    if input.selection != 0 {
+        Delete(input);
+    }
+
     for utf32 {
         array_insert_at(*input.buffer, it, input.cursor);
         input.cursor += 1;
@@ -283,6 +287,14 @@ TextInputBehavior :: (node : *Node) -> *TextInputData, ButtonResult {
 
         if IsKeyPressed(.A) && GetModState() == .Ctrl {
             SelectAll(input);
+        }
+
+        if IsKeyPressed(.Home) && !(GetModState() & (.Ctrl | .Alt)) {
+            SetCursor(input, 0, GetModState() & .Shift != 0);
+        }
+
+        if IsKeyPressed(.End) && !(GetModState() & (.Ctrl | .Alt)) {
+            SetCursor(input, xx input.buffer.count, GetModState() & .Shift != 0);
         }
     }
 
