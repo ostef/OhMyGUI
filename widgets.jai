@@ -194,10 +194,15 @@ TextInput :: (parent : *Node, font : *Font, location := #caller_location) -> *No
                     cursor_position = .{iter.pen.x, iter.pen.y - iter.font.ascent * iter.size};
                 }
 
-                avail := input_field.layout_last_frame.size.x - input_field.padding.x - input_field.padding.z - iter.font.space_advance * iter.size;
-                if cursor_position.x > avail {
-                    text_node.offset.x = avail - cursor_position.x;
+                if text_node.layout_last_frame.rect.x + cursor_position.x < input_field.layout_last_frame.rect.x + input_field.padding.x {
+                    input_field.scroll.x = ceil(-cursor_position.x);
                 }
+
+                if text_node.layout_last_frame.rect.x + cursor_position.x >= input_field.layout_last_frame.rect.z - input_field.padding.z {
+                    input_field.scroll.x = floor(-cursor_position.x + input_field.layout_last_frame.size.x - input_field.padding.x - input_field.padding.z - 1);
+                }
+
+                input_field.scroll.x = clamp(input_field.scroll.x, -text_node.layout_last_frame.size.x, 0);
             }
         }
     }
