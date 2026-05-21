@@ -260,6 +260,7 @@ TextInputBehavior :: (node : *Node) -> *TextInputData, ButtonResult {
 
     should_deactivate := !(node.state_flags & .Focused) && IsMouseButtonPressed(.Left);
     should_deactivate |= IsKeyPressed(.Escape);
+    should_deactivate |= IsKeyPressed(.Return);
 
     button_result := ButtonBehavior(node);
     if !should_deactivate && (button_result.pressed || node.state_flags & .ActiveLastFrame) {
