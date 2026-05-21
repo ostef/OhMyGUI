@@ -99,6 +99,20 @@ Insert :: (input : *TextInputData, str : $T) {
     }
 }
 
+BackspaceWord :: (input : *TextInputData) -> bool {
+    input.cursor_blink_time = 0;
+
+    if input.selection != 0 {
+        return Delete(input);
+    }
+
+    if !MoveCursorLeftByWord(input, true) {
+        return false;
+    }
+
+    return Delete(input);
+}
+
 Backspace :: (input : *TextInputData) -> bool {
     if input.selection != 0 {
         return Delete(input);
@@ -134,12 +148,21 @@ Delete :: (input : *TextInputData) -> bool {
     return true;
 }
 
-MoveCursorLeftByWord :: (input : *TextInputData, select := false) -> bool {
-    // @Todo: correctly handle non ascii characters
-    IsAlpha :: (codepoint : u32) -> bool {
-        return codepoint < 127 && is_alpha(xx codepoint);
+DeleteWord :: (input : *TextInputData) -> bool {
+    input.cursor_blink_time = 0;
+
+    if input.selection != 0 {
+        return Delete(input);
     }
 
+    if !MoveCursorRightByWord(input, true) {
+        return false;
+    }
+
+    return Delete(input);
+}
+
+MoveCursorLeftByWord :: (input : *TextInputData, select := false) -> bool {
     input.cursor_blink_time = 0;
 
     if !MoveCursorLeft(input, select) {
@@ -155,11 +178,6 @@ MoveCursorLeftByWord :: (input : *TextInputData, select := false) -> bool {
 }
 
 MoveCursorRightByWord :: (input : *TextInputData, select := false) -> bool {
-    // @Todo: correctly handle non ascii characters
-    IsAlpha :: (codepoint : u32) -> bool {
-        return codepoint < 127 && is_alpha(xx codepoint);
-    }
-
     input.cursor_blink_time = 0;
 
     start_char := ifx input.cursor < input.buffer.count then input.buffer[input.cursor];
@@ -260,11 +278,19 @@ TextInputBehavior :: (node : *Node) -> *TextInputData, ButtonResult {
         }
 
         if IsKeyPressed(.Backspace) {
-            Backspace(input);
+            if GetModState() & .Ctrl {
+                BackspaceWord(input);
+            } else {
+                Backspace(input);
+            }
         }
 
         if IsKeyPressed(.Delete) {
-            Delete(input);
+            if GetModState() & .Ctrl {
+                DeleteWord(input);
+            } else {
+                Delete(input);
+            }
         }
 
         if IsKeyPressed(.Left) && !(GetModState() & .Alt) {

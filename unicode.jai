@@ -243,3 +243,8 @@ EncodeCharacterAsUtf8 :: (codepoint : u32, buffer : []u8, byte_offset : s64) -> 
 
     return size, .Ok;
 }
+
+// @Todo: correctly handle non ascii characters
+IsAlpha :: (codepoint : u32) -> bool {
+    return codepoint < 127 && is_alpha(xx codepoint);
+}
