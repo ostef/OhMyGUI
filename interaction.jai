@@ -86,14 +86,14 @@ SelectAll :: (input : *TextInputData) {
     input.selection = -input.cursor;
 }
 
-Insert :: (input : *TextInputData, utf32 : []u32) {
+Insert :: (input : *TextInputData, str : $T) {
     input.cursor_blink_time = 0;
 
     if input.selection != 0 {
         Delete(input);
     }
 
-    for utf32 {
+    for str {
         array_insert_at(*input.buffer, it, input.cursor);
         input.cursor += 1;
     }
@@ -295,6 +295,29 @@ TextInputBehavior :: (node : *Node) -> *TextInputData, ButtonResult {
 
         if IsKeyPressed(.End) && !(GetModState() & (.Ctrl | .Alt)) {
             SetCursor(input, xx input.buffer.count, GetModState() & .Shift != 0);
+        }
+
+        if input.selection != 0 && IsKeyPressed(.C) && GetModState() == .Ctrl {
+            start := min(input.cursor, input.cursor + input.selection);
+            end   := max(input.cursor, input.cursor + input.selection);
+
+            utf32 : []u32;
+            utf32.data = input.buffer.data + start;
+            utf32.count = end - start;
+
+            text := EncodeStringAsUtf8(utf32 ,, temp);
+            ctext := to_c_string(text ,, temp);
+            SDL_SetClipboardText(ctext);
+        }
+
+        if IsKeyPressed(.V) && GetModState() == .Ctrl && SDL_HasClipboardText() {
+            SDL_free :: (ptr : *void) #foreign SDL2;
+
+            ctext := SDL_GetClipboardText();
+            defer SDL_free(ctext);
+            text := to_string(ctext);
+
+            Insert(input, MakeUtf8String(text));
         }
     }
 
