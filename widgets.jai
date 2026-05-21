@@ -137,7 +137,7 @@ DrawTextInputText :: (node : *Node, clip_shape : *SDShape) {
     }
 }
 
-TextInput :: (parent : *Node, location := #caller_location) -> *Node {
+TextInput :: (parent : *Node, font : *Font, location := #caller_location) -> *Node {
     input_field := GetNode(parent, location=location);
     {
         SetPadding(input_field, 5, 2);
@@ -159,7 +159,7 @@ TextInput :: (parent : *Node, location := #caller_location) -> *Node {
             SetBorderColor(text_node, 0, 0, 0, 0);
 
             text := EncodeStringAsUtf8(input.buffer ,, temp);
-            SetText(text_node, context.omg.fonts, 16, text);
+            SetText(text_node, font, 16, text);
 
             if input_field.state_flags & .Active {
                 cursor_position : Vec2f;
