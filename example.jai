@@ -140,8 +140,13 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
                 OMG.Text(main_viewport, font, 16, tprint("Layout: % us", cast(int, context.omg.layout_time_last_frame * 1000 * 1000)));
                 OMG.Text(main_viewport, font, 16, tprint("Render: % ms", OMG.GetLastFrameGPUTime() * 1000));
 
-                text_input := OMG.TextInput(main_viewport, font);
+                text_input_submitted, text_input := OMG.TextInput(main_viewport, font);
                 OMG.SetSize(text_input, OMG.SizePx(300), OMG.SizePx(32));
+
+                if text_input_submitted {
+                    text := OMG.GetTextInputResult(text_input ,, temp);
+                    print("%\n", text);
+                }
 
                 label_and_slider := OMG.GetNode(main_viewport);
                 {

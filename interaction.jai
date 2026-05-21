@@ -252,15 +252,16 @@ SetCursor :: (input : *TextInputData, cursor : s32, select := false) {
     }
 }
 
-TextInputBehavior :: (node : *Node) -> *TextInputData, ButtonResult {
+TextInputBehavior :: (node : *Node) -> *TextInputData, submitted : bool, ButtonResult {
     input, is_new := AddUserData(node, TextInputData, DestroyTextInputData);
     if is_new {
         input.buffer.allocator = context.omg.general_purpose_allocator;
     }
 
+    submitted := node.state_flags & .ActiveLastFrame && IsKeyPressed(.Return);
     should_deactivate := !(node.state_flags & .Focused) && IsMouseButtonPressed(.Left);
     should_deactivate |= IsKeyPressed(.Escape);
-    should_deactivate |= IsKeyPressed(.Return);
+    should_deactivate |= submitted;
 
     button_result := ButtonBehavior(node);
     if !should_deactivate && (button_result.pressed || node.state_flags & .ActiveLastFrame) {
@@ -348,7 +349,7 @@ TextInputBehavior :: (node : *Node) -> *TextInputData, ButtonResult {
         }
     }
 
-    return input, button_result;
+    return input, submitted, button_result;
 }
 
 SetContentScroll :: inline (node : *Node, axis : Axis, value : float) {

@@ -137,13 +137,13 @@ DrawTextInputText :: (node : *Node, clip_shape : *SDShape) {
     }
 }
 
-TextInput :: (parent : *Node, font : *Font, location := #caller_location) -> *Node {
+TextInput :: (parent : *Node, font : *Font, location := #caller_location) -> submitted : bool, *Node {
     input_field := GetNode(parent, location=location);
     {
         SetPadding(input_field, 5, 2);
         SetChildAlign(input_field, 0, 0.5);
 
-        input, input_button := TextInputBehavior(input_field);
+        input, submitted, input_button := TextInputBehavior(input_field);
 
         if input_field.state_flags & .Active {
             input_field.border_color = ColorU32(0, 1, 0, 1);
@@ -205,9 +205,9 @@ TextInput :: (parent : *Node, font : *Font, location := #caller_location) -> *No
                 input_field.scroll.x = clamp(input_field.scroll.x, -text_node.layout_last_frame.size.x, 0);
             }
         }
-    }
 
-    return input_field;
+        return submitted, input_field;
+    }
 }
 
 Slider :: (parent : *Node, value : *$T, min : T, max : T, step : T, handle_size := 10.0, height := 10.0, location := #caller_location) -> background : *Node, handle : *Node {
