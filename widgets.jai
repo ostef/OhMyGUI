@@ -143,7 +143,7 @@ TextInput :: (parent : *Node, location := #caller_location) -> *Node {
         SetPadding(input_field, 5, 2);
         SetChildAlign(input_field, 0, 0.5);
 
-        input := TextInputBehavior(input_field);
+        input, input_button := TextInputBehavior(input_field);
 
         if input_field.state_flags & .Active {
             input_field.border_color = ColorU32(0, 1, 0, 1);
@@ -164,12 +164,32 @@ TextInput :: (parent : *Node, location := #caller_location) -> *Node {
             if input_field.state_flags & .Active {
                 cursor_position : Vec2f;
 
+                is_selecting := context.omg.mouse_capturing_node == input_field;
+                mouse := GetMousePosition(input_field.window);
+
+                if is_selecting && mouse.x < text_node.layout_last_frame.rect.x {
+                    SetCursor(input, 0, !input_button.pressed);
+                }
+
                 iter := IterText(text_node);
                 for iter {
+                    glyph_rect : Vec4f;
+                    glyph_rect.xy = text_node.layout_last_frame.rect.xy + iter.pen - Vec2f.{0, iter.font.ascent * iter.size};
+                    glyph_rect.zw = glyph_rect.xy + Vec2f.{it.hori_advance, iter.font.ascent + iter.font.descent} * iter.size;
+
+                    if is_selecting && mouse.x >= glyph_rect.x && mouse.x < glyph_rect.z {
+                        SetCursor(input, xx it_index, !input_button.pressed);
+                    }
+
                     if it_index == input.cursor {
                         cursor_position = .{iter.pen.x, iter.pen.y - iter.font.ascent * iter.size};
                     }
                 }
+
+                if is_selecting && mouse.x >= text_node.layout_last_frame.rect.x + iter.pen.x {
+                    SetCursor(input, xx input.buffer.count, !input_button.pressed);
+                }
+
                 if input.cursor == input.buffer.count {
                     cursor_position = .{iter.pen.x, iter.pen.y - iter.font.ascent * iter.size};
                 }
