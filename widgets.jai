@@ -339,6 +339,8 @@ TextInput :: (parent : *Node, style : *TextInputStyle = null, location := #calle
                 }
 
                 input_field.scroll.x = clamp(input_field.scroll.x, -text_node.layout_last_frame.size.x, 0);
+            } else if input_field.state_flags & .ActiveLastFrame {
+                input_field.scroll.x = 0;
             }
         }
 
