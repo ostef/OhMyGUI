@@ -4,8 +4,6 @@ Text :: (parent : *Node, fmt_str : string, args : ..Any, style : *TextStyle = nu
     node := GetNode(parent, location);
     SetText(node, tprint(fmt_str, ..args));
     SetSize(node, SizeFit(), SizeFit()); // Fit text
-    SetBackgroundColor(node, 0, 0, 0, 0);
-    SetBorderColor(node, 0, 0, 0, 0);
 
     Apply(node, style);
 
@@ -276,26 +274,20 @@ TextInput :: (parent : *Node, style : *TextInputStyle = null, location := #calle
 
     input_field := GetNode(parent, location=location);
     {
-        SetPadding(input_field, 5, 2);
         SetChildAlign(input_field, 0, 0.5);
 
         input, submitted, input_button := TextInputBehavior(input_field);
-
-        if input_field.state_flags & .Active {
-            input_field.border_color = ColorU32(0, 1, 0, 1);
-        } else {
-            input_field.border_color = ColorU32(0, 0, 0, 1);
-        }
 
         text_node := GetNode(input_field, "text");
         {
             SetDraw(text_node, DrawTextInputText);
 
-            SetBackgroundColor(text_node, 0, 0, 0, 0);
-            SetBorderColor(text_node, 0, 0, 0, 0);
-
             text := EncodeStringAsUtf8(input.buffer ,, temp);
             SetText(text_node, text);
+
+            state := GetState(input_field);
+            Apply(input_field, style.states[state].background);
+            Apply(text_node, style.states[state].text);
 
             if input_field.state_flags & .Active {
                 cursor_position : Vec2f;
