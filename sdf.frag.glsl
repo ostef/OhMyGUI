@@ -71,8 +71,8 @@ float PrimCircle(vec2 p, float radius) {
 }
 
 float PrimBox(vec2 p, vec2 size, vec4 corner_radiuses) {
-    corner_radiuses.xy = p.x > 0.0 ? corner_radiuses.xy : corner_radiuses.zw;
-    corner_radiuses.x  = p.y > 0.0 ? corner_radiuses.x  : corner_radiuses.y;
+    corner_radiuses.xy = p.x > 0.0 ? corner_radiuses.yw : corner_radiuses.xz;
+    corner_radiuses.x  = p.y > 0.0 ? corner_radiuses.y  : corner_radiuses.x;
     vec2 q = abs(p) - size * 0.5 + corner_radiuses.x;
 
     return min(max(q.x, q.y), 0.0) + length(max(q, 0.0)) - corner_radiuses.x;

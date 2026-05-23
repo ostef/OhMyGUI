@@ -321,7 +321,7 @@ EvalSDF :: (p : Vec2f, shape : *SDShape) -> float {
         radius : float = ---;
         if p.x > 0 {
             if p.y > 0 {
-                radius = corner_radiuses.x;
+                radius = corner_radiuses.w;
             } else {
                 radius = corner_radiuses.y;
             }
@@ -329,7 +329,7 @@ EvalSDF :: (p : Vec2f, shape : *SDShape) -> float {
             if p.y > 0 {
                 radius = corner_radiuses.z;
             } else {
-                radius = corner_radiuses.w;
+                radius = corner_radiuses.x;
             }
         }
 
