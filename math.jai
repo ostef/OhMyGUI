@@ -1,3 +1,5 @@
+RGBA8 :: #type,isa u32;
+
 Vec2f :: Vector2;
 Vec4f :: Vector4;
 

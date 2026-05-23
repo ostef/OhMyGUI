@@ -14,6 +14,8 @@ g_frame_syncs : [2]GLsync;
 
 g_slider_value : float;
 
+g_theme : OMG.Theme;
+
 DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
     OMG.NewFrame(delta_time);
     defer OMG.Render();
@@ -23,6 +25,8 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
     root := OMG.GetNode(g_window);
     {
         OMG.SetLayout(root, .TopToBottom);
+
+        button := OMG.Button("Hello", style=my_theme.button_primary);
 
         title_bar := OMG.GetNode(root, "title_bar");
         {

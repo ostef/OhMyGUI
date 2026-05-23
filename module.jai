@@ -12,6 +12,7 @@
 #load "text.jai";
 #load "gl.jai";
 #load "node.jai";
+#load "style.jai";
 #load "layout.jai";
 #load "interaction.jai";
 #load "widgets.jai";
@@ -30,6 +31,7 @@ Context :: struct {
     fonts : *Font;
     node_pool : Bucket_Array(Node, 1000);
 
+    node_stack : [..]*Node;
     id_offset_stack : [..]int;
 
     mouse_is_over_node : bool;
@@ -42,6 +44,53 @@ Context :: struct {
     scroll_focused_node : *Node;
 
     default_effect := Effect.{kind=.SolidColor, solid_color=.{color=0xffffffff}};
+}
+
+GetCurrentNode :: inline () -> *Node {
+    if context.omg.node_stack.count == 0 {
+        return null;
+    }
+
+    return context.omg.node_stack[context.omg.node_stack.count - 1];
+}
+
+BeginNode :: (node : *Node) {
+    array_add(*context.omg.node_stack, node);
+}
+
+BeginNode :: (location := #caller_location) -> *Node {
+    parent := GetCurrentNode();
+    assert(parent != null, "No node in stack");
+
+    node := GetNode(parent, location);
+    BeginNode(node);
+
+    return node;
+}
+
+BeginNode :: (str_id : string) -> *Node {
+    parent := GetCurrentNode();
+    assert(parent != null, "No node in stack");
+
+    node := GetNode(parent, str_id);
+    BeginNode(node);
+
+    return node;
+}
+
+BeginNode :: (id : ID) -> *Node {
+    parent := GetCurrentNode();
+    assert(parent != null, "No node in stack");
+
+    node := GetNode(parent, id);
+    BeginNode(node);
+
+    return node;
+}
+
+EndNode :: () {
+    assert(context.omg.node_stack.count > 0, "No node in stack");
+    pop(*context.omg.node_stack);
 }
 
 Window :: struct {
@@ -112,6 +161,8 @@ Terminate :: () {
         DestroyFont(context.omg.fonts);
     }
 
+    array_free(context.omg.node_stack);
+    array_free(context.omg.id_offset_stack);
     array_free(context.omg.input_last_frame.text);
     array_free(context.omg.input.text);
 
@@ -172,6 +223,11 @@ NewFrame :: (delta_time : float) {
 Render :: () {
     omg := context.omg;
     omg.layout_time_last_frame = 0;
+
+    if omg.node_stack.count > 0 {
+        log_error("Mismatching number of begin/end node");
+        omg.node_stack.count = 0;
+    }
 
     if omg.id_offset_stack.count > 0 {
         log_error("Mismatching number of push/pop for ID offset stack");

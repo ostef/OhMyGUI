@@ -26,14 +26,6 @@ ButtonBehavior :: (node : *Node) -> ButtonResult {
         node.state_flags |= .Hot;
     }
 
-    if node.state_flags & .Hot {
-        SetBackgroundColor(node, 1, 0, 0, 1);
-    } else if node.state_flags & .Focused {
-        SetBackgroundColor(node, 0, 1, 0, 1);
-    } else {
-        SetBackgroundColor(node, 1, 1, 1, 1);
-    }
-
     result : ButtonResult;
     if node.state_flags & .Hot {
         result.held = true;
