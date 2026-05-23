@@ -146,25 +146,43 @@ InitDefaultTheme :: () {
         normal.background.corner_radiuses = .{10,10,10,10};
         normal.background.padding = .{10,10,10,10};
         normal.background.child_gap = .{4,4};
-        normal.background.background_color = ColorU32(1,1,1,1);
-        normal.background.border_color = ColorU32(0,0,0,1);
-        normal.background.border_size = 1;
+        normal.background.background_color = ColorU32(0.9,0.9,0.9,1);
         normal.text = text;
 
         focused = normal;
-        focused.background.background_color = ColorU32(0.9,0.9,0.9,1);
+        focused.background.background_color = ColorU32(0.8,0.8,0.8,1);
 
         hot = normal;
-        hot.background.background_color = ColorU32(0.8,0.8,0.8,1);
+        hot.background.background_color = ColorU32(0.7,0.7,0.7,1);
 
         active = normal;
 
         disabled = normal;
-        disabled.background.border_color = ColorU32(0.5,0.5,0.5,1);
         disabled.text.text_color = ColorU32(0.5,0.5,0.5,1);
     }
     SetStyle(*theme, "button", button);
 
+    {
+        using slider;
+
+        handle_size = 15;
+
+        normal.background.corner_radiuses = .{2,2,2,2};
+        normal.background.background_color = ColorU32(0.7, 0.7, 0.7, 0.4);
+        normal.handle.background_color = ColorU32(0.8, 0.8, 0.8, 1);
+        normal.handle.corner_radiuses = .{2,2,2,2};
+
+        focused = normal;
+        focused.background.background_color = ColorU32(0.4, 0.4, 0.4, 0.8);
+
+        hot = focused;
+
+        active = hot;
+        active.handle.background_color = ColorU32(0.9, 0.9, 0.9, 1);
+
+        disabled.background.background_color = ColorU32(0.5, 0.5, 0.5, 0.5);
+        disabled.handle.background_color = ColorU32(0.5, 0.5, 0.5, 1);
+    }
     SetStyle(*theme, "slider", slider);
 
     {
@@ -189,6 +207,26 @@ InitDefaultTheme :: () {
     }
     SetStyle(*theme, "scrollbar", scrollbar);
 
+    {
+        using text_input;
+
+        normal.background.corner_radiuses = .{10,10,10,10};
+        normal.background.padding = .{10,10,10,10};
+        normal.background.child_gap = .{4,4};
+        normal.background.background_color = ColorU32(0.9,0.9,0.9,1);
+        normal.text = text;
+
+        focused = normal;
+        focused.background.background_color = ColorU32(0.8,0.8,0.8,1);
+
+        hot = normal;
+        hot.background.background_color = ColorU32(0.7, 0.7, 0.7,1);
+
+        active = normal;
+
+        disabled = normal;
+        disabled.text.text_color = ColorU32(0.5,0.5,0.5,1);
+    }
     SetStyle(*theme, "text_input", text_input);
 
     SetTheme(*theme);
