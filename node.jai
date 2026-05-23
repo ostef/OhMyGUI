@@ -9,26 +9,48 @@ NodeFlags :: enum_flags u8 {
 }
 
 NodeState :: enum u8 {
+    Disabled;
     Active;
     Hot;
     Focused;
-    Disabled;
+    None;
 }
 
 Num_Node_States :: #run type_info(NodeState).values.count;
 
 NodeStateFlags :: enum_flags u8 {
+    Disabled :: 1 << NodeState.Disabled;
     Active   :: 1 << NodeState.Active;
     Hot      :: 1 << NodeState.Hot;
     Focused  :: 1 << NodeState.Focused;
-    Disabled :: 1 << NodeState.Disabled;
-    CurrentFrame :: Disabled | Focused | Hot | Active;
+    CurrentFrame :: Focused | Hot | Active | Disabled;
 
-    ActiveLastFrame   :: Active   << Num_Node_States;
-    HotLastFrame      :: Hot      << Num_Node_States;
-    FocusedLastFrame  :: Focused  << Num_Node_States;
-    DisabledLastFrame :: Disabled << Num_Node_States;
-    LastFrame :: DisabledLastFrame | FocusedLastFrame | HotLastFrame | ActiveLastFrame;
+    DisabledLastFrame :: Disabled << (Num_Node_States - 1);
+    ActiveLastFrame   :: Active   << (Num_Node_States - 1);
+    HotLastFrame      :: Hot      << (Num_Node_States - 1);
+    FocusedLastFrame  :: Focused  << (Num_Node_States - 1);
+    LastFrame :: FocusedLastFrame | HotLastFrame | ActiveLastFrame | DisabledLastFrame;
+}
+
+GetState :: inline (node : *Node) -> NodeState {
+    return GetState(node.state_flags);
+}
+
+GetState :: inline (state_flags : NodeStateFlags) -> NodeState {
+    if state_flags & .Active {
+        return .Active;
+    }
+    if state_flags & .Hot {
+        return .Hot;
+    }
+    if state_flags & .Focused {
+        return .Focused;
+    }
+    if state_flags & .Disabled {
+        return .Disabled;
+    }
+
+    return .None;
 }
 
 NodeUserData :: struct {
@@ -89,10 +111,10 @@ Node :: struct {
     // Styling properties, NOT reset each frame
     using styling : struct {
         corner_radiuses : Vec4f;
-        background_color : u32 = 0xffffffff;
-        text_color : u32 = 0x000000ff;
-        border_color : u32 = 0x000000ff;
-        border_size : float = 1;
+        background_color : u32;
+        text_color : u32;
+        border_color : u32;
+        border_size : float;
         border_inset : float;
         outer_shadow_blur : float;
         outer_shadow_offset : Vec2f;
@@ -507,6 +529,11 @@ SetChildAlign :: inline (node : *Node, x : float, y : float) {
 
 SetLayout :: inline (node : *Node, mode : LayoutMode) {
     node.child_layout_mode = mode;
+}
+
+SetText :: inline (node : *Node, text : string) {
+    node.flags |= .TextNode;
+    node.text = text;
 }
 
 SetText :: inline (node : *Node, font : *Font, size : float, text : string) {

@@ -1,5 +1,3 @@
-RGBA8 :: #type,isa u32;
-
 Vec2f :: Vector2;
 Vec4f :: Vector4;
 
@@ -225,4 +223,32 @@ SnapUp :: (value : float, grid_size : float) -> float {
         return value;
     }
     return ceil(value / grid_size) * grid_size;
+}
+
+SetAlpha :: inline (color : u32, alpha : float) -> u32 {
+    rgba := ColorVec4f(color);
+    rgba.alpha = alpha;
+    return ColorU32(rgba);
+}
+
+ColorU32 :: inline (rgba : Vec4f) -> u32 {
+    return ColorU32(rgba.x, rgba.y, rgba.z, rgba.w);
+}
+
+ColorU32 :: inline (r : float, g : float, b : float, a : float) -> u32 {
+    ur := cast(u32, clamp(r * 255, 0, 255));
+    ug := cast(u32, clamp(g * 255, 0, 255));
+    ub := cast(u32, clamp(b * 255, 0, 255));
+    ua := cast(u32, clamp(a * 255, 0, 255));
+
+    return (ur << 24) | (ug << 16) | (ub << 8) | ua;
+}
+
+ColorVec4f :: inline (rgba : u32) -> Vec4f {
+    r := (rgba >> 24) & 0xff;
+    g := (rgba >> 16) & 0xff;
+    b := (rgba >> 8)  & 0xff;
+    a := (rgba >> 0)  & 0xff;
+
+    return .{r / 255.0, g / 255.0, b / 255.0, a / 255.0};
 }

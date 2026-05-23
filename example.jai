@@ -20,13 +20,9 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
     OMG.NewFrame(delta_time);
     defer OMG.Render();
 
-    font := OMG.GetFont("Roboto-Regular");
-
     root := OMG.GetNode(g_window);
     {
         OMG.SetLayout(root, .TopToBottom);
-
-        button := OMG.Button("Hello", style=my_theme.button_primary);
 
         title_bar := OMG.GetNode(root, "title_bar");
         {
@@ -36,34 +32,20 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
             OMG.SetWidth(title_bar, OMG.SizeFill());
             OMG.SetHeight(title_bar, OMG.SizeFit());
 
-            OMG.Text(title_bar, font, 14, tprint("OMG Engine (% FPS)", cast(int, 1 / delta_time)));
+            OMG.SetBackgroundColor(title_bar, 1, 1, 1, 1);
+            OMG.SetBorderColor(title_bar, 0, 0, 0, 1);
+            OMG.SetBorderSize(title_bar, 1);
 
-            MenuButton :: (menu : *OMG.Node, str_id : string, font : *OMG.Font, text : string) -> *OMG.Node {
-                button := OMG.GetNode(menu, str_id);
-                {
-                    OMG.SetPadding(button, 4, 4);
-                    OMG.SetSize(button, OMG.SizeFit(), OMG.SizeFit());
-                    OMG.SetChildAlign(button, 0.5, 0.5);
-
-                    clicked := OMG.ButtonBehavior(button).released;
-                    if clicked {
-                        print("Clicked %!\n", text);
-                    }
-
-                    OMG.Text(button, font, 14, text);
-                }
-
-                return button;
-            }
+            OMG.Text(title_bar, "OMG Engine (% FPS)", cast(int, 1 / delta_time));
 
             title_menu := OMG.GetNode(title_bar);
             OMG.SetSize(title_menu, OMG.SizeFill(), OMG.SizeFit());
 
-            file_menu := MenuButton(title_menu, "file_menu", font, "File");
-            edit_menu := MenuButton(title_menu, "edit_menu", font, "Edit");
-            entities_menu := MenuButton(title_menu, "entities_menu", font, "Entities");
-            window_menu := MenuButton(title_menu, "window_menu", font, "Window");
-            help_menu := MenuButton(title_menu, "help_menu", font, "Help");
+            OMG.Button(title_menu, "File");
+            OMG.Button(title_menu, "Edit");
+            OMG.Button(title_menu, "Entities");
+            OMG.Button(title_menu, "Window");
+            OMG.Button(title_menu, "Help");
 
             title_mini := OMG.GetNode(title_bar, "minimize");
             OMG.SetSize(title_mini, OMG.SizePx(25));
@@ -97,13 +79,21 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
                     OMG.SetLayout(panel, .TopToBottom);
                     OMG.SetSize(panel, OMG.SizeFill());
 
+                    OMG.SetBackgroundColor(panel, 1, 1, 1, 1);
+                    OMG.SetBorderColor(panel, 0, 0, 0, 1);
+                    OMG.SetBorderSize(panel, 1);
+
                     title_bar := OMG.GetNode(panel, "title_bar");
                     {
                         OMG.SetSize(title_bar, OMG.SizeFill(), OMG.SizePx(32));
                         OMG.SetPadding(title_bar, 4, 4);
                         OMG.SetChildAlign(title_bar, 0, 0.5);
 
-                        OMG.Text(title_bar, OMG.GetFont("Roboto-Regular"), 14, title);
+                        OMG.SetBackgroundColor(title_bar, 1, 1, 1, 1);
+                        OMG.SetBorderColor(title_bar, 0, 0, 0, 1);
+                        OMG.SetBorderSize(title_bar, 1);
+
+                        OMG.Text(title_bar, title);
                     }
 
                     content_and_scrollbar := OMG.GetNode(panel, "content_and_scrollbar");
@@ -137,14 +127,14 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
                 OMG.SetPadding(main_viewport, 12, 12);
                 OMG.SetChildGap(main_viewport, 4, 4);
 
-                OMG.Text(main_viewport, font, 16, tprint("Mouse focus: %", context.omg.mouse_focused_node));
-                OMG.Text(main_viewport, font, 16, tprint("Mouse capture: %", context.omg.mouse_capturing_node));
-                OMG.Text(main_viewport, font, 16, tprint("Scroll focus: %", context.omg.scroll_focused_node));
+                OMG.Text(main_viewport, "Mouse focus: %", context.omg.mouse_focused_node);
+                OMG.Text(main_viewport, "Mouse capture: %", context.omg.mouse_capturing_node);
+                OMG.Text(main_viewport, "Scroll focus: %", context.omg.scroll_focused_node);
 
-                OMG.Text(main_viewport, font, 16, tprint("Layout: % us", cast(int, context.omg.layout_time_last_frame * 1000 * 1000)));
-                OMG.Text(main_viewport, font, 16, tprint("Render: % ms", OMG.GetLastFrameGPUTime() * 1000));
+                OMG.Text(main_viewport, "Layout: % us", cast(int, context.omg.layout_time_last_frame * 1000 * 1000));
+                OMG.Text(main_viewport, "Render: % ms", OMG.GetLastFrameGPUTime() * 1000);
 
-                text_input_submitted, text_input := OMG.TextInput(main_viewport, font);
+                text_input_submitted, text_input := OMG.TextInput(main_viewport);
                 OMG.SetSize(text_input, OMG.SizePx(300), OMG.SizePx(32));
 
                 if text_input_submitted {
@@ -160,15 +150,21 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
                     OMG.SetChildAlign(label_and_slider, 0, 0.5);
                     OMG.SetChildGap(label_and_slider, 10, 0);
 
-                    label := OMG.Text(label_and_slider, font, 16, tprint("Value: %", g_slider_value));
+                    label := OMG.Text(label_and_slider, "Value: %", g_slider_value);
                     OMG.SetWidth(label, OMG.SizeFill(0.5));
 
                     slider := OMG.Slider(label_and_slider, *g_slider_value, 0, 1, 0);
                     OMG.SetWidth(slider, OMG.SizeFill());
                 }
 
-                OMG.Text(main_viewport, OMG.GetFont("JetBrainsMono-Regular"), 14, "Some text with another font");
-                OMG.Text(main_viewport, font, (cos(time) + 2) * 10, "The quick brown fox jumps over the lazy dog!");
+Text :: #string END
+The quick brown fox jumps over the lazy dog?
+THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG!
+0123456789
+END
+
+                the_quick := OMG.Text(main_viewport, Text);
+                the_quick.text_size = (cos(time) + 2) * 10;
 
                 content_browser := Panel(left_side, "content_browser", "Content Browser");
                 OMG.SetHeight(content_browser, OMG.SizeFill(0.9));
@@ -190,7 +186,7 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
                         OMG.SetSize(entry, OMG.SizeFill(), OMG.SizeFit());
                         OMG.ButtonBehavior(entry);
 
-                        OMG.Text(entry, font, 16, tprint("Entry %", i));
+                        OMG.Text(entry, "Entry %", i);
                     }
 
                     entity_inspector := Panel(right_side, "entity_inspector", "Entity Inspector");
@@ -227,7 +223,6 @@ main :: () {
     defer OMG.TerminateGL();
 
     font_config : OMG.FontConfig;
-    OMG.LoadFontFromFile("Roboto-Regular.ttf", font_config);
     OMG.LoadFontFromFile("JetBrainsMono-Regular.ttf", font_config);
 
     program_start := current_time_monotonic();

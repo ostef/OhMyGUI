@@ -50,7 +50,19 @@ Glyph :: struct {
 
 g_ft_lib : FT_Library;
 
+GetDefaultFont :: inline () -> *Font {
+    return GetFont("__default");
+}
+
+LoadDefaultFont :: () -> *Font {
+    return LoadFontFromFile("__default", "Roboto-Regular.ttf", .{});
+}
+
 LoadFontFromFile :: (filename : string, config : FontConfig) -> *Font {
+    return LoadFontFromFile(basename(filename), filename, config);
+}
+
+LoadFontFromFile :: (name : string, filename : string, config : FontConfig) -> *Font {
     if !g_ft_lib {
         ft_err := FT_Init_FreeType(*g_ft_lib);
         if ft_err != xx FT_Err.Ok {
@@ -82,7 +94,7 @@ LoadFontFromFile :: (filename : string, config : FontConfig) -> *Font {
 
     font := New(Font);
     font.filename = filename;
-    font.name = basename(filename);
+    font.name = name;
     font.resolution = config.resolution;
     font.ascent = FractToFloat(ft_face.size.metrics.ascender) / cast(float, config.resolution);
     font.descent = -FractToFloat(ft_face.size.metrics.descender) / cast(float, config.resolution);

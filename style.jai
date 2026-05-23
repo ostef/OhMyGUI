@@ -6,7 +6,22 @@ SetStyle :: (theme : *Theme, name : string, value : Any) {
     table_set(*theme.styles, name, value);
 }
 
+EnsureStyle :: inline (style : **$T, name : string) {
+    if !style.* {
+        style.* = GetStyle(name, T);
+        assert(style.* != null, "Theme has no style named '%' of type %", name, T);
+    }
+}
+
+GetStyle :: inline (name : string, $T : Type) -> *T {
+    return GetStyle(GetTheme(), name, T);
+}
+
 GetStyle :: (theme : *Theme, name : string, $T : Type) -> *T {
+    if !theme {
+        return null;
+    }
+
     exists, any := table_find(*theme.styles, name);
     if !exists {
         return null;
@@ -65,13 +80,13 @@ Apply :: inline (node : *Node, style : TextStyle) {
 }
 
 StateStyle :: struct(T : Type) {
+    disabled : T;
     active : T;
     hot : T;
     focused : T;
-    disabled : T;
     normal : T;
 
-    #overlay(active)
+    #overlay(disabled)
     states : [Num_Node_States]T;
 }
 
@@ -98,3 +113,83 @@ StateStyle :: struct(T : Type) {
 //         return builder_to_string(*builder);
 //     }
 // }
+
+#scope_file
+
+g_default_theme : struct {
+    theme : Theme;
+
+    text : TextStyle;
+    button : ButtonStyle;
+    slider : SliderStyle;
+    scrollbar : SliderStyle;
+    text_input : TextInputStyle;
+};
+
+#scope_export
+
+InitDefaultTheme :: () {
+    using g_default_theme;
+
+    {
+        using text;
+
+        font = GetDefaultFont();
+        text_size = 16;
+        text_color = ColorU32(0,0,0,1);
+    }
+    SetStyle(*theme, "text", text);
+
+    {
+        using button;
+
+        normal.background.corner_radiuses = .{10,10,10,10};
+        normal.background.padding = .{10,10,10,10};
+        normal.background.child_gap = .{4,4};
+        normal.background.background_color = ColorU32(1,1,1,1);
+        normal.background.border_color = ColorU32(0,0,0,1);
+        normal.background.border_size = 1;
+        normal.text = text;
+
+        focused = normal;
+        focused.background.background_color = ColorU32(0.9,0.9,0.9,1);
+
+        hot = normal;
+        hot.background.background_color = ColorU32(0.8,0.8,0.8,1);
+
+        active = normal;
+
+        disabled = normal;
+        disabled.background.border_color = ColorU32(0.5,0.5,0.5,1);
+        disabled.text.text_color = ColorU32(0.5,0.5,0.5,1);
+    }
+    SetStyle(*theme, "button", button);
+
+    SetStyle(*theme, "slider", slider);
+
+    {
+        using scrollbar;
+
+        handle_size = 10;
+
+        normal.background.background_color = ColorU32(0.7, 0.7, 0.7, 0.4);
+        normal.handle.background_color = ColorU32(0.8, 0.8, 0.8, 1);
+        normal.handle.corner_radiuses = .{5,5,5,5};
+
+        focused = normal;
+        focused.background.background_color = ColorU32(0.4, 0.4, 0.4, 0.8);
+
+        hot = focused;
+
+        active = hot;
+        active.handle.background_color = ColorU32(0.9, 0.9, 0.9, 1);
+
+        disabled.background.background_color = ColorU32(0.5, 0.5, 0.5, 0.5);
+        disabled.handle.background_color = ColorU32(0.5, 0.5, 0.5, 1);
+    }
+    SetStyle(*theme, "scrollbar", scrollbar);
+
+    SetStyle(*theme, "text_input", text_input);
+
+    SetTheme(*theme);
+}

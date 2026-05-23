@@ -1,6 +1,8 @@
-Text :: (parent : *Node, text : string, style : TextStyle, location := #caller_location) -> *Node {
+Text :: (parent : *Node, fmt_str : string, args : ..Any, style : *TextStyle = null, location := #caller_location) -> *Node {
+    EnsureStyle(*style, "text");
+
     node := GetNode(parent, location);
-    SetText(node, font, size, text);
+    SetText(node, tprint(fmt_str, ..args));
     SetSize(node, SizeFit(), SizeFit()); // Fit text
     SetBackgroundColor(node, 0, 0, 0, 0);
     SetBorderColor(node, 0, 0, 0, 0);
@@ -10,15 +12,48 @@ Text :: (parent : *Node, text : string, style : TextStyle, location := #caller_l
     return node;
 }
 
+ButtonStateStyle :: struct {
+    background : BoxStyle;
+    text : TextStyle;
+}
+
+ButtonStyle :: StateStyle(ButtonStateStyle);
+
+Button :: (parent : *Node, text : string, style : *ButtonStyle = null, location := #caller_location) -> clicked : bool, *Node {
+    EnsureStyle(*style, "button");
+
+    node := GetNode(parent, location);
+    {
+        SetSize(node, SizeFit(), SizeFit());
+
+        text_node := GetNode(node, "text");
+        SetText(text_node, text);
+
+        button := ButtonBehavior(node);
+
+        state := GetState(node);
+
+        Apply(node, style.states[state].background);
+        Apply(text_node, style.states[state].text);
+
+        return button.released, node;
+    }
+}
+
 SliderStateStyle :: struct {
     background : BoxStyle;
     handle : BoxStyle;
+}
+
+SliderStyle :: struct {
+    using _ : StateStyle(SliderStateStyle);
     handle_size : float;
 }
 
-SliderStyle :: StateStyle(SliderStateStyle);
+// @Todo: unify slider and scrollbar
+Slider :: (parent : *Node, value : *$T, min : T, max : T, step : T, style : *SliderStyle = null, location := #caller_location) -> background : *Node, handle : *Node {
+    EnsureStyle(*style, "slider");
 
-Slider :: (parent : *Node, value : *$T, min : T, max : T, step : T, style : SliderStyle, location := #caller_location) -> background : *Node, handle : *Node {
     fvalue := ifx value then cast(float, value.*);
     fmin := cast(float, min);
     fmax := cast(float, max);
@@ -76,16 +111,22 @@ Slider :: (parent : *Node, value : *$T, min : T, max : T, step : T, style : Slid
         }
     }
 
+    state := GetState(handle);
+    Apply(background, style.states[state].background);
+    Apply(handle, style.states[state].handle);
+
     return background, handle;
 }
 
-Scrollbar :: (parent : *Node, target : *Node, axis : Axis, style : SliderStyle, location := #caller_location) -> background : *Node, handle : *Node {
+Scrollbar :: (parent : *Node, target : *Node, axis : Axis, style : *SliderStyle = null, location := #caller_location) -> background : *Node, handle : *Node {
+    EnsureStyle(*style, "scrollbar");
+
     background, handle : *Node;
 
-    background = GetNode(parent, location=location);
+    background = GetNode(parent, location);
     {
-        background.desired_size[axis] = SizeFit();
-        background.desired_size[GetCrossAxis(axis)] = SizeFill();
+        background.desired_size[axis] = SizeFill();
+        background.desired_size[GetCrossAxis(axis)] = SizeFit();
 
         ScrollViewBehavior(background, target, xx (1 << axis));
 
@@ -93,8 +134,8 @@ Scrollbar :: (parent : *Node, target : *Node, axis : Axis, style : SliderStyle, 
         {
             ratio := target.layout_last_frame.size[axis] / target.layout_last_frame.children_size[axis];
 
-            handle.desired_size[axis] = SizeFill();
-            handle.desired_size[GetCrossAxis(axis)] = SizeFill(ratio);
+            handle.desired_size[axis] = SizeFill(ratio);
+            handle.desired_size[GetCrossAxis(axis)] = SizePx(style.handle_size);
 
             // offset = (scroll / scrollable) * offset_max
             // offset / offset_max = scroll / scrollable
@@ -127,6 +168,8 @@ Scrollbar :: (parent : *Node, target : *Node, axis : Axis, style : SliderStyle, 
             }
 
             if handle_result.held {
+                handle.state_flags |= .Active;
+
                 new_offset := GetMousePosition()[axis] - context.omg.mouse_captured_at[axis];
                 new_offset += context.omg.mouse_captured_node_value[axis];
                 new_scroll := (new_offset / offset_max) * scrollable;
@@ -138,8 +181,11 @@ Scrollbar :: (parent : *Node, target : *Node, axis : Axis, style : SliderStyle, 
         }
     }
 
-    Apply(background, style.normal.background);
-    Apply(handle, style.normal.handle);
+    state := GetState(background.state_flags | handle.state_flags);
+    Apply(background, style.states[state].background);
+
+    state = GetState(handle.state_flags);
+    Apply(handle, style.states[state].handle);
 
     return background, handle;
 }
@@ -150,7 +196,7 @@ TextInputStateStyle :: struct {
 }
 
 TextInputStyle :: struct {
-    using states : StateStyle(TextInputStateStyle);
+    using _ : StateStyle(TextInputStateStyle);
     cursor : BoxStyle;
     selection : BoxStyle;
 }
@@ -225,13 +271,13 @@ DrawTextInputText :: (node : *Node, clip_shape : *SDShape) {
     }
 }
 
-TextInput :: (parent : *Node, style : TextInputStyle, location := #caller_location) -> submitted : bool, *Node {
+TextInput :: (parent : *Node, style : *TextInputStyle = null, location := #caller_location) -> submitted : bool, *Node {
+    EnsureStyle(*style, "text_input");
+
     input_field := GetNode(parent, location=location);
     {
         SetPadding(input_field, 5, 2);
         SetChildAlign(input_field, 0, 0.5);
-
-        AddUserData(input_field, style.*);
 
         input, submitted, input_button := TextInputBehavior(input_field);
 
@@ -249,7 +295,7 @@ TextInput :: (parent : *Node, style : TextInputStyle, location := #caller_locati
             SetBorderColor(text_node, 0, 0, 0, 0);
 
             text := EncodeStringAsUtf8(input.buffer ,, temp);
-            SetText(text_node, font, 16, text);
+            SetText(text_node, text);
 
             if input_field.state_flags & .Active {
                 cursor_position : Vec2f;
@@ -297,38 +343,5 @@ TextInput :: (parent : *Node, style : TextInputStyle, location := #caller_locati
         }
 
         return submitted, input_field;
-    }
-}
-
-ButtonStateStyle :: struct {
-    background : BoxStyle;
-    text : TextStyle;
-}
-
-ButtonStyle :: StateStyle(ButtonStateStyle);
-
-Button :: (parent : *Node, text : string, style : ButtonStyle, location := #caller_location) -> clicked : bool, *Node {
-    node := GetNode(parent, location);
-    {
-        SetSize(node, SizeFit(), SizeFit());
-        SetPadding(node, 10, 10);
-        SetChildAlign(node, 0.5, 0.5);
-
-        button := ButtonBehavior(node);
-
-        if node.state_flags & .Hot {
-            SetBackgroundColor(node, 1, 0, 0, 1);
-        } else if node.state_flags & .Focused {
-            SetBackgroundColor(node, 0, 1, 0, 1);
-        } else {
-            SetBackgroundColor(node, 1, 1, 1, 1);
-        }
-
-        text_node := GetNode(node, "text");
-        {
-            SetText(text_node, font, 16, text);
-        }
-
-        return button.released, node;
     }
 }

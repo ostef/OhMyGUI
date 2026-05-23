@@ -31,6 +31,7 @@ Context :: struct {
     fonts : *Font;
     node_pool : Bucket_Array(Node, 1000);
 
+    theme : *Theme;
     node_stack : [..]*Node;
     id_offset_stack : [..]int;
 
@@ -44,6 +45,14 @@ Context :: struct {
     scroll_focused_node : *Node;
 
     default_effect := Effect.{kind=.SolidColor, solid_color=.{color=0xffffffff}};
+}
+
+GetTheme :: inline () -> *Theme {
+    return context.omg.theme;
+}
+
+SetTheme :: inline (theme : *Theme) {
+    context.omg.theme = theme;
 }
 
 GetCurrentNode :: inline () -> *Node {
@@ -150,6 +159,11 @@ DestroyWindow :: (window : *Window) {
 Init :: () {
     context.omg = New(Context);
     context.omg.general_purpose_allocator = context.allocator;
+
+    default_font := LoadDefaultFont();
+    assert(default_font != null, "Could not load default font");
+
+    InitDefaultTheme();
 }
 
 Terminate :: () {
