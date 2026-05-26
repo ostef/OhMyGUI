@@ -402,12 +402,10 @@ DrawCheckmark :: (node : *Node, clip_shape : *SDShape) {
     radiuses := Vec4f.{checkmark.rounding, checkmark.rounding, 2, 2} * scale;
 
     left := Box(thickness, left_height, radiuses);
-    left = Move(left, 0, -left_height * 0.5);
-    left = Rotate(left, -checkmark.angle);
+    left = Transform(left, Rotate2D(-checkmark.angle) * Translate2D(0, -left_height * 0.5));
 
     right := Box(thickness, right_height, radiuses);
-    right = Move(right, 0, -right_height * 0.5);
-    right = Rotate(right, checkmark.angle);
+    right = Transform(right, Rotate2D(checkmark.angle) * Translate2D(0, -right_height * 0.5));
 
     shape := Union(left, right, 0.5 * scale);
     shape = Move(shape, size * 0.5 * checkmark.offset.x, -thickness * 0.5 + checkmark.offset.y * size);
