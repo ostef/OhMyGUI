@@ -274,6 +274,7 @@ TextInput :: (parent : *Node, style : *TextInputStyle = null, location := #calle
 
     input_field := GetNode(parent, location=location);
     {
+        SetSize(input_field, SizeFill(), SizeFit());
         SetChildAlign(input_field, 0, 0.5);
 
         input, submitted, input_button := TextInputBehavior(input_field);
@@ -337,5 +338,121 @@ TextInput :: (parent : *Node, style : *TextInputStyle = null, location := #calle
         }
 
         return submitted, input_field;
+    }
+}
+
+CheckmarkStyle :: struct {
+    rounding := 1.0;
+    thickness := 0.2;
+    offset := Vec2f.{-0.2, 0};
+    left_size := 0.5;
+    right_size := 0.9;
+    angle := PI * 0.17;
+
+    background_color : u32;
+    border_color : u32;
+    border_size : float;
+    border_inset : float;
+    outer_shadow_blur : float;
+    outer_shadow_offset : Vec2f;
+    outer_shadow_color : u32;
+}
+
+Apply :: inline (node : *Node, style : CheckmarkStyle) {
+    node.background_color = style.background_color;
+    node.border_color = style.border_color;
+    node.border_size = style.border_size;
+    node.border_inset = style.border_inset;
+    node.outer_shadow_blur = style.outer_shadow_blur;
+    node.outer_shadow_offset = style.outer_shadow_offset;
+    node.outer_shadow_color = style.outer_shadow_color;
+}
+
+CheckboxStateStyle :: struct {
+    background : BoxStyle;
+    checkmark : CheckmarkStyle;
+}
+
+CheckboxStyle :: StateStyle(CheckboxStateStyle);
+
+DrawCheckmark :: (node : *Node, clip_shape : *SDShape) {
+    checkbox_style := GetUserData(node.parent, CheckboxStyle);
+    if !checkbox_style {
+        return;
+    }
+
+    has_background := (node.background_color & 0xff) > 0;
+    has_border := (node.border_color & 0xff) > 0 && node.border_size > 0;
+    has_shadow := (node.outer_shadow_color & 0xff) > 0;
+
+    if !has_background && !has_border && !has_shadow {
+        return;
+    }
+
+    position := Vec2f.{(node.rect.x + node.rect.z) * 0.5, node.rect.w};
+
+    size := node.size.y;
+    scale := size / 20.0;
+    state := GetState(node.parent);
+    using style := checkbox_style.states[state];
+
+    left_height := size * checkmark.left_size;
+    right_height := size * checkmark.right_size;
+    thickness := size * checkmark.thickness;
+    radiuses := Vec4f.{checkmark.rounding, checkmark.rounding, 2, 2} * scale;
+
+    left := Box(thickness, left_height, radiuses);
+    left = Move(left, 0, -left_height * 0.5);
+    left = Rotate(left, -checkmark.angle);
+
+    right := Box(thickness, right_height, radiuses);
+    right = Move(right, 0, -right_height * 0.5);
+    right = Rotate(right, checkmark.angle);
+
+    shape := Union(left, right, 0.5 * scale);
+    shape = Move(shape, size * 0.5 * checkmark.offset.x, -thickness * 0.5 + checkmark.offset.y * size);
+
+    d := DrawShape(*node.window.draw_list, shape, position);
+
+    if has_shadow {
+        OuterShadow(d, node.outer_shadow_offset * scale, node.outer_shadow_blur * scale, node.outer_shadow_color);
+    }
+    if has_background {
+        SolidColor(d, node.background_color);
+    }
+    if has_border {
+        StrokeColor(d, node.border_color, node.border_size, node.border_inset);
+    }
+
+    SetClipShape(d, clip_shape);
+}
+
+Checkbox :: (parent : *Node, value : *bool, style : *CheckboxStyle = null, location := #caller_location) -> modified : bool, *Node {
+    EnsureStyle(*style, "checkbox");
+
+    node := GetNode(parent, location);
+    {
+        SetSize(node, SizePx(20), SizePx(20));
+
+        checkmark_style := AddUserData(node, CheckboxStyle);
+        checkmark_style.* = style.*;
+
+        button := ButtonBehavior(node);
+        if button.released {
+            value.* = !value.*;
+        }
+
+        state := GetState(node);
+        Apply(node, style.states[state].background);
+
+        if value.* {
+            checkmark := GetNode(node, "text");
+            SetDraw(checkmark, DrawCheckmark);
+            SetSize(checkmark, SizeFill(), SizeFill());
+
+            Apply(checkmark, style.states[state].checkmark);
+        }
+
+        return button.released, node;
     }
 }

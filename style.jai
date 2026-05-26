@@ -124,6 +124,7 @@ g_default_theme : struct {
     slider : SliderStyle;
     scrollbar : SliderStyle;
     text_input : TextInputStyle;
+    checkbox : CheckboxStyle;
 };
 
 #scope_export
@@ -223,11 +224,35 @@ InitDefaultTheme :: () {
         hot.background.background_color = ColorU32(0.7, 0.7, 0.7,1);
 
         active = normal;
+        active.background.border_size = 2;
+        active.background.border_color = ColorU32(0.1, 0.3, 0.8, 1);
 
         disabled = normal;
         disabled.text.text_color = ColorU32(0.5,0.5,0.5,1);
     }
     SetStyle(*theme, "text_input", text_input);
+
+    {
+        using checkbox;
+
+        normal.background.corner_radiuses = .{4,4,4,4};
+        normal.background.padding = .{2,2,2,2};
+        normal.background.background_color = ColorU32(0.9,0.9,0.9,1);
+        normal.checkmark.background_color = ColorU32(0.3, 0.5, 0.8, 1);
+        normal.checkmark.rounding = 1;
+
+        focused = normal;
+        focused.background.background_color = ColorU32(0.8,0.8,0.8,1);
+
+        hot = normal;
+        hot.background.background_color = ColorU32(0.7,0.7,0.7,1);
+
+        active = normal;
+
+        disabled = normal;
+        disabled.checkmark.background_color = ColorU32(0.5,0.5,0.5,1);
+    }
+    SetStyle(*theme, "checkbox", checkbox);
 
     SetTheme(*theme);
 }

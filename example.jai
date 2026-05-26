@@ -13,6 +13,7 @@ g_frame_in_flight : int;
 g_frame_syncs : [2]GLsync;
 
 g_slider_value : float;
+g_checkbox_value : bool;
 
 g_theme : OMG.Theme;
 
@@ -135,7 +136,7 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
                 OMG.Text(main_viewport, "Render: % ms", OMG.GetLastFrameGPUTime() * 1000);
 
                 text_input_submitted, text_input := OMG.TextInput(main_viewport);
-                OMG.SetSize(text_input, OMG.SizePx(300), OMG.SizePx(32));
+                OMG.SetWidth(text_input, OMG.SizePx(300));
 
                 if text_input_submitted {
                     text := OMG.GetTextInputResult(text_input ,, temp);
@@ -156,6 +157,8 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
                     slider := OMG.Slider(label_and_slider, *g_slider_value, 0, 1, 0);
                     OMG.SetWidth(slider, OMG.SizeFill());
                 }
+
+                OMG.Checkbox(main_viewport, *g_checkbox_value);
 
 Text :: #string END
 The quick brown fox jumps over the lazy dog?
