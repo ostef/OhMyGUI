@@ -167,6 +167,7 @@ Scrollbar :: (parent : *Node, target : *Node, axis : Axis, style : *SliderStyle 
 
             if handle_result.held {
                 handle.state_flags |= .Active;
+                UpdateStateTime(handle);
 
                 new_offset := GetMousePosition()[axis] - context.omg.mouse_captured_at[axis];
                 new_offset += context.omg.mouse_captured_node_value[axis];
@@ -349,13 +350,13 @@ CheckmarkStyle :: struct {
     right_size := 0.9;
     angle := PI * 0.17;
 
-    background_color : u32;
-    border_color : u32;
+    background_color : RGBA8;
+    border_color : RGBA8;
     border_size : float;
     border_inset : float;
     outer_shadow_blur : float;
     outer_shadow_offset : Vec2f;
-    outer_shadow_color : u32;
+    outer_shadow_color : RGBA8;
 }
 
 Apply :: inline (node : *Node, style : CheckmarkStyle) {

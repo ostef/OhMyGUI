@@ -53,6 +53,27 @@ GetState :: inline (state_flags : NodeStateFlags) -> NodeState {
     return .None;
 }
 
+GetStateLastFrame :: inline (node : *Node) -> NodeState {
+    return GetStateLastFrame(node.state_flags);
+}
+
+GetStateLastFrame :: inline (state_flags : NodeStateFlags) -> NodeState {
+    if state_flags & .ActiveLastFrame {
+        return .Active;
+    }
+    if state_flags & .HotLastFrame {
+        return .Hot;
+    }
+    if state_flags & .FocusedLastFrame {
+        return .Focused;
+    }
+    if state_flags & .DisabledLastFrame {
+        return .Disabled;
+    }
+
+    return .None;
+}
+
 NodeUserData :: struct {
     next : *NodeUserData;
     destroy : (*Node, *void);
@@ -111,17 +132,76 @@ Node :: struct {
     // Styling properties, NOT reset each frame
     using styling : struct {
         corner_radiuses : Vec4f;
-        background_color : u32;
-        text_color : u32;
-        border_color : u32;
+        background_color : RGBA8;
+        text_color : RGBA8;
+        border_color : RGBA8;
         border_size : float;
         border_inset : float;
         outer_shadow_blur : float;
         outer_shadow_offset : Vec2f;
-        outer_shadow_color : u32;
+        outer_shadow_color : RGBA8;
     };
 
+    state_stack : NodeStateStack;
     state_flags : NodeStateFlags;
+}
+
+NodeStateStack :: struct {
+    times : [Num_Node_States]float = ---;
+    states : [Num_Node_States]NodeState = ---;
+    size_and_cursor : u8;
+}
+
+GetCursor :: inline (stack : NodeStateStack) -> int {
+    return stack.size_and_cursor & 0x0f;
+}
+
+SetCursor :: inline (stack : *NodeStateStack, cursor : int) {
+    stack.size_and_cursor = (stack.size_and_cursor & 0xf0) | (cast(u8, cursor) & 0x0f);
+}
+
+GetSize :: inline (stack : NodeStateStack) -> int {
+    return (stack.size_and_cursor >> 4) & 0x0f;
+}
+
+SetSize :: inline (stack : *NodeStateStack, size : int) {
+    stack.size_and_cursor = (stack.size_and_cursor & 0x0f) | (cast(u8, size) << 4);
+}
+
+Get :: (stack : *NodeStateStack, index : int) -> NodeState, time : float {
+    size := GetSize(stack);
+    assert(index >= 0 && index < size);
+
+    cursor := GetCursor(stack);
+    index = (cursor + Num_Node_States - index - 1) % Num_Node_States;
+
+    return stack.states[index], stack.times[index];
+}
+
+PushState :: (stack : *NodeStateStack, state : NodeState) {
+    size := GetSize(stack);
+    cursor := GetCursor(stack);
+
+    stack.states[cursor] = state;
+    stack.times[cursor] = 0;
+
+    cursor = (cursor + 1) % Num_Node_States;
+
+    if size < Num_Node_States {
+        size += 1;
+        SetSize(stack, size);
+    }
+
+    SetCursor(stack, cursor);
+}
+
+for_expansion :: (stack : *NodeStateStack, body : Code, flags : For_Flags) #expand {
+    `it : struct{ state: NodeState; time: float; };
+
+    for `it_index : 0..GetSize(stack) - 1 {
+        it.state, it.time = Get(stack, it_index);
+        #insert body;
+    }
 }
 
 // for_expansion
@@ -336,6 +416,12 @@ GetID :: inline (loc : Source_Code_Location, apply_offset := true) -> ID {
     return id;
 }
 
+UpdateStateTime :: (node : *Node) {
+    if GetState(node) != GetStateLastFrame(node) {
+        node.state_time = 0;
+    }
+}
+
 TouchNode :: (node : *Node) {
     if node.last_used_on_frame == context.omg.frame_index {
         return;
@@ -346,12 +432,43 @@ TouchNode :: (node : *Node) {
     node.properties = .{};
     node.scroll = scroll;
     node.layout = .{};
+
     if node.parent {
         PushChild(node.parent, node);
         node.depth = node.parent.depth + 1;
     } else {
         node.depth = 0;
     }
+
+    if GetState(node.state_flags) == GetStateLastFrame(node.state_flags) {
+        node.state_time += context.omg.delta_time;
+    }
+
+    // if node.state_flags & .DisabledLastFrame {
+    //     node.state_times[NodeState.Disabled] += context.omg.delta_time;
+    // } else {
+    //     node.state_times[NodeState.Disabled] = 0;
+    // }
+    // if node.state_flags & .ActiveLastFrame {
+    //     node.state_times[NodeState.Active] += context.omg.delta_time;
+    // } else {
+    //     node.state_times[NodeState.Active] = 0;
+    // }
+    // if node.state_flags & .HotLastFrame {
+    //     node.state_times[NodeState.Hot] += context.omg.delta_time;
+    // } else {
+    //     node.state_times[NodeState.Hot] = 0;
+    // }
+    // if node.state_flags & .FocusedLastFrame {
+    //     node.state_times[NodeState.Focused] += context.omg.delta_time;
+    // } else {
+    //     node.state_times[NodeState.Focused] = 0;
+    // }
+    // if !(node.state_flags & .LastFrame) {
+    //     node.state_times[NodeState.None] += context.omg.delta_time;
+    // } else {
+    //     node.state_times[NodeState.None] = 0;
+    // }
 }
 
 GetNode :: (window : *Window) -> *Node {

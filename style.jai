@@ -39,13 +39,13 @@ BoxStyle :: struct {
     child_gap : Vec2f;
 
     corner_radiuses : Vec4f;
-    background_color : u32;
-    border_color : u32;
+    background_color : RGBA8;
+    border_color : RGBA8;
     border_size : float;
     border_inset : float;
     outer_shadow_blur : float;
     outer_shadow_offset : Vec2f;
-    outer_shadow_color : u32;
+    outer_shadow_color : RGBA8;
 }
 
 Apply :: inline (node : *Node, style : BoxStyle) {
@@ -64,10 +64,10 @@ Apply :: inline (node : *Node, style : BoxStyle) {
 TextStyle :: struct {
     font : *Font;
     text_size : float;
-    text_color : u32;
+    text_color : RGBA8;
     outer_shadow_blur : float;
     outer_shadow_offset : Vec2f;
-    outer_shadow_color : u32;
+    outer_shadow_color : RGBA8;
 }
 
 Apply :: inline (node : *Node, style : TextStyle) {
@@ -90,29 +90,159 @@ StateStyle :: struct(T : Type) {
     states : [Num_Node_States]T;
 }
 
-// AnimateProc :: #type (a : float, b : float, t : float) -> float;
+AnimFunc :: enum u8 {
+    Linear;
+    CubicIn;
+    CubicOut;
+    CubicInOut;
+    ElasticIn;
+    ElasticOut;
+    ElasticInOut;
+    BackIn;
+    BackOut;
+    BackInOut;
+}
 
-// AnimateStyle :: (a : $T, b : T, time : float, speed : float, animate : AnimateProc) {
-//     t := time / speed;
+AnimParams :: struct {
+    length : float;
+    func : AnimFunc;
+}
 
-//     #insert -> string {
-//         AppendAnimate :: (
+Animate :: inline (a : float, b : float, t : float, func : AnimFunc) -> float {
+    if #complete func == {
+    case .Linear;
+        // t = t
+    case .CubicIn;
+        t = t * t * t;
+    case .CubicOut;
+        t = 1 - t;
+        t = 1 - (t * t * t);
+    case .CubicInOut;
+        if t < 0.5 {
+            t = 4 * t * t * t;
+        } else {
+            t = -2 * t;
+            t = 1 - (t * t * t) * 0.5;
+        }
+    case .ElasticIn;
+        if t > 0 && t < 1 {
+            t = -pow(2, 10 * t - 10) * sin(t * 10 - 10.75) * (2 * PI / 3);
+        }
+    case .ElasticOut;
+        if t > 0 && t < 1 {
+            t = 1 + pow(2, -10 * t) * sin((t * 10 - 10.75) * (2 * PI / 3));
+        }
+    case .ElasticInOut;
+        if t > 0 {
+            if t < 0.5 {
+                t = -pow(2, 20 * t - 10) * sin(t * 20 - 11.125) * (2 * PI / 4.5) / 2;
+            } else if t < 1 {
+                t = 1 + pow(2, -20 * t + 10) * sin(t * 20 - 11.125) * (2 * PI / 4.5) / 2;
+            }
+        }
+    case .BackIn;
+        C1 :: 1.70158;
+        C3 :: C1 + 1;
+        t = C3 * t * t * t - C1 * t * t;
+    case .BackOut;
+        C1 :: 1.70158;
+        C3 :: C1 + 1;
+        t -= 1;
+        t = 1 + C3 * t * t * t + C1 * t * t;
+    case .BackInOut;
+        C1 :: 1.70158;
+        C2 :: C1 * 1.525;
+        if t < 0.5 {
+            t = t * 2;
+            t = (t * t * ((C2 + 1) * t - C2)) / 2;
+        } else {
+            t = t * 2 - 2;
+            t = (t * t * ((C2 + 1) * t + C2) + 2) / 2;
+        }
+    }
 
-//         builder : String_Builder;
+    return a * (1 - t) + b * t;
+}
 
-//         info := type_info(T);
-//         for info.members {
-//             type := it.type;
-//             if type == type_info(Vec2f) {
-//             } else if type == type_info(Vec4f) {
-//             } else if type == type_info(RGBA8) {
-//             } else if type.kind == {
-//             }
-//         }
+Animate :: inline (a : Vec2f, b : Vec2f, t : float, func : AnimFunc) -> Vec2f {
+    return .{
+        Animate(a.x, b.x, t, func),
+        Animate(a.y, b.y, t, func),
+    };
+}
 
-//         return builder_to_string(*builder);
-//     }
-// }
+Animate :: inline (a : Vec4f, b : Vec4f, t : float, func : AnimFunc) -> Vec4f {
+    return .{
+        Animate(a.x, b.x, t, func),
+        Animate(a.y, b.y, t, func),
+        Animate(a.z, b.z, t, func),
+        Animate(a.w, b.w, t, func),
+    };
+}
+
+Animate :: inline (a : RGBA8, b : RGBA8, t : float, func : AnimFunc) -> RGBA8 {
+    a4f := ColorVec4f(a);
+    b4f := ColorVec4f(b);
+
+    return ColorU32(
+        Animate(a4f.x, b4f.x, t, func),
+        Animate(a4f.y, b4f.y, t, func),
+        Animate(a4f.z, b4f.z, t, func),
+        Animate(a4f.w, b4f.w, t, func),
+    );
+}
+
+AnimateStyle :: (a : $T, b : T, t : float, func : AnimFunc) -> T {
+    if t < 0 {
+        return a;
+    }
+    if t > 1 {
+        return b;
+    }
+
+    result : T;
+
+    #insert -> string {
+        AppendAnimate :: (builder : *String_Builder, name : string, type : *Type_Info) {
+            if type == type_info(Vec2f) || type == type_info(Vec4f) || type == type_info(RGBA8) {
+                print_to_builder(*builder, "result.%1 = Animate(a.%1, b.%1, t, func);\n", name);
+            } else if type.kind == {
+            case .VARIANT;
+                variant := cast(*Type_Info_Variant, type);
+                AppendAnimate(builder, name, variant.variant_of);
+            case .FLOAT;
+                print_to_builder(*builder, "result.%1 = xx Animate(xx a.%1, b.%1, t, func);\n", name);
+            case .INTEGER;
+                print_to_builder(*builder, "result.%1 = xx Animate(xx a.%1, b.%1, t, func);\n", name);
+            case .STRUCT;
+                struct_type := cast(*Type_Info_Struct, type);
+                for struct_type.members {
+                    AppendAnimate(builder, tprint("%.%", name, it.name), it.type);
+                }
+            case .ARRAY;
+                array_type := cast(*Type_Info_Array, type);
+                if array_type.array_type != .FIXED {
+                    return;
+                }
+
+                print_to_builder(*builder, "for result.%1 {\n", name);
+                AppendAnimate(builder, tprint("%[it_index]", name), array_type.element_type);
+                print_to_builder(*builder, "}\n");
+            }
+        }
+
+        builder : String_Builder;
+
+        info := type_info(T);
+        for info.members {
+            AppendAnimate(*builder, it.name, it.type);
+        }
+
+        return builder_to_string(*builder);
+    }
+
+    return result;
+}
 
 #scope_file
 
@@ -128,6 +258,23 @@ g_default_theme : struct {
 };
 
 #scope_export
+
+// AnimateStateStyle :: (node : *Node, styles : StateStyle($T), length : float, func : AnimFunc) -> T {
+//     result := styles.normal;
+
+//     for < i : 0..GetSize(node.state_stack) - 1 {
+//         state, time := Get(*node.state_stack, i);
+
+//         if time >= speed {
+//             return style.states[state];
+//         }
+
+//         style := styles[state];
+//         result = AnimateStyle(result, style, time, speed, animate);
+//     }
+
+//     return result;
+// }
 
 InitDefaultTheme :: () {
     using g_default_theme;

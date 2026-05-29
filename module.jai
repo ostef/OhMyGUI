@@ -231,6 +231,7 @@ NewFrame :: (delta_time : float) {
 
     if omg.mouse_focused_node {
         omg.mouse_focused_node.state_flags |= .Focused;
+        UpdateStateTime(omg.mouse_focused_node);
     }
 }
 

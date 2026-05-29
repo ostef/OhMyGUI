@@ -69,22 +69,22 @@ EffectKind :: enum u8 {
 // We could add a blend mode feature?
 Effect :: union kind : EffectKind {
     .SolidColor ,, solid_color : struct {
-        color : u32;
+        color : RGBA8;
         blur_factor : float;
     };
     .StrokeColor ,, stroke_color : struct {
-        color : u32;
+        color : RGBA8;
         blur_factor : float;
         inset : float;
         size : float;
     };
     .OuterShadow ,, outer_shadow : struct {
-        color : u32;
+        color : RGBA8;
         offset : Vec2f;
         blur_factor : float;
     };
     .InnerShadow ,, inner_shadow : struct {
-        color : u32;
+        color : RGBA8;
         offset : Vec2f;
         blur_factor : float;
     };
@@ -106,7 +106,7 @@ SolidColor :: inline (using drawing : *Drawing, color : Vec4f, blur_factor := 0.
     SolidColor(drawing, ColorU32(color), blur_factor);
 }
 
-SolidColor :: inline (using drawing : *Drawing, color : u32, blur_factor := 0.0) {
+SolidColor :: inline (using drawing : *Drawing, color : RGBA8, blur_factor := 0.0) {
     effect := PushEffect(drawing);
     effect.kind = .SolidColor;
     effect.solid_color.color = color;
@@ -117,7 +117,7 @@ StrokeColor :: inline (using drawing : *Drawing, color : Vec4f, size : float, in
     StrokeColor(drawing, ColorU32(color), size, inset, blur_factor);
 }
 
-StrokeColor :: inline (using drawing : *Drawing, color : u32, size : float, inset := 0.0, blur_factor := 0.0) {
+StrokeColor :: inline (using drawing : *Drawing, color : RGBA8, size : float, inset := 0.0, blur_factor := 0.0) {
     effect := PushEffect(drawing);
     effect.kind = .StrokeColor;
     effect.stroke_color.color = color;
@@ -134,7 +134,7 @@ OuterShadow :: inline (using drawing : *Drawing, offset : Vec2f, blur_factor : f
     OuterShadow(drawing, offset, blur_factor, ColorU32(color));
 }
 
-OuterShadow :: inline (using drawing : *Drawing, offset : Vec2f, blur_factor : float, color : u32) {
+OuterShadow :: inline (using drawing : *Drawing, offset : Vec2f, blur_factor : float, color : RGBA8) {
     effect := PushEffect(drawing);
     effect.kind = .OuterShadow;
     effect.outer_shadow.offset = offset;
@@ -150,7 +150,7 @@ InnerShadow :: inline (using drawing : *Drawing, blur_factor : float, color := V
     InnerShadow(drawing, blur_factor, ColorU32(color), offset);
 }
 
-InnerShadow :: inline (using drawing : *Drawing, blur_factor : float, color : u32, offset := Vec2f.{0,0}) {
+InnerShadow :: inline (using drawing : *Drawing, blur_factor : float, color : RGBA8, offset := Vec2f.{0,0}) {
     effect := PushEffect(drawing);
     effect.kind = .InnerShadow;
     effect.inner_shadow.offset = offset;
@@ -218,7 +218,7 @@ DrawText :: inline (draw_list : *DrawList, font : *Font, position : Vec2f, size 
     DrawText(draw_list, font, position ,size, text, ColorU32(color), clip_shape);
 }
 
-DrawText :: (draw_list : *DrawList, font : *Font, position : Vec2f, size : float, text : string, color : u32, clip_shape : *SDShape = null) {
+DrawText :: (draw_list : *DrawList, font : *Font, position : Vec2f, size : float, text : string, color : RGBA8, clip_shape : *SDShape = null) {
     if !font || (color & 0xff) == 0 {
         return;
     }
