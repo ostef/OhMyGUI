@@ -142,7 +142,7 @@ Node :: struct {
         outer_shadow_color : RGBA8;
     };
 
-    state_stack : NodeStateStack;
+    // state_stack : NodeStateStack;
     state_flags : NodeStateFlags;
 }
 
@@ -335,9 +335,11 @@ AllocNode :: () -> *Node {
     return node;
 }
 
-FreeNode :: (node : *Node) {
-    for :PrevFrameChildren node {
-        FreeNode(it);
+FreeNode :: (node : *Node, free_children := true) {
+    if free_children {
+        for :PrevFrameChildren node {
+            FreeNode(it);
+        }
     }
 
     for :UserData node {
@@ -416,12 +418,6 @@ GetID :: inline (loc : Source_Code_Location, apply_offset := true) -> ID {
     return id;
 }
 
-UpdateStateTime :: (node : *Node) {
-    if GetState(node) != GetStateLastFrame(node) {
-        node.state_time = 0;
-    }
-}
-
 TouchNode :: (node : *Node) {
     if node.last_used_on_frame == context.omg.frame_index {
         return;
@@ -439,36 +435,6 @@ TouchNode :: (node : *Node) {
     } else {
         node.depth = 0;
     }
-
-    if GetState(node.state_flags) == GetStateLastFrame(node.state_flags) {
-        node.state_time += context.omg.delta_time;
-    }
-
-    // if node.state_flags & .DisabledLastFrame {
-    //     node.state_times[NodeState.Disabled] += context.omg.delta_time;
-    // } else {
-    //     node.state_times[NodeState.Disabled] = 0;
-    // }
-    // if node.state_flags & .ActiveLastFrame {
-    //     node.state_times[NodeState.Active] += context.omg.delta_time;
-    // } else {
-    //     node.state_times[NodeState.Active] = 0;
-    // }
-    // if node.state_flags & .HotLastFrame {
-    //     node.state_times[NodeState.Hot] += context.omg.delta_time;
-    // } else {
-    //     node.state_times[NodeState.Hot] = 0;
-    // }
-    // if node.state_flags & .FocusedLastFrame {
-    //     node.state_times[NodeState.Focused] += context.omg.delta_time;
-    // } else {
-    //     node.state_times[NodeState.Focused] = 0;
-    // }
-    // if !(node.state_flags & .LastFrame) {
-    //     node.state_times[NodeState.None] += context.omg.delta_time;
-    // } else {
-    //     node.state_times[NodeState.None] = 0;
-    // }
 }
 
 GetNode :: (window : *Window) -> *Node {
@@ -504,7 +470,6 @@ GetNode :: inline (parent : *Node, str_id : string) -> *Node {
 GetNode :: (parent : *Node, id : ID) -> *Node {
     assert(id != 0);
 
-    was_added_this_frame := false;
     node : *Node;
     if parent {
         for :PrevFrameChildren parent {
@@ -517,7 +482,6 @@ GetNode :: (parent : *Node, id : ID) -> *Node {
         if !node {
             for :Children parent {
                 if it.local_id == id {
-                    was_added_this_frame = true;
                     node = it;
                     break;
                 }

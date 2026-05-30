@@ -231,7 +231,6 @@ NewFrame :: (delta_time : float) {
 
     if omg.mouse_focused_node {
         omg.mouse_focused_node.state_flags |= .Focused;
-        UpdateStateTime(omg.mouse_focused_node);
     }
 }
 
@@ -268,11 +267,19 @@ Render :: () {
 
         layout_start := current_time_monotonic();
         LayoutNodes(window.root_node);
-        PostLayout(window.root_node);
+
         layout_end := current_time_monotonic();
         omg.layout_time_last_frame = xx to_float64_seconds(layout_end - layout_start);
 
         DrawNodes(window.root_node);
+    }
+
+    for * context.omg.node_pool {
+        if it.last_used_on_frame != context.omg.frame_index {
+            FreeNode(it, free_children=false);
+        } else {
+            it.layout_last_frame = it.layout;
+        }
     }
 
     text := omg.input_last_frame.text;
@@ -283,21 +290,8 @@ Render :: () {
     omg.input.mouse_wheel = .{};
 }
 
+
 #scope_file
-
-PostLayout :: (node : *Node) {
-    frame_index := context.omg.frame_index;
-
-    for :PrevFrameChildren node {
-        if it.last_used_on_frame != frame_index {
-            FreeNode(it);
-        } else {
-            PostLayout(it);
-        }
-    }
-
-    node.layout_last_frame = node.layout;
-}
 
 DrawNodes :: (node : *Node, clip_shape : *SDShape = null) {
     if node.draw {

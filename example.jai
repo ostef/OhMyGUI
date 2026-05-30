@@ -128,8 +128,8 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
                 OMG.SetPadding(main_viewport, 12, 12);
                 OMG.SetChildGap(main_viewport, 4, 4);
 
-                // OMG.Text(main_viewport, "Mouse focus: %", ifx context.omg.mouse_focused_node then context.omg.mouse_focused_node.state_times);
-                // OMG.Text(main_viewport, "Mouse capture: %", ifx context.omg.mouse_capturing_node then context.omg.mouse_capturing_node.state_times);
+                OMG.Text(main_viewport, "Mouse focus: % %", context.omg.mouse_focused_node, ifx context.omg.mouse_focused_node then context.omg.mouse_focused_node.id);
+                OMG.Text(main_viewport, "Mouse capture: % %", context.omg.mouse_capturing_node, ifx context.omg.mouse_capturing_node then context.omg.mouse_capturing_node.id);
                 OMG.Text(main_viewport, "Scroll focus: %", context.omg.scroll_focused_node);
 
                 OMG.Text(main_viewport, "Layout: % us", cast(int, context.omg.layout_time_last_frame * 1000 * 1000));

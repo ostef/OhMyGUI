@@ -24,7 +24,6 @@ ButtonBehavior :: (node : *Node) -> ButtonResult {
 
     if omg.mouse_capturing_node == node {
         node.state_flags |= .Hot;
-        UpdateStateTime(node);
     }
 
     result : ButtonResult;
@@ -259,7 +258,6 @@ TextInputBehavior :: (node : *Node) -> *TextInputData, submitted : bool, ButtonR
     button_result := ButtonBehavior(node);
     if !should_deactivate && (button_result.pressed || node.state_flags & .ActiveLastFrame) {
         node.state_flags |= .Active;
-        UpdateStateTime(node);
     }
 
     if node.state_flags & .Active {
@@ -392,14 +390,12 @@ ScrollViewBehavior :: (node : *Node, target : *Node, axis : AxisFlags) {
 SetMouseFocus :: inline (node : *Node) {
     if context.omg.mouse_focused_node {
         context.omg.mouse_focused_node.state_flags &= ~.Focused;
-        UpdateStateTime(node);
     }
 
     context.omg.mouse_focused_node = node;
 
     if node {
         node.state_flags |= .Focused;
-        UpdateStateTime(node);
     }
 }
 

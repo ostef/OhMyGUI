@@ -167,7 +167,6 @@ Scrollbar :: (parent : *Node, target : *Node, axis : Axis, style : *SliderStyle 
 
             if handle_result.held {
                 handle.state_flags |= .Active;
-                UpdateStateTime(handle);
 
                 new_offset := GetMousePosition()[axis] - context.omg.mouse_captured_at[axis];
                 new_offset += context.omg.mouse_captured_node_value[axis];
