@@ -257,7 +257,7 @@ DefaultTheme :: struct {
 
 g_default_theme : DefaultTheme;
 
-InitTheme :: (theme : *DefaultTheme, accent_color : RGBA8) {
+SetupDefaultTheme :: (theme : *DefaultTheme, accent_color : RGBA8) {
     {
         using theme.text;
 
