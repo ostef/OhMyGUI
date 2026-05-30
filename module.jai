@@ -163,7 +163,9 @@ Init :: () {
     default_font := LoadDefaultFont();
     assert(default_font != null, "Could not load default font");
 
-    InitDefaultTheme();
+    InitTheme(*g_default_theme, ColorU32(0.3, 0.5, 0.8, 1));
+
+    SetTheme(*g_default_theme);
 }
 
 Terminate :: () {

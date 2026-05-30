@@ -244,10 +244,8 @@ AnimateStyle :: (a : $T, b : T, t : float, func : AnimFunc) -> T {
     return result;
 }
 
-#scope_file
-
-g_default_theme : struct {
-    theme : Theme;
+DefaultTheme :: struct {
+    #as theme : Theme;
 
     text : TextStyle;
     button : ButtonStyle;
@@ -255,47 +253,28 @@ g_default_theme : struct {
     scrollbar : SliderStyle;
     text_input : TextInputStyle;
     checkbox : CheckboxStyle;
-};
+}
 
-#scope_export
+g_default_theme : DefaultTheme;
 
-// AnimateStateStyle :: (node : *Node, styles : StateStyle($T), length : float, func : AnimFunc) -> T {
-//     result := styles.normal;
-
-//     for < i : 0..GetSize(node.state_stack) - 1 {
-//         state, time := Get(*node.state_stack, i);
-
-//         if time >= speed {
-//             return style.states[state];
-//         }
-
-//         style := styles[state];
-//         result = AnimateStyle(result, style, time, speed, animate);
-//     }
-
-//     return result;
-// }
-
-InitDefaultTheme :: () {
-    using g_default_theme;
-
+InitTheme :: (theme : *DefaultTheme, accent_color : RGBA8) {
     {
-        using text;
+        using theme.text;
 
         font = GetDefaultFont();
         text_size = 16;
         text_color = ColorU32(0,0,0,1);
     }
-    SetStyle(*theme, "text", text);
+    SetStyle(theme, "text", theme.text);
 
     {
-        using button;
+        using theme.button;
 
         normal.background.corner_radiuses = .{10,10,10,10};
         normal.background.padding = .{10,10,10,10};
         normal.background.child_gap = .{4,4};
         normal.background.background_color = ColorU32(0.9,0.9,0.9,1);
-        normal.text = text;
+        normal.text = theme.text;
 
         focused = normal;
         focused.background.background_color = ColorU32(0.8,0.8,0.8,1);
@@ -308,10 +287,10 @@ InitDefaultTheme :: () {
         disabled = normal;
         disabled.text.text_color = ColorU32(0.5,0.5,0.5,1);
     }
-    SetStyle(*theme, "button", button);
+    SetStyle(theme, "button", theme.button);
 
     {
-        using slider;
+        using theme.slider;
 
         handle_size = 15;
 
@@ -331,10 +310,10 @@ InitDefaultTheme :: () {
         disabled.background.background_color = ColorU32(0.5, 0.5, 0.5, 0.5);
         disabled.handle.background_color = ColorU32(0.5, 0.5, 0.5, 1);
     }
-    SetStyle(*theme, "slider", slider);
+    SetStyle(theme, "slider", theme.slider);
 
     {
-        using scrollbar;
+        using theme.scrollbar;
 
         handle_size = 10;
 
@@ -353,16 +332,16 @@ InitDefaultTheme :: () {
         disabled.background.background_color = ColorU32(0.5, 0.5, 0.5, 0.5);
         disabled.handle.background_color = ColorU32(0.5, 0.5, 0.5, 1);
     }
-    SetStyle(*theme, "scrollbar", scrollbar);
+    SetStyle(theme, "scrollbar", theme.scrollbar);
 
     {
-        using text_input;
+        using theme.text_input;
 
         normal.background.corner_radiuses = .{10,10,10,10};
         normal.background.padding = .{10,10,10,10};
         normal.background.child_gap = .{4,4};
         normal.background.background_color = ColorU32(0.9,0.9,0.9,1);
-        normal.text = text;
+        normal.text = theme.text;
 
         focused = normal;
         focused.background.background_color = ColorU32(0.8,0.8,0.8,1);
@@ -372,20 +351,20 @@ InitDefaultTheme :: () {
 
         active = normal;
         active.background.border_size = 2;
-        active.background.border_color = ColorU32(0.1, 0.3, 0.8, 1);
+        active.background.border_color = accent_color;
 
         disabled = normal;
         disabled.text.text_color = ColorU32(0.5,0.5,0.5,1);
     }
-    SetStyle(*theme, "text_input", text_input);
+    SetStyle(theme, "text_input", theme.text_input);
 
     {
-        using checkbox;
+        using theme.checkbox;
 
         normal.background.corner_radiuses = .{4,4,4,4};
         normal.background.padding = .{2,2,2,2};
         normal.background.background_color = ColorU32(0.9,0.9,0.9,1);
-        normal.checkmark.background_color = ColorU32(0.3, 0.5, 0.8, 1);
+        normal.checkmark.background_color = accent_color;
         normal.checkmark.rounding = 1;
 
         focused = normal;
@@ -399,7 +378,5 @@ InitDefaultTheme :: () {
         disabled = normal;
         disabled.checkmark.background_color = ColorU32(0.5,0.5,0.5,1);
     }
-    SetStyle(*theme, "checkbox", checkbox);
-
-    SetTheme(*theme);
+    SetStyle(theme, "checkbox", theme.checkbox);
 }
