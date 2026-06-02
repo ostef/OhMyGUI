@@ -56,7 +56,7 @@ Slider :: (parent : *Node, value : *$T, min : T, max : T, step : T, style : *Sli
     fvalue := ifx value then cast(float, value.*);
     fmin := cast(float, min);
     fmax := cast(float, max);
-    fstep := cast(float, step);
+    fstep := ifx GetModState() == .Shift then 0.0 else cast(float, step);
 
     defer if value {
         value.* = xx fvalue;
