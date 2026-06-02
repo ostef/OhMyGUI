@@ -86,7 +86,6 @@ Node :: struct {
     index : Bucket_Locator;
 
     last_used_on_frame : u64;
-    depth : u32;
 
     draw : (node : *Node, clip_shape : *SDShape) = DrawNodeDefault;
     user_data : *NodeUserData;
@@ -111,13 +110,13 @@ Node :: struct {
 
     layout_last_frame : type_of(layout);
 
-    // User controlled properties mostly related to layout, reset each frame except for scroll
+    // User controlled properties mostly related to layout, reset each frame except for scroll and offset
     using properties : struct {
         font : *Font;
         text : string;
         text_size : float;
 
-        offset : Vec2f;
+        offset : Vec2f; // NOT reset each frame
         scroll : Vec2f; // NOT reset each frame
         desired_size := Size2D.{.{kind=.FitChildren}, .{kind=.FitChildren}};
         min_size := Vec2f.{-FLOAT32_INFINITY, -FLOAT32_INFINITY};
@@ -386,16 +385,17 @@ TouchNode :: (node : *Node) {
     }
 
     node.last_used_on_frame = context.omg.frame_index;
+
     scroll := node.scroll;
+    offset := node.offset;
     node.properties = .{};
     node.scroll = scroll;
+    node.offset = offset;
+
     node.layout = .{};
 
     if node.parent {
         PushChild(node.parent, node);
-        node.depth = node.parent.depth + 1;
-    } else {
-        node.depth = 0;
     }
 }
 
@@ -412,15 +412,6 @@ GetPopupRoot :: (window : *Window) -> *Node {
     return window.popup_root_node;
 }
 
-GetPopupRoot :: (window : *SDL_Window) -> *Node {
-    w := GetWindow(window);
-    if !w {
-        return null;
-    }
-
-    return GetPopupRoot(w);
-}
-
 GetNode :: (window : *Window) -> *Node {
     if !window.root_node {
         window.root_node = AllocNode();
@@ -432,15 +423,6 @@ GetNode :: (window : *Window) -> *Node {
     TouchNode(window.root_node);
 
     return window.root_node;
-}
-
-GetNode :: (window : *SDL_Window) -> *Node {
-    w := GetWindow(window);
-    if !w {
-        return null;
-    }
-
-    return GetNode(w);
 }
 
 GetNode :: inline (parent : *Node, location := #caller_location) -> *Node {
@@ -484,6 +466,21 @@ GetNode :: (parent : *Node, id : ID) -> *Node {
     TouchNode(node);
 
     return node;
+}
+
+GetPopupNode :: inline (window : *Window, location := #caller_location) -> *Node {
+    return GetNode(GetPopupRoot(window), location);
+}
+
+GetPopupNode :: inline (window : *Window, str_id : string) -> *Node {
+    return GetNode(GetPopupRoot(window), str_id);
+}
+
+GetPopupNode :: inline (window : *Window, id : ID) -> *Node {
+    return GetNode(GetPopupRoot(window), id);
+}
+
+BringForward :: (node : *Node) {
 }
 
 SetDraw :: inline (node : *Node, draw : type_of(Node.draw)) {

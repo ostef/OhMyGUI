@@ -462,7 +462,3 @@ Checkbox :: (parent : *Node, value : *bool, style : *CheckboxStyle = null, locat
         return button.released, node;
     }
 }
-
-Popup :: (window : *Window, location := #caller_location) -> *Node {
-    return GetNode(GetPopupRoot(window), location);
-}
