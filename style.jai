@@ -292,20 +292,23 @@ SetupDefaultTheme :: (theme : *DefaultTheme, accent_color : RGBA8) {
     {
         using theme.slider;
 
+        background_size = 8;
         handle_size = 15;
 
-        normal.background.corner_radiuses = .{2,2,2,2};
-        normal.background.background_color = ColorU32(0.7, 0.7, 0.7, 0.4);
-        normal.handle.background_color = ColorU32(0.8, 0.8, 0.8, 1);
-        normal.handle.corner_radiuses = .{2,2,2,2};
+        normal.background.corner_radiuses = Vec4f.{1,1,1,1} * background_size * 0.5;
+        normal.background.background_color = ColorU32(0.5, 0.5, 0.5, 1);
+        normal.handle.background_color = theme.button.normal.background.background_color;
+        normal.handle.corner_radiuses = Vec4f.{1,1,1,1} * handle_size * 0.5;
 
         focused = normal;
-        focused.background.background_color = ColorU32(0.4, 0.4, 0.4, 0.8);
+        focused.handle.background_color = theme.button.focused.background.background_color;
 
         hot = focused;
+        hot.handle.background_color = theme.button.hot.background.background_color;
 
         active = hot;
         active.handle.background_color = ColorU32(0.9, 0.9, 0.9, 1);
+        active.handle.background_color = theme.button.active.background.background_color;
 
         disabled.background.background_color = ColorU32(0.5, 0.5, 0.5, 0.5);
         disabled.handle.background_color = ColorU32(0.5, 0.5, 0.5, 1);

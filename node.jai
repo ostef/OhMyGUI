@@ -287,6 +287,27 @@ AddUserData :: (node : *Node, id : ID, size : int, destroy : type_of(NodeUserDat
     return ptr, is_new, node;
 }
 
+SetUserData :: inline (node : *Node, value : $T, destroy : type_of(NodeUserData.destroy) = null) -> *T, is_new : bool, *NodeUserData {
+    ptr, is_new, node := GetUserData(node, T, true);
+    ptr.* = value;
+    node.destroy = destroy;
+    return ptr, is_new, node;
+}
+
+SetUserData :: inline (node : *Node, str_id : string, value : $T, destroy : type_of(NodeUserData.destroy) = null) -> *T, is_new : bool, *NodeUserData {
+    ptr, is_new, node := GetUserData(node, str_id, T, true);
+    ptr.* = value;
+    node.destroy = destroy;
+    return ptr, is_new, node;
+}
+
+SetUserData :: inline (node : *Node, id : ID, value : $T, destroy : type_of(NodeUserData.destroy) = null) -> *T, is_new : bool, *NodeUserData {
+    ptr, is_new, node := GetUserData(node, id, T, true);
+    ptr.* = value;
+    node.destroy = destroy;
+    return ptr, is_new, node;
+}
+
 GetUserData :: inline (node : *Node, $T : Type, create := false) -> *T, is_new : bool, *NodeUserData {
     ptr, is_new, node := GetUserData(node, cast(ID, type_info(T)), T, create);
     return ptr, is_new, node;

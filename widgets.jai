@@ -45,7 +45,40 @@ SliderStateStyle :: struct {
 
 SliderStyle :: struct {
     using _ : StateStyle(SliderStateStyle);
+    background_size : float;
     handle_size : float;
+}
+
+DrawSliderBackground :: (node : *Node, clip_shape : *SDShape) {
+    has_background := (node.background_color & 0xff) > 0;
+    has_border := (node.border_color & 0xff) > 0 && node.border_size > 0;
+    has_shadow := (node.outer_shadow_color & 0xff) > 0;
+
+    if !has_background && !has_border && !has_shadow {
+        return;
+    }
+
+    size := node.size;
+    style := GetUserData(node, SliderStyle);
+    if style {
+        size.y = style.background_size;
+    }
+
+    position := (node.rect.xy + node.rect.zw) * 0.5;
+
+    d := DrawShape(*node.window.draw_list, Box(size, node.corner_radiuses), position);
+
+    if has_shadow {
+        OuterShadow(d, node.outer_shadow_offset, node.outer_shadow_blur, node.outer_shadow_color);
+    }
+    if has_background {
+        SolidColor(d, node.background_color);
+    }
+    if has_border {
+        StrokeColor(d, node.border_color, node.border_size, node.border_inset);
+    }
+
+    SetClipShape(d, clip_shape);
 }
 
 // @Todo: unify slider and scrollbar
@@ -66,6 +99,8 @@ Slider :: (parent : *Node, value : *$T, min : T, max : T, step : T, style : *Sli
     background = GetNode(parent, location=location);
     {
         SetSize(background, SizeFill(), SizeFit());
+        SetDraw(background, DrawSliderBackground);
+        SetUserData(background, style.*);
 
         handle = GetNode(background, "handle");
         {
@@ -432,8 +467,7 @@ Checkbox :: (parent : *Node, value : *bool, style : *CheckboxStyle = null, locat
     {
         SetSize(node, SizePx(20), SizePx(20));
 
-        checkmark_style := AddUserData(node, CheckboxStyle);
-        checkmark_style.* = style.*;
+        SetUserData(node, style.*);
 
         button := ButtonBehavior(node);
         if button.released {
