@@ -32,7 +32,6 @@ Context :: struct {
     node_pool : Bucket_Array(Node, 1000);
 
     theme : *Theme;
-    node_stack : [..]*Node;
     id_offset_stack : [..]int;
 
     mouse_is_over_node : bool;
@@ -55,59 +54,13 @@ SetTheme :: inline (theme : *Theme) {
     context.omg.theme = theme;
 }
 
-GetCurrentNode :: inline () -> *Node {
-    if context.omg.node_stack.count == 0 {
-        return null;
-    }
-
-    return context.omg.node_stack[context.omg.node_stack.count - 1];
-}
-
-BeginNode :: (node : *Node) {
-    array_add(*context.omg.node_stack, node);
-}
-
-BeginNode :: (location := #caller_location) -> *Node {
-    parent := GetCurrentNode();
-    assert(parent != null, "No node in stack");
-
-    node := GetNode(parent, location);
-    BeginNode(node);
-
-    return node;
-}
-
-BeginNode :: (str_id : string) -> *Node {
-    parent := GetCurrentNode();
-    assert(parent != null, "No node in stack");
-
-    node := GetNode(parent, str_id);
-    BeginNode(node);
-
-    return node;
-}
-
-BeginNode :: (id : ID) -> *Node {
-    parent := GetCurrentNode();
-    assert(parent != null, "No node in stack");
-
-    node := GetNode(parent, id);
-    BeginNode(node);
-
-    return node;
-}
-
-EndNode :: () {
-    assert(context.omg.node_stack.count > 0, "No node in stack");
-    pop(*context.omg.node_stack);
-}
-
 Window :: struct {
     sdl_window : *SDL_Window;
     prev : *Window;
     next : *Window;
 
     root_node : *Node;
+    popup_root_node : *Node;
     draw_list : DrawList;
 }
 
@@ -150,7 +103,14 @@ DestroyWindow :: (window : *Window) {
 
     DestroyDrawList(*window.draw_list);
 
-    FreeNode(window.root_node);
+    if window.popup_root_node {
+        FreeNode(window.popup_root_node);
+    }
+
+    if window.root_node {
+        FreeNode(window.root_node);
+    }
+
     free(window);
 }
 
@@ -176,7 +136,6 @@ Terminate :: () {
         DestroyFont(context.omg.fonts);
     }
 
-    array_free(context.omg.node_stack);
     array_free(context.omg.id_offset_stack);
     array_free(context.omg.input_last_frame.text);
     array_free(context.omg.input.text);
@@ -223,11 +182,14 @@ NewFrame :: (delta_time : float) {
     window := omg.windows;
     while window {
         defer window = window.next;
-        if !window.root_node {
-            continue;
+
+        if window.root_node {
+            FindMouseFocus(window.root_node);
         }
 
-        FindMouseFocus(window.root_node);
+        if window.popup_root_node {
+            FindMouseFocus(window.popup_root_node);
+        }
     }
 
     if omg.mouse_focused_node {
@@ -238,11 +200,6 @@ NewFrame :: (delta_time : float) {
 Render :: () {
     omg := context.omg;
     omg.layout_time_last_frame = 0;
-
-    if omg.node_stack.count > 0 {
-        log_error("Mismatching number of begin/end node");
-        omg.node_stack.count = 0;
-    }
 
     if omg.id_offset_stack.count > 0 {
         log_error("Mismatching number of push/pop for ID offset stack");
@@ -257,22 +214,35 @@ Render :: () {
     window := omg.windows;
     while window {
         defer window = window.next;
-        if !window.root_node {
-            continue;
-        }
 
         w, h : s32;
         SDL_GetWindowSize(window.sdl_window, *w, *h);
 
-        SetSize(window.root_node, SizePx(xx w), SizePx(xx h));
-
         layout_start := current_time_monotonic();
-        LayoutNodes(window.root_node);
+
+        if window.root_node {
+            SetSize(window.root_node, SizePx(xx w), SizePx(xx h));
+
+            LayoutNodes(window.root_node);
+        }
+
+        if window.popup_root_node {
+            SetLayout(window.popup_root_node, .None);
+            SetChildAlign(window.popup_root_node, 0, 0);
+            SetSize(window.popup_root_node, SizePx(xx w), SizePx(xx h));
+
+            LayoutNodes(window.popup_root_node);
+        }
 
         layout_end := current_time_monotonic();
         omg.layout_time_last_frame = xx to_float64_seconds(layout_end - layout_start);
 
-        DrawNodes(window.root_node);
+        if window.root_node {
+            DrawNodes(window.root_node);
+        }
+        if window.popup_root_node {
+            DrawNodes(window.popup_root_node);
+        }
     }
 
     for * context.omg.node_pool {

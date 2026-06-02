@@ -399,6 +399,28 @@ TouchNode :: (node : *Node) {
     }
 }
 
+GetPopupRoot :: (window : *Window) -> *Node {
+    if !window.popup_root_node {
+        window.popup_root_node = AllocNode();
+        window.popup_root_node.window = window;
+        window.popup_root_node.local_id = GetID("PopupRoot");
+        window.popup_root_node.id = GetID(window.popup_root_node.local_id, cast(u64, window));
+    }
+
+    TouchNode(window.popup_root_node);
+
+    return window.popup_root_node;
+}
+
+GetPopupRoot :: (window : *SDL_Window) -> *Node {
+    w := GetWindow(window);
+    if !w {
+        return null;
+    }
+
+    return GetPopupRoot(w);
+}
+
 GetNode :: (window : *Window) -> *Node {
     if !window.root_node {
         window.root_node = AllocNode();

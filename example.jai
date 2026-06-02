@@ -157,6 +157,13 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
                     OMG.Slider(label_and_slider, *g_slider_value, 0, 1, 0.1);
                 }
 
+                popup := OMG.Popup(g_window);
+                OMG.SetSize(popup, OMG.SizePx(50), OMG.SizePx(100));
+                OMG.SetBackgroundColor(popup, 1,1,1,1);
+                popup.outer_shadow_color = OMG.ColorU32(0,0,0,1);
+                popup.outer_shadow_blur = 5;
+                popup.outer_shadow_offset = .{10,10};
+
                 OMG.Checkbox(main_viewport, *g_checkbox_value);
 
 Text :: #string END
