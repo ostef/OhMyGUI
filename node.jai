@@ -6,6 +6,7 @@ NodeFlags :: enum_flags u8 {
     TextNode;
     Focusable;
     Scrollable;
+    SortedChildren;
 }
 
 NodeState :: enum u8 {
@@ -86,6 +87,7 @@ Node :: struct {
     index : Bucket_Locator;
 
     last_used_on_frame : u64;
+    z_index : s32 = -1; // Used when the parent wants to sort children such as popups
 
     draw : (node : *Node, clip_shape : *SDShape) = DrawNodeDefault;
     user_data : *NodeUserData;
@@ -481,6 +483,7 @@ GetPopupNode :: inline (window : *Window, id : ID) -> *Node {
 }
 
 BringForward :: (node : *Node) {
+    node.z_index = 0x7fffffff;
 }
 
 SetDraw :: inline (node : *Node, draw : type_of(Node.draw)) {

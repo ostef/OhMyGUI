@@ -96,10 +96,91 @@ LayoutDirection :: (node : *Node, body : Code, flags : For_Flags) #expand {
     }
 }
 
+MergeSort :: (first : *Node) -> *Node {
+    Split :: (first : *Node) -> *Node {
+        fast := first;
+        slow := first;
+
+        // Fast moves twice as fast as slow, so when fast reaches the end
+        // slow is at the middle
+        while fast && fast.next_sibling && fast.next_sibling.next_sibling {
+            fast = fast.next_sibling.next_sibling;
+            slow = slow.next_sibling;
+        }
+
+        tmp := slow.next_sibling;
+        slow.next_sibling = null;
+        if tmp {
+            tmp.prev_sibling = null;
+        }
+
+        return tmp;
+    }
+
+    Merge :: (first : *Node, second : *Node) -> *Node {
+        if !first {
+            return second;
+        }
+        if !second {
+            return first;
+        }
+
+        if first.z_index < second.z_index {
+            first.next_sibling = Merge(first.next_sibling, second);
+            if first.next_sibling {
+                first.next_sibling.prev_sibling = first;
+            }
+            first.prev_sibling = null;
+
+            return first;
+        } else {
+            second.next_sibling = Merge(first, second.next_sibling);
+            if second.next_sibling {
+                second.next_sibling.prev_sibling = second;
+            }
+            second.prev_sibling = null;
+
+            return second;
+        }
+    }
+
+    if !first || !first.next_sibling {
+        return first;
+    }
+
+    second := Split(first);
+
+    first = MergeSort(first);
+    second = MergeSort(second);
+
+    return Merge(first, second);
+}
+
+SortChildren :: (node : *Node) {
+    node.first_child = MergeSort(node.first_child);
+
+    index : s32 = 0;
+    node.last_child = node.first_child;
+    while node.last_child && node.last_child.next_sibling {
+        node.last_child.z_index = index;
+        index += 1;
+
+        node.last_child = node.last_child.next_sibling;
+    }
+
+    if node.last_child {
+        node.last_child.z_index = index;
+    }
+}
+
 LayoutNodes :: (root : *Node) {
     assert(root.parent == null);
     assert(root.desired_size.x.kind == .Pixels);
     assert(root.desired_size.y.kind == .Pixels);
+
+    if root.flags & .SortedChildren {
+        SortChildren(root);
+    }
 
     LayoutFixedAndFitSizing(root);
     LayoutFillSizing(root);

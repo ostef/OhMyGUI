@@ -172,8 +172,11 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
 
                     popup_result := OMG.ButtonBehavior(popup);
                     if popup_result.held {
+                        OMG.BringForward(popup);
                         popup.offset = OMG.GetMousePosition(window);
                     }
+
+                    OMG.Text(popup, "%", popup.z_index);
                 }
 
                 OMG.Checkbox(main_viewport, *g_checkbox_value);

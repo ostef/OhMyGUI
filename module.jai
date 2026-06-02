@@ -230,6 +230,7 @@ Render :: () {
             SetLayout(window.popup_root_node, .None);
             SetChildAlign(window.popup_root_node, 0, 0);
             SetSize(window.popup_root_node, SizePx(xx w), SizePx(xx h));
+            window.popup_root_node.flags |= .SortedChildren;
 
             LayoutNodes(window.popup_root_node);
         }
