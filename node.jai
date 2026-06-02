@@ -142,66 +142,7 @@ Node :: struct {
         outer_shadow_color : RGBA8;
     };
 
-    // state_stack : NodeStateStack;
     state_flags : NodeStateFlags;
-}
-
-NodeStateStack :: struct {
-    times : [Num_Node_States]float = ---;
-    states : [Num_Node_States]NodeState = ---;
-    size_and_cursor : u8;
-}
-
-GetCursor :: inline (stack : NodeStateStack) -> int {
-    return stack.size_and_cursor & 0x0f;
-}
-
-SetCursor :: inline (stack : *NodeStateStack, cursor : int) {
-    stack.size_and_cursor = (stack.size_and_cursor & 0xf0) | (cast(u8, cursor) & 0x0f);
-}
-
-GetSize :: inline (stack : NodeStateStack) -> int {
-    return (stack.size_and_cursor >> 4) & 0x0f;
-}
-
-SetSize :: inline (stack : *NodeStateStack, size : int) {
-    stack.size_and_cursor = (stack.size_and_cursor & 0x0f) | (cast(u8, size) << 4);
-}
-
-Get :: (stack : *NodeStateStack, index : int) -> NodeState, time : float {
-    size := GetSize(stack);
-    assert(index >= 0 && index < size);
-
-    cursor := GetCursor(stack);
-    index = (cursor + Num_Node_States - index - 1) % Num_Node_States;
-
-    return stack.states[index], stack.times[index];
-}
-
-PushState :: (stack : *NodeStateStack, state : NodeState) {
-    size := GetSize(stack);
-    cursor := GetCursor(stack);
-
-    stack.states[cursor] = state;
-    stack.times[cursor] = 0;
-
-    cursor = (cursor + 1) % Num_Node_States;
-
-    if size < Num_Node_States {
-        size += 1;
-        SetSize(stack, size);
-    }
-
-    SetCursor(stack, cursor);
-}
-
-for_expansion :: (stack : *NodeStateStack, body : Code, flags : For_Flags) #expand {
-    `it : struct{ state: NodeState; time: float; };
-
-    for `it_index : 0..GetSize(stack) - 1 {
-        it.state, it.time = Get(stack, it_index);
-        #insert body;
-    }
 }
 
 // for_expansion
