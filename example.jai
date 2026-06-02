@@ -154,8 +154,7 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
                     label := OMG.Text(label_and_slider, "Value: %", g_slider_value);
                     OMG.SetWidth(label, OMG.SizeFill(0.5));
 
-                    slider := OMG.Slider(label_and_slider, *g_slider_value, 0, 1, 0);
-                    OMG.SetWidth(slider, OMG.SizeFill());
+                    OMG.Slider(label_and_slider, *g_slider_value, 0, 1, 0);
                 }
 
                 OMG.Checkbox(main_viewport, *g_checkbox_value);

@@ -49,40 +49,8 @@ SliderStyle :: struct {
     handle_size : float;
 }
 
-DrawSliderBackground :: (node : *Node, clip_shape : *SDShape) {
-    has_background := (node.background_color & 0xff) > 0;
-    has_border := (node.border_color & 0xff) > 0 && node.border_size > 0;
-    has_shadow := (node.outer_shadow_color & 0xff) > 0;
-
-    if !has_background && !has_border && !has_shadow {
-        return;
-    }
-
-    size := node.size;
-    style := GetUserData(node, SliderStyle);
-    if style {
-        size.y = style.background_size;
-    }
-
-    position := (node.rect.xy + node.rect.zw) * 0.5;
-
-    d := DrawShape(*node.window.draw_list, Box(size, node.corner_radiuses), position);
-
-    if has_shadow {
-        OuterShadow(d, node.outer_shadow_offset, node.outer_shadow_blur, node.outer_shadow_color);
-    }
-    if has_background {
-        SolidColor(d, node.background_color);
-    }
-    if has_border {
-        StrokeColor(d, node.border_color, node.border_size, node.border_inset);
-    }
-
-    SetClipShape(d, clip_shape);
-}
-
 // @Todo: unify slider and scrollbar
-Slider :: (parent : *Node, value : *$T, min : T, max : T, step : T, style : *SliderStyle = null, location := #caller_location) -> background : *Node, handle : *Node {
+Slider :: (parent : *Node, value : *$T, min : T, max : T, step : T, style : *SliderStyle = null, location := #caller_location) -> slider : *Node, background : *Node, handle : *Node {
     EnsureStyle(*style, "slider");
 
     fvalue := ifx value then cast(float, value.*);
@@ -94,34 +62,40 @@ Slider :: (parent : *Node, value : *$T, min : T, max : T, step : T, style : *Sli
         value.* = xx fvalue;
     }
 
-    background, handle : *Node;
+    slider, background, handle : *Node;
 
-    background = GetNode(parent, location=location);
+    slider = GetNode(parent, location=location);
     {
-        SetSize(background, SizeFill(), SizeFit());
-        SetDraw(background, DrawSliderBackground);
-        SetUserData(background, style.*);
+        SetSize(slider, SizeFill(), SizeFit());
+        SetLayout(slider, .None);
+        SetChildAlign(slider, 0, 0.5);
+        SetDraw(slider, null);
 
-        handle = GetNode(background, "handle");
+        background = GetNode(slider, "background");
+        {
+            SetSize(background, SizeFill(), SizePx(style.background_size));
+        }
+
+        handle = GetNode(slider, "handle");
         {
             SetSize(handle, SizePx(style.handle_size), SizePx(style.handle_size));
 
             range := fmax - fmin;
-            offset_max := background.layout_last_frame.size[Axis.X] - style.handle_size;
+            offset_max := slider.layout_last_frame.size[Axis.X] - style.handle_size;
 
-            // Allow the user to click on the background to interact with the scrollbar
-            background.flags |= .Focusable;
+            // Allow the user to click on the slider to interact with the scrollbar
+            slider.flags |= .Focusable;
 
             handle_result := ButtonBehavior(handle);
 
-            if background.state_flags & .Focused && IsMouseButtonPressed(.Left) {
+            if slider.state_flags & .Focused && IsMouseButtonPressed(.Left) {
                 SetMouseCapture(handle);
                 SetMouseFocus(handle);
                 handle_result.pressed = true;
                 handle_result.held = true;
 
-                mouse := GetMousePosition(background.window)[Axis.X];
-                new_offset := mouse - background.layout_last_frame.rect.xy[Axis.X] - style.handle_size * 0.5;
+                mouse := GetMousePosition(slider.window)[Axis.X];
+                new_offset := mouse - slider.layout_last_frame.rect.xy[Axis.X] - style.handle_size * 0.5;
                 new_value := (new_offset / offset_max) * range;
 
                 fvalue = Snap(clamp(new_value, fmin, fmax), fstep);
@@ -148,7 +122,7 @@ Slider :: (parent : *Node, value : *$T, min : T, max : T, step : T, style : *Sli
     Apply(background, style.states[state].background);
     Apply(handle, style.states[state].handle);
 
-    return background, handle;
+    return slider, background, handle;
 }
 
 Scrollbar :: (parent : *Node, target : *Node, axis : Axis, style : *SliderStyle = null, location := #caller_location) -> background : *Node, handle : *Node {

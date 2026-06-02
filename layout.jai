@@ -223,6 +223,7 @@ LayoutFillSizing :: (node : *Node) {
 LayoutPosition :: (node : *Node) {
     axis := GetLayoutAxis(node);
     cross := GetCrossAxis(axis);
+    no_positioning := node.child_layout_mode == .None;
     reverse := IsLayoutReverseDirection(node);
 
     remaining_size := node.size[axis] - node.padding.xy[axis] - node.padding.zw[axis]
@@ -236,7 +237,7 @@ LayoutPosition :: (node : *Node) {
     for :LayoutDirection node {
         defer first = false;
 
-        if reverse {
+        if !no_positioning && reverse {
             cursor -= it.size[axis] + node.child_gap[axis] * cast(float, !first);
             cursor = floor(cursor);
         }
@@ -244,7 +245,7 @@ LayoutPosition :: (node : *Node) {
         it.relative_position[axis] = cursor;
         it.relative_position[cross] = ceil(node.padding.xy[cross] + (cross_size - it.size[cross]) * node.child_align[cross]);
 
-        if !reverse {
+        if !no_positioning && !reverse {
             cursor += it.size[axis] + node.child_gap[axis];
             cursor = ceil(cursor);
         }
