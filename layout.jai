@@ -157,19 +157,25 @@ MergeSort :: (first : *Node) -> *Node {
 }
 
 SortChildren :: (node : *Node) {
-    node.first_child = MergeSort(node.first_child);
+    if node.flags & .SortChildren {
+        node.first_child = MergeSort(node.first_child);
 
-    index : s32 = 0;
-    node.last_child = node.first_child;
-    while node.last_child && node.last_child.next_sibling {
-        node.last_child.z_index = index;
-        index += 1;
+        index : s32 = 0;
+        node.last_child = node.first_child;
+        while node.last_child && node.last_child.next_sibling {
+            node.last_child.z_index = index;
+            index += 1;
 
-        node.last_child = node.last_child.next_sibling;
+            node.last_child = node.last_child.next_sibling;
+        }
+
+        if node.last_child {
+            node.last_child.z_index = index;
+        }
     }
 
-    if node.last_child {
-        node.last_child.z_index = index;
+    for :Children node {
+        SortChildren(it);
     }
 }
 
@@ -178,9 +184,7 @@ LayoutNodes :: (root : *Node) {
     assert(root.desired_size.x.kind == .Pixels);
     assert(root.desired_size.y.kind == .Pixels);
 
-    if root.flags & .SortedChildren {
-        SortChildren(root);
-    }
+    SortChildren(root);
 
     LayoutFixedAndFitSizing(root);
     LayoutFillSizing(root);

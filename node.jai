@@ -6,7 +6,7 @@ NodeFlags :: enum_flags u8 {
     TextNode;
     Focusable;
     Scrollable;
-    SortedChildren;
+    SortChildren;
 }
 
 NodeState :: enum u8 {
