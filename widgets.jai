@@ -66,7 +66,7 @@ Slider :: (parent : *Node, value : *$T, min : T, max : T, step : T, style : *Sli
 
     slider = GetNode(parent, location=location);
     {
-        SetSize(slider, SizeFill(), SizeFit());
+        SetSize(slider, SizeFill(), SizePx(Max(style.background_size, style.handle_size)));
         SetLayout(slider, .None);
         SetChildAlign(slider, 0, 0.5);
         SetDraw(slider, null);
