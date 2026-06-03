@@ -192,6 +192,19 @@ NewFrame :: (delta_time : float) {
         }
     }
 
+    window = omg.windows;
+    while window {
+        defer window = window.next;
+
+        if window.root_node {
+            TouchNode(window.root_node);
+        }
+        if window.popup_root_node {
+            TouchNode(window.popup_root_node);
+        }
+    }
+
+
     if omg.mouse_focused_node {
         omg.mouse_focused_node.state_flags |= .Focused;
     }
