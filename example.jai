@@ -14,6 +14,7 @@ g_frame_syncs : [2]GLsync;
 
 g_slider_value : float;
 g_checkbox_value : bool;
+g_show_password : bool;
 
 g_theme : OMG.Theme;
 
@@ -136,12 +137,23 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
                 OMG.Text(main_viewport, "Layout: % us", cast(int, context.omg.layout_time_last_frame * 1000 * 1000));
                 OMG.Text(main_viewport, "Render: % ms", OMG.GetLastFrameGPUTime() * 1000);
 
-                text_input_submitted, text_input := OMG.TextInput(main_viewport);
-                OMG.SetWidth(text_input, OMG.SizePx(300));
+                password_field := OMG.GetNode(main_viewport, "password_field");
+                {
+                    OMG.SetSize(password_field, OMG.SizeFit(), OMG.SizeFit());
+                    OMG.SetLayout(password_field, .LeftToRight);
+                    OMG.SetChildAlign(password_field, 0, 0.5);
+                    OMG.SetChildGap(password_field, 6, 6);
 
-                if text_input_submitted {
-                    text := OMG.GetTextInputResult(text_input ,, temp);
-                    print("%\n", text);
+                    text_input_submitted, text_input := OMG.TextInput(password_field, ifx !g_show_password then .Password);
+                    OMG.SetWidth(text_input, OMG.SizePx(300));
+
+                    if text_input_submitted {
+                        text := OMG.GetTextInputResult(text_input ,, temp);
+                        print("%\n", text);
+                    }
+
+                    OMG.Text(password_field, "Show Password:");
+                    OMG.Checkbox(password_field, *g_show_password);
                 }
 
                 label_and_slider := OMG.GetNode(main_viewport);

@@ -206,6 +206,7 @@ TextInputStyle :: struct {
     using _ : StateStyle(TextInputStateStyle);
     cursor : BoxStyle;
     selection : BoxStyle;
+    password_codepoint : u32 = #char "*";
 }
 
 DrawTextInputText :: (node : *Node, clip_shape : *SDShape) {
@@ -278,7 +279,11 @@ DrawTextInputText :: (node : *Node, clip_shape : *SDShape) {
     }
 }
 
-TextInput :: (parent : *Node, style : *TextInputStyle = null, location := #caller_location) -> submitted : bool, *Node {
+TextInputFlags :: enum_flags {
+    Password;
+}
+
+TextInput :: (parent : *Node, flags : TextInputFlags = 0, style : *TextInputStyle = null, location := #caller_location) -> submitted : bool, *Node {
     EnsureStyle(*style, "text_input");
 
     input_field := GetNode(parent, location=location);
@@ -292,12 +297,30 @@ TextInput :: (parent : *Node, style : *TextInputStyle = null, location := #calle
         {
             SetDraw(text_node, DrawTextInputText);
 
-            text := EncodeStringAsUtf8(input.buffer ,, temp);
-            SetText(text_node, text);
-
             state := GetState(input_field);
             Apply(input_field, style.states[state].background);
             Apply(text_node, style.states[state].text);
+
+            if flags & .Password {
+                password_codepoint : u32 = style.password_codepoint;
+                password_glyph := GetGlyph(text_node.font, password_codepoint);
+                if !password_glyph {
+                    password_codepoint = #char "*";
+                }
+
+                encoding_size := GetUtf8EncodingSize(password_codepoint);
+                text := alloc_string(input.buffer.count * encoding_size ,, temp);
+                byte_offset := 0;
+                for i : 0..input.buffer.count - 1 {
+                    size := EncodeCharacterAsUtf8(password_codepoint, xx text, byte_offset);
+                    byte_offset += size;
+                }
+
+                SetText(text_node, text);
+            } else {
+                text := EncodeStringAsUtf8(input.buffer ,, temp);
+                SetText(text_node, text);
+            }
 
             if input_field.state_flags & .Active {
                 cursor_position : Vec2f;

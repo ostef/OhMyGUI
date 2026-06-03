@@ -250,7 +250,6 @@ LoadGlyph :: (font : *Font, codepoint : u32, ft_face : FT_Face, packer : *RectPa
         return null;
     }
 
-
     FT_Render_Glyph(ft_face.glyph, .NORMAL); // We want the SDF rendering to be based off the bitmap
     FT_Render_Glyph(ft_face.glyph, .SDF);
 
