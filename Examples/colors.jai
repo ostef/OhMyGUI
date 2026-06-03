@@ -78,34 +78,57 @@ ColorSet :: (parent : *OMG.Node, rgb : OMG.Vec3f, location := #caller_location) 
 
         Operation(canvas, "Tones", rgb, (rgb, t) => OMG.MakeTone(rgb, t));
 
-        analogous := Group(canvas, "Analogous");
+        harmonies := OMG.GetNode(canvas);
         {
-            a, b := OMG.AnalogousColors(rgb);
-            Preview(analogous, rgb);
-            Preview(analogous, a);
-            Preview(analogous, b);
-        }
+            OMG.SetLayout(harmonies, .LeftToRight);
 
-        complementaries := Group(canvas, "Complementary");
-        {
-            Preview(complementaries, rgb);
-            Preview(complementaries, OMG.ComplementaryColor(rgb));
-        }
+            analogous := Group(harmonies, "Analogous");
+            {
+                a, b := OMG.AnalogousColors(rgb);
+                Preview(analogous, rgb);
+                Preview(analogous, a);
+                Preview(analogous, b);
+            }
 
-        triadics := Group(canvas, "Triadic");
-        {
-            a, b := OMG.TriadicColors(rgb);
-            Preview(triadics, rgb);
-            Preview(triadics, a);
-            Preview(triadics, b);
-        }
+            complementaries := Group(harmonies, "Complementary");
+            {
+                Preview(complementaries, rgb);
+                Preview(complementaries, OMG.ComplementaryColor(rgb));
+            }
 
-        split_complementaries := Group(canvas, "Split Complementary");
-        {
-            a, b := OMG.SplitComplementaryColors(rgb);
-            Preview(split_complementaries, rgb);
-            Preview(split_complementaries, a);
-            Preview(split_complementaries, b);
+            split_complementaries := Group(harmonies, "Split Complementary");
+            {
+                a, b := OMG.SplitComplementaryColors(rgb);
+                Preview(split_complementaries, rgb);
+                Preview(split_complementaries, a);
+                Preview(split_complementaries, b);
+            }
+
+            triadics := Group(harmonies, "Triadic");
+            {
+                a, b := OMG.TriadicColors(rgb);
+                Preview(triadics, rgb);
+                Preview(triadics, a);
+                Preview(triadics, b);
+            }
+
+            tetradics := Group(harmonies, "Tetradic");
+            {
+                a, b, c := OMG.TetradicColors(rgb);
+                Preview(tetradics, rgb);
+                Preview(tetradics, a);
+                Preview(tetradics, b);
+                Preview(tetradics, c);
+            }
+
+            square := Group(harmonies, "Square");
+            {
+                a, b, c := OMG.SquareColors(rgb);
+                Preview(square, rgb);
+                Preview(square, a);
+                Preview(square, b);
+                Preview(square, c);
+            }
         }
 
         Operation(canvas, "RGB Lerp To Complementary", rgb, (rgb, t) => lerp(rgb, OMG.ComplementaryColor(rgb), t));

@@ -170,3 +170,33 @@ TriadicColors :: (rgb : Vec3f) -> Vec3f, Vec3f {
 
     return HSVToRGB(a), HSVToRGB(b);
 }
+
+TetradicColors :: (rgb : Vec3f, hue_shift := 30.0) -> Vec3f, Vec3f, Vec3f {
+    hsv := RGBToHSV(rgb);
+
+    a := hsv;
+    a.x = fmod_cycling(a.x + hue_shift, 360); // Analogous
+
+    b := a;
+    b.x = fmod_cycling(b.x + 180, 360); // Complementary to analogous
+
+    c := b;
+    c.x = fmod_cycling(c.x - hue_shift, 360); // Analogous to complementary to analogous (complementary of original color)
+
+    return HSVToRGB(a), HSVToRGB(b), HSVToRGB(c);
+}
+
+SquareColors :: (rgb : Vec3f, hue_shift := 30.0) -> Vec3f, Vec3f, Vec3f {
+    hsv := RGBToHSV(rgb);
+
+    a := hsv;
+    a.x = fmod_cycling(a.x + 90, 360);
+
+    b := a;
+    b.x = fmod_cycling(b.x + 90, 360);
+
+    c := b;
+    c.x = fmod_cycling(c.x + 90, 360);
+
+    return HSVToRGB(a), HSVToRGB(b), HSVToRGB(c);
+}
