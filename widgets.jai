@@ -17,25 +17,37 @@ ButtonStateStyle :: struct {
 
 ButtonStyle :: StateStyle(ButtonStateStyle);
 
-Button :: (parent : *Node, text : string, style : *ButtonStyle = null, location := #caller_location) -> clicked : bool, *Node {
+Button :: (parent : *Node, width : Size1D, height : Size1D, style : *ButtonStyle = null, location := #caller_location) -> clicked : bool, *Node {
     EnsureStyle(*style, "button");
 
     node := GetNode(parent, location);
     {
-        SetSize(node, SizeFit(), SizeFit());
-
-        text_node := GetNode(node, "text");
-        SetText(text_node, text);
+        SetSize(node, width, height);
+        SetChildAlign(node, 0.5, 0.5);
 
         button := ButtonBehavior(node);
 
         state := GetState(node);
 
         Apply(node, style.states[state].background);
-        Apply(text_node, style.states[state].text);
 
         return button.released, node;
     }
+}
+
+Button :: (parent : *Node, text : string, style : *ButtonStyle = null, location := #caller_location) -> clicked : bool, *Node {
+    EnsureStyle(*style, "button");
+
+    clicked, node := Button(parent, SizeFit(), SizeFit(), style, location);
+
+    text_node := GetNode(node, "text");
+    SetText(text_node, text);
+
+    state := GetState(node);
+
+    Apply(text_node, style.states[state].text);
+
+    return clicked, node;
 }
 
 SliderStateStyle :: struct {
@@ -567,4 +579,24 @@ Menu :: (parent : *Node, text : string, menu_item_style : *ButtonStyle = null, m
     }
 
     return menu, menu_item;
+}
+
+HorizontalSeparator :: (parent : *Node, style : *BoxStyle = null, location := #caller_location) -> *Node {
+    EnsureStyle(*style, "separator");
+
+    node := GetNode(parent, location);
+    SetSize(node, SizeFill(), SizePx(1));
+    Apply(node, style);
+
+    return node;
+}
+
+VerticalSeparator :: (parent : *Node, style : *BoxStyle = null, location := #caller_location) -> *Node {
+    EnsureStyle(*style, "separator");
+
+    node := GetNode(parent, location);
+    SetSize(node, SizePx(1), SizeFill(1));
+    Apply(node, style);
+
+    return node;
 }

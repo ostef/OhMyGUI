@@ -256,6 +256,7 @@ DefaultTheme :: struct {
     menu_bar : BoxStyle;
     menu_item : ButtonStyle;
     menu : BoxStyle;
+    separator : BoxStyle;
 }
 
 g_default_theme : DefaultTheme;
@@ -398,7 +399,6 @@ SetupDefaultTheme :: (theme : *DefaultTheme, accent_color : RGBA8) {
 
         normal.background.padding = .{4,4,4,4};
         normal.background.child_gap = .{4,4};
-        normal.background.background_color = ColorU32(0.9,0.9,0.9,1);
         normal.text = theme.text;
         normal.text.text_size = floor(normal.text.text_size * 0.9);
 
@@ -409,6 +409,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, accent_color : RGBA8) {
         hot.background.background_color = ColorU32(0.7,0.7,0.7,1);
 
         active = normal;
+        active.background.background_color = ColorU32(0.9,0.9,0.9,1);
 
         disabled = normal;
         disabled.text.text_color = ColorU32(0.5,0.5,0.5,1);
@@ -420,11 +421,22 @@ SetupDefaultTheme :: (theme : *DefaultTheme, accent_color : RGBA8) {
 
         corner_radiuses = .{2,2,2,2};
         padding = .{2,2,2,2};
-        background_color = ColorU32(0.9,0.9,0.9,1);
+        background_color = ColorU32(1,1,1,1);
 
         outer_shadow_color = ColorU32(0,0,0,0.5);
         outer_shadow_offset = .{3,3};
         outer_shadow_blur = 5;
     }
     SetStyle(theme, "menu", theme.menu);
+
+    {
+        using theme.separator;
+
+        background_color = ColorU32(0.1,0.1,0.1,0.5);
+
+        outer_shadow_color = ColorU32(0,0,0,0.1);
+        outer_shadow_offset = .{1,1};
+        outer_shadow_blur = 4;
+    }
+    SetStyle(theme, "separator", theme.separator);
 }
