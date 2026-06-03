@@ -299,6 +299,8 @@ AllocNode :: () -> *Node {
 }
 
 FreeNode :: (node : *Node, free_children := true) {
+    window := node.window;
+
     if free_children {
         for :PrevFrameChildren node {
             FreeNode(it);
@@ -314,6 +316,13 @@ FreeNode :: (node : *Node, free_children := true) {
     }
 
     bucket_array_remove(*context.omg.node_pool, node.index);
+
+    if window.root_node == node {
+        window.root_node = null;
+    }
+    if window.popup_root_node == node {
+        window.popup_root_node = null;
+    }
 }
 
 PushChild :: (parent : *Node, node : *Node) {
@@ -437,6 +446,7 @@ GetNode :: inline (parent : *Node, str_id : string) -> *Node {
 
 GetNode :: (parent : *Node, id : ID) -> *Node {
     assert(id != 0);
+    assert(parent == null || parent.last_used_on_frame == context.omg.frame_index);
 
     node : *Node;
     if parent {
