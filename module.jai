@@ -5,6 +5,7 @@
 #import "Print_Vars";
 
 #load "math.jai";
+#load "color.jai";
 #load "unicode.jai";
 #load "input.jai";
 #load "sdf.jai";
@@ -119,6 +120,7 @@ DestroyWindow :: (window : *Window) {
 Init :: () {
     context.omg = New(Context);
     context.omg.general_purpose_allocator = context.allocator;
+    context.omg.node_pool.allocator = context.allocator;
 
     default_font := LoadDefaultFont();
     assert(default_font != null, "Could not load default font");
@@ -289,7 +291,7 @@ DrawNodes :: (node : *Node, clip_shape : *SDShape = null) {
 
     position := (node.rect.xy + node.rect.zw) * 0.5;
     if node.num_children > 0 {
-        my_clip := Move(Box(node.size - node.padding.xy - node.padding.zw), position);
+        my_clip := Move(Box(node.size), position);
         clip_shape = ifx clip_shape then Inter(clip_shape, my_clip) else my_clip;
 
         for :Children node {

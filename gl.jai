@@ -166,11 +166,11 @@ InitGL :: (num_frames_in_flight : int = 2, shape_buffer_size : int = Default_Sha
         }
     }
 
-    print("Initialized GL backend\n");
-    print("Num frames in flight: %\n", g_num_frames_in_flight);
-    print("Shapes buffer: % bytes\n", g_shape_buffer_size);
-    print("GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT = %\n", g_uniform_buffer_offset_alignment);
-    print("GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT = %\n", g_storage_buffer_offset_alignment);
+    log("Initialized GL backend");
+    log("Num frames in flight: %", g_num_frames_in_flight);
+    log("Shapes buffer: % bytes", g_shape_buffer_size);
+    log("GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT = %", g_uniform_buffer_offset_alignment);
+    log("GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT = %", g_storage_buffer_offset_alignment);
 
     return true;
 }

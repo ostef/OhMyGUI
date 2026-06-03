@@ -679,5 +679,9 @@ SetOuterShadowColor :: inline (node : *Node, color : Vec4f) {
 }
 
 SetOuterShadowOpacity :: inline (node : *Node, alpha : float) {
-    node.outer_shadow_color.w = alpha;
+    SetAlpha(*node.outer_shadow_color, alpha);
+}
+
+SetOuterShadowBlur :: inline (node : *Node, blur : float) {
+    node.outer_shadow_blur = blur;
 }

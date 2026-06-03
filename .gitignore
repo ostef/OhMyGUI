@@ -3,4 +3,5 @@
 *.pdb
 *.dll
 example
+main
 .build

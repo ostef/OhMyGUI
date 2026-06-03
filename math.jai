@@ -1,4 +1,5 @@
 Vec2f :: Vector2;
+Vec3f :: Vector3;
 Vec4f :: Vector4;
 
 operator*[] :: inline (v : Vec2f, index : int) -> *float {
@@ -10,17 +11,22 @@ operator*[] :: inline (v : Vec2f, axis : Axis) -> *float {
     return *v.component[axis];
 }
 
+operator*[] :: inline (v : Vec3f, index : int) -> *float {
+    assert(index >= 0 && index < 3);
+    return *v.component[index];
+}
+
 operator*[] :: inline (v : Vec4f, index : int) -> *float {
     assert(index >= 0 && index < 4);
     return *v.component[index];
 }
 
-operator*[] :: inline (v : Vec4f, axis : Axis) -> *float {
-    return *v.component[axis];
-}
-
 min :: inline (v : Vec2f) -> Vec2f {
     return .{min(v.x), min(v.y)};
+}
+
+min :: inline (v : Vec3f) -> Vec3f {
+    return .{min(v.x), min(v.y), min(v.z)};
 }
 
 min :: inline (v : Vec4f) -> Vec4f {
@@ -29,6 +35,10 @@ min :: inline (v : Vec4f) -> Vec4f {
 
 max :: inline (v : Vec2f) -> Vec2f {
     return .{max(v.x), max(v.y)};
+}
+
+max :: inline (v : Vec3f) -> Vec3f {
+    return .{max(v.x), max(v.y), max(v.z)};
 }
 
 max :: inline (v : Vec4f) -> Vec4f {
@@ -43,12 +53,20 @@ sign :: inline (v : Vec2f) -> Vec2f {
     return .{sign(v.x), sign(v.y)};
 }
 
+sign :: inline (v : Vec3f) -> Vec3f {
+    return .{sign(v.x), sign(v.y), sign(v.z)};
+}
+
 sign :: inline (v : Vec4f) -> Vec4f {
     return .{sign(v.x), sign(v.y), sign(v.z), sign(v.w)};
 }
 
 abs :: inline (v : Vec2f) -> Vec2f {
     return .{abs(v.x), abs(v.y)};
+}
+
+abs :: inline (v : Vec3f) -> Vec3f {
+    return .{abs(v.x), abs(v.y), abs(v.z)};
 }
 
 abs :: inline (v : Vec4f) -> Vec4f {
@@ -59,8 +77,16 @@ clamp :: inline (v : Vec2f, a : Vec2f, b : Vec2f) -> Vec2f {
     return .{clamp(v.x, a.x, b.x), clamp(v.y, a.y, b.y)};
 }
 
+clamp :: inline (v : Vec3f, a : Vec3f, b : Vec3f) -> Vec3f {
+    return .{clamp(v.x, a.x, b.x), clamp(v.y, a.y, b.y), clamp(v.z, a.z, b.z)};
+}
+
 clamp :: inline (v : Vec4f, a : Vec4f, b : Vec4f) -> Vec4f {
     return .{clamp(v.x, a.x, b.x), clamp(v.y, a.y, b.y), clamp(v.z, a.z, b.z), clamp(v.w, a.w, b.w)};
+}
+
+fract :: inline (x : float) -> float {
+    return x - floor(x);
 }
 
 InflateBounds :: inline (bounds : Vec4f, amount : Vec4f) -> Vec4f {
@@ -223,38 +249,4 @@ SnapUp :: (value : float, grid_size : float) -> float {
         return value;
     }
     return ceil(value / grid_size) * grid_size;
-}
-
-RGBA8 :: #type,isa u32;
-
-SetAlpha :: inline (color : *RGBA8, alpha : float) {
-    color.* = SetAlpha(color.*, alpha);
-}
-
-SetAlpha :: inline (color : RGBA8, alpha : float) -> RGBA8 {
-    rgba := ColorVec4f(color);
-    rgba.alpha = alpha;
-    return ColorU32(rgba);
-}
-
-ColorU32 :: inline (rgba : Vec4f) -> RGBA8 {
-    return ColorU32(rgba.x, rgba.y, rgba.z, rgba.w);
-}
-
-ColorU32 :: inline (r : float, g : float, b : float, a : float) -> RGBA8 {
-    ur := cast(u32, clamp(r * 255, 0, 255));
-    ug := cast(u32, clamp(g * 255, 0, 255));
-    ub := cast(u32, clamp(b * 255, 0, 255));
-    ua := cast(u32, clamp(a * 255, 0, 255));
-
-    return cast(RGBA8, (ur << 24) | (ug << 16) | (ub << 8) | ua);
-}
-
-ColorVec4f :: inline (rgba : RGBA8) -> Vec4f {
-    r := (cast(u32, rgba) >> 24) & 0xff;
-    g := (cast(u32, rgba) >> 16) & 0xff;
-    b := (cast(u32, rgba) >> 8)  & 0xff;
-    a := (cast(u32, rgba) >> 0)  & 0xff;
-
-    return .{r / 255.0, g / 255.0, b / 255.0, a / 255.0};
 }
