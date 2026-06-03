@@ -76,6 +76,8 @@ ColorSet :: (parent : *OMG.Node, rgb : OMG.Vec3f, location := #caller_location) 
 
         Operation(canvas, "Add RGB", rgb, (rgb, t) => OMG.Vec3f.{clamp(rgb.x + t, 0, 1), clamp(rgb.y + t, 0, 1), clamp(rgb.z + t, 0, 1)});
 
+        Operation(canvas, "Tones", rgb, (rgb, t) => OMG.MakeTone(rgb, t));
+
         analogous := Group(canvas, "Analogous");
         {
             a, b := OMG.AnalogousColors(rgb);

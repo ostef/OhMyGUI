@@ -116,6 +116,16 @@ Whiten :: (rgb : Vec3f, amount : float) -> Vec3f {
     return HSVToRGB(hsv);
 }
 
+MakeTone :: (rgb : Vec3f, t : float) -> Vec3f {
+    t = clamp(t, 0, 1);
+
+    hsv := RGBToHSV(rgb);
+    hsv.y = lerp(hsv.y, 0, t);
+    hsv.z = lerp(hsv.z, 0.5, t);
+
+    return HSVToRGB(hsv);
+}
+
 ComplementaryColor :: (rgb : Vec3f) -> Vec3f {
     hsv := RGBToHSV(rgb);
     hsv.x = fmod_cycling(hsv.x + 180, 360);
