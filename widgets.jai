@@ -485,3 +485,22 @@ Checkbox :: (parent : *Node, value : *bool, style : *CheckboxStyle = null, locat
         return button.released, node;
     }
 }
+
+MenuItem :: (parent : *Node, style : *ButtonStyle = null, location := #caller_location) -> clicked : bool, *Node {
+}
+
+Menu :: (parent : *Node, style : *BoxStyle = null, location := #caller_location) -> *Node {
+    EnsureStyle(*style, "menu");
+
+    menu := GetPopupNode(parent.window, location);
+    {
+        SetSize(menu, SizeFit(), SizeFit());
+        SetMinSize(menu, 50, 0);
+        SetMaxSize(menu, 150, 200);
+
+        menu.offset = .{parent.layout_last_frame.rect.x, parent.layout_last_frame.rect.w};
+        Apply(menu, style);
+    }
+
+    return menu;
+}

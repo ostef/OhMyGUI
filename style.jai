@@ -253,6 +253,7 @@ DefaultTheme :: struct {
     scrollbar : SliderStyle;
     text_input : TextInputStyle;
     checkbox : CheckboxStyle;
+    menu : BoxStyle;
 }
 
 g_default_theme : DefaultTheme;
@@ -382,4 +383,17 @@ SetupDefaultTheme :: (theme : *DefaultTheme, accent_color : RGBA8) {
         disabled.checkmark.background_color = ColorU32(0.5,0.5,0.5,1);
     }
     SetStyle(theme, "checkbox", theme.checkbox);
+
+    {
+        using theme.menu;
+
+        corner_radiuses = .{2,2,2,2};
+        padding = .{2,2,2,2};
+        background_color = ColorU32(0.9,0.9,0.9,1);
+
+        outer_shadow_color = ColorU32(0,0,0,0.5);
+        outer_shadow_offset = .{3,3};
+        outer_shadow_blur = 5;
+    }
+    SetStyle(theme, "menu", theme.menu);
 }

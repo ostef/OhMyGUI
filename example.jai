@@ -44,11 +44,14 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
             title_menu := OMG.GetNode(title_bar);
             OMG.SetSize(title_menu, OMG.SizeFill(), OMG.SizeFit());
 
-            OMG.Button(title_menu, "File");
-            OMG.Button(title_menu, "Edit");
-            OMG.Button(title_menu, "Entities");
-            OMG.Button(title_menu, "Window");
-            OMG.Button(title_menu, "Help");
+            _, file := OMG.Button(title_menu, "File");
+            _, edit := OMG.Button(title_menu, "Edit");
+            _, entities := OMG.Button(title_menu, "Entities");
+            _, window := OMG.Button(title_menu, "Window");
+            _, help := OMG.Button(title_menu, "Help");
+
+            menu := OMG.Menu(file);
+            OMG.Text(menu, "Hello Menu");
 
             title_mini := OMG.GetNode(title_bar, "minimize");
             OMG.SetSize(title_mini, OMG.SizePx(25));
@@ -168,27 +171,6 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
                     OMG.SetWidth(label, OMG.SizeFill(0.5));
 
                     OMG.Slider(label_and_slider, *g_slider_value, 0, 1, 0.1);
-                }
-
-                for i : 0..3 {
-                    OMG.PushIDOffset(i);
-                    defer OMG.PopIDOffset();
-
-                    popup := OMG.GetPopupNode(window);
-                    OMG.SetSize(popup, OMG.SizePx(50), OMG.SizePx(100));
-                    OMG.SetBackgroundColor(popup, 1,1,1,1);
-                    OMG.SetCornerRadius(popup, 3);
-                    popup.outer_shadow_color = OMG.ColorU32(0,0,0,0.5);
-                    popup.outer_shadow_blur = 5;
-                    popup.outer_shadow_offset = .{1,1};
-
-                    popup_result := OMG.ButtonBehavior(popup);
-                    if popup_result.held {
-                        OMG.BringForward(popup);
-                        popup.offset = OMG.GetMousePosition(window);
-                    }
-
-                    OMG.Text(popup, "%", popup.z_index);
                 }
 
                 OMG.Checkbox(main_viewport, *g_checkbox_value);
