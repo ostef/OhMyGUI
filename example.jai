@@ -41,17 +41,36 @@ DoOneFrame :: (w : float, h : float, time : float, delta_time : float) {
 
             OMG.Text(title_bar, "OMG Engine (% FPS)", cast(int, 1 / delta_time));
 
-            title_menu := OMG.GetNode(title_bar);
-            OMG.SetSize(title_menu, OMG.SizeFill(), OMG.SizeFit());
+            title_menu_bar := OMG.MenuBar(title_bar, "title_menu_bar");
 
-            _, file := OMG.Button(title_menu, "File");
-            _, edit := OMG.Button(title_menu, "Edit");
-            _, entities := OMG.Button(title_menu, "Entities");
-            _, window := OMG.Button(title_menu, "Window");
-            _, help := OMG.Button(title_menu, "Help");
+            file_menu := OMG.Menu(title_menu_bar, "File");
+            if file_menu {
+                OMG.MenuItem(file_menu, "New");
+                OMG.MenuItem(file_menu, "Open");
+                OMG.MenuItem(file_menu, "Save");
+                OMG.MenuItem(file_menu, "Save As");
+            }
 
-            menu := OMG.Menu(file);
-            OMG.Text(menu, "Hello Menu");
+            edit_menu := OMG.Menu(title_menu_bar, "Edit");
+            if edit_menu {
+                OMG.MenuItem(edit_menu, "Select All");
+                OMG.MenuItem(edit_menu, "Invert Selection");
+            }
+
+            window_menu := OMG.Menu(title_menu_bar, "Window");
+            if window_menu {
+                OMG.MenuItem(window_menu, "New Viewport");
+                OMG.MenuItem(window_menu, "Profiler");
+                OMG.MenuItem(window_menu, "Entity Outliner");
+                OMG.MenuItem(window_menu, "Entity Inspector");
+                OMG.MenuItem(window_menu, "Browser");
+            }
+
+            help_menu := OMG.Menu(title_menu_bar, "Help");
+            if help_menu {
+                OMG.MenuItem(help_menu, "Documentation");
+                OMG.MenuItem(help_menu, "About");
+            }
 
             title_mini := OMG.GetNode(title_bar, "minimize");
             OMG.SetSize(title_mini, OMG.SizePx(25));
