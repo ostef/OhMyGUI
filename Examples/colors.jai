@@ -66,13 +66,13 @@ ColorSet :: (parent : *OMG.Node, rgb : OMG.Vec3f, location := #caller_location) 
         OMG.SetPadding(canvas, 10, 10);
         OMG.SetChildGap(canvas, 5, 5);
 
-        Operation(canvas, "Darken", rgb, (rgb, t) => OMG.Darken(rgb, t));
+        Operation(canvas, "Darken (decrease value)", rgb, (rgb, t) => OMG.Darken(rgb, t));
 
         Operation(canvas, "Subtract RGB", rgb, (rgb, t) => OMG.Vec3f.{clamp(rgb.x - t, 0, 1), clamp(rgb.y - t, 0, 1), clamp(rgb.z - t, 0, 1)});
 
-        Operation(canvas, "Brighten", rgb, (rgb, t) => OMG.Brighten(rgb, t));
+        Operation(canvas, "Brighten (increase value)", rgb, (rgb, t) => OMG.Brighten(rgb, t));
 
-        Operation(canvas, "Whiten", rgb, (rgb, t) => OMG.Whiten(rgb, t));
+        Operation(canvas, "Whiten (decrease saturation, increase value)", rgb, (rgb, t) => OMG.Whiten(rgb, t));
 
         Operation(canvas, "Add RGB", rgb, (rgb, t) => OMG.Vec3f.{clamp(rgb.x + t, 0, 1), clamp(rgb.y + t, 0, 1), clamp(rgb.z + t, 0, 1)});
 
@@ -105,6 +105,18 @@ ColorSet :: (parent : *OMG.Node, rgb : OMG.Vec3f, location := #caller_location) 
             Preview(split_complementaries, a);
             Preview(split_complementaries, b);
         }
+
+        Operation(canvas, "RGB Lerp To Complementary", rgb, (rgb, t) => lerp(rgb, OMG.ComplementaryColor(rgb), t));
+
+        Operation(canvas, "HSV Lerp To Complementary", rgb, (rgb : OMG.Vec3f, t : float) -> OMG.Vec3f {
+            hsv := OMG.RGBToHSV(rgb);
+            complementary_hsv := OMG.RGBToHSV(OMG.ComplementaryColor(rgb));
+
+            hsv = lerp(hsv, complementary_hsv, t);
+            hsv.x = fmod_cycling(hsv.x, 360);
+
+            return OMG.HSVToRGB(hsv);
+        });
     }
 }
 
