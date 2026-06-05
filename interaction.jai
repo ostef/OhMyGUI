@@ -11,18 +11,16 @@ ButtonResult :: struct {
 }
 
 ButtonBehavior :: (node : *Node) -> ButtonResult {
-    omg := context.omg;
-
     node.flags |= .Focusable;
 
-    if (IsMouseButtonReleased(.Left) || IsMouseButtonDown(.Left)) && omg.mouse_capturing_node == node {
+    if (IsMouseButtonReleased(.Left) || IsMouseButtonDown(.Left)) && context.omg.mouse_capturing_node == node {
         SetMouseCapture(node);
         SetMouseFocus(node);
     } else if node.state_flags & .Focused && IsMouseButtonPressed(.Left) {
         SetMouseCapture(node);
     }
 
-    if omg.mouse_capturing_node == node {
+    if context.omg.mouse_capturing_node == node {
         node.state_flags |= .Hot;
     }
 
