@@ -135,7 +135,7 @@ ColorSet :: (parent : *OMG.Node, rgb : OMG.Vec3f, location := #caller_location) 
 
         Operation(canvas, "RGB Lerp To Complementary", rgb, (rgb, t) => lerp(rgb, OMG.ComplementaryColor(rgb), t));
 
-        Operation(canvas, "HSV Lerp To Complementary", rgb, (rgb : OMG.Vec3f, t : float) -> OMG.Vec3f {
+        Operation(canvas, "Hue Lerp To Complementary", rgb, (rgb : OMG.Vec3f, t : float) -> OMG.Vec3f {
             hsv := OMG.RGBToHSV(rgb);
             complementary_hsv := OMG.RGBToHSV(OMG.ComplementaryColor(rgb));
 
