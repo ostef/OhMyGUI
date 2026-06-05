@@ -7,6 +7,7 @@ NodeFlags :: enum_flags u8 {
     Focusable;
     Scrollable;
     SortChildren;
+    NoClip;
 }
 
 NodeState :: enum u8 {

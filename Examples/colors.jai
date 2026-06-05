@@ -14,6 +14,8 @@ ColorSet :: (parent : *OMG.Node, rgb : OMG.Vec3f, location := #caller_location) 
     Group :: (parent : *OMG.Node, name : string, location := #caller_location) -> *OMG.Node {
         parent = OMG.GetNode(parent, location);
         {
+            parent.flags |= .NoClip;
+
             OMG.SetLayout(parent, .TopToBottom);
             OMG.SetPadding(parent, 10, 10);
             OMG.SetChildGap(parent, 4, 4);

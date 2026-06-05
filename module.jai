@@ -291,8 +291,10 @@ DrawNodes :: (node : *Node, clip_shape : *SDShape = null) {
 
     position := (node.rect.xy + node.rect.zw) * 0.5;
     if node.num_children > 0 {
-        my_clip := Move(Box(node.size), position);
-        clip_shape = ifx clip_shape then Inter(clip_shape, my_clip) else my_clip;
+        if !(node.flags & .NoClip) {
+            my_clip := Move(Box(node.size - node.padding.xy - node.padding.zw, node.corner_radiuses), position);
+            clip_shape = ifx clip_shape then Inter(clip_shape, my_clip) else my_clip;
+        }
 
         for :Children node {
             DrawNodes(it, clip_shape);
