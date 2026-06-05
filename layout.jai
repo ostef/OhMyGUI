@@ -215,36 +215,47 @@ LayoutFixedAndFitSizing :: (node : *Node) {
         text_size = CalculateTextSize(node.font, node.text_size, node.text);
     }
 
+    if node.min_size_fit[0] {
+        node.min_size.x = node.children_size.x + node.padding.x + node.padding.z;
+    }
+    if node.min_size_fit[1] {
+        node.min_size.y = node.children_size.y + node.padding.y + node.padding.w;
+    }
+
+    // We should set the size to fit also if min size is set to fit and we want to fill the parent
+    // We need this because otherwise a we can't have a parent that wants to fit with children that wants to fill with a min size of fit
+    should_fit : [2]bool = .[
+        node.desired_size.x.kind == .FitChildren || (node.desired_size.x.kind == .FillParent && node.min_size_fit[0]),
+        node.desired_size.y.kind == .FitChildren || (node.desired_size.y.kind == .FillParent && node.min_size_fit[1]),
+    ];
+
     for axis : Axis.[.X, .Y] {
-        if node.desired_size[axis].kind == {
-        case .FitChildren;
+        if should_fit[axis] {
             if node.flags & .TextNode {
                 node.size[axis] = ceil(text_size[axis]);
             } else {
                 node.size[axis] = ceil(node.children_size[axis] + node.padding.xy[axis] + node.padding.zw[axis]);
             }
             node.size[axis] = clamp(node.size[axis], node.min_size[axis], node.max_size[axis]);
-        case .Pixels;
+        } else if node.desired_size[axis].kind == .Pixels {
             node.size[axis] = node.desired_size[axis].value;
             node.size[axis] = clamp(node.size[axis], node.min_size[axis], node.max_size[axis]);
         }
     }
 
-    if node.desired_size[axis].kind == .FitChildren && !(node.flags & .TextNode) {
+    // Add child gap
+    if should_fit[axis] && !(node.flags & .TextNode) {
         node.size[axis] += ceil((node.num_children - 1) * node.child_gap[axis]);
         node.size[axis] = clamp(node.size[axis], node.min_size[axis], node.max_size[axis]);
     }
 }
 
-// @Todo: the behavior does not seem to be the most intuitive: 2 fill children with weight 1 and 1 will both have the same
-// size of half the available area, because the weights are normalized. If the weights are 2 and 2 the result will be the same.
-// It's likely people will expect instead that both children will be 100% of the available area, and overflow outside the
-// parent's rect
 LayoutFillSizing :: (node : *Node) {
     axis := GetLayoutAxis(node);
     cross := GetCrossAxis(axis);
 
     if node.child_layout_mode == .None {
+        // Warning: the weight does not take into account siblings in None layout mode!
         remaining_size := node.size[axis] - node.padding.xy[axis] - node.padding.zw[axis]
             - node.children_size[axis]
             - (node.num_children - 1) * node.child_gap[axis];
@@ -254,7 +265,6 @@ LayoutFillSizing :: (node : *Node) {
                 continue;
             }
 
-            prev_size := it.size[axis];
             it.size[axis] = floor(remaining_size * it.desired_size[axis].value);
             it.size[axis] = clamp(it.size[axis], it.min_size[axis], it.max_size[axis]);
         }
@@ -320,7 +330,7 @@ LayoutFillSizing :: (node : *Node) {
     for :Children node {
         if it.desired_size[cross].kind == .FillParent {
             it.size[cross] = floor(node.size[cross] * it.desired_size[cross].value - node.padding.xy[cross] - node.padding.zw[cross]);
-            it.size[cross] = clamp(it.size[cross], node.min_size[cross], node.max_size[cross]);
+            it.size[cross] = clamp(it.size[cross], it.min_size[cross], it.max_size[cross]);
             node.children_size[cross] = max(node.children_size[cross], it.size[cross]);
         }
 

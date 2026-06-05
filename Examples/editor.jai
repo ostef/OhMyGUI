@@ -179,7 +179,10 @@ END
                 the_quick.text_size = (cos(g_time) + 2) * 10;
 
                 content_browser := Panel(left_side, "content_browser", "Content Browser");
-                OMG.SetHeight(content_browser, OMG.SizeFill(0.9));
+                {
+                    OMG.SetHeight(content_browser, OMG.SizeFill(0.9));
+
+                }
             }
 
             if content.layout_last_frame.size.x > 500 {

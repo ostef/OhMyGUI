@@ -517,7 +517,8 @@ MenuItem :: (parent : *Node, text : string, style : *ButtonStyle = null, locatio
 
     node := GetNode(parent, location);
     {
-        SetSize(node, SizeFit(), SizeFit());
+        SetSize(node, SizeFill(), SizeFit());
+        SetMinWidthFit(node, true);
 
         text_node := GetNode(node, "text");
         SetText(text_node, text);

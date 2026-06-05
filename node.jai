@@ -123,6 +123,7 @@ Node :: struct {
         desired_size := Size2D.{.{kind=.FitChildren}, .{kind=.FitChildren}};
         min_size := Vec2f.{-FLOAT32_INFINITY, -FLOAT32_INFINITY};
         max_size := Vec2f.{ FLOAT32_INFINITY,  FLOAT32_INFINITY};
+        min_size_fit : [2]bool;
         padding : Vec4f;
         child_gap : Vec2f;
         child_align : Vec2f;
@@ -514,6 +515,10 @@ SetMinWidth :: inline (node : *Node, size : float) {
     node.min_size.x = size;
 }
 
+SetMinWidthFit :: inline (node : *Node, fit : bool) {
+    node.min_size_fit[0] = fit;
+}
+
 SetMaxWidth :: inline (node : *Node, size : float) {
     node.max_size.x = size;
 }
@@ -535,6 +540,10 @@ SetHeight :: inline (node : *Node, size : Size1D, min : float, max : float) {
 
 SetMinHeight :: inline (node : *Node, size : float) {
     node.min_size.y = size;
+}
+
+SetMinHeightFit :: inline (node : *Node, fit : bool) {
+    node.min_size_fit[1] = fit;
 }
 
 SetMaxHeight :: inline (node : *Node, size : float) {
@@ -564,6 +573,11 @@ SetMinSize :: inline (node : *Node, size : Vec2f) {
 
 SetMinSize :: inline (node : *Node, x : float, y : float) {
     node.min_size = .{x, y};
+}
+
+SetMinSizeFit :: inline (node : *Node, x : bool, y : bool) {
+    node.min_size_fit[0] = x;
+    node.min_size_fit[1] = y;
 }
 
 SetMaxSize :: inline (node : *Node, size : Vec2f) {

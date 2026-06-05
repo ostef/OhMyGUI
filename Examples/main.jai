@@ -84,8 +84,8 @@ main :: () {
 
         OMG.NewFrame(g_delta_time);
 
-        // EditorFrame();
-        ColorsFrame();
+        EditorFrame();
+        // ColorsFrame();
 
         OMG.Render();
 
