@@ -1,5 +1,4 @@
 g_slider_value : float;
-g_checkbox_value : bool;
 g_show_password : bool;
 
 EditorFrame :: () {
@@ -164,8 +163,6 @@ EditorFrame :: () {
 
                     OMG.Slider(label_and_slider, *g_slider_value, 0, 1, 0.1);
                 }
-
-                OMG.Checkbox(main_viewport, *g_checkbox_value);
 
                 OMG.HorizontalSeparator(main_viewport);
 
