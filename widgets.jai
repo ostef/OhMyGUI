@@ -300,6 +300,8 @@ TextInput :: (parent : *Node, flags : TextInputFlags = 0, style : *TextInputStyl
 
     input_field := GetNode(parent, location=location);
     {
+        input_field.flags |= .NoPaddedClip;
+
         SetSize(input_field, SizeFill(), SizeFit());
         SetChildAlign(input_field, 0, 0.5);
 

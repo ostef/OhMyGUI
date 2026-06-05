@@ -2,12 +2,13 @@
 
 ID :: u64;
 
-NodeFlags :: enum_flags u8 {
+NodeFlags :: enum_flags u32 {
     TextNode;
     Focusable;
     Scrollable;
     SortChildren;
     NoClip;
+    NoPaddedClip;
 }
 
 NodeState :: enum u8 {
@@ -115,6 +116,8 @@ Node :: struct {
 
     // User controlled properties mostly related to layout, reset each frame except for scroll and offset
     using properties : struct {
+        flags : NodeFlags;
+
         font : *Font;
         text : string;
         text_size : float;
@@ -129,7 +132,6 @@ Node :: struct {
         child_gap : Vec2f;
         child_align : Vec2f;
         child_layout_mode := LayoutMode.LeftToRight;
-        flags : NodeFlags;
     };
 
     // Styling properties, NOT reset each frame
