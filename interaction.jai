@@ -317,7 +317,9 @@ TextInputBehavior :: (node : *Node) -> *TextInputData, submitted : bool, ButtonR
             SetCursor(input, xx input.buffer.count, GetModState() & .Shift != 0);
         }
 
-        if input.selection != 0 && IsKeyPressed(.C) && GetModState() == .Ctrl {
+        if input.selection != 0 && (IsKeyPressed(.C) || IsKeyPressed(.X)) && GetModState() == .Ctrl {
+            cut := IsKeyPressed(.X);
+
             start := min(input.cursor, input.cursor + input.selection);
             end   := max(input.cursor, input.cursor + input.selection);
 
@@ -328,6 +330,10 @@ TextInputBehavior :: (node : *Node) -> *TextInputData, submitted : bool, ButtonR
             text := EncodeStringAsUtf8(utf32 ,, temp);
             ctext := to_c_string(text ,, temp);
             SDL_SetClipboardText(ctext);
+
+            if cut {
+                Delete(input);
+            }
         }
 
         if IsKeyPressed(.V) && GetModState() == .Ctrl && SDL_HasClipboardText() {
