@@ -10,6 +10,12 @@ SetRGB :: inline (color : RGBA8, rgb : Vec3f) -> RGBA8 {
     return ColorU32(rgba);
 }
 
+GetRGB :: inline (color : RGBA8) -> Vec3f {
+    rgba := ColorVec4f(color);
+
+    return rgba.xyz;
+}
+
 SetAlpha :: inline (color : *RGBA8, alpha : float) {
     color.* = SetAlpha(color.*, alpha);
 }
@@ -18,6 +24,10 @@ SetAlpha :: inline (color : RGBA8, alpha : float) -> RGBA8 {
     rgba := ColorVec4f(color);
     rgba.w = alpha;
     return ColorU32(rgba);
+}
+
+ColorU32 :: inline (rgb : Vec3f, alpha : float) -> RGBA8 {
+    return ColorU32(rgb.x, rgb.y, rgb.z, alpha);
 }
 
 ColorU32 :: inline (rgba : Vec4f) -> RGBA8 {
