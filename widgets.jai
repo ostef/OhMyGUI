@@ -17,6 +17,22 @@ ButtonStateStyle :: struct {
 
 ButtonStyle :: StateStyle(ButtonStateStyle);
 
+SetColors :: (style : *ButtonStyle, base_background_color : RGBA8) {
+    SetColors(style, base_background_color, ChooseTextColor(base_background_color));
+}
+
+SetColors :: (using style : *ButtonStyle, base_background_color : RGBA8, text_color : RGBA8) {
+    normal.background.background_color = base_background_color;
+    focused.background.background_color = Whiten(base_background_color, 0.05);
+    hot.background.background_color = Darken(base_background_color, 0.05);
+    active.background.background_color = Whiten(base_background_color, 0.1);
+
+    normal.text.text_color = text_color;
+    focused.text.text_color = text_color;
+    hot.text.text_color = text_color;
+    active.text.text_color = text_color;
+}
+
 Button :: (parent : *Node, width : Size1D, height : Size1D, style : *ButtonStyle = null, location := #caller_location) -> clicked : bool, *Node {
     EnsureStyle(*style, "button");
 
@@ -59,6 +75,18 @@ SliderStyle :: struct {
     using _ : StateStyle(SliderStateStyle);
     background_size : float;
     handle_size : float;
+}
+
+SetColors :: (using style : *SliderStyle, base_background_color : RGBA8, base_handle_color : RGBA8) {
+    normal.background.background_color = base_background_color;
+    focused.background.background_color = base_background_color;
+    hot.background.background_color = base_background_color;
+    active.background.background_color = base_background_color;
+
+    normal.handle.background_color = base_handle_color;
+    focused.handle.background_color = Whiten(base_handle_color, 0.05);
+    hot.handle.background_color = Darken(base_handle_color, 0.05);
+    active.handle.background_color = Whiten(base_handle_color, 0.1);
 }
 
 // @Todo: unify slider and scrollbar
@@ -219,6 +247,25 @@ TextInputStyle :: struct {
     cursor : BoxStyle;
     selection : BoxStyle;
     password_codepoint : u32 = #char "*";
+}
+
+SetColors :: (using style : *TextInputStyle, base_background_color : RGBA8, accent_color : RGBA8) {
+    text_color := ChooseTextColor(base_background_color);
+    normal.text.text_color = text_color;
+    focused.text.text_color = text_color;
+    hot.text.text_color = text_color;
+    active.text.text_color = text_color;
+
+    cursor.background_color = text_color;
+    selection.background_color = accent_color;
+
+    normal.background.background_color = base_background_color;
+    focused.background.background_color = Whiten(base_background_color, 0.05);
+    hot.background.background_color = Darken(base_background_color, 0.05);
+    active.background.background_color = Whiten(base_background_color, 0.1);
+
+    active.background.border_size = 2;
+    active.background.border_color = accent_color;
 }
 
 DrawTextInputText :: (node : *Node, clip_shape : *SDShape) {
@@ -420,6 +467,18 @@ CheckboxStateStyle :: struct {
 }
 
 CheckboxStyle :: StateStyle(CheckboxStateStyle);
+
+SetColors :: (using style : *CheckboxStyle, base_background_color : RGBA8, checkmark_color : RGBA8) {
+    normal.background.background_color = base_background_color;
+    focused.background.background_color = Whiten(base_background_color, 0.05);
+    hot.background.background_color = Darken(base_background_color, 0.05);
+    active.background.background_color = Whiten(base_background_color, 0.1);
+
+    normal.checkmark.background_color = checkmark_color;
+    focused.checkmark.background_color = checkmark_color;
+    hot.checkmark.background_color = checkmark_color;
+    active.checkmark.background_color = checkmark_color;
+}
 
 DrawCheckmark :: (node : *Node, clip_shape : *SDShape) {
     checkbox_style := GetUserData(node.parent, CheckboxStyle);

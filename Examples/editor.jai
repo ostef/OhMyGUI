@@ -2,6 +2,9 @@ g_slider_value : float;
 g_show_password : bool;
 
 EditorFrame :: () {
+    base_background_color := OMG.GetStyle("button", OMG.ButtonStyle).normal.background.background_color;
+    base_background_color = OMG.Darken(base_background_color, 0.1);
+
     window := OMG.GetWindow(g_window);
     root := OMG.GetNode(window);
     {
@@ -15,11 +18,13 @@ EditorFrame :: () {
             OMG.SetWidth(title_bar, OMG.SizeFill());
             OMG.SetHeight(title_bar, OMG.SizeFit());
 
-            OMG.SetBackgroundColor(title_bar, 1, 1, 1, 1);
-            OMG.SetBorderColor(title_bar, 0, 0, 0, 1);
+            OMG.SetBackgroundColor(title_bar, base_background_color);
+            OMG.SetBorderColor(title_bar, OMG.MakeTone(base_background_color, 0.2));
             OMG.SetBorderSize(title_bar, 1);
 
             OMG.Text(title_bar, "OMG Engine (% FPS)", cast(int, 1 / g_delta_time));
+
+            OMG.VerticalSeparator(title_bar);
 
             title_menu_bar := OMG.MenuBar(title_bar, "title_menu_bar");
 
@@ -70,13 +75,16 @@ EditorFrame :: () {
             OMG.SetSize(content, OMG.SizeFill());
 
             Panel :: (parent : *OMG.Node, str_id : string, title : string) -> *OMG.Node {
+                base_background_color := OMG.GetStyle("button", OMG.ButtonStyle).normal.background.background_color;
+                base_background_color = OMG.Darken(base_background_color, 0.1);
+
                 panel := OMG.GetNode(parent, str_id);
                 {
                     OMG.SetLayout(panel, .TopToBottom);
                     OMG.SetSize(panel, OMG.SizeFill());
 
-                    OMG.SetBackgroundColor(panel, 1, 1, 1, 1);
-                    OMG.SetBorderColor(panel, 0, 0, 0, 1);
+                    OMG.SetBackgroundColor(panel, base_background_color);
+                    OMG.SetBorderColor(panel, OMG.MakeTone(base_background_color, 0.2));
                     OMG.SetBorderSize(panel, 1);
 
                     title_bar := OMG.GetNode(panel, "title_bar");
@@ -85,8 +93,8 @@ EditorFrame :: () {
                         OMG.SetPadding(title_bar, 4, 4);
                         OMG.SetChildAlign(title_bar, 0, 0.5);
 
-                        OMG.SetBackgroundColor(title_bar, 1, 1, 1, 1);
-                        OMG.SetBorderColor(title_bar, 0, 0, 0, 1);
+                        OMG.SetBackgroundColor(title_bar, base_background_color);
+                        OMG.SetBorderColor(title_bar, OMG.MakeTone(base_background_color, 0.2));
                         OMG.SetBorderSize(title_bar, 1);
 
                         OMG.Text(title_bar, title);
@@ -206,7 +214,7 @@ END
 
                     entity_inspector := Panel(right_side, "entity_inspector", "Entity Inspector");
                     {
-                        add_component, add_component_node := OMG.Button(entity_inspector, "Add Component");
+                        add_component, add_component_node := OMG.Button(entity_inspector, "Add Component", style=OMG.GetStyle("button_accent", OMG.ButtonStyle));
                         OMG.SetWidth(add_component_node, OMG.SizeFill());
 
                         text := OMG.GetNode(add_component_node, "text");

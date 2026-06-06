@@ -104,6 +104,10 @@ HSVToRGB :: (hsv : Vec3f) -> Vec3f {
     return v * p;
 }
 
+Darken :: inline (rgba : RGBA8, amount : float) -> RGBA8 {
+    return SetRGB(rgba, Darken(GetRGB(rgba), amount));
+}
+
 Darken :: (rgb : Vec3f, amount : float) -> Vec3f {
     hsv := RGBToHSV(rgb);
     hsv.z = clamp(hsv.z - amount, 0, 1);
@@ -111,11 +115,19 @@ Darken :: (rgb : Vec3f, amount : float) -> Vec3f {
     return HSVToRGB(hsv);
 }
 
+Brighten :: inline (rgba : RGBA8, amount : float) -> RGBA8 {
+    return SetRGB(rgba, Brighten(GetRGB(rgba), amount));
+}
+
 Brighten :: (rgb : Vec3f, amount : float) -> Vec3f {
     hsv := RGBToHSV(rgb);
     hsv.z = clamp(hsv.z + amount, 0, 1);
 
     return HSVToRGB(hsv);
+}
+
+Whiten :: inline (rgba : RGBA8, amount : float) -> RGBA8 {
+    return SetRGB(rgba, Whiten(GetRGB(rgba), amount));
 }
 
 Whiten :: (rgb : Vec3f, amount : float) -> Vec3f {
@@ -126,6 +138,10 @@ Whiten :: (rgb : Vec3f, amount : float) -> Vec3f {
     return HSVToRGB(hsv);
 }
 
+MakeTone :: inline (rgba : RGBA8, t : float) -> RGBA8 {
+    return SetRGB(rgba, MakeTone(GetRGB(rgba), t));
+}
+
 MakeTone :: (rgb : Vec3f, t : float) -> Vec3f {
     t = clamp(t, 0, 1);
 
@@ -134,6 +150,16 @@ MakeTone :: (rgb : Vec3f, t : float) -> Vec3f {
     hsv.z = lerp(hsv.z, 0.5, t);
 
     return HSVToRGB(hsv);
+}
+
+InvertColor :: (rgba : RGBA8, t := 1.0) -> RGBA8 {
+    rgb := GetRGB(rgba);
+    rgb = lerp(rgb, Vec3f.{1,1,1} - rgb, t);
+    return SetRGB(rgba, rgb);
+}
+
+InvertColor :: (rgb : Vec3f, t := 1.0) -> Vec3f {
+    return lerp(rgb, Vec3f.{1,1,1} - rgb, t);
 }
 
 ComplementaryColor :: (rgb : Vec3f) -> Vec3f {
@@ -209,4 +235,16 @@ SquareColors :: (rgb : Vec3f, hue_shift := 30.0) -> Vec3f, Vec3f, Vec3f {
     c.x = fmod_cycling(c.x + 90, 360);
 
     return HSVToRGB(a), HSVToRGB(b), HSVToRGB(c);
+}
+
+PerceivedBrightnessYIQ :: inline (rgba : RGBA8) -> float {
+    return PerceivedBrightnessYIQ(GetRGB(rgba));
+}
+
+PerceivedBrightnessYIQ :: inline (rgb : Vec3f) -> float {
+    return 0.299 * rgb.x + 0.587 * rgb.y + 0.114 * rgb.z;
+}
+
+ChooseTextColor :: inline (background : RGBA8, dark : RGBA8 = 0x0d0d0dff, light : RGBA8 = 0xf2f2f2ff, $choose : (RGBA8) -> bool = (color) => PerceivedBrightnessYIQ(color) > 0.5) -> RGBA8 {
+    return ifx choose(background) then dark else light;
 }

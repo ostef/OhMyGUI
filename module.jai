@@ -124,7 +124,13 @@ Init :: () {
     default_font := LoadDefaultFont();
     assert(default_font != null, "Could not load default font");
 
-    SetupDefaultTheme(*g_default_theme, ColorU32(0.3, 0.5, 0.8, 1));
+    SetupDefaultTheme(
+        *g_default_theme,
+        // base_background_color=ColorU32(0.2, 0.2, 0.2, 1),
+        base_background_color=ColorU32(0.9, 0.9, 0.9, 1),
+        base_accent_color=ColorU32(0.3, 0.5, 0.8, 1),
+    );
+
     SetTheme(*g_default_theme);
 }
 

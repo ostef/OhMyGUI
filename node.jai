@@ -655,6 +655,10 @@ SetBackgroundColor :: inline (node : *Node, color : Vec4f) {
     node.background_color = ColorU32(color);
 }
 
+SetBackgroundColor :: inline (node : *Node, color : RGBA8) {
+    node.background_color = color;
+}
+
 SetTextColor :: inline (node : *Node, r : float, g : float, b : float, a : float) {
     node.text_color = ColorU32(r, g, b, a);
 }
@@ -663,12 +667,20 @@ SetTextColor :: inline (node : *Node, color : Vec4f) {
     node.text_color = ColorU32(color);
 }
 
+SetTextColor :: inline (node : *Node, color : RGBA8) {
+    node.text_color = color;
+}
+
 SetBorderColor :: inline (node : *Node, r : float, g : float, b : float, a : float) {
     node.border_color = ColorU32(r, g, b, a);
 }
 
 SetBorderColor :: inline (node : *Node, color : Vec4f) {
     node.border_color = ColorU32(color);
+}
+
+SetBorderColor :: inline (node : *Node, color : RGBA8) {
+    node.border_color = color;
 }
 
 SetBorderSize :: inline (node : *Node, size : float) {

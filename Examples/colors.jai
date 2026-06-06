@@ -158,7 +158,8 @@ ColorsFrame :: () {
             OMG.SetPadding(canvas, 20, 20);
             OMG.SetBackgroundColor(canvas, 1,1,1,1);
 
-            ColorSet(canvas, .{1,0.2,0.5});
+            // ColorSet(canvas, .{1,0.2,0.5});
+            ColorSet(canvas, .{1,1,1});
         }
     }
 }

@@ -11,7 +11,6 @@ using,only(.["*"]) OMG;
 #load "colors.jai";
 
 g_window : *SDL_Window;
-g_mouse : Vector2;
 g_frame_in_flight : int;
 g_frame_syncs : [2]GLsync;
 g_time : float;
@@ -66,19 +65,6 @@ main :: () {
             OMG.HandleEvent(event);
         }
 
-        wx, wy : s32;
-        SDL_GetWindowPosition(g_window, *wx, *wy);
-
-        w, h : s32;
-        SDL_GetWindowSize(g_window, *w, *h);
-
-        mx, my : s32;
-        SDL_GetGlobalMouseState(*mx, *my);
-        mx -= wx;
-        my -= wy;
-
-        g_mouse = .{xx mx, xx my};
-
         OMG.NewFrame(g_delta_time);
 
         EditorFrame();
@@ -94,6 +80,9 @@ main :: () {
 
             glDeleteSync(g_frame_syncs[g_frame_in_flight]);
         }
+
+        w, h : s32;
+        SDL_GetWindowSize(g_window, *w, *h);
 
         glViewport(0, 0, xx w, xx h);
         glClearColor(0,0,0,1);

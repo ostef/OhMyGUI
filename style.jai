@@ -249,6 +249,7 @@ DefaultTheme :: struct {
 
     text : TextStyle;
     button : ButtonStyle;
+    button_accent : ButtonStyle;
     slider : SliderStyle;
     scrollbar : SliderStyle;
     text_input : TextInputStyle;
@@ -261,13 +262,15 @@ DefaultTheme :: struct {
 
 g_default_theme : DefaultTheme;
 
-SetupDefaultTheme :: (theme : *DefaultTheme, accent_color : RGBA8) {
+SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base_accent_color : RGBA8) {
+    print("%\n", PerceivedBrightnessYIQ(base_background_color));
+
     {
         using theme.text;
 
         font = GetDefaultFont();
         text_size = 16;
-        text_color = ColorU32(0,0,0,1);
+        text_color = ChooseTextColor(base_background_color);
     }
     SetStyle(theme, "text", theme.text);
 
@@ -277,21 +280,40 @@ SetupDefaultTheme :: (theme : *DefaultTheme, accent_color : RGBA8) {
         normal.background.corner_radiuses = .{10,10,10,10};
         normal.background.padding = .{10,10,10,10};
         normal.background.child_gap = .{4,4};
-        normal.background.background_color = ColorU32(0.9,0.9,0.9,1);
-        normal.text = theme.text;
+        normal.text.font = GetDefaultFont();
+        normal.text.text_size = 16;
 
         focused = normal;
-        focused.background.background_color = ColorU32(0.8,0.8,0.8,1);
-
         hot = normal;
-        hot.background.background_color = ColorU32(0.7,0.7,0.7,1);
-
         active = normal;
-
         disabled = normal;
-        disabled.text.text_color = ColorU32(0.5,0.5,0.5,1);
+
+        SetColors(*theme.button, base_background_color);
+
+        SetAlpha(*disabled.text.text_color, 0.5);
     }
     SetStyle(theme, "button", theme.button);
+
+    {
+        using theme.button_accent;
+
+        normal.background.corner_radiuses = .{10,10,10,10};
+        normal.background.padding = .{10,10,10,10};
+        normal.background.child_gap = .{4,4};
+        normal.text.font = GetDefaultFont();
+        normal.text.text_size = 16;
+
+        focused = normal;
+        hot = normal;
+        active = normal;
+        disabled = normal;
+
+        SetColors(*theme.button_accent, base_accent_color);
+
+        disabled = normal;
+        SetAlpha(*disabled.text.text_color, 0.5);
+    }
+    SetStyle(theme, "button_accent", theme.button_accent);
 
     {
         using theme.slider;
@@ -300,22 +322,14 @@ SetupDefaultTheme :: (theme : *DefaultTheme, accent_color : RGBA8) {
         handle_size = 15;
 
         normal.background.corner_radiuses = Vec4f.{1,1,1,1} * background_size * 0.5;
-        normal.background.background_color = ColorU32(0.5, 0.5, 0.5, 1);
-        normal.handle.background_color = theme.button.normal.background.background_color;
         normal.handle.corner_radiuses = Vec4f.{1,1,1,1} * handle_size * 0.5;
 
         focused = normal;
-        focused.handle.background_color = theme.button.focused.background.background_color;
+        hot = normal;
+        active = normal;
+        disabled = normal;
 
-        hot = focused;
-        hot.handle.background_color = theme.button.hot.background.background_color;
-
-        active = hot;
-        active.handle.background_color = ColorU32(0.9, 0.9, 0.9, 1);
-        active.handle.background_color = theme.button.active.background.background_color;
-
-        disabled.background.background_color = ColorU32(0.5, 0.5, 0.5, 0.5);
-        disabled.handle.background_color = ColorU32(0.5, 0.5, 0.5, 1);
+        SetColors(*theme.slider, MakeTone(base_background_color, 0.3), base_accent_color);
     }
     SetStyle(theme, "slider", theme.slider);
 
@@ -324,44 +338,38 @@ SetupDefaultTheme :: (theme : *DefaultTheme, accent_color : RGBA8) {
 
         handle_size = 10;
 
-        normal.background.background_color = ColorU32(0.7, 0.7, 0.7, 0.4);
-        normal.handle.background_color = ColorU32(0.8, 0.8, 0.8, 1);
-        normal.handle.corner_radiuses = .{5,5,5,5};
+        normal.background.corner_radiuses = Vec4f.{1,1,1,1} * background_size * 0.5;
+        normal.handle.corner_radiuses = Vec4f.{1,1,1,1} * handle_size * 0.5;
 
         focused = normal;
-        focused.background.background_color = ColorU32(0.4, 0.4, 0.4, 0.8);
+        hot = normal;
+        active = normal;
+        disabled = normal;
 
-        hot = focused;
-
-        active = hot;
-        active.handle.background_color = ColorU32(0.9, 0.9, 0.9, 1);
-
-        disabled.background.background_color = ColorU32(0.5, 0.5, 0.5, 0.5);
-        disabled.handle.background_color = ColorU32(0.5, 0.5, 0.5, 1);
+        SetColors(*theme.scrollbar, MakeTone(base_background_color, 0.3), base_background_color);
     }
     SetStyle(theme, "scrollbar", theme.scrollbar);
 
     {
         using theme.text_input;
 
+        cursor.background_color = ChooseTextColor(base_background_color);
+
         normal.background.corner_radiuses = .{10,10,10,10};
         normal.background.padding = .{10,10,10,10};
         normal.background.child_gap = .{4,4};
-        normal.background.background_color = ColorU32(0.9,0.9,0.9,1);
-        normal.text = theme.text;
+        normal.text.font = GetDefaultFont();
+        normal.text.text_size = 16;
 
         focused = normal;
-        focused.background.background_color = ColorU32(0.8,0.8,0.8,1);
-
         hot = normal;
-        hot.background.background_color = ColorU32(0.7, 0.7, 0.7,1);
-
         active = normal;
-        active.background.border_size = 2;
-        active.background.border_color = accent_color;
-
         disabled = normal;
-        disabled.text.text_color = ColorU32(0.5,0.5,0.5,1);
+
+        SetColors(*theme.text_input, base_background_color, base_accent_color);
+
+        SetAlpha(*disabled.text.text_color, 0.5);
+        SetAlpha(*disabled.background.background_color, 0.5);
     }
     SetStyle(theme, "text_input", theme.text_input);
 
@@ -370,27 +378,24 @@ SetupDefaultTheme :: (theme : *DefaultTheme, accent_color : RGBA8) {
 
         normal.background.corner_radiuses = .{4,4,4,4};
         normal.background.padding = .{2,2,2,2};
-        normal.background.background_color = ColorU32(0.9,0.9,0.9,1);
-        normal.checkmark.background_color = accent_color;
         normal.checkmark.rounding = 1;
 
         focused = normal;
-        focused.background.background_color = ColorU32(0.8,0.8,0.8,1);
-
         hot = normal;
-        hot.background.background_color = ColorU32(0.7,0.7,0.7,1);
-
         active = normal;
-
         disabled = normal;
-        disabled.checkmark.background_color = ColorU32(0.5,0.5,0.5,1);
+
+        SetColors(*theme.checkbox, base_background_color, base_accent_color);
+
+        SetAlpha(*disabled.background.background_color, 0.5);
+        SetAlpha(*disabled.checkmark.background_color, 0.5);
     }
     SetStyle(theme, "checkbox", theme.checkbox);
 
     {
         using theme.menu_bar;
 
-        background_color = ColorU32(1,1,1,1);
+        background_color = Darken(base_background_color, 0.1);
     }
     SetStyle(theme, "menu_bar", theme.menu_bar);
 
@@ -399,20 +404,18 @@ SetupDefaultTheme :: (theme : *DefaultTheme, accent_color : RGBA8) {
 
         normal.background.padding = .{4,4,4,4};
         normal.background.child_gap = .{4,4};
-        normal.text = theme.text;
-        normal.text.text_size = floor(normal.text.text_size * 0.9);
+        normal.text.font = GetDefaultFont();
+        normal.text.text_size = 16;
 
         focused = normal;
-        focused.background.background_color = ColorU32(0.8,0.8,0.8,1);
-
         hot = normal;
-        hot.background.background_color = ColorU32(0.7,0.7,0.7,1);
-
         active = normal;
-        active.background.background_color = ColorU32(0.9,0.9,0.9,1);
-
         disabled = normal;
-        disabled.text.text_color = ColorU32(0.5,0.5,0.5,1);
+
+        SetColors(*theme.menu_item, Darken(base_background_color, 0.1));
+        normal.background.background_color = 0;
+
+        SetAlpha(*disabled.text.text_color, 0.5);
     }
     SetStyle(theme, "menu_item", theme.menu_item);
 
@@ -421,7 +424,8 @@ SetupDefaultTheme :: (theme : *DefaultTheme, accent_color : RGBA8) {
 
         corner_radiuses = .{2,2,2,2};
         padding = .{2,2,2,2};
-        background_color = ColorU32(1,1,1,1);
+
+        background_color = Darken(base_background_color, 0.1);
 
         outer_shadow_color = ColorU32(0,0,0,0.5);
         outer_shadow_offset = .{3,3};
