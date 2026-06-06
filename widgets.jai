@@ -68,6 +68,7 @@ Button :: (parent : *Node, text : string, style : *ButtonStyle = null, location 
 
 SliderStateStyle :: struct {
     background : BoxStyle;
+    fill : BoxStyle;
     handle : BoxStyle;
 }
 
@@ -77,11 +78,16 @@ SliderStyle :: struct {
     handle_size : float;
 }
 
-SetColors :: (using style : *SliderStyle, base_background_color : RGBA8, base_handle_color : RGBA8) {
+SetColors :: (using style : *SliderStyle, base_background_color : RGBA8, base_fill_color : RGBA8, base_handle_color : RGBA8) {
     normal.background.background_color = base_background_color;
     focused.background.background_color = base_background_color;
     hot.background.background_color = base_background_color;
     active.background.background_color = base_background_color;
+
+    normal.fill.background_color = base_fill_color;
+    focused.fill.background_color = base_fill_color;
+    hot.fill.background_color = base_fill_color;
+    active.fill.background_color = base_fill_color;
 
     normal.handle.background_color = base_handle_color;
     focused.handle.background_color = Whiten(base_handle_color, 0.05);
@@ -102,7 +108,7 @@ Slider :: (parent : *Node, value : *$T, min : T, max : T, step : T, style : *Sli
         value.* = xx fvalue;
     }
 
-    slider, background, handle : *Node;
+    slider, background, fill, handle : *Node;
 
     slider = GetNode(parent, location=location);
     {
@@ -114,6 +120,7 @@ Slider :: (parent : *Node, value : *$T, min : T, max : T, step : T, style : *Sli
         background = GetNode(slider, "background");
         {
             SetSize(background, SizeFill(), SizePx(style.background_size));
+            SetLayout(background, .None);
         }
 
         handle = GetNode(slider, "handle");
@@ -156,10 +163,16 @@ Slider :: (parent : *Node, value : *$T, min : T, max : T, step : T, style : *Sli
 
             handle.offset[Axis.X] = (fvalue / range) * offset_max;
         }
+
+        fill = GetNode(background, "fill");
+        {
+            SetSize(fill, SizeFill(fvalue / (fmax - fmin)), SizeFill());
+        }
     }
 
     state := GetState(handle);
     Apply(background, style.states[state].background);
+    Apply(fill, style.states[state].fill);
     Apply(handle, style.states[state].handle);
 
     return slider, background, handle;

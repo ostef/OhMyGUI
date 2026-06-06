@@ -2,8 +2,7 @@ g_slider_value : float;
 g_show_password : bool;
 
 EditorFrame :: () {
-    base_background_color := OMG.GetStyle("button", OMG.ButtonStyle).normal.background.background_color;
-    base_background_color = OMG.Darken(base_background_color, 0.1);
+    base_background_color := OMG.GetStyle("base", OMG.BoxStyle).background_color;
 
     window := OMG.GetWindow(g_window);
     root := OMG.GetNode(window);
@@ -75,8 +74,7 @@ EditorFrame :: () {
             OMG.SetSize(content, OMG.SizeFill());
 
             Panel :: (parent : *OMG.Node, str_id : string, title : string) -> *OMG.Node {
-                base_background_color := OMG.GetStyle("button", OMG.ButtonStyle).normal.background.background_color;
-                base_background_color = OMG.Darken(base_background_color, 0.1);
+                base_background_color := OMG.GetStyle("base", OMG.BoxStyle).background_color;
 
                 panel := OMG.GetNode(parent, str_id);
                 {
@@ -90,7 +88,7 @@ EditorFrame :: () {
                     title_bar := OMG.GetNode(panel, "title_bar");
                     {
                         OMG.SetSize(title_bar, OMG.SizeFill(), OMG.SizePx(32));
-                        OMG.SetPadding(title_bar, 4, 4);
+                        OMG.SetPadding(title_bar, 10, 4);
                         OMG.SetChildAlign(title_bar, 0, 0.5);
 
                         OMG.SetBackgroundColor(title_bar, base_background_color);

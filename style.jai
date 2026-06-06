@@ -247,6 +247,7 @@ AnimateStyle :: (a : $T, b : T, t : float, func : AnimFunc) -> T {
 DefaultTheme :: struct {
     #as theme : Theme;
 
+    base : BoxStyle;
     text : TextStyle;
     button : ButtonStyle;
     button_accent : ButtonStyle;
@@ -263,7 +264,14 @@ DefaultTheme :: struct {
 g_default_theme : DefaultTheme;
 
 SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base_accent_color : RGBA8) {
-    print("%\n", PerceivedBrightnessYIQ(base_background_color));
+    button_base_background_color := MakeTone(base_background_color, 0.25);
+
+    {
+        using theme.base;
+
+        background_color = base_background_color;
+    }
+    SetStyle(theme, "base", theme.base);
 
     {
         using theme.text;
@@ -288,7 +296,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         active = normal;
         disabled = normal;
 
-        SetColors(*theme.button, base_background_color);
+        SetColors(*theme.button, button_base_background_color);
 
         SetAlpha(*disabled.text.text_color, 0.5);
     }
@@ -323,13 +331,16 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
 
         normal.background.corner_radiuses = Vec4f.{1,1,1,1} * background_size * 0.5;
         normal.handle.corner_radiuses = Vec4f.{1,1,1,1} * handle_size * 0.5;
+        // SetAlpha(*normal.handle.outer_shadow_color, 0.5);
+        // normal.handle.outer_shadow_blur = 5;
 
         focused = normal;
         hot = normal;
         active = normal;
         disabled = normal;
 
-        SetColors(*theme.slider, MakeTone(base_background_color, 0.3), base_accent_color);
+        SetColors(*theme.slider, MakeTone(base_background_color, 0.3), Whiten(base_accent_color, 0.1), base_accent_color);
+
     }
     SetStyle(theme, "slider", theme.slider);
 
@@ -346,7 +357,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         active = normal;
         disabled = normal;
 
-        SetColors(*theme.scrollbar, MakeTone(base_background_color, 0.3), base_background_color);
+        SetColors(*theme.scrollbar, MakeTone(base_background_color, 0.05), 0, button_base_background_color);
     }
     SetStyle(theme, "scrollbar", theme.scrollbar);
 
@@ -366,7 +377,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         active = normal;
         disabled = normal;
 
-        SetColors(*theme.text_input, base_background_color, base_accent_color);
+        SetColors(*theme.text_input, button_base_background_color, base_accent_color);
 
         SetAlpha(*disabled.text.text_color, 0.5);
         SetAlpha(*disabled.background.background_color, 0.5);
@@ -385,7 +396,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         active = normal;
         disabled = normal;
 
-        SetColors(*theme.checkbox, base_background_color, base_accent_color);
+        SetColors(*theme.checkbox, button_base_background_color, base_accent_color);
 
         SetAlpha(*disabled.background.background_color, 0.5);
         SetAlpha(*disabled.checkmark.background_color, 0.5);
@@ -395,24 +406,26 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
     {
         using theme.menu_bar;
 
-        background_color = Darken(base_background_color, 0.1);
+        child_gap = .{2,2};
+        background_color = base_background_color;
     }
     SetStyle(theme, "menu_bar", theme.menu_bar);
 
     {
         using theme.menu_item;
 
+        normal.background.corner_radiuses = .{3,3,3,3};
         normal.background.padding = .{4,4,4,4};
         normal.background.child_gap = .{4,4};
         normal.text.font = GetDefaultFont();
-        normal.text.text_size = 16;
+        normal.text.text_size = 14;
 
         focused = normal;
         hot = normal;
         active = normal;
         disabled = normal;
 
-        SetColors(*theme.menu_item, Darken(base_background_color, 0.1));
+        SetColors(*theme.menu_item, Darken(button_base_background_color, 0.1));
         normal.background.background_color = 0;
 
         SetAlpha(*disabled.text.text_color, 0.5);
@@ -422,10 +435,12 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
     {
         using theme.menu;
 
-        corner_radiuses = .{2,2,2,2};
+        corner_radiuses = .{3,3,3,3};
         padding = .{2,2,2,2};
 
-        background_color = Darken(base_background_color, 0.1);
+        background_color = base_background_color;
+        border_color = MakeTone(base_background_color, 0.3);
+        border_size = 1;
 
         outer_shadow_color = ColorU32(0,0,0,0.5);
         outer_shadow_offset = .{3,3};
@@ -436,11 +451,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
     {
         using theme.separator;
 
-        background_color = ColorU32(0.1,0.1,0.1,0.5);
-
-        outer_shadow_color = ColorU32(0,0,0,0.1);
-        outer_shadow_offset = .{1,1};
-        outer_shadow_blur = 4;
+        background_color = ColorU32(0.5, 0.5, 0.5, 1);
     }
     SetStyle(theme, "separator", theme.separator);
 }

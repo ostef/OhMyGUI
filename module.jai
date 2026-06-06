@@ -126,8 +126,8 @@ Init :: () {
 
     SetupDefaultTheme(
         *g_default_theme,
-        // base_background_color=ColorU32(0.2, 0.2, 0.2, 1),
-        base_background_color=ColorU32(0.9, 0.9, 0.9, 1),
+        base_background_color=ColorU32(0.95, 0.95, 0.95, 1),
+        // base_background_color=ColorU32(0.05, 0.05, 0.05, 1),
         base_accent_color=ColorU32(0.3, 0.5, 0.8, 1),
     );
 
