@@ -43,9 +43,6 @@ main :: () {
     }
     defer OMG.TerminateGL();
 
-    font_config : OMG.FontConfig;
-    OMG.LoadFontFromFile("JetBrainsMono-Regular.ttf", font_config);
-
     program_start := current_time_monotonic();
     quit := false;
     g_delta_time = 1 / 60.0;
