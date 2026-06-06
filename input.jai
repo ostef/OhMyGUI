@@ -325,11 +325,11 @@ HandleInputEvent :: (event : SDL_Event) {
 
     case SDL_MOUSEWHEEL;
         if event.wheel.direction == xx SDL_MouseWheelDirection.SDL_MOUSEWHEEL_FLIPPED {
-            omg.input.mouse_wheel.y = xx event.wheel.x;
-            omg.input.mouse_wheel.x = xx event.wheel.y;
+            omg.input.mouse_wheel.x -= event.wheel.x * context.omg.mouse_wheel_multiplier;
+            omg.input.mouse_wheel.y -= event.wheel.y * context.omg.mouse_wheel_multiplier;
         } else {
-            omg.input.mouse_wheel.x = xx event.wheel.x;
-            omg.input.mouse_wheel.y = xx event.wheel.y;
+            omg.input.mouse_wheel.x += event.wheel.x * context.omg.mouse_wheel_multiplier;
+            omg.input.mouse_wheel.y += event.wheel.y * context.omg.mouse_wheel_multiplier;
         }
 
     case SDL_TEXTINPUT;

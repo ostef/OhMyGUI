@@ -387,6 +387,8 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
 
         normal.background.corner_radiuses = .{4,4,4,4};
         normal.background.padding = .{2,2,2,2};
+        normal.background.border_color = MakeTone(button_base_background_color, 0.3);
+        normal.background.border_size = 1;
         normal.checkmark.rounding = 1;
 
         focused = normal;
@@ -423,7 +425,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         active = normal;
         disabled = normal;
 
-        SetColors(*theme.menu_item, Darken(button_base_background_color, 0.1));
+        SetColors(*theme.menu_item, Darken(button_base_background_color, 0.1), ChooseTextColor(base_background_color));
         normal.background.background_color = 0;
 
         SetAlpha(*disabled.text.text_color, 0.5);
