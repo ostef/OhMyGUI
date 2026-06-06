@@ -87,14 +87,16 @@ if OMG.Button(root, "Hello") {
 ```
 
 ## Layout
-Layout in OhMyGUI is done at the end of the frame based on different properties that the user can set. There are 5 layout modes currently available, which are mostly self explanatory:
+Layout in OhMyGUI is done at the end of the frame based on different properties that the user can set. There are 5 layout modes currently available, which define how children are positioned:
 * None
 * LeftToRight
 * RightToLeft
 * TopToBottom
 * BottomToTop
 
-The None layout mode means child nodes are not positioned. This is useful for e.g. visual node editors, where nodes position themselves and can be freely moved by the user.
+The None layout mode means child nodes are not positioned. This is useful for e.g. visual node editors, where nodes position themselves and can be freely moved by the user. The offset property of the node is used in that case as the position of the node relative to its parent.
+
+Note that children cannot decide themselves that they want to be positionned differently.
 
 Sizing can be parameterized in three ways, on both the X and Y axis:
 * Pixels (`SizePx(value)` function)
