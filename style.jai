@@ -390,7 +390,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, accent_color : RGBA8) {
     {
         using theme.menu_bar;
 
-        background_color = ColorU32(0.9,0.9,0.9,1);
+        background_color = ColorU32(1,1,1,1);
     }
     SetStyle(theme, "menu_bar", theme.menu_bar);
 
