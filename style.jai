@@ -331,8 +331,6 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
 
         normal.background.corner_radiuses = Vec4f.{1,1,1,1} * background_size * 0.5;
         normal.handle.corner_radiuses = Vec4f.{1,1,1,1} * handle_size * 0.5;
-        // SetAlpha(*normal.handle.outer_shadow_color, 0.5);
-        // normal.handle.outer_shadow_blur = 5;
 
         focused = normal;
         hot = normal;
