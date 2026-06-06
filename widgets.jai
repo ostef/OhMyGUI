@@ -117,6 +117,13 @@ Slider :: (parent : *Node, value : *$T, min : T, max : T, step : T, style : *Sli
         SetChildAlign(slider, 0, 0.5);
         SetDraw(slider, null);
 
+        scroll := ScrollBehavior(slider);
+        if scroll.y != 0 {
+            fvalue = Snap(clamp(fvalue + sign(scroll.y) * fstep, fmin, fmax), fstep);
+        } else if scroll.x != 0 {
+            fvalue = Snap(clamp(fvalue + sign(scroll.x) * fstep, fmin, fmax), fstep);
+        }
+
         background = GetNode(slider, "background");
         {
             SetSize(background, SizeFill(), SizePx(style.background_size));
