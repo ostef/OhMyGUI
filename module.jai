@@ -35,7 +35,6 @@ Context :: struct {
     theme : *Theme;
     id_offset_stack : [..]int;
 
-    mouse_is_over_node : bool;
     mouse_hovered_node : *Node;
     mouse_focused_node : *Node;
     mouse_capturing_node : *Node;
@@ -173,7 +172,6 @@ NewFrame :: (delta_time : float) {
     omg.input.mouse_position = .{xx mx, xx my};
 
     omg.mouse_hovered_node = null;
-    omg.mouse_is_over_node = false;
     omg.mouse_focused_node = null;
     omg.scroll_focused_node = null;
 

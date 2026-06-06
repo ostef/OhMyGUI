@@ -439,11 +439,7 @@ FindMouseFocus :: (node : *Node) {
     omg := context.omg;
     mouse := GetMousePosition(node.window);
 
-    if node.parent && IsInsideRect(mouse, node.clipped_rect) {
-        omg.mouse_is_over_node = true;
-    }
-
-    if IsInsideRect(mouse, node.clipped_rect) {
+    if node.parent && IsInsideRect(mouse, node.layout_last_frame.clipped_rect) {
         omg.mouse_hovered_node = node;
 
         if !omg.mouse_capturing_node || omg.mouse_capturing_node == node {

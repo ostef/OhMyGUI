@@ -525,26 +525,23 @@ MenuItem :: (parent : *Node, text : string, style : *ButtonStyle = null, locatio
         text_node := GetNode(node, "text");
         SetText(text_node, text);
 
-        should_deactivate := !(node.state_flags & .Focused) && IsMouseButtonPressed(.Left);
-        should_deactivate |= IsKeyPressed(.Escape);
-
         button := ButtonBehavior(node);
-        if !should_deactivate && (button.released || node.state_flags & .ActiveLastFrame) {
-            node.state_flags |= .Active;
-        }
 
         state := GetState(node);
 
         Apply(node, style.states[state].background);
         Apply(text_node, style.states[state].text);
 
-        return node.state_flags & .Active != 0, node;
+        return button.released, node;
     }
 }
 
 Menu :: (parent : *Node, text : string, menu_item_style : *ButtonStyle = null, menu_style : *BoxStyle = null, location := #caller_location) -> menu : *Node, menu_item : *Node {
     EnsureStyle(*menu_item_style, "menu_item");
     EnsureStyle(*menu_style, "menu");
+
+    popup_root := GetPopupRoot(parent.window);
+    menu_id := GetID(GetID(location), popup_root.id);
 
     menu_item := GetNode(parent, location);
     {
@@ -553,8 +550,26 @@ Menu :: (parent : *Node, text : string, menu_item_style : *ButtonStyle = null, m
         text_node := GetNode(menu_item, "text");
         SetText(text_node, text);
 
-        should_deactivate := !(menu_item.state_flags & .Focused) && IsMouseButtonPressed(.Left);
-        should_deactivate |= IsKeyPressed(.Escape);
+        should_deactivate := IsKeyPressed(.Escape);
+        if !(menu_item.state_flags & .Focused) && IsMouseButtonPressed(.Left) {
+            // Traverse the node tree to make sure we are not an ancestor to the focused node
+            // If we are an ancestor, we don't deactivate the menu
+            found_menu := false;
+
+            ancestor := context.omg.mouse_hovered_node;
+            while ancestor {
+                if ancestor.id == menu_id {
+                    found_menu = true;
+                    break;
+                }
+
+                ancestor = ancestor.parent;
+            }
+
+            if !found_menu {
+                should_deactivate = true;
+            }
+        }
 
         button := ButtonBehavior(menu_item);
         if !should_deactivate && (button.released || menu_item.state_flags & .ActiveLastFrame) {
