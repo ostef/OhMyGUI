@@ -1,15 +1,8 @@
-#import,dir "freetype";
+#import "freetype";
 #import "Hash_Table";
 #import "String";
 
 // https://freetype.org/freetype2/docs/glyphs/glyphs-3.html
-
-#scope_file
-
-FT_Property_Set :: (lib : FT_Library, module_name : *u8, property_name : *u8, value : *void) -> FT_Error #foreign freetype;
-FT_Property_Get :: (lib : FT_Library, module_name : *u8, property_name : *u8, value : *void) -> FT_Error #foreign freetype;
-
-#scope_export
 
 Font :: struct {
     prev : *Font;
@@ -99,8 +92,8 @@ LoadFontFromFile :: (name : string, filename : string, config : FontConfig) -> *
     font.ascent = FractToFloat(ft_face.size.metrics.ascender) / cast(float, config.resolution);
     font.descent = -FractToFloat(ft_face.size.metrics.descender) / cast(float, config.resolution);
 
-    sdf_spread : s32;
-    FT_Property_Get(g_ft_lib, "sdf", "spread", *sdf_spread);
+    sdf_spread : s32 = 8;
+    // FT_Property_Get(g_ft_lib, "sdf", "spread", *sdf_spread);
     font.sdf_range = sdf_spread / cast(float, font.resolution);
 
     packer : RectPacker;
