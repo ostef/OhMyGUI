@@ -355,7 +355,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         active = normal;
         disabled = normal;
 
-        SetColors(*theme.scrollbar, MakeTone(base_background_color, 0.05), 0, button_base_background_color);
+        SetColors(*theme.scrollbar, MakeTone(base_background_color, 0.05), 0, MakeTone(base_background_color, 0.5));
     }
     SetStyle(theme, "scrollbar", theme.scrollbar);
 
