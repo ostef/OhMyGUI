@@ -1,4 +1,4 @@
-g_slider_value : float;
+g_slider_value := 0.5;
 g_show_password : bool;
 
 EditorFrame :: () {

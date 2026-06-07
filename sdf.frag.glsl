@@ -44,7 +44,6 @@ layout(binding=2, std430) readonly buffer EffectData {
     Effect u_effects[];
 };
 uniform vec2 u_viewport_size;
-uniform float u_anti_aliasing_factor;
 uniform sampler2D u_texture;
 
 layout(location=0) in vec2 in_position;
@@ -58,10 +57,10 @@ layout(location=6) in flat uint in_num_clip_shapes;
 layout(location=0) out vec4 out_color;
 
 vec4 ColorVec4(uint rgba) {
-    float r = float((rgba >> 24) & 0xff);
-    float g = float((rgba >> 16) & 0xff);
-    float b = float((rgba >> 8)  & 0xff);
-    float a = float((rgba >> 0)  & 0xff);
+    float r = float((rgba >> 24) & uint(0xff));
+    float g = float((rgba >> 16) & uint(0xff));
+    float b = float((rgba >> 8)  & uint(0xff));
+    float a = float((rgba >> 0)  & uint(0xff));
 
     return vec4(r, g, b, a) * (1 / 255.0);
 }

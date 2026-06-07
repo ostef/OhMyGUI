@@ -9,7 +9,8 @@
 #load "unicode.jai";
 #load "input.jai";
 #load "sdf.jai";
-#load "draw.jai";
+#load "box_draw.jai";
+// #load "draw.jai";
 #load "text.jai";
 #load "gl.jai";
 #load "node.jai";
@@ -49,7 +50,7 @@ Context :: struct {
     mouse_captured_node_value : Vec2f = .{FLOAT32_NAN, FLOAT32_NAN}; // Value that nodes can specify upon capturing the mouse
     scroll_focused_node : *Node;
 
-    default_effect := Effect.{kind=.SolidColor, solid_color=.{color=0xffffffff}};
+    // default_effect := Effect.{kind=.SolidColor, solid_color=.{color=0xffffffff}};
 }
 
 GetTheme :: inline () -> *Theme {
@@ -85,6 +86,7 @@ GetWindow :: (window : *SDL_Window, create := true) -> *Window {
     }
 
     w = New(Window);
+    InitDrawList(*w.draw_list);
     w.sdl_window = window;
     w.next = context.omg.windows;
     if w.next {
@@ -264,10 +266,10 @@ Render :: () {
         omg.layout_time_last_frame = xx to_float64_seconds(layout_end - layout_start);
 
         if window.root_node {
-            DrawNodes(window.root_node);
+            DrawNodes(*window.draw_list, window.root_node);
         }
         if window.popup_root_node {
-            DrawNodes(window.popup_root_node);
+            DrawNodes(*window.draw_list, window.popup_root_node);
         }
     }
 
@@ -290,9 +292,9 @@ Render :: () {
 
 #scope_file
 
-DrawNodes :: (node : *Node, clip_shape : *SDShape = null) {
+DrawNodes :: (draw_list : *DrawList, node : *Node) {
     if node.draw {
-        node.draw(node, clip_shape);
+        node.draw(draw_list, node);
     }
 
     if node.clipped_rect.x >= node.clipped_rect.z || node.clipped_rect.y >= node.clipped_rect.w {
@@ -302,15 +304,22 @@ DrawNodes :: (node : *Node, clip_shape : *SDShape = null) {
     position := (node.rect.xy + node.rect.zw) * 0.5;
     if node.num_children > 0 {
         if !(node.flags & .NoClip) {
-            my_clip := ifx node.flags & .NoPaddedClip
-                then Box(node.size, node.corner_radiuses)
-                else Box(node.size - node.padding.xy - node.padding.zw, node.corner_radiuses);
-            my_clip = Move(my_clip, position);
-            clip_shape = ifx clip_shape then Inter(clip_shape, my_clip) else my_clip;
+            if node.flags & .NoPaddedClip {
+                PushClipBox(*node.window.draw_list, node.rect, node.corner_radiuses);
+            } else {
+                bounds := node.rect;
+                bounds.xy += node.padding.xy;
+                bounds.zw -= node.padding.zw;
+                PushClipBox(*node.window.draw_list, bounds, node.corner_radiuses);
+            }
         }
 
         for :Children node {
-            DrawNodes(it, clip_shape);
+            DrawNodes(draw_list, it);
+        }
+
+        if !(node.flags & .NoClip) {
+            PopClipBox(*node.window.draw_list);
         }
     }
 }

@@ -1,10 +1,5 @@
 #import "GL";
 
-Approx_Max_Instances :: 10000;
-Approx_Max_Shapes :: 5 * Approx_Max_Instances;
-Approx_Max_Effects :: 5 * Approx_Max_Shapes;
-Default_Shapes_Buffer_Size :: Approx_Max_Shapes * size_of(ShaderSDShape) + Approx_Max_Instances * size_of(ShaderSDInstance) + Approx_Max_Effects * size_of(ShaderEffect);
-
 GetLastFrameGPUTime :: inline () -> float {
     return g_last_frame_gpu_time;
 }
@@ -16,14 +11,16 @@ g_color_framebuffer : GLuint;
 g_color_texture_width : u32;
 g_color_texture_height : u32;
 
-g_shape_shader : GLuint;
+g_shader_shape : GLuint;
+g_shader_box : GLuint;
+g_shader_glyph : GLuint;
 g_dummy_vao : GLuint;
 
 g_num_frames_in_flight : int;
 g_frame_in_flight : int;
-g_shape_buffer_size : int;
-g_shape_buffer_handles : []GLuint;
-g_shape_buffer_ptrs : []*void;
+g_frame_data_buffer_size : int;
+g_frame_data_buffer_handles : []GLuint;
+g_frame_data_buffer_ptrs : []*void;
 g_timestamp_queries : [][2]GLuint;
 
 g_uniform_buffer_offset_alignment : s32;
@@ -116,31 +113,41 @@ LoadShader :: (vertex_filename : string, fragment_filename : string) -> GLuint {
 
 #scope_export
 
-InitGL :: (num_frames_in_flight : int = 2, shape_buffer_size : int = Default_Shapes_Buffer_Size) -> bool {
+InitGL :: (num_frames_in_flight := 2, frame_data_buffer_size := 1 * 1024 * 1024) -> bool {
     g_num_frames_in_flight = num_frames_in_flight;
 
-    g_shape_shader = LoadShader("sdf.vert.glsl", "sdf.frag.glsl");
-    if !g_shape_shader {
+    g_shader_shape = LoadShader("sdf.vert.glsl", "sdf.frag.glsl");
+    if !g_shader_shape {
+        return false;
+    }
+
+    g_shader_box = LoadShader("box.vert.glsl", "box.frag.glsl");
+    if !g_shader_box {
+        return false;
+    }
+
+    g_shader_glyph = LoadShader("glyph.vert.glsl", "glyph.frag.glsl");
+    if !g_shader_glyph {
         return false;
     }
 
     glCreateVertexArrays(1, *g_dummy_vao);
 
-    g_shape_buffer_handles = NewArray(num_frames_in_flight, GLuint);
-    g_shape_buffer_size = shape_buffer_size;
-    g_shape_buffer_ptrs = NewArray(num_frames_in_flight, *void);
+    g_frame_data_buffer_handles = NewArray(num_frames_in_flight, GLuint);
+    g_frame_data_buffer_size = frame_data_buffer_size;
+    g_frame_data_buffer_ptrs = NewArray(num_frames_in_flight, *void);
 
-    glCreateBuffers(xx g_shape_buffer_handles.count, g_shape_buffer_handles.data);
+    glCreateBuffers(xx g_frame_data_buffer_handles.count, g_frame_data_buffer_handles.data);
     for i : 0..g_num_frames_in_flight - 1 {
-        handle := g_shape_buffer_handles[i];
+        handle := g_frame_data_buffer_handles[i];
         if handle == 0 {
             return false;
         }
 
-        glNamedBufferStorage(handle, xx g_shape_buffer_size, null, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
+        glNamedBufferStorage(handle, xx g_frame_data_buffer_size, null, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
 
-        g_shape_buffer_ptrs[i] = glMapNamedBufferRange(handle, 0, xx g_shape_buffer_size, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
-        if g_shape_buffer_ptrs[i] == null {
+        g_frame_data_buffer_ptrs[i] = glMapNamedBufferRange(handle, 0, xx g_frame_data_buffer_size, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
+        if g_frame_data_buffer_ptrs[i] == null {
             return false;
         }
     }
@@ -168,7 +175,7 @@ InitGL :: (num_frames_in_flight : int = 2, shape_buffer_size : int = Default_Sha
 
     log("Initialized GL backend");
     log("Num frames in flight: %", g_num_frames_in_flight);
-    log("Shapes buffer: % bytes", g_shape_buffer_size);
+    log("Frame data buffer: % bytes", g_frame_data_buffer_size);
     log("GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT = %", g_uniform_buffer_offset_alignment);
     log("GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT = %", g_storage_buffer_offset_alignment);
 
@@ -179,19 +186,19 @@ TerminateGL :: () {
     glDeleteQueries(xx (g_timestamp_queries.count * 2), xx g_timestamp_queries.data);
     free(g_timestamp_queries.data);
 
-    glDeleteProgram(g_shape_shader);
-    g_shape_shader = 0;
+    glDeleteProgram(g_shader_shape);
+    g_shader_shape = 0;
 
     glDeleteVertexArrays(1, *g_dummy_vao);
     g_dummy_vao = 0;
 
-    glDeleteBuffers(xx g_shape_buffer_handles.count, g_shape_buffer_handles.data);
+    glDeleteBuffers(xx g_frame_data_buffer_handles.count, g_frame_data_buffer_handles.data);
 
-    free(g_shape_buffer_handles.data);
-    g_shape_buffer_handles = .[];
+    free(g_frame_data_buffer_handles.data);
+    g_frame_data_buffer_handles = .[];
 
-    free(g_shape_buffer_ptrs.data);
-    g_shape_buffer_ptrs = .[];
+    free(g_frame_data_buffer_ptrs.data);
+    g_frame_data_buffer_ptrs = .[];
 }
 
 RenderGL :: (viewport_w : u32, viewport_h : u32) {
@@ -232,34 +239,42 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
 
     push_allocator(temp);
 
-    instances_buffer : [..]ShaderSDInstance;
-    shapes_buffer : [..]ShaderSDShape;
-    effects_buffer : [..]ShaderEffect;
-    draw_calls : [..]DrawCall;
+    clip_boxes : [..]ShaderClipBox;
+    boxes : [..]ShaderBoxDrawing;
+    glyphs : [..]ShaderGlyphDrawing;
 
-    PrepareRenderingBuffers(*instances_buffer, *shapes_buffer, *effects_buffer, *draw_calls);
+    window := context.omg.windows;
+    while window {
+        defer window = window.next;
 
-    instances_offset := 0;
-    instances_size := instances_buffer.count * size_of(ShaderSDInstance);
+        CopyDrawListClipBoxes(*window.draw_list, *clip_boxes);
+        CopyDrawListBoxes(*window.draw_list, *boxes);
+        CopyDrawListGlyphs(*window.draw_list, *glyphs);
+    }
 
-    shapes_offset := align_forward(instances_offset + instances_size, g_storage_buffer_offset_alignment);
-    shapes_size := shapes_buffer.count * size_of(ShaderSDShape);
+    print_vars(clip_boxes.count, boxes.count, glyphs.count);
 
-    effects_offset := align_forward(shapes_offset + shapes_size, g_storage_buffer_offset_alignment);
-    effects_size := effects_buffer.count * size_of(ShaderEffect);
+    clip_boxes_offset := 0;
+    clip_boxes_size := clip_boxes.count * size_of(ShaderClipBox);
 
-    total_size := effects_offset + effects_size;
+    boxes_offset := align_forward(clip_boxes_offset + clip_boxes_size, g_storage_buffer_offset_alignment);
+    boxes_size := boxes.count * size_of(ShaderBoxDrawing);
 
-    buffer_handle := g_shape_buffer_handles[g_frame_in_flight];
-    buffer_ptr := g_shape_buffer_ptrs[g_frame_in_flight];
-    if total_size > g_shape_buffer_size {
-        log_error("Too many shapes to draw % of % bytes, % instances, % shapes, % effects\n", total_size, g_shape_buffer_size, instances_buffer.count, shapes_buffer.count, effects_buffer.count);
+    glyphs_offset := align_forward(boxes_offset + boxes_size, g_storage_buffer_offset_alignment);
+    glyphs_size := glyphs.count * size_of(ShaderGlyphDrawing);
+
+    total_size := glyphs_offset + glyphs_size;
+
+    buffer_handle := g_frame_data_buffer_handles[g_frame_in_flight];
+    buffer_ptr := g_frame_data_buffer_ptrs[g_frame_in_flight];
+    if total_size > g_frame_data_buffer_size {
+        log_error("Too many things to draw % of % bytes, % clip boxes, % boxes, % glyphs\n", total_size, g_frame_data_buffer_size, clip_boxes.count, boxes.count, glyphs.count);
         return;
     }
 
-    memcpy(buffer_ptr + instances_offset, instances_buffer.data, instances_size);
-    memcpy(buffer_ptr + shapes_offset, shapes_buffer.data, shapes_size);
-    memcpy(buffer_ptr + effects_offset, effects_buffer.data, effects_size);
+    memcpy(buffer_ptr + clip_boxes_offset, clip_boxes.data, clip_boxes_size);
+    memcpy(buffer_ptr + boxes_offset, boxes.data, boxes_size);
+    memcpy(buffer_ptr + glyphs_offset, glyphs.data, glyphs_size);
 
     glBindFramebuffer(GL_FRAMEBUFFER, g_color_framebuffer);
 
@@ -274,23 +289,14 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
 
     glBindVertexArray(g_dummy_vao);
 
-    if instances_buffer.count > 0 {
-        glUseProgram(g_shape_shader);
-
-        u_viewport_size := glGetUniformLocation(g_shape_shader, "u_viewport_size");
-        if u_viewport_size >= 0 {
-            glUniform2f(u_viewport_size, xx viewport_w, xx viewport_h);
+    window = context.omg.windows;
+    while window {
+        defer {
+            ClearDrawList(*window.draw_list);
+            window = window.next;
         }
 
-        glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 0, buffer_handle, xx instances_offset, xx instances_size);
-        glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 1, buffer_handle, xx shapes_offset, xx shapes_size);
-        glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 2, buffer_handle, xx effects_offset, xx effects_size);
-
-        for draw_calls {
-            glBindTextureUnit(0, xx it.texture);
-
-            glDrawArraysInstancedBaseInstance(GL_TRIANGLES, 0, 6, it.num_instances, it.base_instance);
-        }
+        SendDrawCommands(*window.draw_list, buffer_handle, xx clip_boxes_offset, xx boxes_offset, xx glyphs_offset, viewport_w, viewport_h);
     }
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
@@ -299,3 +305,66 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
 
     glQueryCounter(g_timestamp_queries[g_frame_in_flight][1], GL_TIMESTAMP);
 }
+
+// OldDraw :: () {
+//     instances_buffer : [..]ShaderSDInstance;
+//     shapes_buffer : [..]ShaderSDShape;
+//     effects_buffer : [..]ShaderEffect;
+//     draw_calls : [..]DrawCall;
+
+//     PrepareRenderingBuffers(*instances_buffer, *shapes_buffer, *effects_buffer, *draw_calls);
+
+//     instances_offset := 0;
+//     instances_size := instances_buffer.count * size_of(ShaderSDInstance);
+
+//     shapes_offset := align_forward(instances_offset + instances_size, g_storage_buffer_offset_alignment);
+//     shapes_size := shapes_buffer.count * size_of(ShaderSDShape);
+
+//     effects_offset := align_forward(shapes_offset + shapes_size, g_storage_buffer_offset_alignment);
+//     effects_size := effects_buffer.count * size_of(ShaderEffect);
+
+//     total_size := effects_offset + effects_size;
+
+//     buffer_handle := g_frame_data_buffer_handles[g_frame_in_flight];
+//     buffer_ptr := g_frame_data_buffer_ptrs[g_frame_in_flight];
+//     if total_size > g_frame_data_buffer_size {
+//         log_error("Too many shapes to draw % of % bytes, % instances, % shapes, % effects\n", total_size, g_frame_data_buffer_size, instances_buffer.count, shapes_buffer.count, effects_buffer.count);
+//         return;
+//     }
+
+//     memcpy(buffer_ptr + instances_offset, instances_buffer.data, instances_size);
+//     memcpy(buffer_ptr + shapes_offset, shapes_buffer.data, shapes_size);
+//     memcpy(buffer_ptr + effects_offset, effects_buffer.data, effects_size);
+
+//     glBindFramebuffer(GL_FRAMEBUFFER, g_color_framebuffer);
+
+//     glClear(GL_COLOR_BUFFER_BIT);
+
+//     glDisable(GL_DEPTH_TEST);
+//     glDisable(GL_CULL_FACE);
+//     glEnable(GL_BLEND);
+//     // We already multiply RGB with the alpha in the shaders, so use ONE for the RGB factor
+//     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+//     glBlendEquation(GL_FUNC_ADD);
+
+//     glBindVertexArray(g_dummy_vao);
+
+//     if instances_buffer.count > 0 {
+//         glUseProgram(g_shader_shape);
+
+//         u_viewport_size := glGetUniformLocation(g_shader_shape, "u_viewport_size");
+//         if u_viewport_size >= 0 {
+//             glUniform2f(u_viewport_size, xx viewport_w, xx viewport_h);
+//         }
+
+//         glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 0, buffer_handle, xx instances_offset, xx instances_size);
+//         glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 1, buffer_handle, xx shapes_offset, xx shapes_size);
+//         glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 2, buffer_handle, xx effects_offset, xx effects_size);
+
+//         for draw_calls {
+//             glBindTextureUnit(0, xx it.texture);
+
+//             glDrawArraysInstancedBaseInstance(GL_TRIANGLES, 0, 6, it.num_instances, it.base_instance);
+//         }
+//     }
+// }

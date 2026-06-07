@@ -91,7 +91,7 @@ Node :: struct {
     last_used_on_frame : u64;
     z_index : s32 = -1; // Used when the parent wants to sort children such as popups
 
-    draw : (node : *Node, clip_shape : *SDShape) = DrawNodeDefault;
+    draw : (*DrawList, *Node) = DrawNodeDefault;
     user_data : *NodeUserData;
 
     window : *Window;

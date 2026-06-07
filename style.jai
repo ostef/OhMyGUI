@@ -406,7 +406,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
     {
         using theme.menu_bar;
 
-        child_gap = .{2,2};
+        child_gap = .{3,3};
         background_color = base_background_color;
     }
     SetStyle(theme, "menu_bar", theme.menu_bar);

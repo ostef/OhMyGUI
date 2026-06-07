@@ -288,7 +288,8 @@ SetColors :: (using style : *TextInputStyle, base_background_color : RGBA8, acce
     active.background.border_color = accent_color;
 }
 
-DrawTextInputText :: (node : *Node, clip_shape : *SDShape) {
+DrawTextInputText :: (draw_list : *DrawList, node : *Node) {
+    /*
     if !node.font || (node.text_color & 0xff) == 0 {
         return;
     }
@@ -356,6 +357,7 @@ DrawTextInputText :: (node : *Node, clip_shape : *SDShape) {
         SetClipShape(selection_drawing, clip_shape);
         SolidColor(selection_drawing, ColorU32(0.1, 0.2, 0.6, 0.5));
     }
+    */
 }
 
 TextInputFlags :: enum_flags {
@@ -500,7 +502,8 @@ SetColors :: (using style : *CheckboxStyle, base_background_color : RGBA8, check
     active.checkmark.background_color = checkmark_color;
 }
 
-DrawCheckmark :: (node : *Node, clip_shape : *SDShape) {
+DrawCheckmark :: (draw_list : *DrawList, node : *Node) {
+    /*
     checkbox_style := GetUserData(node.parent, CheckboxStyle);
     if !checkbox_style {
         return;
@@ -548,6 +551,7 @@ DrawCheckmark :: (node : *Node, clip_shape : *SDShape) {
     }
 
     SetClipShape(d, clip_shape);
+    */
 }
 
 Checkbox :: (parent : *Node, value : *bool, style : *CheckboxStyle = null, location := #caller_location) -> modified : bool, *Node {
