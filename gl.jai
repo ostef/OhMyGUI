@@ -250,8 +250,6 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
         CopyDrawListShaderData(*window.draw_list, *clip_boxes, *boxes, *glyphs);
     }
 
-    print_vars(clip_boxes.count, boxes.count, glyphs.count);
-
     clip_boxes_offset := 0;
     clip_boxes_size := clip_boxes.count * size_of(ShaderClipBox);
 
