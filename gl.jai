@@ -247,9 +247,7 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
     while window {
         defer window = window.next;
 
-        CopyDrawListClipBoxes(*window.draw_list, *clip_boxes);
-        CopyDrawListBoxes(*window.draw_list, *boxes);
-        CopyDrawListGlyphs(*window.draw_list, *glyphs);
+        CopyDrawListShaderData(*window.draw_list, *clip_boxes, *boxes, *glyphs);
     }
 
     print_vars(clip_boxes.count, boxes.count, glyphs.count);

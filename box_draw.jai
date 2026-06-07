@@ -130,11 +130,11 @@ PopClipBox :: (list : *DrawList) {
     pop(*list.clip_box_stack);
 }
 
-DrawBox :: (list : *DrawList, box : BoxDrawing, texture : TextureHandle = 0) {
+DrawBox :: (list : *DrawList, box : BoxDrawing, texture : TextureHandle = 0) -> int {
     if (box.background_color & 0xff) == 0
     && ((box.border_color & 0xff) == 0 || box.border_size <= 0)
     && (box.outer_shadow_color & 0xff) == 0 {
-        return;
+        return -1;
     }
 
     draw_call := GetCurrentDrawCall(list);
@@ -150,11 +150,13 @@ DrawBox :: (list : *DrawList, box : BoxDrawing, texture : TextureHandle = 0) {
     ptr := array_add(*list.boxes);
     ptr.* = box;
     ptr.clip_box_index = GetCurrentClipBoxIndex(list);
+
+    return list.boxes.count - 1;
 }
 
-DrawGlyph :: (list : *DrawList, glyph : GlyphDrawing, texture : TextureHandle) {
+DrawGlyph :: (list : *DrawList, glyph : GlyphDrawing, texture : TextureHandle) -> int {
     if (glyph.color & 0xff) == 0 && (glyph.outer_shadow_color & 0xff) == 0 {
-        return;
+        return -1;
     }
 
     draw_call := GetCurrentDrawCall(list);
@@ -170,100 +172,8 @@ DrawGlyph :: (list : *DrawList, glyph : GlyphDrawing, texture : TextureHandle) {
     ptr := array_add(*list.glyphs);
     ptr.* = glyph;
     ptr.clip_box_index = GetCurrentClipBoxIndex(list);
-}
 
-CopyDrawListClipBoxes :: (list : *DrawList, result : *[..]ShaderClipBox) {
-    list.gpu_buffer_clip_boxes_offset = xx result.count;
-
-    for list.clip_boxes {
-        array_add(result, it);
-    }
-}
-
-CopyDrawListBoxes :: (list : *DrawList, result : *[..]ShaderBoxDrawing) {
-    list.gpu_buffer_boxes_offset = xx result.count;
-
-    for list.boxes {
-        box := array_add(result);
-        box.size_and_position.xy = it.size;
-        box.size_and_position.zw = it.position;
-        box.corner_radiuses = it.corner_radiuses;
-        box.background_color = it.background_color;
-        box.border_color = it.border_color;
-        box.border_size_and_inset.x = it.border_size;
-        box.border_size_and_inset.y = it.border_inset;
-        box.outer_shadow_color = it.outer_shadow_color;
-        box.outer_shadow_offset = it.outer_shadow_offset;
-        box.outer_shadow_blur = it.outer_shadow_blur;
-        box.clip_box_index = ifx it.clip_box_index >= 0
-            then cast(s32, list.gpu_buffer_clip_boxes_offset) + it.clip_box_index
-            else -1;
-    }
-}
-
-CopyDrawListGlyphs :: (list : *DrawList, result : *[..]ShaderGlyphDrawing) {
-    list.gpu_buffer_glyphs_offset = xx result.count;
-
-    for list.glyphs {
-        glyph := array_add(result);
-        glyph.* = it;
-        glyph.clip_box_index = ifx it.clip_box_index >= 0
-            then cast(s32, list.gpu_buffer_clip_boxes_offset) + it.clip_box_index
-            else -1;
-    }
-}
-
-SendDrawCommands :: (list : *DrawList, buffer_handle : GLuint, clip_boxes_offset : u32, boxes_offset : u32, glyphs_offset : u32, viewport_w : u32, viewport_h : u32) {
-    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 0, buffer_handle, xx clip_boxes_offset, xx (list.clip_boxes.count * size_of(ShaderClipBox)));
-    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 1, buffer_handle, xx boxes_offset, xx (list.boxes.count * size_of(ShaderBoxDrawing)));
-    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 2, buffer_handle, xx glyphs_offset, xx (list.glyphs.count * size_of(ShaderGlyphDrawing)));
-
-    current_shader : GLuint = 0;
-    current_texture : GLuint = 0;
-
-    for list.draw_calls {
-        first_instance : u32;
-
-        num_instances := it.last - it.first + 1;
-        if num_instances <= 0 {
-            continue;
-        }
-
-        if it.kind == {
-        case .Box;
-            first_instance = it.first + list.gpu_buffer_boxes_offset;
-
-            if current_shader != g_shader_box {
-                glUseProgram(g_shader_box);
-                current_shader = g_shader_box;
-
-                u_viewport_size := glGetUniformLocation(current_shader, "u_viewport_size");
-                if u_viewport_size >= 0 {
-                    glUniform2f(u_viewport_size, xx viewport_w, xx viewport_h);
-                }
-            }
-
-        case .Glyph;
-            first_instance = it.first + list.gpu_buffer_glyphs_offset;
-
-            if current_shader != g_shader_glyph {
-                glUseProgram(g_shader_glyph);
-                current_shader = g_shader_glyph;
-
-                u_viewport_size := glGetUniformLocation(current_shader, "u_viewport_size");
-                if u_viewport_size >= 0 {
-                    glUniform2f(u_viewport_size, xx viewport_w, xx viewport_h);
-                }
-            }
-        }
-
-        if current_texture != it.texture {
-            glBindTextureUnit(0, xx it.texture);
-            current_texture = xx it.texture;
-        }
-
-        glDrawArraysInstancedBaseInstance(GL_TRIANGLES, 0, 6, xx num_instances, xx first_instance);
-    }
+    return list.glyphs.count - 1;
 }
 
 DrawText :: (list : *DrawList, font : *Font, position : Vec2f, size : float, text : string, color : RGBA8, outer_shadow_color : RGBA8 = 0, outer_shadow_offset := Vec2f.{0,0}, outer_shadow_blur := 0.0) {
@@ -326,3 +236,91 @@ DrawNodeDefault :: (draw_list : *DrawList, node : *Node) {
     );
 }
 
+
+CopyDrawListShaderData :: (list : *DrawList, clip_boxes : *[..]ShaderClipBox, boxes : *[..]ShaderBoxDrawing, glyphs : *[..]ShaderGlyphDrawing) {
+    list.gpu_buffer_clip_boxes_offset = xx clip_boxes.count;
+    list.gpu_buffer_boxes_offset = xx boxes.count;
+    list.gpu_buffer_glyphs_offset = xx glyphs.count;
+
+    for list.clip_boxes {
+        array_add(clip_boxes, it);
+    }
+
+    for list.boxes {
+        box := array_add(boxes);
+        box.size_and_position.xy = it.size;
+        box.size_and_position.zw = it.position;
+        box.corner_radiuses = it.corner_radiuses;
+        box.background_color = it.background_color;
+        box.border_color = it.border_color;
+        box.border_size_and_inset.x = it.border_size;
+        box.border_size_and_inset.y = it.border_inset;
+        box.outer_shadow_color = it.outer_shadow_color;
+        box.outer_shadow_offset = it.outer_shadow_offset;
+        box.outer_shadow_blur = it.outer_shadow_blur;
+        box.clip_box_index = ifx it.clip_box_index >= 0
+            then cast(s32, list.gpu_buffer_clip_boxes_offset) + it.clip_box_index
+            else -1;
+    }
+
+    for list.glyphs {
+        glyph := array_add(glyphs);
+        glyph.* = it;
+        glyph.clip_box_index = ifx it.clip_box_index >= 0
+            then cast(s32, list.gpu_buffer_clip_boxes_offset) + it.clip_box_index
+            else -1;
+    }
+}
+
+SendDrawCommands :: (list : *DrawList, buffer_handle : GLuint, clip_boxes_offset : u32, boxes_offset : u32, glyphs_offset : u32, viewport_w : u32, viewport_h : u32) {
+    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 0, buffer_handle, xx clip_boxes_offset, xx (list.clip_boxes.count * size_of(ShaderClipBox)));
+    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 1, buffer_handle, xx boxes_offset, xx (list.boxes.count * size_of(ShaderBoxDrawing)));
+    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 2, buffer_handle, xx glyphs_offset, xx (list.glyphs.count * size_of(ShaderGlyphDrawing)));
+
+    current_shader : GLuint = 0;
+    current_texture : GLuint = 0;
+
+    for list.draw_calls {
+        first_instance : u32;
+
+        num_instances := it.last - it.first + 1;
+        if num_instances <= 0 {
+            continue;
+        }
+
+        if it.kind == {
+        case .Box;
+            first_instance = it.first + list.gpu_buffer_boxes_offset;
+
+            if current_shader != g_shader_box {
+                glUseProgram(g_shader_box);
+                current_shader = g_shader_box;
+
+                u_viewport_size := glGetUniformLocation(current_shader, "u_viewport_size");
+                if u_viewport_size >= 0 {
+                    glUniform2f(u_viewport_size, xx viewport_w, xx viewport_h);
+                }
+            }
+
+        case .Glyph;
+            first_instance = it.first + list.gpu_buffer_glyphs_offset;
+
+            if current_shader != g_shader_glyph {
+                glUseProgram(g_shader_glyph);
+                current_shader = g_shader_glyph;
+
+                u_viewport_size := glGetUniformLocation(current_shader, "u_viewport_size");
+                if u_viewport_size >= 0 {
+                    glUniform2f(u_viewport_size, xx viewport_w, xx viewport_h);
+                }
+            }
+        }
+
+        if current_texture != it.texture {
+            glBindTextureUnit(0, xx it.texture);
+            current_texture = xx it.texture;
+        }
+
+        glDrawArraysInstancedBaseInstance(GL_TRIANGLES, 0, 6, xx num_instances, xx first_instance);
+    }
+}

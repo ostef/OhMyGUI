@@ -289,21 +289,30 @@ SetColors :: (using style : *TextInputStyle, base_background_color : RGBA8, acce
 }
 
 DrawTextInputText :: (draw_list : *DrawList, node : *Node) {
-    /*
     if !node.font || (node.text_color & 0xff) == 0 {
         return;
     }
 
     input := GetUserData(node.parent, TextInputData);
     if !input {
-        DrawText(*node.window.draw_list, node.font, node.rect.xy, node.text_size, node.text, node.text_color, clip_shape);
+        DrawText(
+            draw_list,
+            node.font,
+            node.rect.xy,
+            node.text_size,
+            node.text,
+            node.text_color,
+            node.outer_shadow_color,
+            node.outer_shadow_offset,
+            node.outer_shadow_blur
+        );
+
         return;
     }
 
     sdf_range := node.font.sdf_range * node.text_size;
 
-    selection_drawing := ifx node.parent.state_flags & .Active && input.selection != 0
-        then DrawShape(*node.window.draw_list, null, .{});
+    selection_box_index := ifx node.parent.state_flags & .Active && input.selection != 0 then DrawBox(draw_list, .{background_color=0xffffffff}) else -1;
 
     selection_position := node.rect.xy;
     cursor_position := node.rect.xy;
@@ -312,10 +321,22 @@ DrawTextInputText :: (draw_list : *DrawList, node : *Node) {
         glyph_position := node.rect.xy + iter.pen + it.hori_bearing * iter.size;
         glyph_position += it.size * iter.size * 0.5;
 
-        s := SDTexture(node.font.texture, it.texture_size * iter.size, it.uv_rect, .{sdf_range, -sdf_range});
-        d := DrawShape(*node.window.draw_list, s, glyph_position);
-        SetClipShape(d, clip_shape);
-        SolidColor(d, node.text_color);
+        bounds := Vec4f.{
+            xy=glyph_position - it.texture_size * iter.size * 0.5,
+            zw=glyph_position + it.texture_size * iter.size * 0.5,
+        };
+
+        DrawGlyph(draw_list, .{
+                bounds=bounds,
+                uv_bounds=it.uv_rect,
+                sdf_range=.{sdf_range, -sdf_range},
+                color=node.text_color,
+                outer_shadow_color=node.outer_shadow_color,
+                outer_shadow_offset=node.outer_shadow_offset,
+                outer_shadow_blur=node.outer_shadow_blur,
+            },
+            node.font.texture
+        );
 
         if it_index == input.cursor {
             cursor_position += Vec2f.{iter.pen.x, iter.pen.y - iter.font.ascent * iter.size};
@@ -335,15 +356,19 @@ DrawTextInputText :: (draw_list : *DrawList, node : *Node) {
     cursor_position.x = ceil(cursor_position.x);
     cursor_position.y = ceil(cursor_position.y);
 
+    // Draw cursor
     if node.parent.state_flags & .Active && (fmod_cycling(input.cursor_blink_time, 1) < 0.5 || input.cursor_blink_time > 5) {
         cursor_size := Vec2f.{1, node.rect.w - node.rect.y};
 
-        d := DrawShape(*node.window.draw_list, Box(cursor_size), cursor_position + cursor_size * 0.5);
-        SetClipShape(d, clip_shape);
-        SolidColor(d, node.text_color);
+        DrawBox(draw_list, .{
+            size=cursor_size,
+            position=cursor_position + cursor_size * 0.5,
+            background_color=node.text_color,
+        });
     }
 
-    if selection_drawing {
+    // Draw selection
+    if selection_box_index >= 0 {
         selection_size := Vec2f.{abs(cursor_position.x - selection_position.x), node.rect.w - node.rect.y};
         selection_size.x = ceil(selection_size.x);
         selection_size.y = ceil(selection_size.y);
@@ -352,12 +377,11 @@ DrawTextInputText :: (draw_list : *DrawList, node : *Node) {
         selection_position.x = floor(selection_position.x);
         selection_position.y = floor(selection_position.y);
 
-        selection_drawing.shape = Box(selection_size);
-        selection_drawing.position = selection_position + selection_size * 0.5;
-        SetClipShape(selection_drawing, clip_shape);
-        SolidColor(selection_drawing, ColorU32(0.1, 0.2, 0.6, 0.5));
+        box := *draw_list.boxes[selection_box_index];
+        box.size = selection_size;
+        box.position = selection_position + selection_size * 0.5;
+        box.background_color = ColorU32(0.1, 0.2, 0.6, 0.5);
     }
-    */
 }
 
 TextInputFlags :: enum_flags {
