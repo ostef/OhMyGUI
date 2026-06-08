@@ -117,22 +117,22 @@ LoadShader :: (vertex_filename : string, fragment_filename : string) -> GLuint {
 InitGL :: (num_frames_in_flight := 2, frame_data_buffer_size := 1 * 1024 * 1024) -> bool {
     g_num_frames_in_flight = num_frames_in_flight;
 
-    g_shader_shape = LoadShader("sdf.vert.glsl", "sdf.frag.glsl");
+    g_shader_shape = LoadShader("Shaders/sdf.vert.glsl", "Shaders/sdf.frag.glsl");
     if !g_shader_shape {
         return false;
     }
 
-    g_shader_box = LoadShader("box.vert.glsl", "box.frag.glsl");
+    g_shader_box = LoadShader("Shaders/box.vert.glsl", "Shaders/box.frag.glsl");
     if !g_shader_box {
         return false;
     }
 
-    g_shader_glyph = LoadShader("glyph.vert.glsl", "glyph.frag.glsl");
+    g_shader_glyph = LoadShader("Shaders/glyph.vert.glsl", "Shaders/glyph.frag.glsl");
     if !g_shader_glyph {
         return false;
     }
 
-    g_shader_triangle = LoadShader("triangle.vert.glsl", "triangle.frag.glsl");
+    g_shader_triangle = LoadShader("Shaders/triangle.vert.glsl", "Shaders/triangle.frag.glsl");
     if !g_shader_triangle {
         return false;
     }
