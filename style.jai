@@ -261,7 +261,12 @@ DefaultTheme :: struct {
     separator : BoxStyle;
 }
 
-g_default_theme : DefaultTheme;
+g_default_theme_light : DefaultTheme;
+g_default_theme_dark : DefaultTheme;
+
+GetDefaultThemes :: inline () -> light : *Theme, dark : *Theme {
+    return *g_default_theme_light, *g_default_theme_dark;
+}
 
 SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base_accent_color : RGBA8) {
     button_base_background_color := MakeTone(base_background_color, 0.25);

@@ -50,6 +50,15 @@ EditorFrame :: () {
                 OMG.MenuItem(window_menu, "Browser");
             }
 
+            if OMG.MenuItem(title_menu_bar, "Switch Theme") {
+                light, dark := OMG.GetDefaultThemes();
+                if OMG.GetTheme() == light {
+                    OMG.SetTheme(dark);
+                } else {
+                    OMG.SetTheme(light);
+                }
+            }
+
             help_menu := OMG.Menu(title_menu_bar, "Help");
             if help_menu {
                 OMG.MenuItem(help_menu, "Documentation");
