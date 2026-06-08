@@ -1,4 +1,6 @@
 # OhMyGUI
+> &#9888;&#65039; This project is a work in progress
+
 Tree based immediate mode GUI library in Jai inspired by Clay and PanGui.
 
 ## Main features
