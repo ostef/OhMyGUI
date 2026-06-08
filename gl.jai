@@ -14,6 +14,7 @@ g_color_texture_height : u32;
 g_shader_shape : GLuint;
 g_shader_box : GLuint;
 g_shader_glyph : GLuint;
+g_shader_triangle : GLuint;
 g_dummy_vao : GLuint;
 
 g_num_frames_in_flight : int;
@@ -131,6 +132,11 @@ InitGL :: (num_frames_in_flight := 2, frame_data_buffer_size := 1 * 1024 * 1024)
         return false;
     }
 
+    g_shader_triangle = LoadShader("triangle.vert.glsl", "triangle.frag.glsl");
+    if !g_shader_triangle {
+        return false;
+    }
+
     glCreateVertexArrays(1, *g_dummy_vao);
 
     g_frame_data_buffer_handles = NewArray(num_frames_in_flight, GLuint);
@@ -242,12 +248,13 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
     clip_boxes : [..]ShaderClipBox;
     boxes : [..]ShaderBoxDrawing;
     glyphs : [..]ShaderGlyphDrawing;
+    triangles : [..]ShaderTriangleDrawing;
 
     window := context.omg.windows;
     while window {
         defer window = window.next;
 
-        CopyDrawListShaderData(*window.draw_list, *clip_boxes, *boxes, *glyphs);
+        CopyDrawListShaderData(*window.draw_list, *clip_boxes, *boxes, *glyphs, *triangles);
     }
 
     clip_boxes_offset := 0;
@@ -259,18 +266,22 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
     glyphs_offset := align_forward(boxes_offset + boxes_size, g_storage_buffer_offset_alignment);
     glyphs_size := glyphs.count * size_of(ShaderGlyphDrawing);
 
-    total_size := glyphs_offset + glyphs_size;
+    triangles_offset := align_forward(glyphs_offset + glyphs_size, g_storage_buffer_offset_alignment);
+    triangles_size := triangles.count * size_of(ShaderTriangleDrawing);
+
+    total_size := triangles_offset + triangles_size;
 
     buffer_handle := g_frame_data_buffer_handles[g_frame_in_flight];
     buffer_ptr := g_frame_data_buffer_ptrs[g_frame_in_flight];
     if total_size > g_frame_data_buffer_size {
-        log_error("Too many things to draw % of % bytes, % clip boxes, % boxes, % glyphs\n", total_size, g_frame_data_buffer_size, clip_boxes.count, boxes.count, glyphs.count);
+        log_error("Too many things to draw % of % bytes, % clip boxes, % boxes, % glyphs, % triangles\n", total_size, g_frame_data_buffer_size, clip_boxes.count, boxes.count, glyphs.count, triangles.count);
         return;
     }
 
     memcpy(buffer_ptr + clip_boxes_offset, clip_boxes.data, clip_boxes_size);
     memcpy(buffer_ptr + boxes_offset, boxes.data, boxes_size);
     memcpy(buffer_ptr + glyphs_offset, glyphs.data, glyphs_size);
+    memcpy(buffer_ptr + triangles_offset, triangles.data, triangles_size);
 
     glBindFramebuffer(GL_FRAMEBUFFER, g_color_framebuffer);
 
@@ -292,7 +303,16 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
             window = window.next;
         }
 
-        SendDrawCommands(*window.draw_list, buffer_handle, xx clip_boxes_offset, xx boxes_offset, xx glyphs_offset, viewport_w, viewport_h);
+        SendDrawCommands(
+            *window.draw_list,
+            buffer_handle,
+            xx clip_boxes_offset,
+            xx boxes_offset,
+            xx glyphs_offset,
+            xx triangles_offset,
+            viewport_w,
+            viewport_h
+        );
     }
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);

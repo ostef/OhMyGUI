@@ -1,225 +1,224 @@
-// https://shaderfun.com/2018/07/01/signed-distance-fields-part-7-some-simple-effects/
-// https://shaderfun.com/2018/07/23/signed-distance-fields-part-8-gradients-bevels-and-noise/
-
-DrawList :: struct {
-    drawings : [..]Drawing;
-    clip_shapes : [..]*SDShape;
-}
-
-DestroyDrawList :: (draw_list : *DrawList) {
-    array_free(draw_list.drawings);
-    array_free(draw_list.clip_shapes);
-}
-
-PushClipShape :: (draw_list : *DrawList, shape : *SDShape) {
-    array_add(*draw_list.clip_shapes, shape);
-}
-
-PopClipShape :: (draw_list : *DrawList) -> *SDShape {
-    assert(draw_list.clip_shapes.count > 0);
-
-    shape := GetClipShape(draw_list);
-    pop(*draw_list.clip_shapes);
-
-    return shape;
-}
-
-GetClipShape :: inline (draw_list : *DrawList) -> *SDShape {
-    if draw_list.clip_shapes.count <= 0 {
-        return null;
-    }
-
-    return draw_list.clip_shapes[draw_list.clip_shapes.count - 1];
-}
-
-DrawShape :: (draw_list : *DrawList, shape : *SDShape, position : Vec2f) -> *Drawing {
-    array_add(*draw_list.drawings, .{shape=shape, position=position});
-
-    drawing := *draw_list.drawings[draw_list.drawings.count - 1];
-    drawing.effects.allocator = temp;
-    drawing.clip_shape = GetClipShape(draw_list);
-
-    array_add(*drawing.effects, context.omg.default_effect);
-    drawing.should_override_default_effect = true;
-
-    return drawing;
-}
-
 TextureHandle :: u64;
 
-Drawing :: struct {
+BoxDrawing :: struct {
+    size : Vec2f;
     position : Vec2f;
-    shape : *SDShape;
-    clip_shape : *SDShape;
-    effects : [..]Effect;
-    should_override_default_effect : bool;
+    corner_radiuses : Vec4f;
+    background_color : RGBA8;
+    border_color : RGBA8;
+    border_size : float;
+    border_inset : float;
+    outer_shadow_color : RGBA8;
+    outer_shadow_offset : Vec2f;
+    outer_shadow_blur : float;
+    clip_box_index : s32;
 }
 
-SetClipShape :: inline (drawing : *Drawing, shape : *SDShape) {
-    drawing.clip_shape = shape;
+ShaderBoxDrawing :: struct {
+    size_and_position : Vec4f;
+    corner_radiuses : Vec4f;
+    clip_box_index : s32;
+    background_color : u32;
+    border_size_and_inset : Vec2f;
+    border_color : u32;
+    outer_shadow_color : u32;
+    outer_shadow_offset : Vec2f;
+    outer_shadow_blur : float;
+    padding : [3]u32;
 }
 
-EffectKind :: enum u8 {
-    SolidColor;
-    StrokeColor;
-    OuterShadow;
-    InnerShadow;
+TriangleDrawing :: struct {
+    p0 : Vec2f;
+    p1 : Vec2f;
+    p2 : Vec2f;
+    c0 : RGBA8;
+    c1 : RGBA8;
+    c2 : RGBA8;
+    clip_box_index : s32;
 }
 
-// We could add a blend mode feature?
-Effect :: union kind : EffectKind {
-    .SolidColor ,, solid_color : struct {
-        color : RGBA8;
-        blur_factor : float;
-    };
-    .StrokeColor ,, stroke_color : struct {
-        color : RGBA8;
-        blur_factor : float;
-        inset : float;
-        size : float;
-    };
-    .OuterShadow ,, outer_shadow : struct {
-        color : RGBA8;
-        offset : Vec2f;
-        blur_factor : float;
-    };
-    .InnerShadow ,, inner_shadow : struct {
-        color : RGBA8;
-        offset : Vec2f;
-        blur_factor : float;
-    };
+ShaderTriangleDrawing :: TriangleDrawing;
+
+ClipBox :: struct {
+    bounds : Vec4f;
+    corner_radiuses : Vec4f;
 }
 
-PushEffect :: inline (using drawing : *Drawing) -> *Effect {
-    if should_override_default_effect {
-        should_override_default_effect = false;
-        effect := *effects[0];
-        effect.* = .{};
+ShaderClipBox :: ClipBox;
 
-        return effect;
+GlyphDrawing :: struct {
+    bounds : Vec4f;
+    uv_bounds : Vec4f;
+    sdf_range : Vec2f;
+    color : u32;
+    outer_shadow_color : u32;
+    outer_shadow_offset : Vec2f;
+    outer_shadow_blur : float;
+    clip_box_index : s32;
+}
+
+ShaderGlyphDrawing :: GlyphDrawing;
+
+DrawCall :: struct {
+    kind : enum {
+        Boxes;
+        Glyphs;
+        Triangles;
+    };
+
+    first : u32;
+    last : u32;
+    texture : TextureHandle;
+}
+
+DrawList :: struct {
+    draw_calls : [..]DrawCall;
+    clip_boxes : [..]ClipBox;
+    clip_box_stack : [..]s32;
+    boxes : [..]BoxDrawing;
+    glyphs : [..]GlyphDrawing;
+    triangles : [..]TriangleDrawing;
+
+    gpu_buffer_clip_boxes_offset : u32;
+    gpu_buffer_boxes_offset : u32;
+    gpu_buffer_glyphs_offset : u32;
+    gpu_buffer_triangles_offset : u32;
+}
+
+InitDrawList :: (list : *DrawList) {
+    list.draw_calls.allocator = context.allocator;
+    list.boxes.allocator = context.allocator;
+    list.clip_boxes.allocator = context.allocator;
+    list.clip_box_stack.allocator = context.allocator;
+    list.glyphs.allocator = context.allocator;
+    list.triangles.allocator = context.allocator;
+}
+
+DestroyDrawList :: (list : *DrawList) {
+    array_free(list.draw_calls);
+    array_free(list.boxes);
+    array_free(list.clip_boxes);
+    array_free(list.clip_box_stack);
+    array_free(list.glyphs);
+    array_free(list.triangles);
+    list.* = .{};
+}
+
+ClearDrawList :: (list : *DrawList) {
+    array_reset_keeping_memory(*list.draw_calls);
+    array_reset_keeping_memory(*list.boxes);
+    array_reset_keeping_memory(*list.clip_boxes);
+    array_reset_keeping_memory(*list.clip_box_stack);
+    array_reset_keeping_memory(*list.glyphs);
+    array_reset_keeping_memory(*list.triangles);
+
+    list.gpu_buffer_clip_boxes_offset = 0;
+    list.gpu_buffer_boxes_offset = 0;
+    list.gpu_buffer_glyphs_offset = 0;
+    list.gpu_buffer_triangles_offset = 0;
+}
+
+GetCurrentDrawCall :: (list : *DrawList) -> *DrawCall {
+    if list.draw_calls.count <= 0 {
+        return null;
+    }
+    return *list.draw_calls[list.draw_calls.count - 1];
+}
+
+GetCurrentClipBoxIndex :: (list : *DrawList) -> s32 {
+    if list.clip_box_stack.count <= 0 {
+        return -1;
+    }
+    return list.clip_box_stack[list.clip_box_stack.count - 1];
+}
+
+PushClipBox :: (list : *DrawList, bounds : Vec4f, corner_radiuses : Vec4f = .{}) {
+    box := array_add(*list.clip_boxes);
+    box.bounds = bounds;
+    box.corner_radiuses = corner_radiuses;
+
+    current_index := GetCurrentClipBoxIndex(list);
+    if current_index >= 0 {
+        box.bounds = ClipRect(box.bounds, list.clip_boxes[current_index].bounds);
     }
 
-    return array_add(*effects);
+    array_add(*list.clip_box_stack, xx (list.clip_boxes.count - 1));
 }
 
-SolidColor :: inline (using drawing : *Drawing, color : Vec4f, blur_factor := 0.0) {
-    SolidColor(drawing, ColorU32(color), blur_factor);
+PopClipBox :: (list : *DrawList) {
+    pop(*list.clip_box_stack);
 }
 
-SolidColor :: inline (using drawing : *Drawing, color : RGBA8, blur_factor := 0.0) {
-    effect := PushEffect(drawing);
-    effect.kind = .SolidColor;
-    effect.solid_color.color = color;
-    effect.solid_color.blur_factor = blur_factor;
-}
-
-StrokeColor :: inline (using drawing : *Drawing, color : Vec4f, size : float, inset := 0.0, blur_factor := 0.0) {
-    StrokeColor(drawing, ColorU32(color), size, inset, blur_factor);
-}
-
-StrokeColor :: inline (using drawing : *Drawing, color : RGBA8, size : float, inset := 0.0, blur_factor := 0.0) {
-    effect := PushEffect(drawing);
-    effect.kind = .StrokeColor;
-    effect.stroke_color.color = color;
-    effect.stroke_color.size = size;
-    effect.stroke_color.inset = inset;
-    effect.stroke_color.blur_factor = blur_factor;
-}
-
-OuterShadow :: inline (using drawing : *Drawing, offset : Vec2f, blur_factor : float, opacity : float) {
-    OuterShadow(drawing, offset, blur_factor, .{0,0,0,opacity});
-}
-
-OuterShadow :: inline (using drawing : *Drawing, offset : Vec2f, blur_factor : float, color := Vec4f.{0,0,0,0.5}) {
-    OuterShadow(drawing, offset, blur_factor, ColorU32(color));
-}
-
-OuterShadow :: inline (using drawing : *Drawing, offset : Vec2f, blur_factor : float, color : RGBA8) {
-    effect := PushEffect(drawing);
-    effect.kind = .OuterShadow;
-    effect.outer_shadow.offset = offset;
-    effect.outer_shadow.blur_factor = blur_factor;
-    effect.outer_shadow.color = color;
-}
-
-InnerShadow :: inline (using drawing : *Drawing, blur_factor : float, opacity : float, offset := Vec2f.{0,0}) {
-    InnerShadow(drawing, blur_factor, .{0,0,0,opacity}, offset);
-}
-
-InnerShadow :: inline (using drawing : *Drawing, blur_factor : float, color := Vec4f.{0,0,0,1}, offset := Vec2f.{0,0}) {
-    InnerShadow(drawing, blur_factor, ColorU32(color), offset);
-}
-
-InnerShadow :: inline (using drawing : *Drawing, blur_factor : float, color : RGBA8, offset := Vec2f.{0,0}) {
-    effect := PushEffect(drawing);
-    effect.kind = .InnerShadow;
-    effect.inner_shadow.offset = offset;
-    effect.inner_shadow.blur_factor = blur_factor;
-    effect.inner_shadow.color = color;
-}
-
-GetBounds :: (bounds : Vec4f, effect : *Effect) -> Vec4f {
-    if effect.kind == {
-    case .OuterShadow;
-        using effect.outer_shadow;
-
-        inflate : Vec4f;
-        if blur_factor > 0 {
-            inflate.xy = max(inflate.xy, Vec2f.{blur_factor, blur_factor});
-            inflate.zw = max(inflate.zw, Vec2f.{blur_factor, blur_factor});
-        }
-        if offset.x > 0 {
-            inflate.z += offset.x;
-        }
-        if offset.y > 0 {
-            inflate.w += offset.y;
-        }
-        if offset.x < 0 {
-            inflate.x -= offset.x;
-        }
-        if offset.y < 0 {
-            inflate.y -= offset.y;
-        }
-
-        return InflateBounds(bounds, inflate);
-
-    case .StrokeColor;
-        using effect.stroke_color;
-
-        inflate : Vec4f;
-        if inset < 0 {
-            inflate.xy = max(inflate.xy, -Vec2f.{inset, inset});
-            inflate.zw = max(inflate.zw, -Vec2f.{inset, inset});
-        }
-        if blur_factor > 0 {
-            inflate.xy = max(inflate.xy, Vec2f.{blur_factor, blur_factor});
-            inflate.zw = max(inflate.zw, Vec2f.{blur_factor, blur_factor});
-        }
-
-        return InflateBounds(bounds, inflate);
-
-    case .SolidColor;
-        using effect.solid_color;
-
-        inflate : Vec4f;
-        if blur_factor > 0 {
-            inflate.xy = max(inflate.xy, Vec2f.{blur_factor, blur_factor});
-            inflate.zw = max(inflate.zw, Vec2f.{blur_factor, blur_factor});
-        }
-
-        return InflateBounds(bounds, inflate);
-
-    case;
-        return bounds;
+DrawBox :: (list : *DrawList, box : BoxDrawing, texture : TextureHandle = 0) -> int {
+    if (box.background_color & 0xff) == 0
+    && ((box.border_color & 0xff) == 0 || box.border_size <= 0)
+    && (box.outer_shadow_color & 0xff) == 0 {
+        return -1;
     }
+
+    draw_call := GetCurrentDrawCall(list);
+    if !draw_call || draw_call.kind != .Boxes || draw_call.texture != texture {
+        draw_call = array_add(*list.draw_calls);
+        draw_call.kind = .Boxes;
+        draw_call.first = xx list.boxes.count;
+        draw_call.texture = texture;
+    }
+
+    draw_call.last = xx list.boxes.count;
+
+    ptr := array_add(*list.boxes);
+    ptr.* = box;
+    ptr.clip_box_index = GetCurrentClipBoxIndex(list);
+
+    return list.boxes.count - 1;
 }
 
-DrawText :: inline (draw_list : *DrawList, font : *Font, position : Vec2f, size : float, text : string, color : Vec4f, clip_shape : *SDShape = null) {
-    DrawText(draw_list, font, position ,size, text, ColorU32(color), clip_shape);
+DrawGlyph :: (list : *DrawList, glyph : GlyphDrawing, texture : TextureHandle) -> int {
+    if (glyph.color & 0xff) == 0 && (glyph.outer_shadow_color & 0xff) == 0 {
+        return -1;
+    }
+
+    draw_call := GetCurrentDrawCall(list);
+    if !draw_call || draw_call.kind != .Glyphs || draw_call.texture != texture {
+        draw_call = array_add(*list.draw_calls);
+        draw_call.kind = .Glyphs;
+        draw_call.first = xx list.glyphs.count;
+        draw_call.texture = texture;
+    }
+
+    draw_call.last = xx list.glyphs.count;
+
+    ptr := array_add(*list.glyphs);
+    ptr.* = glyph;
+    ptr.clip_box_index = GetCurrentClipBoxIndex(list);
+
+    return list.glyphs.count - 1;
 }
 
-DrawText :: (draw_list : *DrawList, font : *Font, position : Vec2f, size : float, text : string, color : RGBA8, clip_shape : *SDShape = null) {
-    if !font || (color & 0xff) == 0 {
+DrawTriangle :: (list : *DrawList, triangle : TriangleDrawing) -> int {
+    if (triangle.c0 & 0xff) == 0 && (triangle.c1 & 0xff) == 0 && (triangle.c2 & 0xff) == 0 {
+        return -1;
+    }
+
+    draw_call := GetCurrentDrawCall(list);
+    if !draw_call || draw_call.kind != .Triangles {
+        draw_call = array_add(*list.draw_calls);
+        draw_call.kind = .Triangles;
+        draw_call.first = xx list.triangles.count;
+        draw_call.texture = 0;
+    }
+
+    draw_call.last = xx list.triangles.count;
+
+    ptr := array_add(*list.triangles);
+    ptr.* = triangle;
+    ptr.clip_box_index = GetCurrentClipBoxIndex(list);
+
+    return list.triangles.count - 1;
+}
+
+DrawText :: (list : *DrawList, font : *Font, position : Vec2f, size : float, text : string, color : RGBA8, outer_shadow_color : RGBA8 = 0, outer_shadow_offset := Vec2f.{0,0}, outer_shadow_blur := 0.0) {
+    if !font || ((color & 0xff) == 0 && (outer_shadow_color & 0xff) == 0) {
         return;
     }
 
@@ -233,255 +232,173 @@ DrawText :: (draw_list : *DrawList, font : *Font, position : Vec2f, size : float
         glyph_position := position + iter.pen + it.hori_bearing * iter.size;
         glyph_position += it.size * iter.size * 0.5;
 
-        s := SDTexture(font.texture, it.texture_size * iter.size, it.uv_rect, .{sdf_range, -sdf_range});
-        d := DrawShape(draw_list, s, glyph_position);
-        SetClipShape(d, clip_shape);
-        SolidColor(d, color);
+        bounds := Vec4f.{
+            xy=glyph_position - it.texture_size * iter.size * 0.5,
+            zw=glyph_position + it.texture_size * iter.size * 0.5,
+        };
+
+        DrawGlyph(list, .{
+                bounds=bounds,
+                uv_bounds=it.uv_rect,
+                sdf_range=.{sdf_range, -sdf_range},
+                color=color,
+                outer_shadow_color=outer_shadow_color,
+                outer_shadow_offset=outer_shadow_offset,
+                outer_shadow_blur=outer_shadow_blur,
+            },
+            font.texture
+        );
     }
 }
 
-DrawNodeDefault :: (node : *Node, clip_shape : *SDShape) {
-    DrawBox :: inline (node : *Node, clip_shape : *SDShape) {
-        has_background := (node.background_color & 0xff) > 0;
-        has_border := (node.border_color & 0xff) > 0 && node.border_size > 0;
-        has_shadow := (node.outer_shadow_color & 0xff) > 0;
+DrawNodeDefault :: (draw_list : *DrawList, node : *Node) {
+    DrawBox(draw_list, .{
+        size=node.rect.zw - node.rect.xy,
+        position=(node.rect.xy + node.rect.zw) * 0.5,
+        corner_radiuses=node.corner_radiuses,
+        background_color=node.background_color,
+        border_color=node.border_color,
+        border_size=node.border_size,
+        border_inset=node.border_inset,
+        outer_shadow_color=node.outer_shadow_color,
+        outer_shadow_offset=node.outer_shadow_offset,
+        outer_shadow_blur=node.outer_shadow_blur,
+    });
 
-        if !has_background && !has_border && !has_shadow {
-            return;
-        }
+    DrawText(draw_list,
+        node.font,
+        node.rect.xy,
+        node.text_size,
+        node.text,
+        node.text_color,
+        node.outer_shadow_color,
+        node.outer_shadow_offset,
+        node.outer_shadow_blur
+    );
+}
 
-        position := (node.rect.xy + node.rect.zw) * 0.5;
 
-        d := DrawShape(*node.window.draw_list, Box(node.size, node.corner_radiuses), position);
+CopyDrawListShaderData :: (list : *DrawList, clip_boxes : *[..]ShaderClipBox, boxes : *[..]ShaderBoxDrawing, glyphs : *[..]ShaderGlyphDrawing, triangles : *[..]ShaderTriangleDrawing) {
+    list.gpu_buffer_clip_boxes_offset = xx clip_boxes.count;
+    list.gpu_buffer_boxes_offset = xx boxes.count;
+    list.gpu_buffer_glyphs_offset = xx glyphs.count;
+    list.gpu_buffer_triangles_offset = xx triangles.count;
 
-        if has_shadow {
-            OuterShadow(d, node.outer_shadow_offset, node.outer_shadow_blur, node.outer_shadow_color);
-        }
-        if has_background {
-            SolidColor(d, node.background_color);
-        }
-        if has_border {
-            StrokeColor(d, node.border_color, node.border_size, node.border_inset);
-        }
-
-        SetClipShape(d, clip_shape);
+    for list.clip_boxes {
+        array_add(clip_boxes, it);
     }
 
-    DrawText :: (node : *Node, clip_shape : *SDShape) {
-        if !node.font || node.text_size <= 0 || !node.text || (node.text_color & 0xff) == 0 {
-            return;
-        }
-
-        DrawText(*node.window.draw_list, node.font, node.rect.xy, node.text_size, node.text, node.text_color, clip_shape);
+    for list.boxes {
+        box := array_add(boxes);
+        box.size_and_position.xy = it.size;
+        box.size_and_position.zw = it.position;
+        box.corner_radiuses = it.corner_radiuses;
+        box.background_color = it.background_color;
+        box.border_color = it.border_color;
+        box.border_size_and_inset.x = it.border_size;
+        box.border_size_and_inset.y = it.border_inset;
+        box.outer_shadow_color = it.outer_shadow_color;
+        box.outer_shadow_offset = it.outer_shadow_offset;
+        box.outer_shadow_blur = it.outer_shadow_blur;
+        box.clip_box_index = ifx it.clip_box_index >= 0
+            then cast(s32, list.gpu_buffer_clip_boxes_offset) + it.clip_box_index
+            else -1;
     }
 
-    DrawBox(node, clip_shape);
-    DrawText(node, clip_shape);
-}
-
-#scope_module
-
-ShaderSDInstance :: struct {
-    bounds : Vec4f;
-    position : Vec2f;
-    first_shape_index : u32;
-    num_shapes : u32;
-    first_effect_index : u32;
-    num_effects : u32;
-    first_clip_shape_index : u32;
-    num_clip_shapes : u32;
-}
-
-ShaderSDShape :: struct {
-    kind : u32;
-    padding : [3]u32;
-    params : [8]float;
-}
-
-ShaderEffect :: struct {
-    kind : u32;
-    params0 : [3]u32;
-    params1 : [4]float;
-}
-
-DrawCall :: struct {
-    texture : TextureHandle;
-    base_instance : u32;
-    num_instances : u32;
-}
-
-FlattenShapes :: (shape : *SDShape, buffer : *[..]ShaderSDShape, textures : *[..]TextureHandle) -> u32 {
-    num_shapes : u32;
-
-    shshape : ShaderSDShape;
-    shshape.kind = xx shape.kind;
-
-    if #complete shape.kind == {
-    case .CirclePrimitive;
-        shshape.params[0] = shape.circle_prim.radius;
-
-    case .BoxPrimitive;
-        shshape.params[0] = shape.box_prim.size.x;
-        shshape.params[1] = shape.box_prim.size.y;
-        shshape.params[2] = shape.box_prim.corner_radiuses.x;
-        shshape.params[3] = shape.box_prim.corner_radiuses.y;
-        shshape.params[4] = shape.box_prim.corner_radiuses.z;
-        shshape.params[5] = shape.box_prim.corner_radiuses.w;
-
-    case .TrianglePrimitive;
-        shshape.params[0] = shape.triangle_prim.p0.x;
-        shshape.params[1] = shape.triangle_prim.p0.y;
-        shshape.params[2] = shape.triangle_prim.p1.x;
-        shshape.params[3] = shape.triangle_prim.p1.y;
-        shshape.params[4] = shape.triangle_prim.p2.x;
-        shshape.params[5] = shape.triangle_prim.p2.y;
-
-    case .TexturePrimitive;
-        array_add_if_unique(textures, xx shape.texture_prim.texture);
-        shshape.params[0] = shape.texture_prim.uvs.x;
-        shshape.params[1] = shape.texture_prim.uvs.y;
-        shshape.params[2] = shape.texture_prim.uvs.z;
-        shshape.params[3] = shape.texture_prim.uvs.w;
-        shshape.params[4] = shape.texture_prim.size.x;
-        shshape.params[5] = shape.texture_prim.size.y;
-        shshape.params[6] = shape.texture_prim.dist_range.x;
-        shshape.params[7] = shape.texture_prim.dist_range.y;
-
-    case .SmoothSubtractionOperation; #through;
-    case .SmoothIntersectionOperation; #through;
-    case .SmoothUnionOperation;
-        shshape.params[0] = shape.smooth_union_op.k;
-        #through;
-
-    case .UnionOperation; #through;
-    case .SubtractionOperation; #through;
-    case .IntersectionOperation;
-        num_shapes += FlattenShapes(shape.union_op.shape_a, buffer, textures);
-        num_shapes += FlattenShapes(shape.union_op.shape_b, buffer, textures);
-
-    case .InflateOperation;
-        num_shapes += FlattenShapes(shape.inflate_op.shape, buffer, textures);
-
-        shshape.params[0] = shape.inflate_op.radius;
-
-    case .OnionOperation;
-        num_shapes += FlattenShapes(shape.onion_op.shape, buffer, textures);
-
-        shshape.params[0] = shape.onion_op.radius;
-
-    case .MorphOperation;
-        shshape.params[0] = shape.morph_op.t;
-        num_shapes += FlattenShapes(shape.morph_op.shape_a, buffer, textures);
-        num_shapes += FlattenShapes(shape.morph_op.shape_b, buffer, textures);
-
-    case .TransformOperation;
-        // For transform operations, we push 1 transformation to the coordinate
-        // system, then we push the shape, then we push another transformation
-        // back to the original coordinate system
-        t := Invert(shape.transform_op.transform);
-        shshape.params[0] = t.a;
-        shshape.params[1] = t.b;
-        shshape.params[2] = t.tx;
-        shshape.params[3] = t.c;
-        shshape.params[4] = t.d;
-        shshape.params[5] = t.ty;
-
-        array_add(buffer, shshape);
-        num_shapes += 1;
-
-        num_shapes += FlattenShapes(shape.transform_op.shape, buffer, textures);
-
-        t = shape.transform_op.transform;
-        shshape.params[0] = t.a;
-        shshape.params[1] = t.b;
-        shshape.params[2] = t.tx;
-        shshape.params[3] = t.c;
-        shshape.params[4] = t.d;
-        shshape.params[5] = t.ty;
+    for list.glyphs {
+        glyph := array_add(glyphs);
+        glyph.* = it;
+        glyph.clip_box_index = ifx it.clip_box_index >= 0
+            then cast(s32, list.gpu_buffer_clip_boxes_offset) + it.clip_box_index
+            else -1;
     }
 
-    array_add(buffer, shshape);
-    num_shapes += 1;
-
-    return num_shapes;
+    for list.triangles {
+        triangle := array_add(triangles);
+        triangle.* = it;
+        triangle.clip_box_index = ifx it.clip_box_index >= 0
+            then cast(s32, list.gpu_buffer_clip_boxes_offset) + it.clip_box_index
+            else -1;
+    }
 }
 
-PrepareRenderingBuffers :: (instances : *[..]ShaderSDInstance, shapes : *[..]ShaderSDShape, effects : *[..]ShaderEffect, draw_calls : *[..]DrawCall) {
-    textures : [..]TextureHandle;
-    defer array_free(textures);
+SendDrawCommands :: (
+    list : *DrawList,
+    buffer_handle : GLuint,
+    clip_boxes_offset : u32,
+    boxes_offset : u32,
+    glyphs_offset : u32,
+    triangles_offset : u32,
+    viewport_w : u32,
+    viewport_h : u32
+) {
+    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 0, buffer_handle, xx clip_boxes_offset, xx (list.clip_boxes.count * size_of(ShaderClipBox)));
+    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 1, buffer_handle, xx boxes_offset, xx (list.boxes.count * size_of(ShaderBoxDrawing)));
+    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 2, buffer_handle, xx glyphs_offset, xx (list.glyphs.count * size_of(ShaderGlyphDrawing)));
+    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 3, buffer_handle, xx triangles_offset, xx (list.triangles.count * size_of(ShaderTriangleDrawing)));
 
-    window := context.omg.windows;
-    while window {
-        defer {
-            window.draw_list.drawings.count = 0;
-            window.draw_list.clip_shapes.count = 0;
-            window = window.next;
+    current_shader : GLuint = 0;
+    current_texture : GLuint = 0;
+
+    for list.draw_calls {
+        first_instance : u32;
+
+        num_instances := it.last - it.first + 1;
+        if num_instances <= 0 {
+            continue;
         }
 
-        for window.draw_list.drawings {
-            last_call := ifx draw_calls.count > 0 then *draw_calls.*[draw_calls.count - 1];
-            textures.count = 0;
+        num_vertices : u32;
 
-            instance : ShaderSDInstance;
-            instance.position = it.position;
-            instance.bounds = GetBounds(it.shape);
-            instance.first_shape_index = xx shapes.count;
-            instance.num_shapes = FlattenShapes(it.shape, shapes, *textures);
-            instance.first_effect_index = xx effects.count;
-            instance.num_effects = xx it.effects.count;
-            if it.clip_shape {
-                instance.first_clip_shape_index = xx shapes.count;
-                instance.num_clip_shapes = FlattenShapes(it.clip_shape, shapes, *textures);
-            }
+        if it.kind == {
+        case .Boxes;
+            num_vertices = 6;
+            first_instance = it.first + list.gpu_buffer_boxes_offset;
 
-            if textures.count > 1 {
-                log_error("Too many textures on shape");
-                continue;
-            }
+            if current_shader != g_shader_box {
+                glUseProgram(g_shader_box);
+                current_shader = g_shader_box;
 
-            if !last_call || (last_call.texture != 0 && textures.count > 0 && textures[0] != last_call.texture)  {
-                last_call = array_add(draw_calls);
-                last_call.base_instance = xx instances.count;
-            }
-
-            if textures.count > 0 {
-                last_call.texture = textures[0];
-            }
-
-            extended_bounds := instance.bounds;
-            for * fx : it.effects {
-                effect := array_add(effects);
-                effect.kind = xx fx.kind;
-
-                new_bounds := GetBounds(instance.bounds, fx);
-                extended_bounds = .{
-                    xy=min(new_bounds.xy, extended_bounds.xy),
-                    zw=max(new_bounds.zw, extended_bounds.zw),
-                };
-
-                if #complete fx.kind == {
-                case .SolidColor;
-                    effect.params0[0] = fx.solid_color.color;
-                    effect.params1[0] = fx.solid_color.blur_factor;
-
-                case .StrokeColor;
-                    effect.params0[0] = fx.stroke_color.color;
-                    effect.params1[0] = fx.stroke_color.blur_factor;
-                    effect.params1[1] = fx.stroke_color.inset;
-                    effect.params1[2] = fx.stroke_color.size;
-
-                case .InnerShadow; #through;
-                case .OuterShadow;
-                    effect.params0[0] = fx.outer_shadow.color;
-                    effect.params1[0] = fx.outer_shadow.offset.x;
-                    effect.params1[1] = fx.outer_shadow.offset.y;
-                    effect.params1[2] = fx.outer_shadow.blur_factor;
+                u_viewport_size := glGetUniformLocation(current_shader, "u_viewport_size");
+                if u_viewport_size >= 0 {
+                    glUniform2f(u_viewport_size, xx viewport_w, xx viewport_h);
                 }
             }
 
-            instance.bounds = extended_bounds;
-            array_add(instances, instance);
-            last_call.num_instances += 1;
+        case .Glyphs;
+            num_vertices = 6;
+            first_instance = it.first + list.gpu_buffer_glyphs_offset;
+
+            if current_shader != g_shader_glyph {
+                glUseProgram(g_shader_glyph);
+                current_shader = g_shader_glyph;
+
+                u_viewport_size := glGetUniformLocation(current_shader, "u_viewport_size");
+                if u_viewport_size >= 0 {
+                    glUniform2f(u_viewport_size, xx viewport_w, xx viewport_h);
+                }
+            }
+
+        case .Triangles;
+            num_vertices = 3;
+            first_instance = it.first + list.gpu_buffer_triangles_offset;
+
+            if current_shader != g_shader_triangle {
+                glUseProgram(g_shader_triangle);
+                current_shader = g_shader_triangle;
+
+                u_viewport_size := glGetUniformLocation(current_shader, "u_viewport_size");
+                if u_viewport_size >= 0 {
+                    glUniform2f(u_viewport_size, xx viewport_w, xx viewport_h);
+                }
+            }
         }
+
+        if current_texture != it.texture {
+            glBindTextureUnit(0, xx it.texture);
+            current_texture = xx it.texture;
+        }
+
+        glDrawArraysInstancedBaseInstance(GL_TRIANGLES, 0, num_vertices, xx num_instances, xx first_instance);
     }
 }

@@ -10,10 +10,10 @@ Tree based immediate mode GUI library in Jai inspired by Clay and PanGui.
 * Style aware: all the widgets can be called with an optional style parameter.
 * Draw callbacks: drawing is done after layout at the end of the frame. This allows you to attach a different draw callback to any node that has already been declared to customize its visuals to your own needs.
 * SDF fonts that look good at any size.
+* Primitive based renderer: boxes, glyphs and triangles
 * General purpose SDF shape and effects renderer: describe shapes using SDF primitives and operations, draw and add effects such as outer shadow, inner shadow and borders
 
 ## Planned/Todo
-* Classic triangle based drawing
 * Gradients
 * Transitions/animations
 * Text wrapping

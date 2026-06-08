@@ -9,8 +9,7 @@
 #load "unicode.jai";
 #load "input.jai";
 #load "sdf.jai";
-#load "box_draw.jai";
-// #load "draw.jai";
+#load "draw.jai";
 #load "text.jai";
 #load "gl.jai";
 #load "node.jai";
@@ -134,8 +133,8 @@ Init :: () {
 
     SetupDefaultTheme(
         *g_default_theme,
-        base_background_color=ColorU32(0.95, 0.95, 0.95, 1),
-        // base_background_color=ColorU32(0.05, 0.05, 0.05, 1),
+        // base_background_color=ColorU32(0.95, 0.95, 0.95, 1),
+        base_background_color=ColorU32(0.05, 0.05, 0.05, 1),
         base_accent_color=ColorU32(0.3, 0.5, 0.8, 1),
     );
 

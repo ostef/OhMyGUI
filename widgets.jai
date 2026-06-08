@@ -527,6 +527,15 @@ SetColors :: (using style : *CheckboxStyle, base_background_color : RGBA8, check
 }
 
 DrawCheckmark :: (draw_list : *DrawList, node : *Node) {
+    DrawTriangle(draw_list, .{
+        p0=.{node.rect.x, node.rect.y},
+        p1=.{node.rect.z, node.rect.y},
+        p2=.{(node.rect.x + node.rect.z) * 0.5, node.rect.w},
+        c0=node.background_color,
+        c1=node.background_color,
+        c2=node.background_color,
+    });
+
     /*
     checkbox_style := GetUserData(node.parent, CheckboxStyle);
     if !checkbox_style {
