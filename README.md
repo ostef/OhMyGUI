@@ -5,10 +5,38 @@ Tree based immediate mode GUI library in Jai inspired by Clay and PanGui.
 
 ## Main features
 * Immediate mode API: declare the UI by code each frame, nodes are added/removed/persisted accordingly.
-* Tree-based UI: unlike Dear ImGUI, OhMyGUI keeps track of the element tree. This allows for more layout options as well as extending/modifying nodes after they've been declared.
+* Tree-based UI: unlike Dear ImGUI, OhMyGUI keeps track of the element tree. This is important to allow easily extending/modifying nodes after they've been declared.
+* Layout is done on a separate pass.
 * Style aware: all the widgets can be called with an optional style parameter.
-* Draw callbacks: drawing is done after layout at the end of the frame. This allows you to attach a different draw callback to any node that has already been declared to further customize its visuals.
+* Draw callbacks: drawing is done after layout at the end of the frame. This allows you to attach a different draw callback to any node that has already been declared to customize its visuals to your own needs.
 * SDF fonts that look good at any size.
+* General purpose SDF shape and effects renderer: describe shapes using SDF primitives and operations, draw and add effects such as outer shadow, inner shadow and borders
+
+## Planned/Todo
+* Classic triangle based drawing
+* Gradients
+* Transitions/animations
+* Text wrapping
+* UI element wrapping
+* Text effects
+* Multiple windows
+* Default icon library
+
+Widgets:
+* Tables
+* Tooltips
+* Color picker
+* Selectable button
+* Radio buttons
+* Progress bar
+* Combo boxes
+* Multi line text input
+* Number text input
+* Trees
+* Submenus
+* Popups
+* Subwindows
+* Panels
 
 ## How it works
 Each frame, the user calls `GetNode` with an ID to declare a UI element or get a node that has been declared prior, or any of the widget functions. This builds a tree which is traversed at the end of the frame to lay UI elements out according to properties specified by the user, then draw UI elements that are visible.
