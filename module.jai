@@ -32,7 +32,6 @@ Context :: struct {
     }
 
     input : InputContext;
-    input_last_frame : InputContext;
 
     windows : *Window;
     fonts : *Font;
@@ -128,6 +127,8 @@ Init :: () {
     context.omg.general_purpose_allocator = context.allocator;
     context.omg.node_pool.allocator = context.allocator;
 
+    InitInput(*context.omg.input);
+
     default_font := LoadDefaultFont();
     assert(default_font != null, "Could not load default font");
 
@@ -155,8 +156,8 @@ Terminate :: () {
     }
 
     array_free(context.omg.id_offset_stack);
-    array_free(context.omg.input_last_frame.text);
-    array_free(context.omg.input.text);
+
+    FreeInput(*context.omg.input);
 
     bucket_array_reset(*context.omg.node_pool);
 
@@ -184,9 +185,7 @@ NewFrame :: (delta_time : float) {
     omg.frame_index += 1;
     omg.delta_time = delta_time;
 
-    mx, my : s32;
-    SDL_GetGlobalMouseState(*mx, *my);
-    omg.input.mouse_position = .{xx mx, xx my};
+    InputNewFrame(*context.omg.input);
 
     omg.mouse_hovered_node = null;
     omg.mouse_focused_node = null;
@@ -284,12 +283,7 @@ Render :: () {
         }
     }
 
-    text := omg.input_last_frame.text;
-    omg.input_last_frame = omg.input;
-    omg.input.text = text;
-    omg.input.text.count = 0;
-
-    omg.input.mouse_wheel = .{};
+    ResetInput(*omg.input);
 }
 
 

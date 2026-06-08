@@ -1,9 +1,19 @@
 InputContext :: struct {
     mouse_position : Vec2f;
+    mouse_delta : Vec2f;
     mouse_wheel : Vec2f;
-    mouse_buttons : MouseButtonFlags;
-    keys_down : [KeyCode.Count]bool;
+
+    mouse_button_states : [3]KeyState;
+    key_states : []KeyState;
+
     text : [..]u32;
+}
+
+KeyState :: enum_flags u8 {
+    Pressed;
+    Repeated;
+    Down;
+    Released;
 }
 
 MouseButton :: enum u8 {
@@ -16,6 +26,42 @@ MouseButtonFlags :: enum_flags u8 {
     Left;
     Middle;
     Right;
+}
+
+InitInput :: (using input : *InputContext) {
+    text.allocator = context.allocator;
+    key_states = NewArray(xx KeyCode.Count, KeyState);
+}
+
+FreeInput :: (using input : *InputContext) {
+    array_free(text);
+    free(*key_states.data);
+    input.* = .{};
+}
+
+InputNewFrame :: (using input : *InputContext) {
+    old_mouse_pos := mouse_position;
+
+    mx, my : s32;
+    SDL_GetGlobalMouseState(*mx, *my);
+    mouse_position = .{xx mx, xx my};
+
+    mouse_delta = mouse_position - old_mouse_pos;
+}
+
+ResetInput :: (using input : *InputContext) {
+    array_reset_keeping_memory(*text);
+
+    mouse_wheel = .{};
+    mouse_delta = .{};
+
+    for * mouse_button_states {
+        it.* &= ~(KeyState.Pressed | .Repeated | .Released);
+    }
+
+    for * key_states {
+        it.* &= ~(KeyState.Pressed | .Repeated | .Released);
+    }
 }
 
 SDLMouseButtonToMouseButton :: (button : u8) -> MouseButton {
@@ -40,27 +86,27 @@ GetMousePosition :: inline (window : *Window) -> Vec2f {
 }
 
 GetMouseDelta :: inline () -> Vec2f {
-    return context.omg.input.mouse_position - context.omg.input_last_frame.mouse_position;
+    return context.omg.input.mouse_delta;
 }
 
 GetMouseWheel :: inline () -> Vec2f {
     return context.omg.input.mouse_wheel;
 }
 
-WasMouseButtonDown :: inline (button : MouseButton) -> bool {
-    return context.omg.input_last_frame.mouse_buttons & xx (1 << button) != 0;
-}
-
 IsMouseButtonDown :: inline (button : MouseButton) -> bool {
-    return context.omg.input.mouse_buttons & xx (1 << button) != 0;
+    return context.omg.input.mouse_button_states[button] & .Down != 0;
 }
 
-IsMouseButtonPressed :: inline (button : MouseButton) -> bool {
-    return !WasMouseButtonDown(button) && IsMouseButtonDown(button);
+IsMouseButtonPressed :: inline (button : MouseButton, repeated := true) -> bool {
+    return context.omg.input.mouse_button_states[button] & .Pressed != 0 || (repeated && context.omg.input.mouse_button_states[button] & .Repeated != 0);
+}
+
+IsMouseButtonDoubleClicked :: inline (button : MouseButton) -> bool {
+    return context.omg.input.mouse_button_states[button] & .Repeated != 0;
 }
 
 IsMouseButtonReleased :: inline (button : MouseButton) -> bool {
-    return WasMouseButtonDown(button) && !IsMouseButtonDown(button);
+    return context.omg.input.mouse_button_states[button] & .Released != 0;
 }
 
 KeyCode :: enum u8 {
@@ -230,28 +276,36 @@ SDLScancodeToKeyCode :: (scancode : SDL_Scancode) -> KeyCode {
     return .Invalid;
 }
 
-WasKeyDown :: inline (key : KeyCode) -> bool {
-    if cast(int, key) >= context.omg.input_last_frame.keys_down.count {
-        return false;
-    }
-
-    return context.omg.input_last_frame.keys_down[key];
-}
-
 IsKeyDown :: inline (key : KeyCode) -> bool {
-    if cast(int, key) >= context.omg.input.keys_down.count {
+    if key < 0 || cast(int, key) >= context.omg.input.key_states.count {
         return false;
     }
 
-    return context.omg.input.keys_down[key];
+    return context.omg.input.key_states[key] & .Down != 0;
 }
 
-IsKeyPressed :: inline (key : KeyCode) -> bool {
-    return !WasKeyDown(key) && IsKeyDown(key);
+IsKeyPressed :: inline (key : KeyCode, repeated := true) -> bool {
+    if key < 0 || cast(int, key) >= context.omg.input.key_states.count {
+        return false;
+    }
+
+    return context.omg.input.key_states[key] & .Pressed != 0 || (repeated && context.omg.input.key_states[key] & .Repeated != 0);
+}
+
+IsKeyRepeated :: inline (key : KeyCode) -> bool {
+    if key < 0 || cast(int, key) >= context.omg.input.key_states.count {
+        return false;
+    }
+
+    return context.omg.input.key_states[key] & .Repeated != 0;
 }
 
 IsKeyReleased :: inline (key : KeyCode) -> bool {
-    return WasKeyDown(key) && !IsKeyDown(key);
+    if key < 0 || cast(int, key) >= context.omg.input.key_states.count {
+        return false;
+    }
+
+    return context.omg.input.key_states[key] & .Released != 0;
 }
 
 ModState :: enum_flags {
@@ -281,30 +335,36 @@ HandleInputEvent :: (event : SDL_Event) {
     if event.type == {
     case SDL_KEYDOWN;
         key_code := SDLScancodeToKeyCode(event.key.keysym.scancode);
-        omg.input.keys_down[key_code] = true;
+        flag := ifx event.key.repeat > 0 then KeyState.Repeated | .Down else .Pressed | .Down;
+
+        omg.input.key_states[key_code] |= flag;
 
         if key_code == .LeftShift || key_code == .RightShift {
-            omg.input.keys_down[KeyCode.Shift] = true;
+            omg.input.key_states[KeyCode.Shift] |= flag;
         }
         if key_code == .LeftCtrl || key_code == .RightCtrl {
-            omg.input.keys_down[KeyCode.Ctrl] = true;
+            omg.input.key_states[KeyCode.Ctrl] |= flag;
         }
         if key_code == .LeftAlt || key_code == .RightAlt {
-            omg.input.keys_down[KeyCode.Alt] = true;
+            omg.input.key_states[KeyCode.Alt] |= flag;
         }
 
     case SDL_KEYUP;
         key_code := SDLScancodeToKeyCode(event.key.keysym.scancode);
-        omg.input.keys_down[key_code] = false;
+        omg.input.key_states[key_code] &= ~.Down;
+        omg.input.key_states[key_code] |= .Released;
 
         if key_code == .LeftShift || key_code == .RightShift {
-            omg.input.keys_down[KeyCode.Shift] = false;
+            omg.input.key_states[KeyCode.Shift] &= ~.Down;
+            omg.input.key_states[KeyCode.Shift] |= .Released;
         }
         if key_code == .LeftCtrl || key_code == .RightCtrl {
-            omg.input.keys_down[KeyCode.Ctrl] = false;
+            omg.input.key_states[KeyCode.Ctrl] &= ~.Down;
+            omg.input.key_states[KeyCode.Ctrl] |= .Released;
         }
         if key_code == .LeftAlt || key_code == .RightAlt {
-            omg.input.keys_down[KeyCode.Alt] = false;
+            omg.input.key_states[KeyCode.Alt] &= ~.Down;
+            omg.input.key_states[KeyCode.Alt] |= .Released;
         }
 
     case SDL_MOUSEBUTTONDOWN;
@@ -313,7 +373,11 @@ HandleInputEvent :: (event : SDL_Event) {
         }
 
         mouse_button := SDLMouseButtonToMouseButton(event.button.button);
-        omg.input.mouse_buttons |= cast(MouseButtonFlags, 1 << mouse_button);
+        if event.button.clicks > 1 {
+            omg.input.mouse_button_states[mouse_button] |= .Repeated | .Down;
+        } else {
+            omg.input.mouse_button_states[mouse_button] |= .Pressed | .Down;
+        }
 
     case SDL_MOUSEBUTTONUP;
         if event.button.button > 2 {
@@ -321,7 +385,8 @@ HandleInputEvent :: (event : SDL_Event) {
         }
 
         mouse_button := SDLMouseButtonToMouseButton(event.button.button);
-        omg.input.mouse_buttons &= ~cast(MouseButtonFlags, 1 << mouse_button);
+        omg.input.mouse_button_states[mouse_button] &= ~.Down;
+        omg.input.mouse_button_states[mouse_button] |= .Released;
 
     case SDL_MOUSEWHEEL;
         if event.wheel.direction == xx SDL_MouseWheelDirection.SDL_MOUSEWHEEL_FLIPPED {

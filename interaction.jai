@@ -6,6 +6,7 @@ IsHovered :: (node : *Node) -> bool {
 
 ButtonResult :: struct {
     pressed : bool;
+    double_clicked : bool;
     held : bool;
     released : bool;
 }
@@ -28,6 +29,7 @@ ButtonBehavior :: (node : *Node) -> ButtonResult {
     if node.state_flags & .Hot {
         result.held = true;
         result.pressed = IsHovered(node) && IsMouseButtonPressed(.Left);
+        result.double_clicked = IsHovered(node) && IsMouseButtonDoubleClicked(.Left);
         result.released = IsHovered(node) && IsMouseButtonReleased(.Left);
     }
 
