@@ -48,7 +48,9 @@ GetDefaultFont :: inline () -> *Font {
 }
 
 LoadDefaultFont :: () -> *Font {
-    return LoadFontFromFile("__default", "Roboto-Regular.ttf", .{});
+    Default_Font_Contents :: #run ReadCompileTimeFile("Roboto-Regular.ttf");
+
+    return LoadFontFromMemory("__default", Default_Font_Contents, .{});
 }
 
 LoadFontFromFile :: (filename : string, config : FontConfig) -> *Font {
@@ -56,6 +58,21 @@ LoadFontFromFile :: (filename : string, config : FontConfig) -> *Font {
 }
 
 LoadFontFromFile :: (name : string, filename : string, config : FontConfig) -> *Font {
+    #import "File";
+    contents, ok := read_entire_file(filename);
+    if !ok {
+        return null;
+    }
+
+    font := LoadFontFromMemory(name, contents, config);
+    if font {
+        font.filename = filename;
+    }
+
+    return font;
+}
+
+LoadFontFromMemory :: (name : string, data : string, config : FontConfig) -> *Font {
     if !g_ft_lib {
         ft_err := FT_Init_FreeType(*g_ft_lib);
         if ft_err != xx FT_Err.Ok {
@@ -76,7 +93,7 @@ LoadFontFromFile :: (name : string, filename : string, config : FontConfig) -> *
     }
 
     ft_face : FT_Face;
-    ft_err := FT_New_Face(g_ft_lib, to_c_string(filename ,, temp), 0, *ft_face);
+    ft_err := FT_New_Memory_Face(g_ft_lib, data.data, data.count, 0, *ft_face);
     if ft_err != xx FT_Err.Ok {
         return null;
     }
@@ -86,7 +103,6 @@ LoadFontFromFile :: (name : string, filename : string, config : FontConfig) -> *
     FT_Set_Pixel_Sizes(ft_face, 0, config.resolution);
 
     font := New(Font);
-    font.filename = filename;
     font.name = name;
     font.resolution = config.resolution;
     font.ascent = FractToFloat(ft_face.size.metrics.ascender) / cast(float, config.resolution);

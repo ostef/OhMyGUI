@@ -105,17 +105,17 @@ InitGL :: (num_frames_in_flight := 2, frame_data_buffer_size := 1 * 1024 * 1024)
 
     #import "File";
 
-    SDF_Vertex_Shader :: #run read_entire_file(sprint("%/Shaders/sdf.vert.glsl", #filepath));
-    SDF_Fragment_Shader :: #run read_entire_file(sprint("%/Shaders/sdf.frag.glsl", #filepath));
+    SDF_Vertex_Shader :: #run ReadCompileTimeFile("Shaders/sdf.vert.glsl");
+    SDF_Fragment_Shader :: #run ReadCompileTimeFile("Shaders/sdf.frag.glsl");
 
-    Box_Vertex_Shader :: #run read_entire_file(sprint("%/Shaders/box.vert.glsl", #filepath));
-    Box_Fragment_Shader :: #run read_entire_file(sprint("%/Shaders/box.frag.glsl", #filepath));
+    Box_Vertex_Shader :: #run ReadCompileTimeFile("Shaders/box.vert.glsl");
+    Box_Fragment_Shader :: #run ReadCompileTimeFile("Shaders/box.frag.glsl");
 
-    Glyph_Vertex_Shader :: #run read_entire_file(sprint("%/Shaders/glyph.vert.glsl", #filepath));
-    Glyph_Fragment_Shader :: #run read_entire_file(sprint("%/Shaders/glyph.frag.glsl", #filepath));
+    Glyph_Vertex_Shader :: #run ReadCompileTimeFile("Shaders/glyph.vert.glsl");
+    Glyph_Fragment_Shader :: #run ReadCompileTimeFile("Shaders/glyph.frag.glsl");
 
-    Triangle_Vertex_Shader :: #run read_entire_file(sprint("%/Shaders/triangle.vert.glsl", #filepath));
-    Triangle_Fragment_Shader :: #run read_entire_file(sprint("%/Shaders/triangle.frag.glsl", #filepath));
+    Triangle_Vertex_Shader :: #run ReadCompileTimeFile("Shaders/triangle.vert.glsl");
+    Triangle_Fragment_Shader :: #run ReadCompileTimeFile("Shaders/triangle.frag.glsl");
 
     g_shader_shape = LoadShader("SDF", SDF_Vertex_Shader, SDF_Fragment_Shader);
     if !g_shader_shape {

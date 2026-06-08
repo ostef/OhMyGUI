@@ -286,6 +286,20 @@ Render :: () {
     ResetInput(*omg.input);
 }
 
+#scope_module
+
+ReadCompileTimeFile :: (filename : string, location := #caller_location) -> string {
+    #import "File";
+    absolute_filename := sprint("%/%", #filepath, filename);
+    contents, ok := read_entire_file(absolute_filename);
+
+    if !ok {
+        #import "Compiler";
+        compiler_report(sprint("Could not read file '%'", absolute_filename), loc=location);
+    }
+
+    return contents;
+}
 
 #scope_file
 
