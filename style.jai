@@ -249,6 +249,7 @@ DefaultTheme :: struct {
 
     base : BoxStyle;
     text : TextStyle;
+    clickable_text : ClickableTextStyle;
     button : ButtonStyle;
     button_accent : ButtonStyle;
     slider : SliderStyle;
@@ -286,6 +287,24 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         text_color = ChooseTextColor(base_background_color);
     }
     SetStyle(theme, "text", theme.text);
+
+    {
+        using theme.clickable_text;
+
+        normal.font = GetDefaultFont();
+        normal.text_size = 16;
+
+        focused = normal;
+        hot = normal;
+        active = normal;
+        disabled = normal;
+
+        normal.text_color = ChooseTextColor(base_background_color);
+        focused.text_color = base_accent_color;
+        hot.text_color = Whiten(base_accent_color, 0.05);
+        active.text_color = Whiten(base_accent_color, 0.1);
+    }
+    SetStyle(theme, "clickable_text", theme.clickable_text);
 
     {
         using theme.button;

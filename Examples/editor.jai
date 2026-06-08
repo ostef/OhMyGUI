@@ -195,6 +195,9 @@ END
                 {
                     OMG.SetHeight(content_browser, OMG.SizeFill(0.9));
 
+                    if OMG.ClickableText(content_browser, "Click Me!") {
+                        print("Clicked!\n");
+                    }
                 }
             }
 

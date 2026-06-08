@@ -10,6 +10,22 @@ Text :: (parent : *Node, fmt_str : string, args : ..Any, style : *TextStyle = nu
     return node;
 }
 
+ClickableTextStyle :: StateStyle(TextStyle);
+
+ClickableText :: (parent : *Node, fmt_str : string, args : ..Any, style : *ClickableTextStyle = null, location := #caller_location) -> clicked : bool, *Node {
+    EnsureStyle(*style, "clickable_text");
+
+    node := GetNode(parent, location);
+    SetText(node, tprint(fmt_str, ..args));
+    SetSize(node, SizeFit(), SizeFit()); // Fit text
+
+    button := ButtonBehavior(node);
+
+    Apply(node, style.states[GetState(node)]);
+
+    return button.released, node;
+}
+
 ButtonStateStyle :: struct {
     background : BoxStyle;
     text : TextStyle;
