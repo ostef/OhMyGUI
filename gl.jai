@@ -29,22 +29,8 @@ g_storage_buffer_offset_alignment : s32;
 
 g_last_frame_gpu_time : float;
 
-LoadShader :: (vertex_filename : string, fragment_filename : string) -> GLuint {
-    #import "File";
-
+LoadShader :: (name : string, vertex_source : string, fragment_source : string) -> GLuint {
     status, log_length : GLint;
-
-    vertex_source, vertex_ok := read_entire_file(vertex_filename);
-    defer free(vertex_source.data);
-    if !vertex_ok {
-        return 0;
-    }
-
-    fragment_source, fragment_ok := read_entire_file(fragment_filename);
-    defer free(fragment_source.data);
-    if !fragment_ok {
-        return 0;
-    }
 
     vertex_shader := glCreateShader(GL_VERTEX_SHADER);
     defer glDeleteShader(vertex_shader);
@@ -64,7 +50,7 @@ LoadShader :: (vertex_filename : string, fragment_filename : string) -> GLuint {
 
         message := string.{log_length, log};
 
-        log_error("Could not compile vertex shader '%': %", vertex_filename, message);
+        log_error("Could not compile vertex shader '%': %", name, message);
 
         return 0;
     }
@@ -81,7 +67,7 @@ LoadShader :: (vertex_filename : string, fragment_filename : string) -> GLuint {
 
         message := string.{log_length, log};
 
-        log_error("Could not compile fragment shader '%': %", fragment_filename, message);
+        log_error("Could not compile fragment shader '%': %", name, message);
 
         return 0;
     }
@@ -104,7 +90,7 @@ LoadShader :: (vertex_filename : string, fragment_filename : string) -> GLuint {
 
         message := string.{log_length, log};
 
-        log_error("Could not compile shader: %", message);
+        log_error("Could not compile shader '%': %", name, message);
 
         return 0;
     }
@@ -117,22 +103,36 @@ LoadShader :: (vertex_filename : string, fragment_filename : string) -> GLuint {
 InitGL :: (num_frames_in_flight := 2, frame_data_buffer_size := 1 * 1024 * 1024) -> bool {
     g_num_frames_in_flight = num_frames_in_flight;
 
-    g_shader_shape = LoadShader("Shaders/sdf.vert.glsl", "Shaders/sdf.frag.glsl");
+    #import "File";
+
+    SDF_Vertex_Shader :: #run read_entire_file(sprint("%/Shaders/sdf.vert.glsl", #filepath));
+    SDF_Fragment_Shader :: #run read_entire_file(sprint("%/Shaders/sdf.frag.glsl", #filepath));
+
+    Box_Vertex_Shader :: #run read_entire_file(sprint("%/Shaders/box.vert.glsl", #filepath));
+    Box_Fragment_Shader :: #run read_entire_file(sprint("%/Shaders/box.frag.glsl", #filepath));
+
+    Glyph_Vertex_Shader :: #run read_entire_file(sprint("%/Shaders/glyph.vert.glsl", #filepath));
+    Glyph_Fragment_Shader :: #run read_entire_file(sprint("%/Shaders/glyph.frag.glsl", #filepath));
+
+    Triangle_Vertex_Shader :: #run read_entire_file(sprint("%/Shaders/triangle.vert.glsl", #filepath));
+    Triangle_Fragment_Shader :: #run read_entire_file(sprint("%/Shaders/triangle.frag.glsl", #filepath));
+
+    g_shader_shape = LoadShader("SDF", SDF_Vertex_Shader, SDF_Fragment_Shader);
     if !g_shader_shape {
         return false;
     }
 
-    g_shader_box = LoadShader("Shaders/box.vert.glsl", "Shaders/box.frag.glsl");
+    g_shader_box = LoadShader("Box", Box_Vertex_Shader, Box_Fragment_Shader);
     if !g_shader_box {
         return false;
     }
 
-    g_shader_glyph = LoadShader("Shaders/glyph.vert.glsl", "Shaders/glyph.frag.glsl");
+    g_shader_glyph = LoadShader("Glyph", Glyph_Vertex_Shader, Glyph_Fragment_Shader);
     if !g_shader_glyph {
         return false;
     }
 
-    g_shader_triangle = LoadShader("Shaders/triangle.vert.glsl", "Shaders/triangle.frag.glsl");
+    g_shader_triangle = LoadShader("Triangle", Triangle_Vertex_Shader, Triangle_Fragment_Shader);
     if !g_shader_triangle {
         return false;
     }
