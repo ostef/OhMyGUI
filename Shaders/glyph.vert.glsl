@@ -1,16 +1,3 @@
-#version 460 core
-
-struct Glyph {
-    vec4 bounds;
-    vec4 uv_bounds;
-    vec2 sdf_range;
-    uint color;
-    uint outer_shadow_color;
-    vec2 outer_shadow_offset;
-    float outer_shadow_blur;
-    int clip_box_index;
-};
-
 layout(binding=2, std430) readonly buffer GlyphData {
     Glyph u_glyphs[];
 };

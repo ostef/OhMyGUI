@@ -1,15 +1,3 @@
-#version 460 core
-
-struct Triangle {
-    vec2 p0;
-    vec2 p1;
-    vec2 p2;
-    uint c0;
-    uint c1;
-    uint c2;
-    int clip_box_index;
-};
-
 layout(binding=3, std430) readonly buffer TriangleData {
     Triangle u_triangles[];
 };
@@ -18,15 +6,6 @@ uniform vec2 u_viewport_size;
 
 layout(location=0) out flat uint out_triangle_index;
 layout(location=1) out vec4 out_color;
-
-vec4 ColorVec4(uint rgba) {
-    float r = float((rgba >> 24) & uint(0xff));
-    float g = float((rgba >> 16) & uint(0xff));
-    float b = float((rgba >> 8)  & uint(0xff));
-    float a = float((rgba >> 0)  & uint(0xff));
-
-    return vec4(r, g, b, a) * (1 / 255.0);
-}
 
 void main() {
     out_triangle_index = gl_InstanceID + gl_BaseInstance;

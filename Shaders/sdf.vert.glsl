@@ -1,5 +1,3 @@
-#version 460 core
-
 struct Instance {
     vec4 bounds;
     vec2 position;

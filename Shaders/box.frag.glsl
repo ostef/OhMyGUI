@@ -1,23 +1,4 @@
-#version 460 core
-
 // Simplified and "baked" version of the general SDF renderer for node boxes
-
-struct ClipBox {
-    vec4 bounds;
-    vec4 corner_radiuses;
-};
-
-struct Box {
-    vec4 size_and_position;
-    vec4 corner_radiuses;
-    int clip_box_index;
-    uint background_color;
-    vec2 border_size_and_inset;
-    uint border_color;
-    uint outer_shadow_color;
-    vec2 outer_shadow_offset;
-    float outer_shadow_blur;
-};
 
 layout(binding=0, std430) readonly buffer ClipData {
     ClipBox u_clip_boxes[];
@@ -31,33 +12,6 @@ uniform vec2 u_viewport_size;
 layout(location=0) in flat uint in_box_index;
 
 layout(location=0) out vec4 out_color;
-
-vec4 ColorVec4(uint rgba) {
-    float r = float((rgba >> 24) & uint(0xff));
-    float g = float((rgba >> 16) & uint(0xff));
-    float b = float((rgba >> 8)  & uint(0xff));
-    float a = float((rgba >> 0)  & uint(0xff));
-
-    return vec4(r, g, b, a) * (1 / 255.0);
-}
-
-float PrimBox(vec2 p, vec2 size, vec4 corner_radiuses) {
-    corner_radiuses.xy = p.x > 0.0 ? corner_radiuses.yw : corner_radiuses.xz;
-    corner_radiuses.x  = p.y > 0.0 ? corner_radiuses.y  : corner_radiuses.x;
-    vec2 q = abs(p) - size * 0.5 + corner_radiuses.x;
-
-    return min(max(q.x, q.y), 0.0) + length(max(q, 0.0)) - corner_radiuses.x;
-}
-
-float FxSolidColor(float d, float blur) {
-    float a = 1 - smoothstep(-blur, blur, d);
-    return clamp(a, 0, 1);
-}
-
-float FxStrokeColor(float d, float blur, float size, float inset) {
-    float a = FxSolidColor(-(d + inset + size), blur) * FxSolidColor(d + inset, blur);
-    return clamp(a, 0, 1);
-}
 
 void main() {
     vec2 p = gl_FragCoord.xy;

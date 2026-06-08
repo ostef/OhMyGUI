@@ -1,17 +1,3 @@
-#version 460 core
-
-struct Box {
-    vec4 size_and_position;
-    vec4 corner_radiuses;
-    int clip_box_index;
-    uint background_color;
-    vec2 border_size_and_inset;
-    uint border_color;
-    uint outer_shadow_color;
-    vec2 outer_shadow_offset;
-    float outer_shadow_blur;
-};
-
 layout(binding=1, std430) readonly buffer BoxData {
     Box u_boxes[];
 };

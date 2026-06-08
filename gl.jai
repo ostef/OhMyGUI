@@ -105,17 +105,19 @@ InitGL :: (num_frames_in_flight := 2, frame_data_buffer_size := 1 * 1024 * 1024)
 
     #import "File";
 
-    SDF_Vertex_Shader :: #run ReadCompileTimeFile("Shaders/sdf.vert.glsl");
-    SDF_Fragment_Shader :: #run ReadCompileTimeFile("Shaders/sdf.frag.glsl");
+    Common_Shader :: #run ReadCompileTimeFile("Shaders/common.glsl");
 
-    Box_Vertex_Shader :: #run ReadCompileTimeFile("Shaders/box.vert.glsl");
-    Box_Fragment_Shader :: #run ReadCompileTimeFile("Shaders/box.frag.glsl");
+    SDF_Vertex_Shader :: #run join(Common_Shader, ReadCompileTimeFile("Shaders/sdf.vert.glsl"));
+    SDF_Fragment_Shader :: #run join(Common_Shader, ReadCompileTimeFile("Shaders/sdf.frag.glsl"));
 
-    Glyph_Vertex_Shader :: #run ReadCompileTimeFile("Shaders/glyph.vert.glsl");
-    Glyph_Fragment_Shader :: #run ReadCompileTimeFile("Shaders/glyph.frag.glsl");
+    Box_Vertex_Shader :: #run join(Common_Shader, ReadCompileTimeFile("Shaders/box.vert.glsl"));
+    Box_Fragment_Shader :: #run join(Common_Shader, ReadCompileTimeFile("Shaders/box.frag.glsl"));
 
-    Triangle_Vertex_Shader :: #run ReadCompileTimeFile("Shaders/triangle.vert.glsl");
-    Triangle_Fragment_Shader :: #run ReadCompileTimeFile("Shaders/triangle.frag.glsl");
+    Glyph_Vertex_Shader :: #run join(Common_Shader, ReadCompileTimeFile("Shaders/glyph.vert.glsl"));
+    Glyph_Fragment_Shader :: #run join(Common_Shader, ReadCompileTimeFile("Shaders/glyph.frag.glsl"));
+
+    Triangle_Vertex_Shader :: #run join(Common_Shader, ReadCompileTimeFile("Shaders/triangle.vert.glsl"));
+    Triangle_Fragment_Shader :: #run join(Common_Shader, ReadCompileTimeFile("Shaders/triangle.frag.glsl"));
 
     g_shader_shape = LoadShader("SDF", SDF_Vertex_Shader, SDF_Fragment_Shader);
     if !g_shader_shape {

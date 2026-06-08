@@ -1,22 +1,4 @@
-#version 460 core
-
 // Simplified and "baked" version of the general SDF renderer for text
-
-struct ClipBox {
-    vec4 bounds;
-    vec4 corner_radiuses;
-};
-
-struct Glyph {
-    vec4 bounds;
-    vec4 uv_bounds;
-    vec2 sdf_range;
-    uint color;
-    uint outer_shadow_color;
-    vec2 outer_shadow_offset;
-    float outer_shadow_blur;
-    int clip_box_index;
-};
 
 layout(binding=0, std430) readonly buffer ClipData {
     ClipBox u_clip_boxes[];
@@ -31,46 +13,6 @@ uniform sampler2D u_texture;
 layout(location=0) in flat uint in_glyph_index;
 
 layout(location=0) out vec4 out_color;
-
-vec4 ColorVec4(uint rgba) {
-    float r = float((rgba >> 24) & uint(0xff));
-    float g = float((rgba >> 16) & uint(0xff));
-    float b = float((rgba >> 8)  & uint(0xff));
-    float a = float((rgba >> 0)  & uint(0xff));
-
-    return vec4(r, g, b, a) * (1 / 255.0);
-}
-
-float FxSolidColor(float d, float blur) {
-    float a = 1 - smoothstep(-blur, blur, d);
-    return clamp(a, 0, 1);
-}
-
-float InverseLerp(float a, float b, float t) {
-    return (t - a) / (b - a);
-}
-
-float PrimBox(vec2 p, vec2 size, vec4 corner_radiuses) {
-    corner_radiuses.xy = p.x > 0.0 ? corner_radiuses.yw : corner_radiuses.xz;
-    corner_radiuses.x  = p.y > 0.0 ? corner_radiuses.y  : corner_radiuses.x;
-    vec2 q = abs(p) - size * 0.5 + corner_radiuses.x;
-
-    return min(max(q.x, q.y), 0.0) + length(max(q, 0.0)) - corner_radiuses.x;
-}
-
-float PrimTexture(vec2 p, in sampler2D tex, vec2 size, vec4 uv_bounds, vec2 range) {
-    vec2 uv = vec2(
-        InverseLerp(-size.x * 0.5, size.x * 0.5, p.x),
-        InverseLerp(-size.y * 0.5, size.y * 0.5, p.y)
-    );
-    uv = clamp(uv, 0, 1);
-    uv = vec2(
-        mix(uv_bounds.x, uv_bounds.z, uv.x),
-        mix(uv_bounds.y, uv_bounds.w, uv.y)
-    );
-
-    return mix(range.x, range.y, texture(tex, uv).x);
-}
 
 void main() {
     vec2 p = gl_FragCoord.xy;
