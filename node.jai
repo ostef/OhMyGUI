@@ -202,6 +202,32 @@ PrevFrameChildren :: (node : *Node, body : Code, flags : For_Flags) #expand {
     }
 }
 
+IsInTree :: (node : *Node, of : *Node) -> bool {
+    curr := node;
+    while curr {
+        if curr == of {
+            return true;
+        }
+
+        curr = curr.parent;
+    }
+
+    return false;
+}
+
+IsInTree :: (node : *Node, of : ID) -> bool {
+    curr := node;
+    while curr {
+        if curr.id == of {
+            return true;
+        }
+
+        curr = curr.parent;
+    }
+
+    return false;
+}
+
 // for_expansion
 UserData :: (node : *Node, body : Code, flags : For_Flags) #expand {
     `it := node.user_data;
@@ -420,41 +446,51 @@ TouchNode :: (node : *Node) {
     }
 }
 
-GetPopupRoot :: (window : *Window) -> *Node {
+GetPopupRoot :: (window : *Window) -> *Node, is_new : bool {
+    is_new : bool;
+
     if !window.popup_root_node {
         window.popup_root_node = AllocNode();
         window.popup_root_node.window = window;
         window.popup_root_node.local_id = GetID("PopupRoot");
         window.popup_root_node.id = GetID(window.popup_root_node.local_id, cast(u64, window));
+
+        is_new = true;
     }
 
     TouchNode(window.popup_root_node);
 
-    return window.popup_root_node;
+    return window.popup_root_node, is_new;
 }
 
-GetNode :: (window : *Window) -> *Node {
+GetNode :: (window : *Window) -> *Node, is_new : bool {
+    is_new : bool;
+
     if !window.root_node {
         window.root_node = AllocNode();
         window.root_node.window = window;
         window.root_node.local_id = GetID("Root");
         window.root_node.id = GetID(window.root_node.local_id, cast(u64, window));
+
+        is_new = true;
     }
 
     TouchNode(window.root_node);
 
-    return window.root_node;
+    return window.root_node, is_new;
 }
 
-GetNode :: inline (parent : *Node, location := #caller_location) -> *Node {
-    return GetNode(parent, GetID(location));
+GetNode :: inline (parent : *Node, location := #caller_location) -> *Node, is_new : bool {
+    node, is_new := GetNode(parent, GetID(location));
+    return node, is_new;
 }
 
-GetNode :: inline (parent : *Node, str_id : string) -> *Node {
-    return GetNode(parent, GetID(str_id));
+GetNode :: inline (parent : *Node, str_id : string) -> *Node, is_new : bool {
+    node, is_new := GetNode(parent, GetID(str_id));
+    return node, is_new;
 }
 
-GetNode :: (parent : *Node, id : ID) -> *Node {
+GetNode :: (parent : *Node, id : ID) -> *Node, is_new : bool {
     assert(id != 0);
     assert(parent == null || parent.last_used_on_frame == context.omg.frame_index);
 
@@ -477,29 +513,36 @@ GetNode :: (parent : *Node, id : ID) -> *Node {
         }
     }
 
+    is_new : bool;
+
     if !node {
         node = AllocNode();
         node.window = parent.window;
         node.parent = parent;
         node.local_id = id;
         node.id = GetID(id, base=parent.id);
+
+        is_new = true;
     }
 
     TouchNode(node);
 
-    return node;
+    return node, is_new;
 }
 
-GetPopupNode :: inline (window : *Window, location := #caller_location) -> *Node {
-    return GetNode(GetPopupRoot(window), location);
+GetPopupNode :: inline (window : *Window, location := #caller_location) -> *Node, is_new : bool {
+    node, is_new := GetNode(GetPopupRoot(window), location);
+    return node, is_new;
 }
 
-GetPopupNode :: inline (window : *Window, str_id : string) -> *Node {
-    return GetNode(GetPopupRoot(window), str_id);
+GetPopupNode :: inline (window : *Window, str_id : string) -> *Node, is_new : bool {
+    node, is_new := GetNode(GetPopupRoot(window), str_id);
+    return node, is_new;
 }
 
-GetPopupNode :: inline (window : *Window, id : ID) -> *Node {
-    return GetNode(GetPopupRoot(window), id);
+GetPopupNode :: inline (window : *Window, id : ID) -> *Node, is_new : bool {
+    node, is_new := GetNode(GetPopupRoot(window), id);
+    return node, is_new;
 }
 
 BringForward :: (node : *Node) {

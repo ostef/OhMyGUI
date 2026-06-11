@@ -2,6 +2,7 @@
 #load "text_input.jai";
 #load "sliders.jai";
 #load "menus.jai";
+#load "subwindow.jai";
 
 Text :: (parent : *Node, fmt_str : string, args : ..Any, style : *TextStyle = null, location := #caller_location) -> *Node {
     EnsureStyle(*style, "text");

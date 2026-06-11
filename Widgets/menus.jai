@@ -50,21 +50,7 @@ Menu :: (parent : *Node, text : string, menu_item_style : *ButtonStyle = null, m
 
         should_deactivate := IsKeyPressed(.Escape);
         if menu_item.state_flags & .ActiveLastFrame && !(menu_item.state_flags & .Focused) && IsMouseButtonPressed(.Left) {
-            // Traverse the node tree to make sure we are not an ancestor to the focused node
-            // If we are an ancestor, we don't deactivate the menu
-            found_menu := false;
-
-            ancestor := context.omg.mouse_hovered_node;
-            while ancestor {
-                if ancestor.id == menu_id {
-                    found_menu = true;
-                    break;
-                }
-
-                ancestor = ancestor.parent;
-            }
-
-            if !found_menu {
+            if !IsInTree(context.omg.mouse_hovered_node, menu_id) {
                 should_deactivate = true;
             }
         }

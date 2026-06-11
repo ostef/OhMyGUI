@@ -108,6 +108,8 @@ EditorFrame :: () {
                 }
             }
 
+            OMG.Toggle(title_menu_bar, "Debug Mode", *context.omg.debug_mode, style=OMG.GetStyle("menu_item", OMG.ButtonStyle));
+
             help_menu := OMG.Menu(title_menu_bar, "Help");
             if help_menu {
                 OMG.MenuItem(help_menu, "Documentation");
@@ -140,6 +142,7 @@ EditorFrame :: () {
                 OMG.SetPadding(main_viewport, 12, 12);
                 OMG.SetChildGap(main_viewport, 4, 4);
 
+                OMG.Text(main_viewport, "% nodes", context.omg.node_pool.count);
                 OMG.Text(main_viewport, "Mouse hover: % %", context.omg.mouse_hovered_node, ifx context.omg.mouse_hovered_node then context.omg.mouse_hovered_node.id);
                 OMG.Text(main_viewport, "Mouse focus: % %", context.omg.mouse_focused_node, ifx context.omg.mouse_focused_node then context.omg.mouse_focused_node.id);
                 OMG.Text(main_viewport, "Mouse capture: % %", context.omg.mouse_capturing_node, ifx context.omg.mouse_capturing_node then context.omg.mouse_capturing_node.id);
@@ -237,4 +240,7 @@ END
             }
         }
     }
+
+    OMG.Subwindow(window, "Hello Subwindow", "hello_subwindow", .{300, 500});
+    OMG.Subwindow(window, "Hello Subwindow 2", "hello_subwindow2", .{300, 500});
 }

@@ -331,6 +331,7 @@ DefaultTheme :: struct {
     menu_item : ButtonStyle;
     menu : BoxStyle;
     separator : BoxStyle;
+    subwindow : SubwindowStyle;
 }
 
 g_default_theme_light : DefaultTheme;
@@ -565,4 +566,37 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         background_color = ColorU32(0.5, 0.5, 0.5, 1);
     }
     SetStyle(theme, "separator", theme.separator);
+
+    {
+        using theme.subwindow;
+
+        background.corner_radiuses = .{6,6,6,6};
+
+        background.background_color = base_background_color;
+        background.border_color = MakeTone(base_background_color, 0.3);
+        background.border_size = 1;
+
+        background.outer_shadow_color = ColorU32(0,0,0,0.5);
+        background.outer_shadow_offset = .{3,3};
+        background.outer_shadow_blur = 5;
+
+        {
+            using title_bar;
+
+            title_bar.normal.background.padding = .{6,6,6,6};
+            title_bar.normal.background.corner_radiuses = .{6,6,0,0};
+
+            title_bar.normal.text.font = GetDefaultFont();
+            title_bar.normal.text.text_size = 16;
+
+            title_bar.normal.background.background_color = MakeTone(base_background_color, 0.1);
+            title_bar.normal.text.text_color = ChooseTextColor(title_bar.normal.background.background_color);
+
+            title_bar.focused = title_bar.normal;
+            title_bar.hot = title_bar.normal;
+            title_bar.active = title_bar.normal;
+            title_bar.disabled = title_bar.normal;
+        }
+    }
+    SetStyle(theme, "subwindow", theme.subwindow);
 }
