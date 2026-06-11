@@ -32,6 +32,7 @@ Context :: struct {
     }
 
     input : InputContext;
+    cursor_this_frame : *Cursor;
 
     windows : *Window;
     fonts : *Font;
@@ -128,6 +129,7 @@ Init :: () {
     context.omg.node_pool.allocator = context.allocator;
 
     InitInput(*context.omg.input);
+    InitSystemCursors();
 
     default_font := LoadDefaultFont();
     assert(default_font != null, "Could not load default font");
@@ -157,7 +159,8 @@ Terminate :: () {
 
     array_free(context.omg.id_offset_stack);
 
-    FreeInput(*context.omg.input);
+    DestroyInput(*context.omg.input);
+    DestroySystemCursors();
 
     bucket_array_reset(*context.omg.node_pool);
 
@@ -186,6 +189,8 @@ NewFrame :: (delta_time : float) {
     omg.delta_time = delta_time;
 
     InputNewFrame(*context.omg.input);
+
+    SetCursor(null);
 
     omg.mouse_hovered_node = null;
     omg.mouse_focused_node = null;
@@ -229,6 +234,12 @@ NewFrame :: (delta_time : float) {
 Render :: () {
     omg := context.omg;
     omg.layout_time_last_frame = 0;
+
+    if omg.cursor_this_frame {
+        SDL_SetCursor(omg.cursor_this_frame);
+    } else {
+        SDL_SetCursor(GetSystemCursor(.Arrow));
+    }
 
     if omg.id_offset_stack.count > 0 {
         log_error("Mismatching number of push/pop for ID offset stack");

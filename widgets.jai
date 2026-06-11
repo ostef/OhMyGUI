@@ -10,7 +10,12 @@ Text :: (parent : *Node, fmt_str : string, args : ..Any, style : *TextStyle = nu
     return node;
 }
 
-ClickableTextStyle :: StateStyle(TextStyle);
+ClickableTextStateStyle :: struct {
+    text : TextStyle;
+    cursor : *Cursor;
+}
+
+ClickableTextStyle :: StateStyle(ClickableTextStateStyle);
 
 ClickableText :: (parent : *Node, fmt_str : string, args : ..Any, style : *ClickableTextStyle = null, location := #caller_location) -> clicked : bool, *Node {
     EnsureStyle(*style, "clickable_text");
@@ -21,7 +26,11 @@ ClickableText :: (parent : *Node, fmt_str : string, args : ..Any, style : *Click
 
     button := ButtonBehavior(node);
 
-    Apply(node, style.states[GetState(node)]);
+    state := GetState(node);
+    Apply(node, style.states[state].text);
+    if state != .None {
+        SetCursor(style.states[state].cursor);
+    }
 
     return button.released, node;
 }
@@ -29,6 +38,7 @@ ClickableText :: (parent : *Node, fmt_str : string, args : ..Any, style : *Click
 ButtonStateStyle :: struct {
     background : BoxStyle;
     text : TextStyle;
+    cursor : *Cursor;
 }
 
 ButtonStyle :: StateStyle(ButtonStateStyle);
@@ -62,6 +72,9 @@ Button :: (parent : *Node, width : Size1D, height : Size1D, style : *ButtonStyle
         state := GetState(node);
 
         Apply(node, style.states[state].background);
+        if state != .None {
+            SetCursor(style.states[state].cursor);
+        }
 
         return button.released, node;
     }
@@ -543,14 +556,60 @@ SetColors :: (using style : *CheckboxStyle, base_background_color : RGBA8, check
 }
 
 DrawCheckmark :: (draw_list : *DrawList, node : *Node) {
+    checkbox_style := GetUserData(node.parent, CheckboxStyle);
+    if !checkbox_style {
+        return;
+    }
+
+    state := GetState(node.parent);
+    using style := checkbox_style.states[state];
+
+    size := node.size.y;
+    thickness := size * checkmark.thickness;
+
+    // rounding := 1.0;
+    // thickness := 0.2;
+    // offset := Vec2f.{-0.2, 0};
+    // left_size := 0.5;
+    // right_size := 0.9;
+    // angle := PI * 0.17;
+
+
+    //                  * p4
+    //                .     * p5
+    //   . * p1     .     .
+    // * p0  .    .     .
+    //   .      * p3  .
+    //      .       .
+    //          * p2
+
+    left_dir := Rotate(Vec2f.{-1,0}, checkmark.angle);
+    right_dir := Rotate(Vec2f.{1,0}, -checkmark.angle);
+    p2 := Vec2f.{(node.rect.x + node.rect.z) * 0.5, node.rect.w};
+    p5 := p2 + right_dir * checkmark.right_size * size;
+    p4 := p5 + PerpendicularCW(right_dir) * thickness;
+
+    p0 := p2 + left_dir * checkmark.left_size * size;
+    p1 := p0 + PerpendicularCW(left_dir) * thickness;
+
     DrawTriangle(draw_list, .{
-        p0=.{node.rect.x, node.rect.y},
-        p1=.{node.rect.z, node.rect.y},
-        p2=.{(node.rect.x + node.rect.z) * 0.5, node.rect.w},
+        p0=p2,
+        p1=p5,
+        p2=p4,
         c0=node.background_color,
         c1=node.background_color,
         c2=node.background_color,
     });
+
+    DrawTriangle(draw_list, .{
+        p0=p2,
+        p1=p0,
+        p2=p1,
+        c0=node.background_color,
+        c1=node.background_color,
+        c2=node.background_color,
+    });
+
 
     /*
     checkbox_style := GetUserData(node.parent, CheckboxStyle);

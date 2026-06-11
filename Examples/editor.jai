@@ -189,7 +189,7 @@ THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG!
 END
 
                 _, the_quick := OMG.ClickableText(main_viewport, Text);
-                the_quick.text_size = (cos(g_time) + 2) * 10;
+                the_quick.text_size = 10 + (cos(g_time) + 2) * 0.5 * 30;
 
                 content_browser := Panel(left_side, "content_browser", "Content Browser");
                 {

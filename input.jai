@@ -33,7 +33,7 @@ InitInput :: (using input : *InputContext) {
     key_states = NewArray(xx KeyCode.Count, KeyState);
 }
 
-FreeInput :: (using input : *InputContext) {
+DestroyInput :: (using input : *InputContext) {
     array_free(text);
     free(*key_states.data);
     input.* = .{};

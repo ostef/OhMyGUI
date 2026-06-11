@@ -92,6 +92,63 @@ StateStyle :: struct(T : Type) {
     states : [Num_Node_States]T;
 }
 
+Cursor :: SDL_Cursor;
+
+SystemCursor :: enum u8 {
+    Arrow;
+    IBeam;
+    Busy;
+    Crosshair;
+    ArrowBusy;
+    ResizeNWSE;
+    ResizeNESW;
+    ResizeHorizontal;
+    ResizeVertical;
+    ResizeAll;
+    Forbidden;
+    Hand;
+
+    Count;
+}
+
+SetCursor :: inline (cursor : *Cursor) {
+    context.omg.cursor_this_frame = cursor;
+}
+
+#scope_file
+
+g_system_cursors : [SystemCursor.Count]*Cursor;
+
+#scope_export
+
+InitSystemCursors :: () {
+    g_system_cursors[SystemCursor.Arrow] = SDL_CreateSystemCursor(ARROW);
+    g_system_cursors[SystemCursor.IBeam] = SDL_CreateSystemCursor(IBEAM);
+    g_system_cursors[SystemCursor.Busy] = SDL_CreateSystemCursor(WAIT);
+    g_system_cursors[SystemCursor.Crosshair] = SDL_CreateSystemCursor(CROSSHAIR);
+    g_system_cursors[SystemCursor.ArrowBusy] = SDL_CreateSystemCursor(WAITARROW);
+    g_system_cursors[SystemCursor.ResizeNWSE] = SDL_CreateSystemCursor(SIZENWSE);
+    g_system_cursors[SystemCursor.ResizeNESW] = SDL_CreateSystemCursor(SIZENESW);
+    g_system_cursors[SystemCursor.ResizeHorizontal] = SDL_CreateSystemCursor(SIZEWE);
+    g_system_cursors[SystemCursor.ResizeVertical] = SDL_CreateSystemCursor(SIZENS);
+    g_system_cursors[SystemCursor.ResizeAll] = SDL_CreateSystemCursor(SIZEALL);
+    g_system_cursors[SystemCursor.Forbidden] = SDL_CreateSystemCursor(NO);
+    g_system_cursors[SystemCursor.Hand] = SDL_CreateSystemCursor(HAND);
+
+    SetCursor(g_system_cursors[SystemCursor.Arrow]);
+}
+
+DestroySystemCursors :: () {
+    for * g_system_cursors {
+        SDL_FreeCursor(it.*);
+        it.* = null;
+    }
+}
+
+GetSystemCursor :: inline (cursor : SystemCursor) -> *Cursor {
+    return g_system_cursors[cursor];
+}
+
 AnimFunc :: enum u8 {
     Linear;
     CubicIn;
@@ -293,20 +350,21 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
     {
         using theme.clickable_text;
 
-        normal.font = GetDefaultFont();
-        normal.text_size = 16;
+        normal.text.font = GetDefaultFont();
+        normal.text.text_size = 16;
 
         focused = normal;
-        focused.text_effects |= .Underline;
+        focused.text.text_effects |= .Underline;
+        focused.cursor = GetSystemCursor(.Hand);
 
         hot = focused;
         active = focused;
         disabled = focused;
 
-        normal.text_color = ChooseTextColor(base_background_color);
-        focused.text_color = base_accent_color;
-        hot.text_color = Whiten(base_accent_color, 0.05);
-        active.text_color = Whiten(base_accent_color, 0.1);
+        normal.text.text_color = ChooseTextColor(base_background_color);
+        focused.text.text_color = base_accent_color;
+        hot.text.text_color = Whiten(base_accent_color, 0.05);
+        active.text.text_color = Whiten(base_accent_color, 0.1);
     }
     SetStyle(theme, "clickable_text", theme.clickable_text);
 
