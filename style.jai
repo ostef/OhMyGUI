@@ -65,6 +65,7 @@ TextStyle :: struct {
     font : *Font;
     text_size : float;
     text_color : RGBA8;
+    text_effects : TextEffects;
     outer_shadow_blur : float;
     outer_shadow_offset : Vec2f;
     outer_shadow_color : RGBA8;
@@ -74,6 +75,7 @@ Apply :: inline (node : *Node, style : TextStyle) {
     node.font = style.font;
     node.text_size = style.text_size;
     node.text_color = style.text_color;
+    node.text_effects = style.text_effects;
     node.outer_shadow_blur = style.outer_shadow_blur;
     node.outer_shadow_offset = style.outer_shadow_offset;
     node.outer_shadow_color = style.outer_shadow_color;
@@ -295,9 +297,11 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         normal.text_size = 16;
 
         focused = normal;
-        hot = normal;
-        active = normal;
-        disabled = normal;
+        focused.text_effects |= .Underline;
+
+        hot = focused;
+        active = focused;
+        disabled = focused;
 
         normal.text_color = ChooseTextColor(base_background_color);
         focused.text_color = base_accent_color;
@@ -369,7 +373,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
     {
         using theme.scrollbar;
 
-        handle_size = 10;
+        handle_size = 8;
 
         normal.background.corner_radiuses = Vec4f.{1,1,1,1} * background_size * 0.5;
         normal.handle.corner_radiuses = Vec4f.{1,1,1,1} * handle_size * 0.5;
@@ -380,6 +384,8 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         disabled = normal;
 
         SetColors(*theme.scrollbar, MakeTone(base_background_color, 0.05), 0, MakeTone(base_background_color, 0.5));
+
+        active.handle.background_color = Whiten(base_accent_color, 0.1);
     }
     SetStyle(theme, "scrollbar", theme.scrollbar);
 

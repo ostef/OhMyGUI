@@ -11,6 +11,11 @@ NodeFlags :: enum_flags u32 {
     NoPaddedClip;
 }
 
+TextEffects :: enum_flags u8 {
+    Underline;
+    Strikethrough;
+}
+
 NodeState :: enum u8 {
     Disabled;
     Active;
@@ -138,13 +143,14 @@ Node :: struct {
     using styling : struct {
         corner_radiuses : Vec4f;
         background_color : RGBA8;
-        text_color : RGBA8;
         border_color : RGBA8;
         border_size : float;
         border_inset : float;
         outer_shadow_blur : float;
         outer_shadow_offset : Vec2f;
         outer_shadow_color : RGBA8;
+        text_color : RGBA8;
+        text_effects : TextEffects;
     };
 
     state_flags : NodeStateFlags;

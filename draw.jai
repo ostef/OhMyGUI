@@ -85,139 +85,155 @@ DrawList :: struct {
     gpu_buffer_triangles_offset : u32;
 }
 
-InitDrawList :: (list : *DrawList) {
-    list.draw_calls.allocator = context.allocator;
-    list.boxes.allocator = context.allocator;
-    list.clip_boxes.allocator = context.allocator;
-    list.clip_box_stack.allocator = context.allocator;
-    list.glyphs.allocator = context.allocator;
-    list.triangles.allocator = context.allocator;
+InitDrawList :: (draw_list : *DrawList) {
+    draw_list.draw_calls.allocator = context.allocator;
+    draw_list.boxes.allocator = context.allocator;
+    draw_list.clip_boxes.allocator = context.allocator;
+    draw_list.clip_box_stack.allocator = context.allocator;
+    draw_list.glyphs.allocator = context.allocator;
+    draw_list.triangles.allocator = context.allocator;
 }
 
-DestroyDrawList :: (list : *DrawList) {
-    array_free(list.draw_calls);
-    array_free(list.boxes);
-    array_free(list.clip_boxes);
-    array_free(list.clip_box_stack);
-    array_free(list.glyphs);
-    array_free(list.triangles);
-    list.* = .{};
+DestroyDrawList :: (draw_list : *DrawList) {
+    array_free(draw_list.draw_calls);
+    array_free(draw_list.boxes);
+    array_free(draw_list.clip_boxes);
+    array_free(draw_list.clip_box_stack);
+    array_free(draw_list.glyphs);
+    array_free(draw_list.triangles);
+    draw_list.* = .{};
 }
 
-ClearDrawList :: (list : *DrawList) {
-    array_reset_keeping_memory(*list.draw_calls);
-    array_reset_keeping_memory(*list.boxes);
-    array_reset_keeping_memory(*list.clip_boxes);
-    array_reset_keeping_memory(*list.clip_box_stack);
-    array_reset_keeping_memory(*list.glyphs);
-    array_reset_keeping_memory(*list.triangles);
+ClearDrawList :: (draw_list : *DrawList) {
+    array_reset_keeping_memory(*draw_list.draw_calls);
+    array_reset_keeping_memory(*draw_list.boxes);
+    array_reset_keeping_memory(*draw_list.clip_boxes);
+    array_reset_keeping_memory(*draw_list.clip_box_stack);
+    array_reset_keeping_memory(*draw_list.glyphs);
+    array_reset_keeping_memory(*draw_list.triangles);
 
-    list.gpu_buffer_clip_boxes_offset = 0;
-    list.gpu_buffer_boxes_offset = 0;
-    list.gpu_buffer_glyphs_offset = 0;
-    list.gpu_buffer_triangles_offset = 0;
+    draw_list.gpu_buffer_clip_boxes_offset = 0;
+    draw_list.gpu_buffer_boxes_offset = 0;
+    draw_list.gpu_buffer_glyphs_offset = 0;
+    draw_list.gpu_buffer_triangles_offset = 0;
 }
 
-GetCurrentDrawCall :: (list : *DrawList) -> *DrawCall {
-    if list.draw_calls.count <= 0 {
+GetCurrentDrawCall :: (draw_list : *DrawList) -> *DrawCall {
+    if draw_list.draw_calls.count <= 0 {
         return null;
     }
-    return *list.draw_calls[list.draw_calls.count - 1];
+    return *draw_list.draw_calls[draw_list.draw_calls.count - 1];
 }
 
-GetCurrentClipBoxIndex :: (list : *DrawList) -> s32 {
-    if list.clip_box_stack.count <= 0 {
+GetCurrentClipBoxIndex :: (draw_list : *DrawList) -> s32 {
+    if draw_list.clip_box_stack.count <= 0 {
         return -1;
     }
-    return list.clip_box_stack[list.clip_box_stack.count - 1];
+    return draw_list.clip_box_stack[draw_list.clip_box_stack.count - 1];
 }
 
-PushClipBox :: (list : *DrawList, bounds : Vec4f, corner_radiuses : Vec4f = .{}) {
-    box := array_add(*list.clip_boxes);
+PushClipBox :: (draw_list : *DrawList, bounds : Vec4f, corner_radiuses : Vec4f = .{}) {
+    box := array_add(*draw_list.clip_boxes);
     box.bounds = bounds;
     box.corner_radiuses = corner_radiuses;
 
-    current_index := GetCurrentClipBoxIndex(list);
+    current_index := GetCurrentClipBoxIndex(draw_list);
     if current_index >= 0 {
-        box.bounds = ClipRect(box.bounds, list.clip_boxes[current_index].bounds);
+        box.bounds = ClipRect(box.bounds, draw_list.clip_boxes[current_index].bounds);
     }
 
-    array_add(*list.clip_box_stack, xx (list.clip_boxes.count - 1));
+    array_add(*draw_list.clip_box_stack, xx (draw_list.clip_boxes.count - 1));
 }
 
-PopClipBox :: (list : *DrawList) {
-    pop(*list.clip_box_stack);
+PopClipBox :: (draw_list : *DrawList) {
+    pop(*draw_list.clip_box_stack);
 }
 
-DrawBox :: (list : *DrawList, box : BoxDrawing, texture : TextureHandle = 0) -> int {
+DrawBox :: inline (draw_list : *DrawList, position : Vec2f, size : Vec2f, color : RGBA8, corner_radiuses := Vec4f.{}) -> int {
+    return DrawBox(draw_list, .{
+            size=size,
+            position=position,
+            background_color=color,
+            corner_radiuses=corner_radiuses,
+        });
+}
+
+DrawBox :: (draw_list : *DrawList, box : BoxDrawing, texture : TextureHandle = 0) -> int {
     if (box.background_color & 0xff) == 0
     && ((box.border_color & 0xff) == 0 || box.border_size <= 0)
     && (box.outer_shadow_color & 0xff) == 0 {
         return -1;
     }
 
-    draw_call := GetCurrentDrawCall(list);
+    draw_call := GetCurrentDrawCall(draw_list);
     if !draw_call || draw_call.kind != .Boxes || draw_call.texture != texture {
-        draw_call = array_add(*list.draw_calls);
+        draw_call = array_add(*draw_list.draw_calls);
         draw_call.kind = .Boxes;
-        draw_call.first = xx list.boxes.count;
+        draw_call.first = xx draw_list.boxes.count;
         draw_call.texture = texture;
     }
 
-    draw_call.last = xx list.boxes.count;
+    draw_call.last = xx draw_list.boxes.count;
 
-    ptr := array_add(*list.boxes);
+    ptr := array_add(*draw_list.boxes);
     ptr.* = box;
-    ptr.clip_box_index = GetCurrentClipBoxIndex(list);
+    ptr.clip_box_index = GetCurrentClipBoxIndex(draw_list);
 
-    return list.boxes.count - 1;
+    return draw_list.boxes.count - 1;
 }
 
-DrawGlyph :: (list : *DrawList, glyph : GlyphDrawing, texture : TextureHandle) -> int {
+DrawGlyph :: (draw_list : *DrawList, glyph : GlyphDrawing, texture : TextureHandle) -> int {
     if (glyph.color & 0xff) == 0 && (glyph.outer_shadow_color & 0xff) == 0 {
         return -1;
     }
 
-    draw_call := GetCurrentDrawCall(list);
+    draw_call := GetCurrentDrawCall(draw_list);
     if !draw_call || draw_call.kind != .Glyphs || draw_call.texture != texture {
-        draw_call = array_add(*list.draw_calls);
+        draw_call = array_add(*draw_list.draw_calls);
         draw_call.kind = .Glyphs;
-        draw_call.first = xx list.glyphs.count;
+        draw_call.first = xx draw_list.glyphs.count;
         draw_call.texture = texture;
     }
 
-    draw_call.last = xx list.glyphs.count;
+    draw_call.last = xx draw_list.glyphs.count;
 
-    ptr := array_add(*list.glyphs);
+    ptr := array_add(*draw_list.glyphs);
     ptr.* = glyph;
-    ptr.clip_box_index = GetCurrentClipBoxIndex(list);
+    ptr.clip_box_index = GetCurrentClipBoxIndex(draw_list);
 
-    return list.glyphs.count - 1;
+    return draw_list.glyphs.count - 1;
 }
 
-DrawTriangle :: (list : *DrawList, triangle : TriangleDrawing) -> int {
+DrawTriangle :: inline (draw_list : *DrawList, p0 : Vec2f, p1 : Vec2f, p2 : Vec2f, color : RGBA8) -> int {
+    return DrawTriangle(draw_list, .{
+            p0=p0, p1=p1, p2=p2,
+            c0=color, c1=color, c2=color,
+        });
+}
+
+DrawTriangle :: (draw_list : *DrawList, triangle : TriangleDrawing) -> int {
     if (triangle.c0 & 0xff) == 0 && (triangle.c1 & 0xff) == 0 && (triangle.c2 & 0xff) == 0 {
         return -1;
     }
 
-    draw_call := GetCurrentDrawCall(list);
+    draw_call := GetCurrentDrawCall(draw_list);
     if !draw_call || draw_call.kind != .Triangles {
-        draw_call = array_add(*list.draw_calls);
+        draw_call = array_add(*draw_list.draw_calls);
         draw_call.kind = .Triangles;
-        draw_call.first = xx list.triangles.count;
+        draw_call.first = xx draw_list.triangles.count;
         draw_call.texture = 0;
     }
 
-    draw_call.last = xx list.triangles.count;
+    draw_call.last = xx draw_list.triangles.count;
 
-    ptr := array_add(*list.triangles);
+    ptr := array_add(*draw_list.triangles);
     ptr.* = triangle;
-    ptr.clip_box_index = GetCurrentClipBoxIndex(list);
+    ptr.clip_box_index = GetCurrentClipBoxIndex(draw_list);
 
-    return list.triangles.count - 1;
+    return draw_list.triangles.count - 1;
 }
 
-DrawText :: (list : *DrawList, font : *Font, position : Vec2f, size : float, text : string, color : RGBA8, outer_shadow_color : RGBA8 = 0, outer_shadow_offset := Vec2f.{0,0}, outer_shadow_blur := 0.0) {
+DrawText :: (draw_list : *DrawList, font : *Font, position : Vec2f, size : float, text : string, color : RGBA8, outer_shadow_color : RGBA8 = 0, outer_shadow_offset := Vec2f.{0,0}, outer_shadow_blur := 0.0, effects : TextEffects = 0) {
     if !font || ((color & 0xff) == 0 && (outer_shadow_color & 0xff) == 0) {
         return;
     }
@@ -237,7 +253,7 @@ DrawText :: (list : *DrawList, font : *Font, position : Vec2f, size : float, tex
             zw=glyph_position + it.texture_size * iter.size * 0.5,
         };
 
-        DrawGlyph(list, .{
+        DrawGlyph(draw_list, .{
                 bounds=bounds,
                 uv_bounds=it.uv_rect,
                 sdf_range=.{sdf_range, -sdf_range},
@@ -248,6 +264,75 @@ DrawText :: (list : *DrawList, font : *Font, position : Vec2f, size : float, tex
             },
             font.texture
         );
+    }
+
+    if effects {
+        ResetPen(*iter);
+        iter.include_newlines = true;
+
+        line_start : Vec2f;
+        new_line := true;
+
+        for iter {
+            if new_line {
+                line_start = position + iter.pen;
+                new_line = false;
+            }
+
+            if it.codepoint == #char "\n" {
+                new_line = true;
+
+                line_end := position + iter.pen;
+
+                if effects & .Underline {
+                    box_position := (line_start + line_end) * 0.5;
+                    box_position.y += (font.desired_underline_position + font.desired_underline_thickness * 0.5) * size;
+                    box_size := Vec2f.{
+                        line_end.x - line_start.x,
+                        max(font.desired_underline_thickness * size, 1),
+                    };
+
+                    DrawBox(draw_list, box_position, box_size, color);
+                }
+
+                if effects & .Strikethrough {
+                    box_position := (line_start + line_end) * 0.5;
+                    box_position.y -= font.ascent * 0.35 * size;
+                    box_size := Vec2f.{
+                        line_end.x - line_start.x,
+                        max(font.desired_underline_thickness * size, 1),
+                    };
+
+                    DrawBox(draw_list, box_position, box_size, color);
+                }
+            }
+        }
+
+        if !new_line {
+            line_end := position + iter.pen;
+
+            if effects & .Underline {
+                box_position := (line_start + line_end) * 0.5;
+                box_position.y += (font.desired_underline_position + font.desired_underline_thickness * 0.5) * size;
+                box_size := Vec2f.{
+                    line_end.x - line_start.x,
+                    max(font.desired_underline_thickness * size, 1),
+                };
+
+                DrawBox(draw_list, box_position, box_size, color);
+            }
+
+            if effects & .Strikethrough {
+                box_position := (line_start + line_end) * 0.5;
+                box_position.y -= font.ascent * 0.35 * size;
+                box_size := Vec2f.{
+                    line_end.x - line_start.x,
+                    max(font.desired_underline_thickness * size, 1),
+                };
+
+                DrawBox(draw_list, box_position, box_size, color);
+            }
+        }
     }
 }
 
@@ -273,22 +358,23 @@ DrawNodeDefault :: (draw_list : *DrawList, node : *Node) {
         node.text_color,
         node.outer_shadow_color,
         node.outer_shadow_offset,
-        node.outer_shadow_blur
+        node.outer_shadow_blur,
+        node.text_effects
     );
 }
 
 
-CopyDrawListShaderData :: (list : *DrawList, clip_boxes : *[..]ShaderClipBox, boxes : *[..]ShaderBoxDrawing, glyphs : *[..]ShaderGlyphDrawing, triangles : *[..]ShaderTriangleDrawing) {
-    list.gpu_buffer_clip_boxes_offset = xx clip_boxes.count;
-    list.gpu_buffer_boxes_offset = xx boxes.count;
-    list.gpu_buffer_glyphs_offset = xx glyphs.count;
-    list.gpu_buffer_triangles_offset = xx triangles.count;
+CopyDrawListShaderData :: (draw_list : *DrawList, clip_boxes : *[..]ShaderClipBox, boxes : *[..]ShaderBoxDrawing, glyphs : *[..]ShaderGlyphDrawing, triangles : *[..]ShaderTriangleDrawing) {
+    draw_list.gpu_buffer_clip_boxes_offset = xx clip_boxes.count;
+    draw_list.gpu_buffer_boxes_offset = xx boxes.count;
+    draw_list.gpu_buffer_glyphs_offset = xx glyphs.count;
+    draw_list.gpu_buffer_triangles_offset = xx triangles.count;
 
-    for list.clip_boxes {
+    for draw_list.clip_boxes {
         array_add(clip_boxes, it);
     }
 
-    for list.boxes {
+    for draw_list.boxes {
         box := array_add(boxes);
         box.size_and_position.xy = it.size;
         box.size_and_position.zw = it.position;
@@ -301,29 +387,29 @@ CopyDrawListShaderData :: (list : *DrawList, clip_boxes : *[..]ShaderClipBox, bo
         box.outer_shadow_offset = it.outer_shadow_offset;
         box.outer_shadow_blur = it.outer_shadow_blur;
         box.clip_box_index = ifx it.clip_box_index >= 0
-            then cast(s32, list.gpu_buffer_clip_boxes_offset) + it.clip_box_index
+            then cast(s32, draw_list.gpu_buffer_clip_boxes_offset) + it.clip_box_index
             else -1;
     }
 
-    for list.glyphs {
+    for draw_list.glyphs {
         glyph := array_add(glyphs);
         glyph.* = it;
         glyph.clip_box_index = ifx it.clip_box_index >= 0
-            then cast(s32, list.gpu_buffer_clip_boxes_offset) + it.clip_box_index
+            then cast(s32, draw_list.gpu_buffer_clip_boxes_offset) + it.clip_box_index
             else -1;
     }
 
-    for list.triangles {
+    for draw_list.triangles {
         triangle := array_add(triangles);
         triangle.* = it;
         triangle.clip_box_index = ifx it.clip_box_index >= 0
-            then cast(s32, list.gpu_buffer_clip_boxes_offset) + it.clip_box_index
+            then cast(s32, draw_list.gpu_buffer_clip_boxes_offset) + it.clip_box_index
             else -1;
     }
 }
 
 SendDrawCommands :: (
-    list : *DrawList,
+    draw_list : *DrawList,
     buffer_handle : GLuint,
     clip_boxes_offset : u32,
     boxes_offset : u32,
@@ -332,15 +418,15 @@ SendDrawCommands :: (
     viewport_w : u32,
     viewport_h : u32
 ) {
-    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 0, buffer_handle, xx clip_boxes_offset, xx (list.clip_boxes.count * size_of(ShaderClipBox)));
-    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 1, buffer_handle, xx boxes_offset, xx (list.boxes.count * size_of(ShaderBoxDrawing)));
-    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 2, buffer_handle, xx glyphs_offset, xx (list.glyphs.count * size_of(ShaderGlyphDrawing)));
-    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 3, buffer_handle, xx triangles_offset, xx (list.triangles.count * size_of(ShaderTriangleDrawing)));
+    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 0, buffer_handle, xx clip_boxes_offset, xx (draw_list.clip_boxes.count * size_of(ShaderClipBox)));
+    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 1, buffer_handle, xx boxes_offset, xx (draw_list.boxes.count * size_of(ShaderBoxDrawing)));
+    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 2, buffer_handle, xx glyphs_offset, xx (draw_list.glyphs.count * size_of(ShaderGlyphDrawing)));
+    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 3, buffer_handle, xx triangles_offset, xx (draw_list.triangles.count * size_of(ShaderTriangleDrawing)));
 
     current_shader : GLuint = 0;
     current_texture : GLuint = 0;
 
-    for list.draw_calls {
+    for draw_list.draw_calls {
         first_instance : u32;
 
         num_instances := it.last - it.first + 1;
@@ -353,7 +439,7 @@ SendDrawCommands :: (
         if it.kind == {
         case .Boxes;
             num_vertices = 6;
-            first_instance = it.first + list.gpu_buffer_boxes_offset;
+            first_instance = it.first + draw_list.gpu_buffer_boxes_offset;
 
             if current_shader != g_shader_box {
                 glUseProgram(g_shader_box);
@@ -367,7 +453,7 @@ SendDrawCommands :: (
 
         case .Glyphs;
             num_vertices = 6;
-            first_instance = it.first + list.gpu_buffer_glyphs_offset;
+            first_instance = it.first + draw_list.gpu_buffer_glyphs_offset;
 
             if current_shader != g_shader_glyph {
                 glUseProgram(g_shader_glyph);
@@ -381,7 +467,7 @@ SendDrawCommands :: (
 
         case .Triangles;
             num_vertices = 3;
-            first_instance = it.first + list.gpu_buffer_triangles_offset;
+            first_instance = it.first + draw_list.gpu_buffer_triangles_offset;
 
             if current_shader != g_shader_triangle {
                 glUseProgram(g_shader_triangle);

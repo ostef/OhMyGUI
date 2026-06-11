@@ -215,6 +215,20 @@ TransformPoint :: inline (p : Vec2f, t : Transform2D) -> Vec2f {
     };
 }
 
+PerpendicularCW :: inline (v : Vec2f) -> Vec2f {
+    return .{v.y, -v.x};
+}
+
+Rotate :: inline (v : Vec2f, angle : float) -> Vec2f {
+    ct := cos(angle);
+    st := sin(angle);
+
+    return .{
+        v.x * ct - v.y * st,
+        v.x * st + v.y * ct,
+    };
+}
+
 Round :: inline (value : float) -> float {
     if value < 0 {
         return cast(float, cast(int, value - 0.5));

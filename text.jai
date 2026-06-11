@@ -14,6 +14,8 @@ Font :: struct {
     resolution : u32;
     ascent, descent : float;
     space_advance : float;
+    desired_underline_position : float;
+    desired_underline_thickness : float;
     sdf_range : float;
     texture : GLuint;
 }
@@ -88,6 +90,11 @@ LoadFontFromMemory :: (name : string, data : string, config : FontConfig) -> *Fo
         // }
     }
 
+    existing_font := GetFont(name);
+    if existing_font {
+        return existing_font;
+    }
+
     if config.resolution == 0 {
         return null;
     }
@@ -107,6 +114,12 @@ LoadFontFromMemory :: (name : string, data : string, config : FontConfig) -> *Fo
     font.resolution = config.resolution;
     font.ascent = FractToFloat(ft_face.size.metrics.ascender) / cast(float, config.resolution);
     font.descent = -FractToFloat(ft_face.size.metrics.descender) / cast(float, config.resolution);
+    font.desired_underline_position = ft_face.underline_position * Fract16ToFloat(ft_face.size.metrics.y_scale);
+    font.desired_underline_position = -FractToFloat(xx font.desired_underline_position) / cast(float, config.resolution);
+    font.desired_underline_thickness = ft_face.underline_thickness * Fract16ToFloat(ft_face.size.metrics.y_scale);
+    font.desired_underline_thickness = FractToFloat(xx font.desired_underline_thickness) / cast(float, config.resolution);
+
+    print("% %\n", font.desired_underline_position, font.desired_underline_thickness);
 
     sdf_spread : s32 = 8;
     // FT_Property_Get(g_ft_lib, "sdf", "spread", *sdf_spread);
@@ -247,6 +260,10 @@ FractToFloat :: inline (value : s64) -> float {
     return cast(float, value) / 64.0;
 }
 
+Fract16ToFloat :: inline (value : s64) -> float {
+    return cast(float, value) / 65536.0;
+}
+
 LoadGlyph :: (font : *Font, codepoint : u32, ft_face : FT_Face, packer : *RectPacker) -> *Glyph {
     existing_glyph := table_find_pointer(*font.glyph_map, codepoint);
     if existing_glyph {
@@ -305,8 +322,14 @@ TextGlyphIterator :: struct {
     font : *Font;
     text : string;
     size : float;
+    include_newlines : bool;
     pen : Vec2f;
     bounds : Vec2f;
+}
+
+ResetPen :: (using iter : *TextGlyphIterator) {
+    pen = .{};
+    bounds = .{};
 }
 
 IterText :: inline (node : *Node) -> TextGlyphIterator {
@@ -327,6 +350,8 @@ Newline :: (iter : *TextGlyphIterator) {
 }
 
 for_expansion :: (iter : *TextGlyphIterator, body : Code, flags : For_Flags) #expand {
+    `it : *Glyph;
+
     if !iter.font {
         return;
     }
@@ -336,6 +361,12 @@ for_expansion :: (iter : *TextGlyphIterator, body : Code, flags : For_Flags) #ex
     for codepoint, `it_index : iter.text {
         if codepoint == {
         case #char "\n";
+            if iter.include_newlines {
+                dummy_glyph := Glyph.{codepoint=codepoint};
+                it = *dummy_glyph;
+                #insert body;
+            }
+
             Newline(iter);
 
         case #char "\t";
@@ -352,7 +383,7 @@ for_expansion :: (iter : *TextGlyphIterator, body : Code, flags : For_Flags) #ex
                 }
             }
 
-            `it := glyph;
+            it = glyph;
             #insert body;
 
             iter.bounds.x = max(iter.bounds.x, iter.pen.x + glyph.hori_advance * iter.size, iter.pen.x + (glyph.hori_bearing.x + glyph.size.x) * iter.size);
