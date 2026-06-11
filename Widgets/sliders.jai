@@ -1,0 +1,191 @@
+
+SliderStateStyle :: struct {
+    background : BoxStyle;
+    fill : BoxStyle;
+    handle : BoxStyle;
+}
+
+SliderStyle :: struct {
+    using _ : StateStyle(SliderStateStyle);
+    background_size : float;
+    handle_size : float;
+}
+
+SetColors :: (using style : *SliderStyle, base_background_color : RGBA8, base_fill_color : RGBA8, base_handle_color : RGBA8) {
+    normal.background.background_color = base_background_color;
+    focused.background.background_color = base_background_color;
+    hot.background.background_color = base_background_color;
+    active.background.background_color = base_background_color;
+
+    normal.fill.background_color = base_fill_color;
+    focused.fill.background_color = base_fill_color;
+    hot.fill.background_color = base_fill_color;
+    active.fill.background_color = base_fill_color;
+
+    normal.handle.background_color = base_handle_color;
+    focused.handle.background_color = Whiten(base_handle_color, 0.05);
+    hot.handle.background_color = Darken(base_handle_color, 0.05);
+    active.handle.background_color = Whiten(base_handle_color, 0.1);
+}
+
+// @Todo: unify slider and scrollbar
+Slider :: (parent : *Node, value : *$T, min : T, max : T, step : T, style : *SliderStyle = null, location := #caller_location) -> slider : *Node, background : *Node, handle : *Node {
+    EnsureStyle(*style, "slider");
+
+    fvalue := ifx value then cast(float, value.*);
+    fmin := cast(float, min);
+    fmax := cast(float, max);
+    fstep := ifx GetModState() == .Shift then 0.0 else cast(float, step);
+
+    defer if value {
+        value.* = xx fvalue;
+    }
+
+    slider, background, fill, handle : *Node;
+
+    slider = GetNode(parent, location=location);
+    {
+        SetSize(slider, SizeFill(), SizePx(Max(style.background_size, style.handle_size)));
+        SetLayout(slider, .None);
+        SetChildAlign(slider, 0, 0.5);
+        SetDraw(slider, null);
+
+        scroll := ScrollBehavior(slider);
+        if scroll.y != 0 {
+            fvalue = Snap(clamp(fvalue + sign(scroll.y) * fstep, fmin, fmax), fstep);
+        } else if scroll.x != 0 {
+            fvalue = Snap(clamp(fvalue + sign(scroll.x) * fstep, fmin, fmax), fstep);
+        }
+
+        background = GetNode(slider, "background");
+        {
+            SetSize(background, SizeFill(), SizePx(style.background_size));
+            SetLayout(background, .None);
+        }
+
+        handle = GetNode(slider, "handle");
+        {
+            SetSize(handle, SizePx(style.handle_size), SizePx(style.handle_size));
+
+            range := fmax - fmin;
+            offset_max := slider.layout_last_frame.size[Axis.X] - style.handle_size;
+
+            // Allow the user to click on the slider to interact with the scrollbar
+            slider.flags |= .Focusable;
+
+            handle_result := ButtonBehavior(handle);
+
+            if slider.state_flags & .Focused && IsMouseButtonPressed(.Left) {
+                SetMouseCapture(handle);
+                SetMouseFocus(handle);
+                handle_result.pressed = true;
+                handle_result.held = true;
+
+                mouse := GetMousePosition(slider.window)[Axis.X];
+                new_offset := mouse - slider.layout_last_frame.rect.xy[Axis.X] - style.handle_size * 0.5;
+                new_value := (new_offset / offset_max) * range;
+
+                fvalue = Snap(clamp(new_value, fmin, fmax), fstep);
+            }
+
+            if handle_result.pressed {
+                context.omg.mouse_captured_node_value = .{};
+                context.omg.mouse_captured_node_value[Axis.X] = (fvalue / range) * offset_max;
+            }
+
+            if handle_result.held {
+                new_offset := GetMousePosition()[Axis.X] - context.omg.mouse_captured_at[Axis.X];
+                new_offset += context.omg.mouse_captured_node_value[Axis.X];
+                new_value := (new_offset / offset_max) * range;
+
+                fvalue = Snap(clamp(new_value, fmin, fmax), fstep);
+            }
+
+            handle.offset[Axis.X] = (fvalue / range) * offset_max;
+        }
+
+        fill = GetNode(background, "fill");
+        {
+            SetSize(fill, SizeFill(fvalue / (fmax - fmin)), SizeFill());
+        }
+    }
+
+    state := GetState(handle);
+    Apply(background, style.states[state].background);
+    Apply(fill, style.states[state].fill);
+    Apply(handle, style.states[state].handle);
+
+    return slider, background, handle;
+}
+
+Scrollbar :: (parent : *Node, target : *Node, axis : Axis, style : *SliderStyle = null, location := #caller_location) -> background : *Node, handle : *Node {
+    EnsureStyle(*style, "scrollbar");
+
+    background, handle : *Node;
+
+    background = GetNode(parent, location);
+    {
+        background.desired_size[axis] = SizeFill();
+        background.desired_size[GetCrossAxis(axis)] = SizeFit();
+
+        ScrollViewBehavior(background, target, xx (1 << axis));
+
+        handle = GetNode(background, "handle");
+        {
+            ratio := target.layout_last_frame.size[axis] / target.layout_last_frame.children_size[axis];
+
+            handle.desired_size[axis] = SizeFill(ratio);
+            handle.desired_size[GetCrossAxis(axis)] = SizePx(style.handle_size);
+
+            // offset = (scroll / scrollable) * offset_max
+            // offset / offset_max = scroll / scrollable
+            // => scroll = (offset / offset_max) * scrollable
+
+            scrollable := target.layout_last_frame.size[axis] - target.layout_last_frame.children_size[axis];
+            offset_max := background.layout_last_frame.size[axis] - handle.layout_last_frame.size[axis];
+
+            // Allow the user to click on the background to interact with the scrollbar
+            background.flags |= .Focusable;
+
+            handle_result := ButtonBehavior(handle);
+
+            if background.state_flags & .Focused && IsMouseButtonPressed(.Left) {
+                SetMouseCapture(handle);
+                SetMouseFocus(handle);
+                handle_result.pressed = true;
+                handle_result.held = true;
+
+                mouse := GetMousePosition(background.window)[axis];
+                new_offset := mouse - background.layout_last_frame.rect.xy[axis] - handle.layout_last_frame.size[axis] * 0.5;
+                new_scroll := (new_offset / offset_max) * scrollable;
+
+                SetContentScroll(target, axis, new_scroll);
+            }
+
+            if handle_result.pressed {
+                context.omg.mouse_captured_node_value = .{};
+                context.omg.mouse_captured_node_value[axis] = (target.scroll[axis] / scrollable) * offset_max;
+            }
+
+            if handle_result.held {
+                handle.state_flags |= .Active;
+
+                new_offset := GetMousePosition()[axis] - context.omg.mouse_captured_at[axis];
+                new_offset += context.omg.mouse_captured_node_value[axis];
+                new_scroll := (new_offset / offset_max) * scrollable;
+
+                SetContentScroll(target, axis, new_scroll);
+            }
+
+            handle.offset[axis] = (target.scroll[axis] / scrollable) * offset_max;
+        }
+    }
+
+    state := GetState(background.state_flags | handle.state_flags);
+    Apply(background, style.states[state].background);
+
+    state = GetState(handle.state_flags);
+    Apply(handle, style.states[state].handle);
+
+    return background, handle;
+}

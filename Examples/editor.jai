@@ -1,5 +1,54 @@
 g_slider_value := 0.5;
 g_show_password : bool;
+g_toggle_value : bool;
+
+Panel :: (parent : *OMG.Node, str_id : string, title : string) -> *OMG.Node {
+    base_background_color := OMG.GetStyle("base", OMG.BoxStyle).background_color;
+
+    panel := OMG.GetNode(parent, str_id);
+    {
+        OMG.SetLayout(panel, .TopToBottom);
+        OMG.SetSize(panel, OMG.SizeFill());
+
+        OMG.SetBackgroundColor(panel, base_background_color);
+        OMG.SetBorderColor(panel, OMG.MakeTone(base_background_color, 0.2));
+        OMG.SetBorderSize(panel, 1);
+
+        title_bar := OMG.GetNode(panel, "title_bar");
+        {
+            OMG.SetSize(title_bar, OMG.SizeFill(), OMG.SizePx(32));
+            OMG.SetPadding(title_bar, 10, 4);
+            OMG.SetChildAlign(title_bar, 0, 0.5);
+
+            OMG.SetBackgroundColor(title_bar, base_background_color);
+            OMG.SetBorderColor(title_bar, OMG.MakeTone(base_background_color, 0.2));
+            OMG.SetBorderSize(title_bar, 1);
+
+            OMG.Text(title_bar, title);
+        }
+
+        content_and_scrollbar := OMG.GetNode(panel, "content_and_scrollbar");
+        {
+            OMG.SetLayout(content_and_scrollbar, .LeftToRight);
+            OMG.SetSize(content_and_scrollbar, OMG.SizeFill());
+
+            content := OMG.GetNode(content_and_scrollbar, "content");
+            {
+                OMG.SetLayout(content, .TopToBottom);
+                OMG.SetSize(content, OMG.SizeFill());
+                OMG.SetPadding(content, 10, 10);
+
+                OMG.ScrollViewBehavior(content, .Y);
+            }
+
+            if content.layout_last_frame.children_size.y > content.layout_last_frame.size.y {
+                OMG.Scrollbar(content_and_scrollbar, content, .Y);
+            }
+
+            return content;
+        }
+    }
+}
 
 EditorFrame :: () {
     base_background_color := OMG.GetStyle("base", OMG.BoxStyle).background_color;
@@ -82,54 +131,6 @@ EditorFrame :: () {
         {
             OMG.SetSize(content, OMG.SizeFill());
 
-            Panel :: (parent : *OMG.Node, str_id : string, title : string) -> *OMG.Node {
-                base_background_color := OMG.GetStyle("base", OMG.BoxStyle).background_color;
-
-                panel := OMG.GetNode(parent, str_id);
-                {
-                    OMG.SetLayout(panel, .TopToBottom);
-                    OMG.SetSize(panel, OMG.SizeFill());
-
-                    OMG.SetBackgroundColor(panel, base_background_color);
-                    OMG.SetBorderColor(panel, OMG.MakeTone(base_background_color, 0.2));
-                    OMG.SetBorderSize(panel, 1);
-
-                    title_bar := OMG.GetNode(panel, "title_bar");
-                    {
-                        OMG.SetSize(title_bar, OMG.SizeFill(), OMG.SizePx(32));
-                        OMG.SetPadding(title_bar, 10, 4);
-                        OMG.SetChildAlign(title_bar, 0, 0.5);
-
-                        OMG.SetBackgroundColor(title_bar, base_background_color);
-                        OMG.SetBorderColor(title_bar, OMG.MakeTone(base_background_color, 0.2));
-                        OMG.SetBorderSize(title_bar, 1);
-
-                        OMG.Text(title_bar, title);
-                    }
-
-                    content_and_scrollbar := OMG.GetNode(panel, "content_and_scrollbar");
-                    {
-                        OMG.SetLayout(content_and_scrollbar, .LeftToRight);
-                        OMG.SetSize(content_and_scrollbar, OMG.SizeFill());
-
-                        content := OMG.GetNode(content_and_scrollbar, "content");
-                        {
-                            OMG.SetLayout(content, .TopToBottom);
-                            OMG.SetSize(content, OMG.SizeFill());
-                            OMG.SetPadding(content, 10, 10);
-
-                            OMG.ScrollViewBehavior(content, .Y);
-                        }
-
-                        if content.layout_last_frame.children_size.y > content.layout_last_frame.size.y {
-                            OMG.Scrollbar(content_and_scrollbar, content, .Y);
-                        }
-
-                        return content;
-                    }
-                }
-            }
-
             left_side := OMG.GetNode(content, "left_side");
             {
                 OMG.SetSize(left_side, OMG.SizeFill());
@@ -198,6 +199,8 @@ END
                     if OMG.ClickableText(content_browser, "Click Me!\nTwice!") {
                         print("Clicked!\n");
                     }
+
+                    OMG.Toggle(content_browser, "Toggle Me", *g_toggle_value);
                 }
             }
 

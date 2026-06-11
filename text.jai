@@ -119,8 +119,6 @@ LoadFontFromMemory :: (name : string, data : string, config : FontConfig) -> *Fo
     font.desired_underline_thickness = ft_face.underline_thickness * Fract16ToFloat(ft_face.size.metrics.y_scale);
     font.desired_underline_thickness = FractToFloat(xx font.desired_underline_thickness) / cast(float, config.resolution);
 
-    print("% %\n", font.desired_underline_position, font.desired_underline_thickness);
-
     sdf_spread : s32 = 8;
     // FT_Property_Get(g_ft_lib, "sdf", "spread", *sdf_spread);
     font.sdf_range = sdf_spread / cast(float, font.resolution);

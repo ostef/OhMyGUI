@@ -149,6 +149,17 @@ GetSystemCursor :: inline (cursor : SystemCursor) -> *Cursor {
     return g_system_cursors[cursor];
 }
 
+HasCursorControl :: (node : *Node) -> bool {
+    if node.state_flags & .Disabled {
+        return false;
+    }
+    if node.state_flags & .Active {
+        return context.omg.mouse_capturing_node == node;
+    }
+
+    return node.state_flags != 0;
+}
+
 AnimFunc :: enum u8 {
     Linear;
     CubicIn;
@@ -311,6 +322,7 @@ DefaultTheme :: struct {
     clickable_text : ClickableTextStyle;
     button : ButtonStyle;
     button_accent : ButtonStyle;
+    toggle : ButtonStyle;
     slider : SliderStyle;
     scrollbar : SliderStyle;
     text_input : TextInputStyle;
@@ -408,6 +420,17 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         SetAlpha(*disabled.text.text_color, 0.5);
     }
     SetStyle(theme, "button_accent", theme.button_accent);
+
+    {
+        theme.toggle = theme.button;
+
+        using theme.toggle;
+
+        active.background.background_color = normal.background.background_color;
+        active.background.border_size = 2;
+        active.background.border_color = base_accent_color;
+    }
+    SetStyle(theme, "toggle", theme.toggle);
 
     {
         using theme.slider;

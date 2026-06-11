@@ -16,7 +16,8 @@
 #load "style.jai";
 #load "layout.jai";
 #load "interaction.jai";
-#load "widgets.jai";
+
+#load "Widgets/widgets.jai";
 
 Context :: struct {
     frame_index : u64;

@@ -25,7 +25,6 @@ Widgets:
 * Tables
 * Tooltips
 * Color picker
-* Selectable button
 * Radio buttons
 * Progress bar
 * Combo boxes
