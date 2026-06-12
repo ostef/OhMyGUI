@@ -28,11 +28,7 @@ Context :: struct {
 
     general_purpose_allocator : Allocator;
 
-    #if OS == .LINUX {
-        mouse_wheel_multiplier := 10.0;
-    } else {
-        mouse_wheel_multiplier := 1.0;
-    }
+    mouse_wheel_multiplier := 10.0;
 
     input : InputContext;
     cursor_this_frame : *Cursor;
