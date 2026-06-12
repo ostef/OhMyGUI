@@ -100,7 +100,7 @@ LoadFontFromMemory :: (name : string, data : string, config : FontConfig) -> *Fo
     }
 
     ft_face : FT_Face;
-    ft_err := FT_New_Memory_Face(g_ft_lib, data.data, data.count, 0, *ft_face);
+    ft_err := FT_New_Memory_Face(g_ft_lib, data.data, xx data.count, 0, *ft_face);
     if ft_err != xx FT_Err.Ok {
         return null;
     }
