@@ -17,7 +17,7 @@ SubwindowTitleBarStyle :: StateStyle(SubwindowTitleBarStateStyle);
 SubwindowStyle :: struct {
     title_bar : SubwindowTitleBarStyle;
     background : BoxStyle;
-    resize_handle_size := 2.0;
+    resize_handle_size := 8.0;
 }
 
 SubwindowTitleBar :: (subwindow : *Node, parent : *Node, title : string, flags : SubwindowFlags, style : *SubwindowTitleBarStyle) -> *Node {
@@ -42,12 +42,12 @@ SubwindowTitleBar :: (subwindow : *Node, parent : *Node, title : string, flags :
         }
 
         if title_button.pressed {
-            context.omg.mouse_captured_node_value = subwindow.offset;
+            context.omg.mouse_captured_node_value = .{xy=subwindow.offset};
         }
 
         if title_button.held {
             mouse_delta := GetMousePosition() - context.omg.mouse_captured_at;
-            original_offset := context.omg.mouse_captured_node_value;
+            original_offset := context.omg.mouse_captured_node_value.xy;
             subwindow.offset = original_offset + mouse_delta;
 
             title_bar_size := node.layout_last_frame.size;
@@ -68,7 +68,86 @@ SubwindowTitleBar :: (subwindow : *Node, parent : *Node, title : string, flags :
     return node;
 }
 
-SubwindowResizeHandles :: (subwindow : *Node, style : *SubwindowStyle) -> *Node {
+ResizeHandle :: enum {
+    Top;
+    Bottom;
+    Left;
+    Right;
+    TopLeft;
+    TopRight;
+    BottomLeft;
+    BottomRight;
+}
+
+SubwindowResize :: (subwindow : *Node, handle : *Node, min_size : Vec2f, direction : ResizeHandle) {
+    Cursors :: SystemCursor.[
+        .ResizeVertical,
+        .ResizeVertical,
+        .ResizeHorizontal,
+        .ResizeHorizontal,
+        .ResizeNWSE,
+        .ResizeNESW,
+        .ResizeNESW,
+        .ResizeNWSE,
+    ];
+
+    button := ButtonBehavior(handle);
+
+    if handle.state_flags & .Focused && IsMouseButtonPressed(.Left) {
+        SetMouseCapture(handle);
+        SetMouseFocus(handle);
+
+        button.pressed = true;
+        button.held = true;
+    }
+
+    if button.pressed {
+        context.omg.mouse_captured_node_value = WindowToScreen(subwindow.window, subwindow.layout_last_frame.rect);
+    }
+
+    if button.held {
+        mouse_delta := GetMousePosition() - context.omg.mouse_captured_at;
+        parent_rect := subwindow.parent.layout_last_frame.rect;
+        new_rect := ScreenToWindow(subwindow.window, context.omg.mouse_captured_node_value);
+        to_modify : struct {x: bool; y: bool; z: bool; w: bool;}
+
+        if #complete direction == {
+        case .Top; to_modify.y = true;
+        case .Bottom; to_modify.w = true;
+        case .Left; to_modify.x = true;
+        case .Right; to_modify.z = true;
+        case .TopLeft; to_modify.x = true; to_modify.y = true;
+        case .TopRight; to_modify.z = true; to_modify.y = true;
+        case .BottomLeft; to_modify.x = true; to_modify.w = true;
+        case .BottomRight; to_modify.z = true; to_modify.w = true;
+        }
+
+        if to_modify.x {
+            new_rect.x = clamp(new_rect.x + mouse_delta.x, parent_rect.x, new_rect.z - min_size.x);
+        }
+        if to_modify.y {
+            new_rect.y = clamp(new_rect.y + mouse_delta.y, parent_rect.y, new_rect.w - min_size.y);
+        }
+        if to_modify.z {
+            new_rect.z = clamp(new_rect.z + mouse_delta.x, new_rect.x + min_size.x, parent_rect.z);
+        }
+        if to_modify.w {
+            new_rect.w = clamp(new_rect.w + mouse_delta.y, new_rect.y + min_size.y, parent_rect.w);
+        }
+
+        new_offset := new_rect.xy - parent_rect.xy;
+        new_size := new_rect.zw - new_rect.xy;
+
+        subwindow.offset = new_offset;
+        SetSize(subwindow, SizePx(new_size.x), SizePx(new_size.y));
+    }
+
+    if HasCursorControl(handle) {
+        SetCursor(GetSystemCursor(Cursors[direction]));
+    }
+}
+
+SubwindowResizeHandles :: (subwindow : *Node, min_size : Vec2f, style : *SubwindowStyle) -> *Node {
     top := GetNode(subwindow, "top");
     SetSize(top, SizeFill(), SizeFit());
     SetLayout(top, .LeftToRight);
@@ -103,6 +182,15 @@ SubwindowResizeHandles :: (subwindow : *Node, style : *SubwindowStyle) -> *Node 
     resize_br := GetNode(bottom, "resize_br");
     SetSize(resize_br, SizePx(style.resize_handle_size), SizePx(style.resize_handle_size));
 
+    SubwindowResize(subwindow, resize_t, min_size, .Top);
+    SubwindowResize(subwindow, resize_b, min_size, .Bottom);
+    SubwindowResize(subwindow, resize_l, min_size, .Left);
+    SubwindowResize(subwindow, resize_r, min_size, .Right);
+    SubwindowResize(subwindow, resize_tl, min_size, .TopLeft);
+    SubwindowResize(subwindow, resize_tr, min_size, .TopRight);
+    SubwindowResize(subwindow, resize_bl, min_size, .BottomLeft);
+    SubwindowResize(subwindow, resize_br, min_size, .BottomRight);
+
     return title_and_content;
 }
 
@@ -111,6 +199,7 @@ Subwindow :: (
     title : string,
     str_id : string,
     initial_size : Vec2f,
+    min_size : Vec2f = .{32,32},
     opened : *bool = null,
     flags : SubwindowFlags = 0,
     style : *SubwindowStyle = null
@@ -137,7 +226,7 @@ Subwindow :: (
 
         title_and_content := ifx flags & .NoResize
             then subwindow
-            else SubwindowResizeHandles(subwindow, style);
+            else SubwindowResizeHandles(subwindow, min_size, style);
 
         if !(flags & .NoTitleBar) {
             SubwindowTitleBar(subwindow, title_and_content, title, flags, *style.title_bar);

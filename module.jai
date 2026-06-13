@@ -45,7 +45,7 @@ Context :: struct {
     mouse_capturing_node : *Node;
     mouse_captured_this_frame : bool;
     mouse_captured_at : Vec2f = .{FLOAT32_NAN, FLOAT32_NAN};
-    mouse_captured_node_value : Vec2f = .{FLOAT32_NAN, FLOAT32_NAN}; // Value that nodes can specify upon capturing the mouse
+    mouse_captured_node_value : Vec4f = .{FLOAT32_NAN, FLOAT32_NAN, FLOAT32_NAN, FLOAT32_NAN}; // Value that nodes can specify upon capturing the mouse
     scroll_focused_node : *Node;
 
     // default_effect := Effect.{kind=.SolidColor, solid_color=.{color=0xffffffff}};

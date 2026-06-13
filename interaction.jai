@@ -99,7 +99,7 @@ SetMouseCapture :: inline (node : *Node) {
     SetMouseCapture(node, .{});
 }
 
-SetMouseCapture :: inline (node : *Node, node_value : Vec2f) {
+SetMouseCapture :: inline (node : *Node, node_value : Vec4f) {
     if context.omg.mouse_capturing_node != node {
         context.omg.mouse_captured_at = GetMousePosition();
         context.omg.mouse_captured_node_value = node_value;
@@ -116,11 +116,31 @@ ScreenToWindow :: (window : *Window, point : Vec2f) -> Vec2f {
     return point - Vec2f.{xx wx, xx wy};
 }
 
+ScreenToWindow :: (window : *Window, rect : Vec4f) -> Vec4f {
+    wx, wy : s32;
+    SDL_GetWindowPosition(window.sdl_window, *wx, *wy);
+
+    return .{
+        xy=rect.xy - Vec2f.{xx wx, xx wy},
+        zw=rect.zw - Vec2f.{xx wx, xx wy},
+    };
+}
+
 WindowToScreen :: (window : *Window, point : Vec2f) -> Vec2f {
     wx, wy : s32;
     SDL_GetWindowPosition(window.sdl_window, *wx, *wy);
 
     return point + Vec2f.{xx wx, xx wy};
+}
+
+WindowToScreen :: (window : *Window, rect : Vec4f) -> Vec4f {
+    wx, wy : s32;
+    SDL_GetWindowPosition(window.sdl_window, *wx, *wy);
+
+    return .{
+        xy=rect.xy + Vec2f.{xx wx, xx wy},
+        zw=rect.zw + Vec2f.{xx wx, xx wy},
+    };
 }
 
 FindMouseFocus :: (node : *Node) {

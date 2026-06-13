@@ -577,7 +577,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         background.border_size = 1;
 
         background.outer_shadow_color = ColorU32(0,0,0,0.5);
-        background.outer_shadow_offset = .{3,3};
+        background.outer_shadow_offset = .{6,6};
         background.outer_shadow_blur = 5;
 
         {

@@ -90,12 +90,12 @@ Slider :: (parent : *Node, value : *$T, min : T, max : T, step : T, style : *Sli
 
             if handle_result.pressed {
                 context.omg.mouse_captured_node_value = .{};
-                context.omg.mouse_captured_node_value[Axis.X] = (fvalue / range) * offset_max;
+                context.omg.mouse_captured_node_value.xy[Axis.X] = (fvalue / range) * offset_max;
             }
 
             if handle_result.held {
                 new_offset := GetMousePosition()[Axis.X] - context.omg.mouse_captured_at[Axis.X];
-                new_offset += context.omg.mouse_captured_node_value[Axis.X];
+                new_offset += context.omg.mouse_captured_node_value.xy[Axis.X];
                 new_value := (new_offset / offset_max) * range;
 
                 fvalue = Snap(clamp(new_value, fmin, fmax), fstep);
@@ -164,14 +164,14 @@ Scrollbar :: (parent : *Node, target : *Node, axis : Axis, style : *SliderStyle 
 
             if handle_result.pressed {
                 context.omg.mouse_captured_node_value = .{};
-                context.omg.mouse_captured_node_value[axis] = (target.scroll[axis] / scrollable) * offset_max;
+                context.omg.mouse_captured_node_value.xy[axis] = (target.scroll[axis] / scrollable) * offset_max;
             }
 
             if handle_result.held {
                 handle.state_flags |= .Active;
 
                 new_offset := GetMousePosition()[axis] - context.omg.mouse_captured_at[axis];
-                new_offset += context.omg.mouse_captured_node_value[axis];
+                new_offset += context.omg.mouse_captured_node_value.xy[axis];
                 new_scroll := (new_offset / offset_max) * scrollable;
 
                 SetContentScroll(target, axis, new_scroll);
