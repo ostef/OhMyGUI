@@ -34,7 +34,6 @@ Widgets:
 * Trees
 * Submenus
 * Popups
-* Subwindows
 * Panels
 
 ## How it works
