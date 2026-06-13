@@ -18,7 +18,7 @@ SubwindowStyle :: struct {
     title_bar : SubwindowTitleBarStyle;
     background : BoxStyle;
     resize_handle_size := 8.0;
-    corner_resize_handle_Size := 12.0;
+    corner_resize_handle_size := 12.0;
 }
 
 SubwindowTitleBar :: (subwindow : *Node, parent : *Node, title : string, flags : SubwindowFlags, style : *SubwindowTitleBarStyle) -> *Node {
@@ -172,11 +172,11 @@ SubwindowResizeHandles :: (subwindow : *Node, min_size : Vec2f, style : *Subwind
     SetLayout(bottom, .LeftToRight);
 
     resize_tl := GetNode(top, "resize_tl");
-    SetSize(resize_tl, SizePx(style.corner_resize_handle_Size), SizePx(style.corner_resize_handle_Size));
+    SetSize(resize_tl, SizePx(style.corner_resize_handle_size), SizePx(style.corner_resize_handle_size));
     resize_t  := GetNode(top, "resize_t");
     SetSize(resize_t, SizeFill(), SizePx(style.resize_handle_size));
     resize_tr := GetNode(top, "resize_tr");
-    SetSize(resize_tr, SizePx(style.corner_resize_handle_Size), SizePx(style.corner_resize_handle_Size));
+    SetSize(resize_tr, SizePx(style.corner_resize_handle_size), SizePx(style.corner_resize_handle_size));
 
     resize_l := GetNode(middle, "resize_l");
     SetSize(resize_l, SizePx(style.resize_handle_size), SizeFill());
@@ -186,11 +186,11 @@ SubwindowResizeHandles :: (subwindow : *Node, min_size : Vec2f, style : *Subwind
     SetSize(resize_r, SizePx(style.resize_handle_size), SizeFill());
 
     resize_bl := GetNode(bottom, "resize_bl");
-    SetSize(resize_bl, SizePx(style.corner_resize_handle_Size), SizePx(style.corner_resize_handle_Size));
+    SetSize(resize_bl, SizePx(style.corner_resize_handle_size), SizePx(style.corner_resize_handle_size));
     resize_b  := GetNode(bottom, "resize_b");
     SetSize(resize_b, SizeFill(), SizePx(style.resize_handle_size));
     resize_br := GetNode(bottom, "resize_br");
-    SetSize(resize_br, SizePx(style.corner_resize_handle_Size), SizePx(style.corner_resize_handle_Size));
+    SetSize(resize_br, SizePx(style.corner_resize_handle_size), SizePx(style.corner_resize_handle_size));
 
     SubwindowResize(subwindow, resize_t, min_size, .Top);
     SubwindowResize(subwindow, resize_b, min_size, .Bottom);
