@@ -144,7 +144,7 @@ Init :: () {
         base_accent_color=ColorU32(0.3, 0.5, 0.8, 1),
     );
 
-    SetTheme(*g_default_theme_light);
+    SetTheme(*g_default_theme_dark);
 }
 
 Terminate :: () {
