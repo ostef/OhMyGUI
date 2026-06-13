@@ -249,6 +249,11 @@ Subwindow :: (
         }
 
         Apply(subwindow, style.background);
+        subwindow.padding = .{};
+        subwindow.child_gap = .{};
+
+        content.padding = style.background.padding;
+        content.child_gap = style.background.child_gap;
     }
 
     return content, subwindow;

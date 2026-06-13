@@ -567,7 +567,7 @@ SetMinWidth :: inline (node : *Node, size : float) {
     node.min_size.x = size;
 }
 
-SetMinWidthFit :: inline (node : *Node, fit : bool) {
+SetMinWidthFit :: inline (node : *Node, fit := true) {
     node.min_size_fit[0] = fit;
 }
 
@@ -594,7 +594,7 @@ SetMinHeight :: inline (node : *Node, size : float) {
     node.min_size.y = size;
 }
 
-SetMinHeightFit :: inline (node : *Node, fit : bool) {
+SetMinHeightFit :: inline (node : *Node, fit := true) {
     node.min_size_fit[1] = fit;
 }
 
@@ -627,7 +627,7 @@ SetMinSize :: inline (node : *Node, x : float, y : float) {
     node.min_size = .{x, y};
 }
 
-SetMinSizeFit :: inline (node : *Node, x : bool, y : bool) {
+SetMinSizeFit :: inline (node : *Node, x := true, y := true) {
     node.min_size_fit[0] = x;
     node.min_size_fit[1] = y;
 }

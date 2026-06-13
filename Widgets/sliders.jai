@@ -28,16 +28,16 @@ SetColors :: (using style : *SliderStyle, base_background_color : RGBA8, base_fi
     active.handle.background_color = Whiten(base_handle_color, 0.1);
 }
 
-// @Todo: unify slider and scrollbar
-Slider :: (parent : *Node, value : *$T, min : T, max : T, step : T, style : *SliderStyle = null, location := #caller_location) -> slider : *Node, background : *Node, handle : *Node {
+Slider :: (parent : *Node, value : *$T, min : T, max : T, step : T, style : *SliderStyle = null, location := #caller_location) -> bool, slider : *Node, background : *Node, handle : *Node {
     EnsureStyle(*style, "slider");
 
+    fvalue_original := ifx value then cast(float, value.*);
     fvalue := ifx value then cast(float, value.*);
     fmin := cast(float, min);
     fmax := cast(float, max);
     fstep := ifx GetModState() == .Shift then 0.0 else cast(float, step);
 
-    defer if value {
+    defer if value && fvalue_original != fvalue {
         value.* = xx fvalue;
     }
 
@@ -115,7 +115,7 @@ Slider :: (parent : *Node, value : *$T, min : T, max : T, step : T, style : *Sli
     Apply(fill, style.states[state].fill);
     Apply(handle, style.states[state].handle);
 
-    return slider, background, handle;
+    return fvalue_original != fvalue, slider, background, handle;
 }
 
 Scrollbar :: (parent : *Node, target : *Node, axis : Axis, style : *SliderStyle = null, location := #caller_location) -> background : *Node, handle : *Node {

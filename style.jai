@@ -319,6 +319,7 @@ DefaultTheme :: struct {
 
     base : BoxStyle;
     text : TextStyle;
+    label_and_content : LabelAndContentStyle;
     clickable_text : ClickableTextStyle;
     button : ButtonStyle;
     button_accent : ButtonStyle;
@@ -332,6 +333,7 @@ DefaultTheme :: struct {
     menu : BoxStyle;
     separator : BoxStyle;
     subwindow : SubwindowStyle;
+    color_picker : ColorPickerStyle;
 }
 
 g_default_theme_light : DefaultTheme;
@@ -380,6 +382,14 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         active.text.text_color = Whiten(base_accent_color, 0.1);
     }
     SetStyle(theme, "clickable_text", theme.clickable_text);
+
+    {
+        using theme.label_and_content;
+
+        text = theme.text;
+        child_gap = .{6,6};
+    }
+    SetStyle(theme, "label_and_content", theme.label_and_content);
 
     {
         using theme.button;
@@ -570,6 +580,9 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
     {
         using theme.subwindow;
 
+        background.padding = .{10,10,10,10};
+        background.child_gap = .{4,4};
+
         background.corner_radiuses = .{6,6,6,6};
 
         background.background_color = base_background_color;
@@ -599,4 +612,23 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         }
     }
     SetStyle(theme, "subwindow", theme.subwindow);
+
+    {
+        using theme.color_picker;
+
+        red_slider = theme.slider;
+        green_slider = theme.slider;
+        blue_slider = theme.slider;
+        alpha_slider = theme.slider;
+
+        red := MakeTone(ColorU32(1,0,0,1), 0.3);
+        green := MakeTone(ColorU32(0,1,0,1), 0.3);
+        blue := MakeTone(ColorU32(0,0,1,1), 0.3);
+        yellow := MakeTone(ColorU32(1,0.8,0.2,1), 0.3);
+        SetColors(*red_slider, MakeTone(base_background_color, 0.3), Whiten(red, 0.1), red);
+        SetColors(*green_slider, MakeTone(base_background_color, 0.3), Whiten(green, 0.1), green);
+        SetColors(*blue_slider, MakeTone(base_background_color, 0.3), Whiten(blue, 0.1), blue);
+        SetColors(*alpha_slider, MakeTone(base_background_color, 0.3), Whiten(yellow, 0.1), yellow);
+    }
+    SetStyle(theme, "color_picker", theme.color_picker);
 }

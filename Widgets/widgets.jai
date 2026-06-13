@@ -3,6 +3,34 @@
 #load "sliders.jai";
 #load "menus.jai";
 #load "subwindow.jai";
+#load "color_picker.jai";
+
+LabelAndContentStyle :: struct {
+    padding : Vec4f;
+    child_gap : Vec2f;
+    text : TextStyle;
+    text_fill := 0.2;
+}
+
+LabelAndContent :: (parent : *Node, label : string, style : *LabelAndContentStyle = null, location := #caller_location) -> *Node {
+    EnsureStyle(*style, "label_and_content");
+
+    node := GetNode(parent, location);
+    SetSize(node, SizeFill(), SizeFit());
+    SetLayout(node, .LeftToRight);
+    SetPadding(node, style.padding);
+
+    text := Text(node, "%", label, style=*style.text);
+    SetSize(text, SizeFill(style.text_fill), SizeFit());
+    SetLayout(text, .LeftToRight);
+
+    content := GetNode(node);
+    SetSize(content, SizeFill(1 - style.text_fill), SizeFit());
+    SetLayout(content, .LeftToRight);
+    SetChildGap(content, style.child_gap);
+
+    return content;
+}
 
 Text :: (parent : *Node, fmt_str : string, args : ..Any, style : *TextStyle = null, location := #caller_location) -> *Node {
     EnsureStyle(*style, "text");
