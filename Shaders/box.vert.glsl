@@ -22,7 +22,7 @@ void main() {
     bounds.xy -= max(box.outer_shadow_blur, 0);
     bounds.zw += max(box.outer_shadow_blur, 0);
     bounds.xy = min(bounds.xy, bounds.xy + box.outer_shadow_offset);
-    bounds.zw = min(bounds.zw, bounds.zw + box.outer_shadow_offset);
+    bounds.zw = max(bounds.zw, bounds.zw + box.outer_shadow_offset);
 
     const vec2 positions[] = vec2[](
         vec2(bounds.z, bounds.w), vec2(bounds.x, bounds.w), vec2(bounds.x, bounds.y),
