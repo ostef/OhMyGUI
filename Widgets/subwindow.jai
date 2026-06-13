@@ -128,6 +128,7 @@ SubwindowResize :: (subwindow : *Node, handle : *Node, min_size : Vec2f, directi
         }
         if to_modify.y {
             new_rect.y = clamp(new_rect.y + mouse_delta.y, parent_rect.y, new_rect.w - min_size.y);
+            new_rect.y = min(new_rect.y, parent_rect.w - min_size.y);
         }
         if to_modify.z {
             new_rect.z = clamp(new_rect.z + mouse_delta.x, new_rect.x + min_size.x, parent_rect.z);
