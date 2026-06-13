@@ -1,5 +1,6 @@
 SubwindowFlags :: enum_flags {
     NoTitleBar;
+    NoClose;
     NoResize;
     NoMove;
 }
@@ -7,7 +8,7 @@ SubwindowFlags :: enum_flags {
 SubwindowTitleBarStateStyle :: struct {
     background : BoxStyle;
     text : TextStyle;
-    text_align := Vec2f.{0.5, 0.5};
+    text_align := Vec2f.{0, 0.5};
     cursor : *Cursor;
 }
 
@@ -48,13 +49,10 @@ SubwindowTitleBar :: (subwindow : *Node, parent : *Node, title : string, flags :
             mouse_delta := GetMousePosition() - context.omg.mouse_captured_at;
             original_offset := context.omg.mouse_captured_node_value;
             subwindow.offset = original_offset + mouse_delta;
-        }
 
-        if title_button.released {
-            subwindow_size := subwindow.layout_last_frame.size;
+            title_bar_size := node.layout_last_frame.size;
             avail_area := subwindow.parent.layout_last_frame.size;
-
-            subwindow.offset = clamp(subwindow.offset, .{0, 0}, avail_area - subwindow_size);
+            subwindow.offset = clamp(subwindow.offset, .{0, 0}, avail_area - title_bar_size);
         }
 
         state := GetState(node);
@@ -108,7 +106,15 @@ SubwindowResizeHandles :: (subwindow : *Node, style : *SubwindowStyle) -> *Node 
     return title_and_content;
 }
 
-Subwindow :: (window : *Window, title : string, str_id : string, initial_size : Vec2f, flags : SubwindowFlags = 0, style : *SubwindowStyle = null, ) -> content : *Node, subwindow : *Node {
+Subwindow :: (
+    window : *Window,
+    title : string,
+    str_id : string,
+    initial_size : Vec2f,
+    opened : *bool = null,
+    flags : SubwindowFlags = 0,
+    style : *SubwindowStyle = null
+) -> content : *Node, subwindow : *Node {
     EnsureStyle(*style, "subwindow");
 
     content, subwindow : *Node;
