@@ -35,7 +35,7 @@ Context :: struct {
 
     windows : *Window;
     fonts : *Font;
-    node_pool : Bucket_Array(Node, 1000);
+    node_pool : Bucket_Array(Node, 300);
 
     theme : *Theme;
     id_offset_stack : [..]int;
