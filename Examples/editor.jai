@@ -242,5 +242,5 @@ END
     }
 
     OMG.Subwindow(window, "Hello Subwindow", "hello_subwindow", .{300, 500});
-    OMG.Subwindow(window, "Hello Subwindow 2", "hello_subwindow2", .{300, 500});
+    OMG.Subwindow(window, "Hello Subwindow 2", "hello_subwindow2", .{300, 500}, flags=.NoResize);
 }

@@ -18,6 +18,7 @@ SubwindowStyle :: struct {
     title_bar : SubwindowTitleBarStyle;
     background : BoxStyle;
     resize_handle_size := 8.0;
+    corner_resize_handle_Size := 12.0;
 }
 
 SubwindowTitleBar :: (subwindow : *Node, parent : *Node, title : string, flags : SubwindowFlags, style : *SubwindowTitleBarStyle) -> *Node {
@@ -148,39 +149,48 @@ SubwindowResize :: (subwindow : *Node, handle : *Node, min_size : Vec2f, directi
 }
 
 SubwindowResizeHandles :: (subwindow : *Node, min_size : Vec2f, style : *SubwindowStyle) -> *Node {
-    top := GetNode(subwindow, "top");
+    SetLayout(subwindow, .None);
+
+    title_and_content := GetNode(subwindow, "title_and_content");
+    SetSize(title_and_content, SizeFill(), SizeFill());
+    SetLayout(title_and_content, .TopToBottom);
+
+    resize_handles := GetNode(subwindow, "resize_handles");
+    SetSize(resize_handles, SizeFill(), SizeFill());
+    SetLayout(resize_handles, .TopToBottom);
+
+    top := GetNode(resize_handles, "top");
     SetSize(top, SizeFill(), SizeFit());
     SetLayout(top, .LeftToRight);
-    middle := GetNode(subwindow, "middle");
+
+    middle := GetNode(resize_handles, "middle");
     SetSize(middle, SizeFill(), SizeFill());
     SetLayout(middle, .LeftToRight);
-    bottom := GetNode(subwindow, "bottom");
+
+    bottom := GetNode(resize_handles, "bottom");
     SetSize(bottom, SizeFill(), SizeFit());
     SetLayout(bottom, .LeftToRight);
 
     resize_tl := GetNode(top, "resize_tl");
-    SetSize(resize_tl, SizePx(style.resize_handle_size), SizePx(style.resize_handle_size));
+    SetSize(resize_tl, SizePx(style.corner_resize_handle_Size), SizePx(style.corner_resize_handle_Size));
     resize_t  := GetNode(top, "resize_t");
     SetSize(resize_t, SizeFill(), SizePx(style.resize_handle_size));
     resize_tr := GetNode(top, "resize_tr");
-    SetSize(resize_tr, SizePx(style.resize_handle_size), SizePx(style.resize_handle_size));
+    SetSize(resize_tr, SizePx(style.corner_resize_handle_Size), SizePx(style.corner_resize_handle_Size));
 
     resize_l := GetNode(middle, "resize_l");
     SetSize(resize_l, SizePx(style.resize_handle_size), SizeFill());
-
-    title_and_content := GetNode(middle, "title_and_content");
-    SetSize(title_and_content, SizeFill(), SizeFill());
-    SetLayout(title_and_content, .TopToBottom);
-
+    center_fill := GetNode(middle, "center");
+    SetSize(center_fill, SizeFill(), SizeFill());
     resize_r := GetNode(middle, "resize_r");
     SetSize(resize_r, SizePx(style.resize_handle_size), SizeFill());
 
     resize_bl := GetNode(bottom, "resize_bl");
-    SetSize(resize_bl, SizePx(style.resize_handle_size), SizePx(style.resize_handle_size));
+    SetSize(resize_bl, SizePx(style.corner_resize_handle_Size), SizePx(style.corner_resize_handle_Size));
     resize_b  := GetNode(bottom, "resize_b");
     SetSize(resize_b, SizeFill(), SizePx(style.resize_handle_size));
     resize_br := GetNode(bottom, "resize_br");
-    SetSize(resize_br, SizePx(style.resize_handle_size), SizePx(style.resize_handle_size));
+    SetSize(resize_br, SizePx(style.corner_resize_handle_Size), SizePx(style.corner_resize_handle_Size));
 
     SubwindowResize(subwindow, resize_t, min_size, .Top);
     SubwindowResize(subwindow, resize_b, min_size, .Bottom);
