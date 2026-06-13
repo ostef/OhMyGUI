@@ -3,6 +3,7 @@ SubwindowFlags :: enum_flags {
     NoClose;
     NoResize;
     NoMove;
+    NoMoveFromBackground;
 }
 
 SubwindowTitleBarStateStyle :: struct {
@@ -21,6 +22,31 @@ SubwindowStyle :: struct {
     corner_resize_handle_size := 12.0;
 }
 
+SubwindowMoveBehavior :: (subwindow : *Node, node : *Node, title_bar_size : Vec2f) {
+    interaction := ButtonBehavior(node);
+
+    if node.state_flags & .Focused && IsMouseButtonPressed(.Left) {
+        SetMouseCapture(node);
+        SetMouseFocus(node);
+
+        interaction.pressed = true;
+        interaction.held = true;
+    }
+
+    if interaction.pressed {
+        context.omg.mouse_captured_node_value = .{xy=subwindow.offset};
+    }
+
+    if interaction.held {
+        mouse_delta := GetMousePosition() - context.omg.mouse_captured_at;
+        original_offset := context.omg.mouse_captured_node_value.xy;
+        subwindow.offset = original_offset + mouse_delta;
+
+        avail_area := subwindow.parent.layout_last_frame.size;
+        subwindow.offset = clamp(subwindow.offset, .{0, 0}, avail_area - title_bar_size);
+    }
+}
+
 SubwindowTitleBar :: (subwindow : *Node, parent : *Node, title : string, flags : SubwindowFlags, style : *SubwindowTitleBarStyle) -> *Node {
     node := GetNode(parent, "title_bar");
     {
@@ -29,31 +55,8 @@ SubwindowTitleBar :: (subwindow : *Node, parent : *Node, title : string, flags :
         text := GetNode(node, "text");
         SetText(text, title);
 
-        title_button : ButtonResult;
         if !(flags & .NoMove) {
-            title_button = ButtonBehavior(node);
-        }
-
-        if node.state_flags & .Focused && IsMouseButtonPressed(.Left) {
-            SetMouseCapture(node);
-            SetMouseFocus(node);
-
-            title_button.pressed = true;
-            title_button.held = true;
-        }
-
-        if title_button.pressed {
-            context.omg.mouse_captured_node_value = .{xy=subwindow.offset};
-        }
-
-        if title_button.held {
-            mouse_delta := GetMousePosition() - context.omg.mouse_captured_at;
-            original_offset := context.omg.mouse_captured_node_value.xy;
-            subwindow.offset = original_offset + mouse_delta;
-
-            title_bar_size := node.layout_last_frame.size;
-            avail_area := subwindow.parent.layout_last_frame.size;
-            subwindow.offset = clamp(subwindow.offset, .{0, 0}, avail_area - title_bar_size);
+            SubwindowMoveBehavior(subwindow, node, node.layout_last_frame.size);
         }
 
         state := GetState(node);
@@ -239,13 +242,18 @@ Subwindow :: (
             then subwindow
             else SubwindowResizeHandles(subwindow, min_size, style);
 
+        title_bar : *Node;
         if !(flags & .NoTitleBar) {
-            SubwindowTitleBar(subwindow, title_and_content, title, flags, *style.title_bar);
+            title_bar = SubwindowTitleBar(subwindow, title_and_content, title, flags, *style.title_bar);
         }
 
         content = GetNode(title_and_content, "content");
         {
             SetSize(content, SizeFill(), SizeFill());
+
+            if !(flags & .NoMove) && !(flags & .NoMoveFromBackground) {
+                SubwindowMoveBehavior(subwindow, content, ifx title_bar then title_bar.layout_last_frame.size);
+            }
         }
 
         Apply(subwindow, style.background);
