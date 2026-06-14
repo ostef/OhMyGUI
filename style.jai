@@ -619,16 +619,17 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         red_slider = theme.slider;
         green_slider = theme.slider;
         blue_slider = theme.slider;
-        alpha_slider = theme.slider;
+        hue_slider = theme.slider;
+        saturation_slider = theme.slider;
+        value_slider = theme.slider;
+        opacity_slider = theme.slider;
 
         red := MakeTone(ColorU32(1,0,0,1), 0.3);
         green := MakeTone(ColorU32(0,1,0,1), 0.3);
         blue := MakeTone(ColorU32(0,0,1,1), 0.3);
-        yellow := MakeTone(ColorU32(1,0.8,0.2,1), 0.3);
         SetColors(*red_slider, MakeTone(base_background_color, 0.3), Whiten(red, 0.1), red);
         SetColors(*green_slider, MakeTone(base_background_color, 0.3), Whiten(green, 0.1), green);
         SetColors(*blue_slider, MakeTone(base_background_color, 0.3), Whiten(blue, 0.1), blue);
-        SetColors(*alpha_slider, MakeTone(base_background_color, 0.3), Whiten(yellow, 0.1), yellow);
     }
     SetStyle(theme, "color_picker", theme.color_picker);
 }

@@ -1,7 +1,7 @@
 g_slider_value := 0.5;
 g_show_password : bool;
 g_toggle_value : bool;
-g_color : OMG.RGBA8;
+g_color : OMG.RGBA8 = 0x000000ff;
 
 Panel :: (parent : *OMG.Node, str_id : string, title : string) -> *OMG.Node {
     base_background_color := OMG.GetStyle("base", OMG.BoxStyle).background_color;
@@ -244,4 +244,9 @@ END
 
     subwindow := OMG.Subwindow(window, "Hello Subwindow", "hello_subwindow", .{300, 500});
     OMG.ColorPicker(subwindow, *g_color);
+
+    box := OMG.GetNode(subwindow);
+    OMG.SetSize(box, OMG.SizePx(35), OMG.SizePx(35));
+    OMG.SetBackgroundColor(box, g_color);
+    OMG.SetCornerRadius(box, 5);
 }
