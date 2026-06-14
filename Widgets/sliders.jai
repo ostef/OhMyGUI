@@ -94,6 +94,8 @@ Slider :: (parent : *Node, value : *$T, min : T, max : T, step : T, style : *Sli
             }
 
             if handle_result.held {
+                handle.state_flags |= .Active;
+
                 new_offset := GetMousePosition()[Axis.X] - context.omg.mouse_captured_at[Axis.X];
                 new_offset += context.omg.mouse_captured_node_value.xy[Axis.X];
                 new_value := (new_offset / offset_max) * range;
@@ -109,6 +111,9 @@ Slider :: (parent : *Node, value : *$T, min : T, max : T, step : T, style : *Sli
             SetSize(fill, SizeFill(fvalue / (fmax - fmin)), SizeFill());
         }
     }
+
+    slider.state_flags |= handle.state_flags;
+    handle.state_flags |= slider.state_flags;
 
     state := GetState(handle);
     Apply(background, style.states[state].background);
