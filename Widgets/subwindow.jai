@@ -185,6 +185,7 @@ SubwindowResizeHandles :: (subwindow : *Node, min_size : Vec2f, style : *Subwind
     bottom := GetNode(resize_handles, "bottom");
     SetSize(bottom, SizeFill(), SizeFit());
     SetLayout(bottom, .LeftToRight);
+    SetChildAlign(bottom, 0, 1);
 
     resize_tl := GetNode(top, "resize_tl");
     SetSize(resize_tl, SizePx(style.corner_resize_handle_size), SizePx(style.corner_resize_handle_size));
