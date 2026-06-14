@@ -128,6 +128,9 @@ Scrollbar :: (parent : *Node, target : *Node, axis : Axis, style : *SliderStyle 
 
     background, handle : *Node;
 
+    size := target.layout_last_frame.size[axis];
+    children_size := target.layout_last_frame.children_size[axis] + target.padding.xy[axis] + target.padding.zw[axis];
+
     background = GetNode(parent, location);
     {
         background.desired_size[axis] = SizeFill();
@@ -137,7 +140,7 @@ Scrollbar :: (parent : *Node, target : *Node, axis : Axis, style : *SliderStyle 
 
         handle = GetNode(background, "handle");
         {
-            ratio := target.layout_last_frame.size[axis] / target.layout_last_frame.children_size[axis];
+            ratio := size / children_size;
 
             handle.desired_size[axis] = SizeFill(ratio);
             handle.desired_size[GetCrossAxis(axis)] = SizePx(style.handle_size);
@@ -146,7 +149,7 @@ Scrollbar :: (parent : *Node, target : *Node, axis : Axis, style : *SliderStyle 
             // offset / offset_max = scroll / scrollable
             // => scroll = (offset / offset_max) * scrollable
 
-            scrollable := target.layout_last_frame.size[axis] - target.layout_last_frame.children_size[axis];
+            scrollable := size - children_size;
             offset_max := background.layout_last_frame.size[axis] - handle.layout_last_frame.size[axis];
 
             // Allow the user to click on the background to interact with the scrollbar

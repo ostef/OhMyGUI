@@ -42,7 +42,7 @@ Panel :: (parent : *OMG.Node, str_id : string, title : string) -> *OMG.Node {
                 OMG.ScrollViewBehavior(content, .Y);
             }
 
-            if content.layout_last_frame.children_size.y > content.layout_last_frame.size.y {
+            if content.layout_last_frame.children_size.y > content.layout_last_frame.size.y - content.padding.y - content.padding.w {
                 OMG.Scrollbar(content_and_scrollbar, content, .Y);
             }
 

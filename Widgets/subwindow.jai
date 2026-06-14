@@ -4,6 +4,15 @@ SubwindowFlags :: enum_flags {
     NoResize;
     NoMove;
     NoMoveFromBackground;
+
+    NoVerticalScrollbar;
+    NoHorizontalScrollbar;
+
+    NoVerticalScroll;
+    NoHorizontalScroll;
+
+    NoScrollbar :: NoVerticalScrollbar | NoHorizontalScrollbar;
+    NoScroll :: NoVerticalScroll | NoHorizontalScroll;
 }
 
 SubwindowTitleBarStateStyle :: struct {
@@ -18,6 +27,8 @@ SubwindowTitleBarStyle :: StateStyle(SubwindowTitleBarStateStyle);
 SubwindowStyle :: struct {
     title_bar : SubwindowTitleBarStyle;
     background : BoxStyle;
+    vertical_scrollbar : SliderStyle;
+    horizontal_scrollbar : SliderStyle;
     resize_handle_size := 8.0;
     corner_resize_handle_size := 12.0;
 }
@@ -231,7 +242,7 @@ Subwindow :: (
 
         SetLayout(subwindow, .TopToBottom);
 
-        subwindow.flags |= .Focusable;
+        subwindow.flags |= .Focusable | .Scrollable; // Prevent the mouse from getting used through the window
 
         // Bring forward if any element inside the window is pressed
         if IsMouseButtonPressed(.Left) && IsInTree(context.omg.mouse_hovered_node, subwindow) {
@@ -247,22 +258,59 @@ Subwindow :: (
             title_bar = SubwindowTitleBar(subwindow, title_and_content, title, flags, *style.title_bar);
         }
 
-        content = GetNode(title_and_content, "content");
+        hscroll := (flags & .NoHorizontalScroll) == 0;
+        vscroll := (flags & .NoVerticalScroll) == 0;
+        hscrollbar := (flags & .NoHorizontalScrollbar) == 0 && (flags & .NoHorizontalScroll) == 0;
+        vscrollbar := (flags & .NoVerticalScrollbar) == 0 && (flags & .NoVerticalScroll) == 0;
+
+        content_parent := title_and_content;
+        content_and_hscrollbar, content_and_vscrollbar : *Node;
+        if hscrollbar {
+            content_and_hscrollbar = GetNode(content_parent, "content_and_hscrollbar");
+            SetLayout(content_and_hscrollbar, .TopToBottom);
+            SetSize(content_and_hscrollbar, SizeFill(), SizeFill());
+            content_parent = content_and_hscrollbar;
+        }
+
+        if vscrollbar {
+            content_and_vscrollbar = GetNode(content_parent, "content_and_vscrollbar");
+            SetLayout(content_and_vscrollbar, .LeftToRight);
+            SetSize(content_and_vscrollbar, SizeFill(), SizeFill());
+            content_parent = content_and_vscrollbar;
+        }
+
+        content = GetNode(content_parent, "content");
         {
             SetSize(content, SizeFill(), SizeFill());
             SetLayout(content, .TopToBottom);
 
+            content.padding = style.background.padding;
+            content.child_gap = style.background.child_gap;
+
             if !(flags & .NoMove) && !(flags & .NoMoveFromBackground) {
                 SubwindowMoveBehavior(subwindow, content, ifx title_bar then title_bar.layout_last_frame.size);
+            }
+
+            axes : AxisFlags;
+            if hscroll {
+                axes |= .X;
+            }
+            if vscroll {
+                axes |= .Y;
+            }
+            ScrollViewBehavior(content, axes);
+
+            if hscrollbar && content.layout_last_frame.children_size.x > content.layout_last_frame.size.x - content.padding.x - content.padding.z {
+                Scrollbar(content_and_hscrollbar, content, .X, style=*style.horizontal_scrollbar);
+            }
+            if vscrollbar && content.layout_last_frame.children_size.y > content.layout_last_frame.size.y - content.padding.y - content.padding.w {
+                Scrollbar(content_and_vscrollbar, content, .Y, style=*style.vertical_scrollbar);
             }
         }
 
         Apply(subwindow, style.background);
         subwindow.padding = .{};
         subwindow.child_gap = .{};
-
-        content.padding = style.background.padding;
-        content.child_gap = style.background.child_gap;
     }
 
     return content, subwindow;

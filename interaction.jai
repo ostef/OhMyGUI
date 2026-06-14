@@ -45,12 +45,12 @@ SetContentScroll :: inline (node : *Node, axis : Axis, value : float) {
 }
 
 SetContentScrollX :: inline (node : *Node, value : float) {
-    avail_scroll := node.layout_last_frame.size.x - node.layout_last_frame.children_size.x;
+    avail_scroll := node.layout_last_frame.size.x - node.padding.x - node.padding.z - node.layout_last_frame.children_size.x;
     node.scroll.x = clamp(value, avail_scroll, 0);
 }
 
 SetContentScrollY :: inline (node : *Node, value : float) {
-    avail_scroll := node.layout_last_frame.size.y - node.layout_last_frame.children_size.y;
+    avail_scroll := node.layout_last_frame.size.y - node.padding.y - node.padding.w - node.layout_last_frame.children_size.y;
     node.scroll.y = clamp(value, avail_scroll, 0);
 }
 
@@ -70,6 +70,7 @@ ScrollViewBehavior :: (node : *Node, axis : AxisFlags) {
 
 ScrollViewBehavior :: (node : *Node, target : *Node, axis : AxisFlags) {
     scroll := ScrollBehavior(node);
+
     if axis & .X {
         SetContentScrollX(target, target.scroll.x + scroll.x);
     }

@@ -610,6 +610,12 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
             active = normal;
             disabled = normal;
         }
+
+        horizontal_scrollbar = theme.scrollbar;
+        horizontal_scrollbar.handle_size += resize_handle_size;
+
+        vertical_scrollbar = theme.scrollbar;
+        vertical_scrollbar.handle_size += resize_handle_size;
     }
     SetStyle(theme, "subwindow", theme.subwindow);
 
