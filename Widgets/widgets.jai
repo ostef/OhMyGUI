@@ -9,7 +9,7 @@ LabelAndContentStyle :: struct {
     padding : Vec4f;
     child_gap : Vec2f;
     text : TextStyle;
-    text_fill := 0.2;
+    text_fill := 0.35;
 }
 
 LabelAndContent :: (parent : *Node, label : string, style : *LabelAndContentStyle = null, location := #caller_location) -> *Node {
@@ -69,22 +69,33 @@ ClickableText :: (parent : *Node, fmt_str : string, args : ..Any, style : *Click
     return button.released, node;
 }
 
-HorizontalSeparator :: (parent : *Node, style : *BoxStyle = null, location := #caller_location) -> *Node {
+HorizontalSeparator :: (parent : *Node, space := 25.0, width := 1.0, style : *BoxStyle = null, location := #caller_location) -> *Node {
     EnsureStyle(*style, "separator");
 
     node := GetNode(parent, location);
-    SetSize(node, SizeFill(), SizePx(1));
-    Apply(node, style);
+    SetSize(node, SizeFill(), SizePx(space));
+    SetChildAlign(node, 0.5, 0.5);
+
+    separator := GetNode(node);
+    SetSize(separator, SizeFill(), SizePx(width));
+
+    Apply(separator, style);
 
     return node;
 }
 
-VerticalSeparator :: (parent : *Node, style : *BoxStyle = null, location := #caller_location) -> *Node {
+VerticalSeparator :: (parent : *Node, space := 25.0, width := 1.0, style : *BoxStyle = null, location := #caller_location) -> *Node {
     EnsureStyle(*style, "separator");
 
     node := GetNode(parent, location);
-    SetSize(node, SizePx(1), SizeFill(1));
-    Apply(node, style);
+    SetSize(node, SizePx(space), SizeFill());
+    SetChildAlign(node, 0.5, 0.5);
+
+    separator := GetNode(node);
+    SetSize(separator, SizePx(width), SizeFill());
+
+    Apply(separator, style);
+
 
     return node;
 }
