@@ -250,6 +250,7 @@ Subwindow :: (
         content = GetNode(title_and_content, "content");
         {
             SetSize(content, SizeFill(), SizeFill());
+            SetLayout(content, .TopToBottom);
 
             if !(flags & .NoMove) && !(flags & .NoMoveFromBackground) {
                 SubwindowMoveBehavior(subwindow, content, ifx title_bar then title_bar.layout_last_frame.size);
