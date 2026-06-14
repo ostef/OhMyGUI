@@ -273,6 +273,12 @@ DrawText :: (draw_list : *DrawList, font : *Font, position : Vec2f, size : float
         line_start : Vec2f;
         new_line := true;
 
+        underline_thickness := max(font.desired_underline_thickness * size, 1);
+        underline_position := font.desired_underline_position * size;
+        if underline_thickness == 1 {
+            underline_position = ceil(underline_position);
+        }
+
         for iter {
             if new_line {
                 line_start = position + iter.pen;
@@ -286,11 +292,8 @@ DrawText :: (draw_list : *DrawList, font : *Font, position : Vec2f, size : float
 
                 if effects & .Underline {
                     box_position := (line_start + line_end) * 0.5;
-                    box_position.y += (font.desired_underline_position + font.desired_underline_thickness * 0.5) * size;
-                    box_size := Vec2f.{
-                        line_end.x - line_start.x,
-                        max(font.desired_underline_thickness * size, 1),
-                    };
+                    box_position.y += (underline_position + underline_thickness * 0.5);
+                    box_size := Vec2f.{line_end.x - line_start.x, underline_thickness};
 
                     DrawBox(draw_list, box_position, box_size, color);
                 }
@@ -298,10 +301,7 @@ DrawText :: (draw_list : *DrawList, font : *Font, position : Vec2f, size : float
                 if effects & .Strikethrough {
                     box_position := (line_start + line_end) * 0.5;
                     box_position.y -= font.ascent * 0.35 * size;
-                    box_size := Vec2f.{
-                        line_end.x - line_start.x,
-                        max(font.desired_underline_thickness * size, 1),
-                    };
+                    box_size := Vec2f.{line_end.x - line_start.x, underline_thickness};
 
                     DrawBox(draw_list, box_position, box_size, color);
                 }
@@ -313,11 +313,8 @@ DrawText :: (draw_list : *DrawList, font : *Font, position : Vec2f, size : float
 
             if effects & .Underline {
                 box_position := (line_start + line_end) * 0.5;
-                box_position.y += (font.desired_underline_position + font.desired_underline_thickness * 0.5) * size;
-                box_size := Vec2f.{
-                    line_end.x - line_start.x,
-                    max(font.desired_underline_thickness * size, 1),
-                };
+                box_position.y += (underline_position + underline_thickness * 0.5);
+                box_size := Vec2f.{line_end.x - line_start.x, underline_thickness};
 
                 DrawBox(draw_list, box_position, box_size, color);
             }
@@ -325,10 +322,7 @@ DrawText :: (draw_list : *DrawList, font : *Font, position : Vec2f, size : float
             if effects & .Strikethrough {
                 box_position := (line_start + line_end) * 0.5;
                 box_position.y -= font.ascent * 0.35 * size;
-                box_size := Vec2f.{
-                    line_end.x - line_start.x,
-                    max(font.desired_underline_thickness * size, 1),
-                };
+                box_size := Vec2f.{line_end.x - line_start.x, underline_thickness};
 
                 DrawBox(draw_list, box_position, box_size, color);
             }
