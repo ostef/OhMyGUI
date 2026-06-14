@@ -75,6 +75,8 @@ Menu :: (parent : *Node, text : string, menu_item_style : *ButtonStyle = null, m
             SetMinSize(menu, 50, 0);
             SetMaxSize(menu, 150, 200);
 
+            BringForward(menu);
+
             menu.offset = .{menu_item.layout_last_frame.rect.x, menu_item.layout_last_frame.rect.w};
             Apply(menu, menu_style);
         }
