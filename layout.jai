@@ -352,7 +352,7 @@ LayoutPosition :: (node : *Node) {
 
     cursor := ifx reverse then floor(node.size[axis] - node.padding.zw[axis] - axis_align_offset + node.scroll[axis]) else ceil(node.padding.xy[axis] + axis_align_offset + node.scroll[axis]);
     first := true;
-    for :LayoutDirection node {
+    for :Children node {
         defer first = false;
 
         if !no_positioning && reverse {
