@@ -137,3 +137,38 @@ Pixels will set the pixel size of the node to the specified value.
 Fit children will set the size of the node to the sum of its children, plus the padding and the child gap.
 
 Fill parent will fill the available space in the parent after nodes with fit and fixed sizing have been calculated. A weight value is used to determine the repartition of the space between the children.
+
+## SDF Renderer
+OMG can render boxes, glyphs and triangle primitives but it can also render complex SDFs:
+```jai
+DrawCheckmark :: (draw_list : *OMG.DrawList) {
+    size := 40 + 40 * (cos(g_time) * 2 + 2);
+
+    scale := size / 20.0;
+    left_height := size * 0.5;
+    right_height := size * 0.9;
+    angle := PI * 0.17;
+    thickness := size * 0.2;
+    radiuses := OMG.Vec4f.{1, 1, 2, 2} * scale;
+
+    left := OMG.Box(thickness, left_height, radiuses);
+    left = OMG.Transform(left, OMG.Rotate2D(-angle) * OMG.Translate2D(0, -left_height * 0.5));
+
+    right := OMG.Box(thickness, right_height, radiuses);
+    right = OMG.Transform(right, OMG.Rotate2D(angle) * OMG.Translate2D(0, -right_height * 0.5));
+
+    shape := OMG.Union(left, right, 0.5 * scale);
+    shape = OMG.Move(shape, -0.2 * size * 0.5, -thickness * 0.5);
+
+    OMG.DrawShape(draw_list, .{
+        shape=shape,
+        position=.{500, 500},
+        background_color=OMG.ColorU32(0.3, 0.5, 0.9, 1),
+        outer_shadow_color=OMG.ColorU32(0, 0, 0, 0.5),
+        outer_shadow_offset=OMG.Vec2f.{15, 15},
+        outer_shadow_blur=5,
+    });
+}
+```
+This draws a blue checkmark with an outer shadow:
+![Checkmark](Examples/checkmark.gif)
