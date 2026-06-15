@@ -1,6 +1,7 @@
 *.o
 *.exe
 *.pdb
+*.rdi
 *.dll
 example
 main

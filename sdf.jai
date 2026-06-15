@@ -1,5 +1,3 @@
-// Sign distance field based effects and drawing
-
 ShapeKind :: enum u8 {
     CirclePrimitive :: 0;
     BoxPrimitive;

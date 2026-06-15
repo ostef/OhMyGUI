@@ -68,7 +68,6 @@ ShaderShape :: struct {
 ShapeDrawing :: struct {
     shape : *Shape;
     position : Vec2f;
-    corner_radiuses : Vec4f;
     background_color : RGBA8;
     border_color : RGBA8;
     border_size : float;
@@ -91,6 +90,7 @@ ShaderShapeDrawing :: struct {
     outer_shadow_color : u32;
     outer_shadow_offset : Vec2f;
     outer_shadow_blur : float;
+    padding : [3]u32;
 }
 
 DrawCall :: struct {
@@ -131,6 +131,7 @@ InitDrawList :: (draw_list : *DrawList) {
     draw_list.clip_box_stack.allocator = context.allocator;
     draw_list.glyphs.allocator = context.allocator;
     draw_list.triangles.allocator = context.allocator;
+    draw_list.shapes.allocator = context.allocator;
 }
 
 DestroyDrawList :: (draw_list : *DrawList) {
@@ -140,6 +141,7 @@ DestroyDrawList :: (draw_list : *DrawList) {
     array_free(draw_list.clip_box_stack);
     array_free(draw_list.glyphs);
     array_free(draw_list.triangles);
+    array_free(draw_list.shapes);
     draw_list.* = .{};
 }
 
@@ -150,6 +152,7 @@ ClearDrawList :: (draw_list : *DrawList) {
     array_reset_keeping_memory(*draw_list.clip_box_stack);
     array_reset_keeping_memory(*draw_list.glyphs);
     array_reset_keeping_memory(*draw_list.triangles);
+    array_reset_keeping_memory(*draw_list.shapes);
 
     draw_list.gpu_buffer_clip_boxes_offset = 0;
     draw_list.gpu_buffer_boxes_offset = 0;
@@ -372,7 +375,7 @@ DrawText :: (draw_list : *DrawList, font : *Font, position : Vec2f, size : float
     }
 }
 
-DrawShape :: (draw_list : *DrawList, shape : *Shape, position : Vec2f, color : RGBA8) -> int {
+DrawShape :: inline (draw_list : *DrawList, shape : *Shape, position : Vec2f, color : RGBA8) -> int {
     return DrawShape(draw_list, .{
         shape=shape,
         position=position,
@@ -526,6 +529,7 @@ CopyDrawListShaderData :: (
     draw_list.gpu_buffer_triangles_offset = xx triangles.count;
     draw_list.gpu_buffer_shape_drawings_offset = xx shape_drawings.count;
     draw_list.gpu_buffer_shapes_offset = xx shapes.count;
+    draw_list.num_shapes = 0;
 
     for draw_list.clip_boxes {
         array_add(clip_boxes, it);
@@ -565,10 +569,11 @@ CopyDrawListShaderData :: (
     }
 
     for draw_list.shapes {
-        first_shape_index := cast(u32, shapes.count);
-        num_shapes := FlattenShapes(it.shape, shapes);
-
         drawing := array_add(shape_drawings);
+        drawing.first_shape_index = cast(u32, shapes.count);
+        drawing.num_shapes = FlattenShapes(it.shape, shapes);
+        draw_list.num_shapes += drawing.num_shapes;
+
         drawing.bounds = GetBounds(it.shape);
         drawing.position = it.position;
         drawing.background_color = it.background_color;
@@ -615,6 +620,9 @@ SendDrawCommands :: (
         }
 
         num_vertices : u32;
+
+        msg := tprint("Draw Call, % (% instances)", it.kind, num_instances);
+        glDebugMessageInsert(GL_DEBUG_SOURCE_APPLICATION, GL_DEBUG_TYPE_MARKER, 0, GL_DEBUG_SEVERITY_NOTIFICATION, xx msg.count, xx msg.data);
 
         if it.kind == {
         case .Boxes;

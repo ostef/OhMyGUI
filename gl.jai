@@ -240,7 +240,6 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
 
         status := glCheckNamedFramebufferStatus(g_color_framebuffer, GL_DRAW_FRAMEBUFFER);
         assert(status == GL_FRAMEBUFFER_COMPLETE, "Failed to create framebuffer (%)", status);
-
     }
 
     defer g_frame_in_flight = (g_frame_in_flight + 1) % g_num_frames_in_flight;
@@ -258,7 +257,15 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
     while window {
         defer window = window.next;
 
-        CopyDrawListShaderData(*window.draw_list, *clip_boxes, *boxes, *glyphs, *triangles, *shape_drawings, *shapes);
+        CopyDrawListShaderData(
+            *window.draw_list,
+            *clip_boxes,
+            *boxes,
+            *glyphs,
+            *triangles,
+            *shape_drawings,
+            *shapes
+        );
     }
 
     clip_boxes_offset := 0;

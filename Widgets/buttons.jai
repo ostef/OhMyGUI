@@ -190,7 +190,6 @@ DrawCheckmark :: (draw_list : *DrawList, node : *Node) {
     DrawShape(*node.window.draw_list, .{
         shape=shape,
         position=position,
-        corner_radiuses=node.corner_radiuses,
         background_color=node.background_color,
         border_color=node.border_color,
         border_size=node.border_size,
@@ -201,12 +200,12 @@ DrawCheckmark :: (draw_list : *DrawList, node : *Node) {
     });
 }
 
-Checkbox :: (parent : *Node, value : *bool, style : *CheckboxStyle = null, location := #caller_location) -> modified : bool, *Node {
+Checkbox :: (parent : *Node, value : *bool, size := 20.0, style : *CheckboxStyle = null, location := #caller_location) -> modified : bool, *Node {
     EnsureStyle(*style, "checkbox");
 
     node := GetNode(parent, location);
     {
-        SetSize(node, SizePx(20), SizePx(20));
+        SetSize(node, SizePx(size), SizePx(size));
 
         SetUserData(node, style.*);
 
