@@ -206,7 +206,11 @@ Insert :: (input : *TextInputData, str : $T, push_edit := true) {
     cursor := input.cursor;
 
     for str {
-        array_insert_at(*input.buffer, it, input.cursor);
+        if it == #char "\n" {
+            array_insert_at(*input.buffer, #char " ", input.cursor);
+        } else {
+            array_insert_at(*input.buffer, it, input.cursor);
+        }
         input.cursor += 1;
     }
 
