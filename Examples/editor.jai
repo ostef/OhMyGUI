@@ -1,5 +1,5 @@
 g_slider_value := 0.5;
-g_show_password : bool;
+g_show_password := true;
 g_toggle_value : bool;
 g_color : OMG.RGBA8 = 0x000000ff;
 

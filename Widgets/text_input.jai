@@ -1,13 +1,33 @@
+TextInputEdit :: struct {
+    Kind :: enum u8 {
+        Insert;
+        Delete;
+        BatchBegin;
+        BatchEnd;
+    }
+
+    cursor : s32;
+    edit_buffer_offset : s32;
+    length : s32;
+    kind : Kind;
+}
+
 TextInputData :: struct {
     buffer : [..]u32;
     selection : s32;
     cursor : s32;
     cursor_blink_time : float;
+
+    edit_history : [..]TextInputEdit;
+    edit_buffer : [..]u32;
+    edit_history_cursor := -1;
 }
 
 DestroyTextInputData :: (node : *Node, data : *void) {
     using _ := cast(*TextInputData, data);
     array_free(buffer);
+    array_free(edit_buffer);
+    array_free(edit_history);
 }
 
 GetTextInputResultUtf32 :: (node : *Node) -> []u32 {
@@ -28,6 +48,136 @@ GetTextInputResult :: (node : *Node) -> string {
     return EncodeStringAsUtf8(data.buffer);
 }
 
+PushEdit :: (input : *TextInputData, kind : TextInputEdit.Kind, cursor : s32, length : s32) -> *TextInputEdit {
+    while input.edit_history.count > 0 && input.edit_history.count > input.edit_history_cursor {
+        PopEdit(input);
+    }
+
+    edit := array_add(*input.edit_history);
+    edit.kind = kind;
+    edit.edit_buffer_offset = xx input.edit_buffer.count;
+    edit.length = length;
+    edit.cursor = cursor;
+
+    input.edit_history_cursor = input.edit_history.count;
+
+    return edit;
+}
+
+PushEdit :: (input : *TextInputData, kind : TextInputEdit.Kind) -> *TextInputEdit {
+    return PushEdit(input, kind, 0, 0);
+}
+
+PushEdit :: (input : *TextInputData, kind : TextInputEdit.Kind, cursor : s32, text : $T) -> *TextInputEdit {
+    edit := PushEdit(input, kind, cursor, xx text.count);
+    for text {
+        array_add(*input.edit_buffer, it);
+    }
+
+    // #if T == Utf8String {
+    //     print("Edit % at %: '%'\n", kind, cursor, text.as_string);
+    // } else #if T == []u32 || T == [..]u32 {
+    //     print("Edit % at %: '%'\n", kind, cursor, EncodeStringAsUtf8(text ,, temp));
+    // }
+
+    return edit;
+}
+
+PopEdit :: (input : *TextInputData) {
+    edit := *input.edit_history[input.edit_history.count - 1];
+    input.edit_buffer.count = max(edit.edit_buffer_offset, 0);
+
+    pop(*input.edit_history);
+
+    input.edit_history_cursor = min(input.edit_history_cursor, input.edit_history.count);
+}
+
+GetEditText :: (input : *TextInputData, edit : TextInputEdit) -> []u32 {
+    text : []u32;
+    text.data = input.edit_buffer.data + clamp(edit.edit_buffer_offset, 0, xx input.edit_buffer.count);
+    text.count = min(input.edit_buffer.count - edit.edit_buffer_offset, xx edit.length);
+
+    return text;
+}
+
+Undo :: (input : *TextInputData) -> bool {
+    if input.edit_history_cursor <= 0 || input.edit_history_cursor > input.edit_history.count {
+        return false;
+    }
+
+    input.edit_history_cursor -= 1;
+    edit := input.edit_history[input.edit_history_cursor];
+
+    if #complete edit.kind == {
+    case .Insert;
+        SetCursor(input, edit.cursor);
+
+        for i : 0..edit.length - 1 {
+            if !Delete(input, push_edit=false) {
+                break;
+            }
+        }
+
+    case .Delete;
+        SetCursor(input, edit.cursor);
+        Insert(input, GetEditText(input, edit), push_edit=false);
+
+    case .BatchEnd;
+        while input.edit_history_cursor > 0 {
+            edit := input.edit_history[input.edit_history_cursor - 1];
+
+            Undo(input);
+
+            if edit.kind == .BatchBegin {
+                break;
+            }
+        }
+
+    case .BatchBegin;
+    }
+
+    return true;
+}
+
+Redo :: (input : *TextInputData) -> bool {
+    if input.edit_history_cursor < 0 || input.edit_history_cursor >= input.edit_history.count {
+        return false;
+    }
+
+    edit := input.edit_history[input.edit_history_cursor];
+    input.edit_history_cursor += 1;
+
+    if #complete edit.kind == {
+    case .Insert;
+        SetCursor(input, edit.cursor);
+        Insert(input, GetEditText(input, edit), push_edit=false);
+
+    case .Delete;
+        SetCursor(input, edit.cursor);
+
+        for i : 0..edit.length - 1 {
+            if !Delete(input, push_edit=false) {
+                break;
+            }
+        }
+
+    case .BatchBegin;
+        while input.edit_history_cursor < input.edit_history.count {
+            edit := input.edit_history[input.edit_history_cursor];
+
+            Redo(input);
+
+            if edit.kind == .BatchEnd {
+                break;
+            }
+        }
+
+    case .BatchEnd;
+    }
+
+    return true;
+}
+
 Activate :: (input : *TextInputData) {
     input.cursor_blink_time = 0;
     input.cursor = xx input.buffer.count;
@@ -40,16 +190,32 @@ SelectAll :: (input : *TextInputData) {
     input.selection = -input.cursor;
 }
 
-Insert :: (input : *TextInputData, str : $T) {
+Insert :: (input : *TextInputData, str : $T, push_edit := true) {
     input.cursor_blink_time = 0;
 
+    pushed_batch := false;
     if input.selection != 0 {
-        Delete(input);
+        if push_edit {
+            PushEdit(input, .BatchBegin);
+            pushed_batch = true;
+        }
+
+        Delete(input, push_edit);
     }
+
+    cursor := input.cursor;
 
     for str {
         array_insert_at(*input.buffer, it, input.cursor);
         input.cursor += 1;
+    }
+
+    if push_edit {
+        PushEdit(input, .Insert, cursor, str);
+
+        if pushed_batch {
+            PushEdit(input, .BatchEnd);
+        }
     }
 }
 
@@ -79,8 +245,15 @@ Backspace :: (input : *TextInputData) -> bool {
     return Delete(input);
 }
 
-Delete :: (input : *TextInputData) -> bool {
+Delete :: (input : *TextInputData, push_edit := true) -> bool {
     if input.selection != 0 {
+        if push_edit {
+            start := min(input.cursor, input.cursor + input.selection);
+            end := max(input.cursor, input.cursor + input.selection);
+            text : []u32 = .{data=input.buffer.data + start, count=end - start};
+            PushEdit(input, .Delete, start, text);
+        }
+
         while input.selection > 0 {
             input.selection -= 1;
             array_ordered_remove_by_index(*input.buffer, input.cursor);
@@ -98,7 +271,12 @@ Delete :: (input : *TextInputData) -> bool {
         return false;
     }
 
+    if push_edit {
+        PushEdit(input, .Delete, input.cursor, ([]u32).{count=1, data=input.buffer.data + input.cursor});
+    }
+
     array_ordered_remove_by_index(*input.buffer, input.cursor);
+
     return true;
 }
 
@@ -265,6 +443,13 @@ TextInputBehavior :: (node : *Node) -> *TextInputData, submitted : bool, ButtonR
             } else {
                 MoveCursorRight(input, select);
             }
+        }
+
+        if IsKeyPressed(.Z) && GetModState() == .Ctrl {
+            Undo(input);
+        }
+        if IsKeyPressed(.Z) && GetModState() == (.Shift | .Ctrl) {
+            Redo(input);
         }
 
         if IsKeyPressed(.A) && GetModState() == .Ctrl {
