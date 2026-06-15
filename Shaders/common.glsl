@@ -38,6 +38,20 @@ struct Triangle {
     int clip_box_index;
 };
 
+struct ShapeDrawing {
+    vec4 bounds;
+    vec2 position;
+    uint first_shape_index;
+    uint num_shapes;
+    int clip_box_index;
+    uint background_color;
+    vec2 border_size_and_inset;
+    uint border_color;
+    uint outer_shadow_color;
+    vec2 outer_shadow_offset;
+    float outer_shadow_blur;
+};
+
 vec4 ColorVec4(uint rgba) {
     float r = float((rgba >> 24) & uint(0xff));
     float g = float((rgba >> 16) & uint(0xff));
@@ -104,6 +118,10 @@ float OpUnion(float a, float b) {
 // https://iquilezles.org/articles/smin/
 // Quadratic polynomial smooth union
 float OpSmoothUnion(float a, float b, float k) {
+    if (abs(k) < 0.00001) {
+        return min(a, b);
+    }
+
     k *= 4.0;
     float h = max(k - abs(a - b), 0.0) / k;
     return min(a, b) - h * h * k * (1.0 / 4.0);

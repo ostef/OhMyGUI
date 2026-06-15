@@ -9,48 +9,27 @@ struct Shape {
 #define Shape_CirclePrimitive 0
 #define Shape_BoxPrimitive 1
 #define Shape_TrianglePrimitive 2
-#define Shape_TexturePrimitive 3
 
 #define Shape_UnionOperation 200
-#define Shape_SmoothUnionOperation 201
-#define Shape_SubtractionOperation 202
-#define Shape_SmoothSubtractionOperation 203
-#define Shape_IntersectionOperation 204
-#define Shape_SmoothIntersectionOperation 205
-#define Shape_InflateOperation 206
-#define Shape_OnionOperation 207
-#define Shape_MorphOperation 208
-#define Shape_TransformOperation 209
+#define Shape_SubtractionOperation 201
+#define Shape_IntersectionOperation 202
+#define Shape_InflateOperation 203
+#define Shape_OnionOperation 204
+#define Shape_MorphOperation 205
+#define Shape_TransformOperation 206
 
-struct Effect {
-    uint kind;
-    uint params00;
-    uint params01;
-    uint params02;
-    vec4 params1;
+layout(binding=0, std430) readonly buffer ClipData {
+    ClipBox u_clip_boxes[];
 };
-
-#define Effect_SolidColor 0
-#define Effect_StrokeColor 1
-#define Effect_OuterShadow 2
-#define Effect_InnerShadow 3
-
-layout(binding=1, std430) readonly buffer ShapeData {
+layout(binding=4, std430) readonly buffer DrawingData {
+    ShapeDrawing u_shape_drawings[];
+};
+layout(binding=5, std430) readonly buffer ShapeData {
     Shape u_shapes[];
 };
-layout(binding=2, std430) readonly buffer EffectData {
-    Effect u_effects[];
-};
 uniform vec2 u_viewport_size;
-uniform sampler2D u_texture;
 
-layout(location=0) in vec2 in_position;
-layout(location=1) in flat uint in_first_shape_index;
-layout(location=2) in flat uint in_num_shapes;
-layout(location=3) in flat uint in_first_effect_index;
-layout(location=4) in flat uint in_num_effects;
-layout(location=5) in flat uint in_first_clip_shape_index;
-layout(location=6) in flat uint in_num_clip_shapes;
+layout(location=0) in flat uint in_shape_drawing_index;
 
 layout(location=0) out vec4 out_color;
 
@@ -86,25 +65,7 @@ float EvalSDF(vec2 p, uint first_shape_index, uint num_shapes) {
             value_index += 1;
         } break;
 
-        case Shape_TexturePrimitive: {
-            vec4 uvs = shape.params0;
-            vec2 size = shape.params1.xy;
-            vec2 dist_range = shape.params1.zw;
-
-            values[value_index] = PrimTexture(p, u_texture, size, uvs, dist_range);
-            value_index += 1;
-        } break;
-
         case Shape_UnionOperation: {
-            float a = values[value_index - 2];
-            float b = values[value_index - 1];
-            value_index -= 2;
-
-            values[value_index] = OpUnion(a, b);
-            value_index += 1;
-        } break;
-
-        case Shape_SmoothUnionOperation: {
             float a = values[value_index - 2];
             float b = values[value_index - 1];
             float k = shape.params0.x;
@@ -117,15 +78,6 @@ float EvalSDF(vec2 p, uint first_shape_index, uint num_shapes) {
         case Shape_SubtractionOperation: {
             float a = values[value_index - 2];
             float b = values[value_index - 1];
-            value_index -= 2;
-
-            values[value_index] = OpSubtraction(a, b);
-            value_index += 1;
-        } break;
-
-        case Shape_SmoothSubtractionOperation: {
-            float a = values[value_index - 2];
-            float b = values[value_index - 1];
             float k = shape.params0.x;
             value_index -= 2;
 
@@ -134,15 +86,6 @@ float EvalSDF(vec2 p, uint first_shape_index, uint num_shapes) {
         } break;
 
         case Shape_IntersectionOperation: {
-            float a = values[value_index - 2];
-            float b = values[value_index - 1];
-            value_index -= 2;
-
-            values[value_index] = OpIntersection(a, b);
-            value_index += 1;
-        } break;
-
-        case Shape_SmoothIntersectionOperation: {
             float a = values[value_index - 2];
             float b = values[value_index - 1];
             float k = shape.params0.x;
@@ -197,83 +140,51 @@ float EvalSDF(vec2 p, uint first_shape_index, uint num_shapes) {
     return values[value_index - 1];
 }
 
-vec4 EvalEffects(vec2 p, float d) {
-    float aa = length(vec2(dFdx(p.x), dFdy(p.y))) * 0.5;
-
-    vec4 result = vec4(0);
-
-    uint effect_index = in_first_effect_index;
-    uint last_effect = in_first_effect_index + in_num_effects;
-    while (effect_index < last_effect) {
-        Effect effect = u_effects[effect_index];
-        effect_index += 1;
-
-        switch (effect.kind) {
-        case Effect_SolidColor: {
-            vec4 color = ColorVec4(effect.params00);
-            float blur_factor = effect.params1.x;
-            float a = FxSolidColor(d, aa + blur_factor);
-            result = mix(result, color, a);
-        } break;
-
-        case Effect_StrokeColor: {
-            vec4 color = ColorVec4(effect.params00);
-            float blur_factor = effect.params1.x;
-            float inset = effect.params1.y;
-            float size = effect.params1.z;
-            float a = FxStrokeColor(d, aa + blur_factor, size, inset);
-            result = mix(result, color, a);
-        } break;
-
-        case Effect_OuterShadow: {
-            vec4 color = ColorVec4(effect.params00);
-            vec2 offset = effect.params1.xy;
-            float blur_factor = effect.params1.z;
-
-            float shadow;
-            if (offset != vec2(0)) {
-                shadow = EvalSDF(p - offset, in_first_shape_index, in_num_shapes);
-            } else {
-                shadow = d;
-            }
-
-            float a = FxSolidColor(shadow, aa + blur_factor);
-
-            result = mix(result, color, a);
-        } break;
-
-        case Effect_InnerShadow: {
-            vec4 color = ColorVec4(effect.params00);
-            vec2 offset = effect.params1.xy;
-            float blur_factor = effect.params1.z;
-
-            float shadow;
-            if (offset != vec2(0)) {
-                shadow = EvalSDF(p - offset, in_first_shape_index, in_num_shapes);
-            } else {
-                shadow = d;
-            }
-
-            float a = FxSolidColor(-shadow, aa + blur_factor) * FxSolidColor(d, aa);
-
-            result = mix(result, color, a);
-        } break;
-        }
-    }
-
-    return result;
-}
-
 void main() {
     vec2 p = gl_FragCoord.xy;
     p.y = u_viewport_size.y - p.y;
 
-    float d = EvalSDF(p - in_position, in_first_shape_index, in_num_shapes);
+    float aa = length(vec2(dFdx(p.x), dFdy(p.y))) * 0.5;
 
-    out_color = EvalEffects(p - in_position, d);
+    ShapeDrawing drawing = u_shape_drawings[in_shape_drawing_index];
 
-    float clip = EvalSDF(p, in_first_clip_shape_index, in_num_clip_shapes);
-    float clip_a = FxSolidColor(clip, 0);
+    float border_size = drawing.border_size_and_inset.x;
+    float border_inset = drawing.border_size_and_inset.y;
+    vec4 background_color = ColorVec4(drawing.background_color);
+    vec4 border_color = ColorVec4(drawing.border_color);
+    vec4 outer_shadow_color = ColorVec4(drawing.outer_shadow_color);
+    vec2 outer_shadow_offset = drawing.outer_shadow_offset;
+    float outer_shadow_blur = drawing.outer_shadow_blur;
 
-    out_color *= clip_a;
+    float d = EvalSDF(p - drawing.position, drawing.first_shape_index, drawing.num_shapes);
+
+    out_color = vec4(0);
+
+    if (outer_shadow_color.a > 0) {
+        float shadow_d;
+        if (outer_shadow_offset != vec2(0)) {
+            shadow_d = EvalSDF(p - drawing.position - outer_shadow_offset, drawing.first_shape_index, drawing.num_shapes);
+        } else {
+            shadow_d = d;
+        }
+
+        float outer_shadow = FxSolidColor(shadow_d, aa + outer_shadow_blur);
+        out_color = mix(out_color, outer_shadow_color, outer_shadow);
+    }
+
+    float background = FxSolidColor(d, aa);
+    out_color = mix(out_color, background_color, background);
+
+    float border = FxStrokeColor(d, aa, border_size, border_inset);
+    out_color = mix(out_color, border_color, border);
+
+    if (drawing.clip_box_index >= 0) {
+        ClipBox clip = u_clip_boxes[drawing.clip_box_index];
+        vec2 clip_size = clip.bounds.zw - clip.bounds.xy;
+        vec2 clip_position = (clip.bounds.xy + clip.bounds.zw) * 0.5;
+        float clip_d = PrimBox(p - clip_position, clip_size, clip.corner_radiuses);
+        float clip_a = FxSolidColor(clip_d, aa);
+
+        out_color *= clip_a;
+    }
 }

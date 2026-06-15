@@ -158,62 +158,6 @@ DrawCheckmark :: (draw_list : *DrawList, node : *Node) {
         return;
     }
 
-    state := GetState(node.parent);
-    using style := checkbox_style.states[state];
-
-    size := node.size.y;
-    thickness := size * checkmark.thickness;
-
-    // rounding := 1.0;
-    // thickness := 0.2;
-    // offset := Vec2f.{-0.2, 0};
-    // left_size := 0.5;
-    // right_size := 0.9;
-    // angle := PI * 0.17;
-
-
-    //                  * p4
-    //                .     * p5
-    //   . * p1     .     .
-    // * p0  .    .     .
-    //   .      * p3  .
-    //      .       .
-    //          * p2
-
-    left_dir := Rotate(Vec2f.{-1,0}, checkmark.angle);
-    right_dir := Rotate(Vec2f.{1,0}, -checkmark.angle);
-    p2 := Vec2f.{(node.rect.x + node.rect.z) * 0.5, node.rect.w};
-    p5 := p2 + right_dir * checkmark.right_size * size;
-    p4 := p5 + PerpendicularCW(right_dir) * thickness;
-
-    p0 := p2 + left_dir * checkmark.left_size * size;
-    p1 := p0 + PerpendicularCW(left_dir) * thickness;
-
-    DrawTriangle(draw_list, .{
-        p0=p2,
-        p1=p5,
-        p2=p4,
-        c0=node.background_color,
-        c1=node.background_color,
-        c2=node.background_color,
-    });
-
-    DrawTriangle(draw_list, .{
-        p0=p2,
-        p1=p0,
-        p2=p1,
-        c0=node.background_color,
-        c1=node.background_color,
-        c2=node.background_color,
-    });
-
-
-    /*
-    checkbox_style := GetUserData(node.parent, CheckboxStyle);
-    if !checkbox_style {
-        return;
-    }
-
     has_background := (node.background_color & 0xff) > 0;
     has_border := (node.border_color & 0xff) > 0 && node.border_size > 0;
     has_shadow := (node.outer_shadow_color & 0xff) > 0;
@@ -243,20 +187,18 @@ DrawCheckmark :: (draw_list : *DrawList, node : *Node) {
     shape := Union(left, right, 0.5 * scale);
     shape = Move(shape, size * 0.5 * checkmark.offset.x, -thickness * 0.5 + checkmark.offset.y * size);
 
-    d := DrawShape(*node.window.draw_list, shape, position);
-
-    if has_shadow {
-        OuterShadow(d, node.outer_shadow_offset * scale, node.outer_shadow_blur * scale, node.outer_shadow_color);
-    }
-    if has_background {
-        SolidColor(d, node.background_color);
-    }
-    if has_border {
-        StrokeColor(d, node.border_color, node.border_size, node.border_inset);
-    }
-
-    SetClipShape(d, clip_shape);
-    */
+    DrawShape(*node.window.draw_list, .{
+        shape=shape,
+        position=position,
+        corner_radiuses=node.corner_radiuses,
+        background_color=node.background_color,
+        border_color=node.border_color,
+        border_size=node.border_size,
+        border_inset=node.border_inset,
+        outer_shadow_color=node.outer_shadow_color,
+        outer_shadow_offset=node.outer_shadow_offset,
+        outer_shadow_blur=node.outer_shadow_blur,
+    });
 }
 
 Checkbox :: (parent : *Node, value : *bool, style : *CheckboxStyle = null, location := #caller_location) -> modified : bool, *Node {

@@ -11,7 +11,7 @@ g_color_framebuffer : GLuint;
 g_color_texture_width : u32;
 g_color_texture_height : u32;
 
-g_shader_shape : GLuint;
+g_shader_sdf : GLuint;
 g_shader_box : GLuint;
 g_shader_glyph : GLuint;
 g_shader_triangle : GLuint;
@@ -107,9 +107,6 @@ InitGL :: (num_frames_in_flight := 2, frame_data_buffer_size := 1 * 1024 * 1024)
 
     Common_Shader :: #run ReadCompileTimeFile("Shaders/common.glsl");
 
-    SDF_Vertex_Shader :: #run join(Common_Shader, ReadCompileTimeFile("Shaders/sdf.vert.glsl"));
-    SDF_Fragment_Shader :: #run join(Common_Shader, ReadCompileTimeFile("Shaders/sdf.frag.glsl"));
-
     Box_Vertex_Shader :: #run join(Common_Shader, ReadCompileTimeFile("Shaders/box.vert.glsl"));
     Box_Fragment_Shader :: #run join(Common_Shader, ReadCompileTimeFile("Shaders/box.frag.glsl"));
 
@@ -119,10 +116,8 @@ InitGL :: (num_frames_in_flight := 2, frame_data_buffer_size := 1 * 1024 * 1024)
     Triangle_Vertex_Shader :: #run join(Common_Shader, ReadCompileTimeFile("Shaders/triangle.vert.glsl"));
     Triangle_Fragment_Shader :: #run join(Common_Shader, ReadCompileTimeFile("Shaders/triangle.frag.glsl"));
 
-    g_shader_shape = LoadShader("SDF", SDF_Vertex_Shader, SDF_Fragment_Shader);
-    if !g_shader_shape {
-        return false;
-    }
+    SDF_Vertex_Shader :: #run join(Common_Shader, ReadCompileTimeFile("Shaders/sdf.vert.glsl"));
+    SDF_Fragment_Shader :: #run join(Common_Shader, ReadCompileTimeFile("Shaders/sdf.frag.glsl"));
 
     g_shader_box = LoadShader("Box", Box_Vertex_Shader, Box_Fragment_Shader);
     if !g_shader_box {
@@ -136,6 +131,11 @@ InitGL :: (num_frames_in_flight := 2, frame_data_buffer_size := 1 * 1024 * 1024)
 
     g_shader_triangle = LoadShader("Triangle", Triangle_Vertex_Shader, Triangle_Fragment_Shader);
     if !g_shader_triangle {
+        return false;
+    }
+
+    g_shader_sdf = LoadShader("SDF", SDF_Vertex_Shader, SDF_Fragment_Shader);
+    if !g_shader_sdf {
         return false;
     }
 
@@ -194,8 +194,8 @@ TerminateGL :: () {
     glDeleteQueries(xx (g_timestamp_queries.count * 2), xx g_timestamp_queries.data);
     free(g_timestamp_queries.data);
 
-    glDeleteProgram(g_shader_shape);
-    g_shader_shape = 0;
+    glDeleteProgram(g_shader_sdf);
+    g_shader_sdf = 0;
 
     glDeleteVertexArrays(1, *g_dummy_vao);
     g_dummy_vao = 0;
@@ -251,12 +251,14 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
     boxes : [..]ShaderBoxDrawing;
     glyphs : [..]ShaderGlyphDrawing;
     triangles : [..]ShaderTriangleDrawing;
+    shape_drawings : [..]ShaderShapeDrawing;
+    shapes : [..]ShaderShape;
 
     window := context.omg.windows;
     while window {
         defer window = window.next;
 
-        CopyDrawListShaderData(*window.draw_list, *clip_boxes, *boxes, *glyphs, *triangles);
+        CopyDrawListShaderData(*window.draw_list, *clip_boxes, *boxes, *glyphs, *triangles, *shape_drawings, *shapes);
     }
 
     clip_boxes_offset := 0;
@@ -271,12 +273,18 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
     triangles_offset := align_forward(glyphs_offset + glyphs_size, g_storage_buffer_offset_alignment);
     triangles_size := triangles.count * size_of(ShaderTriangleDrawing);
 
-    total_size := triangles_offset + triangles_size;
+    shape_drawings_offset := align_forward(triangles_offset + triangles_size, g_storage_buffer_offset_alignment);
+    shape_drawings_size := shape_drawings.count * size_of(ShaderShapeDrawing);
+
+    shapes_offset := align_forward(shape_drawings_offset + shape_drawings_size, g_storage_buffer_offset_alignment);
+    shapes_size := shapes.count * size_of(ShaderShape);
+
+    total_size := shapes_offset + shapes_size;
 
     buffer_handle := g_frame_data_buffer_handles[g_frame_in_flight];
     buffer_ptr := g_frame_data_buffer_ptrs[g_frame_in_flight];
     if total_size > g_frame_data_buffer_size {
-        log_error("Too many things to draw % of % bytes, % clip boxes, % boxes, % glyphs, % triangles\n", total_size, g_frame_data_buffer_size, clip_boxes.count, boxes.count, glyphs.count, triangles.count);
+        log_error("Too many things to draw % of % bytes: % clip boxes, % boxes, % glyphs, % triangles, % shape drawings, % shapes\n", total_size, g_frame_data_buffer_size, clip_boxes.count, boxes.count, glyphs.count, triangles.count, shape_drawings.count, shapes.count);
         return;
     }
 
@@ -284,6 +292,8 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
     memcpy(buffer_ptr + boxes_offset, boxes.data, boxes_size);
     memcpy(buffer_ptr + glyphs_offset, glyphs.data, glyphs_size);
     memcpy(buffer_ptr + triangles_offset, triangles.data, triangles_size);
+    memcpy(buffer_ptr + shape_drawings_offset, shape_drawings.data, shape_drawings_size);
+    memcpy(buffer_ptr + shapes_offset, shapes.data, shapes_size);
 
     glBindFramebuffer(GL_FRAMEBUFFER, g_color_framebuffer);
 
@@ -307,13 +317,15 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
 
         SendDrawCommands(
             *window.draw_list,
+            viewport_w,
+            viewport_h,
             buffer_handle,
             xx clip_boxes_offset,
             xx boxes_offset,
             xx glyphs_offset,
             xx triangles_offset,
-            viewport_w,
-            viewport_h
+            xx shape_drawings_offset,
+            xx shapes_offset
         );
     }
 
@@ -368,9 +380,9 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
 //     glBindVertexArray(g_dummy_vao);
 
 //     if instances_buffer.count > 0 {
-//         glUseProgram(g_shader_shape);
+//         glUseProgram(g_shader_sdf);
 
-//         u_viewport_size := glGetUniformLocation(g_shader_shape, "u_viewport_size");
+//         u_viewport_size := glGetUniformLocation(g_shader_sdf, "u_viewport_size");
 //         if u_viewport_size >= 0 {
 //             glUniform2f(u_viewport_size, xx viewport_w, xx viewport_h);
 //         }
