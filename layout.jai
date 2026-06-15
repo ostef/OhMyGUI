@@ -350,7 +350,9 @@ LayoutPosition :: (node : *Node) {
     axis_align_offset := remaining_size * node.child_align[axis];
     cross_size := node.size[cross] - node.padding.xy[cross] - node.padding.zw[cross];
 
-    cursor := ifx reverse then floor(node.size[axis] - node.padding.zw[axis] - axis_align_offset + node.scroll[axis]) else ceil(node.padding.xy[axis] + axis_align_offset + node.scroll[axis]);
+    cursor := ifx reverse
+        then floor(node.size[axis] - node.padding.zw[axis] - axis_align_offset + node.scroll[axis])
+        else ceil(node.padding.xy[axis] + axis_align_offset + node.scroll[axis]);
     first := true;
     for :Children node {
         defer first = false;
