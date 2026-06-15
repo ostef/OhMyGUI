@@ -171,4 +171,5 @@ DrawCheckmark :: (draw_list : *OMG.DrawList) {
 }
 ```
 This draws a blue checkmark with an outer shadow:
+
 ![Checkmark](Examples/checkmark.gif)
