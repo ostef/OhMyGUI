@@ -52,6 +52,10 @@ ColorVec4f :: inline (rgba : RGBA8) -> Vec4f {
     return .{r / 255.0, g / 255.0, b / 255.0, a / 255.0};
 }
 
+RGBToHSV :: inline (r : float, g : float, b: float) -> Vec3f {
+    return RGBToHSV(.{r,g,b});
+}
+
 RGBToHSV :: (rgb : Vec3f) -> Vec3f {
     r := rgb.x;
     g := rgb.y;
@@ -84,6 +88,10 @@ RGBToHSV :: (rgb : Vec3f) -> Vec3f {
     }
 
     return .{h * 360, s, v};
+}
+
+HSVToRGB :: inline (h : float, s : float, v : float) -> Vec3f {
+    return HSVToRGB(.{h,s,v});
 }
 
 HSVToRGB :: (hsv : Vec3f) -> Vec3f {

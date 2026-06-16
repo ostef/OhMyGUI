@@ -264,3 +264,11 @@ SnapUp :: (value : float, grid_size : float) -> float {
     }
     return ceil(value / grid_size) * grid_size;
 }
+
+ToRads :: inline (angle_in_degrees : float) -> float {
+    return angle_in_degrees * PI / 180.0;
+}
+
+ToDegs :: inline (angle_in_radians : float) -> float {
+    return angle_in_radians * 180.0 / PI;
+}
