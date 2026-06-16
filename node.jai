@@ -97,6 +97,7 @@ Node :: struct {
     z_index : s32 = -1; // Used when the parent wants to sort children such as popups
 
     draw : (*DrawList, *Node) = DrawNodeDefault;
+    is_inside : (*Node, point : Vec2f) -> bool = IsInsideDefault;
     user_data : *NodeUserData;
 
     window : *Window;

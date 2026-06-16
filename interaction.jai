@@ -1,7 +1,15 @@
+IsInsideDefault :: (node : *Node, point : Vec2f) -> bool {
+    return IsInsideRect(point, node.layout_last_frame.clipped_rect);
+}
+
 IsHovered :: (node : *Node) -> bool {
+    if !node.is_inside {
+        return false;
+    }
+
     mouse := GetMousePosition(node.window);
 
-    return IsInsideRect(mouse, node.layout_last_frame.clipped_rect);
+    return node.is_inside(node, mouse);
 }
 
 ButtonResult :: struct {
@@ -146,9 +154,8 @@ WindowToScreen :: (window : *Window, rect : Vec4f) -> Vec4f {
 
 FindMouseFocus :: (node : *Node) {
     omg := context.omg;
-    mouse := GetMousePosition(node.window);
 
-    if node.parent && IsInsideRect(mouse, node.layout_last_frame.clipped_rect) {
+    if node.parent && IsHovered(node) {
         omg.mouse_hovered_node = node;
 
         if !omg.mouse_capturing_node || omg.mouse_capturing_node == node {
