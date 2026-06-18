@@ -21,6 +21,18 @@ operator*[] :: inline (v : Vec4f, index : int) -> *float {
     return *v.component[index];
 }
 
+SignedAngle :: inline (a : Vec2f, b : Vec2f) -> float {
+    denominator := sqrt(dot(a, a) * dot(b, b));
+    if abs(denominator) < 0.00001 {
+        return 0;
+    }
+
+    d := clamp(dot(a, b) / denominator, -1, 1);
+    s := sign(a.x * b.y - a.y * b.y);
+
+    return s * acos(d);
+}
+
 min :: inline (v : Vec2f) -> Vec2f {
     return .{min(v.x), min(v.y)};
 }
@@ -96,8 +108,60 @@ InflateBounds :: inline (bounds : Vec4f, amount : Vec4f) -> Vec4f {
     };
 }
 
+BarycentricCoords :: (p : Vec2f, p0 : Vec2f, p1 : Vec2f, p2 : Vec2f) -> float, float, float {
+    denom := (p1.y - p2.y) * (p0.x - p2.x) + (p2.x - p1.x) * (p0.y - p2.y);
+    w0 := ((p1.y - p2.y) * (p.x - p2.x) + (p2.x - p1.x) * (p.y - p2.y)) / denom;
+    w1 := ((p2.y - p0.y) * (p.x - p2.x) + (p0.x - p2.x) * (p.y - p2.y)) / denom;
+    w2 := 1 - w0 - w1;
+
+    return w0, w1, w2;
+}
+
+ClampToTriangle :: (p : Vec2f, p0 : Vec2f, p1 : Vec2f, p2 : Vec2f) -> Vec2f {
+    w0, w1, w2 := BarycentricCoords(p, p0, p1, p2);
+
+    w0 = max(w0, 0);
+    w1 = max(w1, 0);
+    w2 = max(w2, 0);
+
+    sum := w0 + w1 + w2;
+    w0 /= sum;
+    w1 /= sum;
+    w2 /= sum;
+
+    return {
+        w0 * p0.x + w1 * p1.x + w2 * p2.x,
+        w0 * p0.y + w1 * p1.y + w2 * p2.y,
+    };
+}
+
+IsInsideTriangle :: inline (p : Vec2f, p0 : Vec2f, p1 : Vec2f, p2 : Vec2f) -> bool {
+    Sign :: (p : Vec2f, p0 : Vec2f, p1 : Vec2f) -> float {
+        return (p.x - p1.x) * (p0.y - p1.y) - (p0.x - p1.x) * (p.y - p1.y);
+    }
+
+    d0 := Sign(p, p0, p1);
+    d1 := Sign(p, p1, p2);
+    d2 := Sign(p, p2, p0);
+
+    has_neg := (d0 < 0) || (d1 < 0) || (d2 < 0);
+    has_pos := (d0 > 0) || (d1 > 0) || (d2 > 0);
+
+    return !(has_neg && has_pos);
+}
+
 IsInsideRect :: inline (p : Vec2f, rect : Vec4f) -> bool {
     return p.x > rect.x && p.x < rect.z && p.y > rect.y && p.y < rect.w;
+}
+
+IsInsideWheel :: inline (p : Vec2f, center : Vec2f, inner_radius : float, outer_radius : float) -> bool {
+    sq_dist := length_squared(p - center);
+    return sq_dist > inner_radius * inner_radius && sq_dist < outer_radius * outer_radius;
+}
+
+IsInsideCircle :: inline (p : Vec2f, center : Vec2f, radius : float) -> bool {
+    sq_dist := length_squared(p - center);
+    return sq_dist < radius * radius;
 }
 
 ClipRect :: inline (rect : Vec4f, clip_by : Vec4f) -> Vec4f {

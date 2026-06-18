@@ -32,7 +32,31 @@ ColorPickerData :: struct {
 }
 
 ColorPickerSaturationValueTriangle :: (parent : *Node, data : *ColorPickerData) {
-    DrawSaturationValueTriangle :: (draw_list : *DrawList, node : *Node) {
+    IsInside :: (node : *Node, point : Vec2f) -> bool {
+        if !node.parent || !node.parent.parent {
+            return false;
+        }
+
+        data := GetUserData(node.parent.parent, ColorPickerData);
+        if !data {
+            return false;
+        }
+
+        center := (node.rect.xy + node.rect.zw) * 0.5;
+        outer_radius := min(node.size.x, node.size.y) * 0.5;
+        inner_radius := max(outer_radius - 20, outer_radius * 0.5);
+
+        hue := data.hsv.x;
+        theta := ToRads(hue);
+
+        p0 := Rotate(.{inner_radius, 0}, theta);
+        p1 := Rotate(p0, PI * 0.666667);
+        p2 := Rotate(p1, PI * 0.666667);
+
+        return IsInsideTriangle(point - center, p0, p1, p2);
+    }
+
+    Draw :: (draw_list : *DrawList, node : *Node) {
         if !node.parent || !node.parent.parent {
             return;
         }
@@ -75,11 +99,57 @@ ColorPickerSaturationValueTriangle :: (parent : *Node, data : *ColorPickerData) 
 
     node := GetNode(parent);
     SetSize(node, SizeFill(), SizeFill());
-    SetDraw(node, DrawSaturationValueTriangle);
+    SetDraw(node, Draw);
+    SetIsInside(node, IsInside);
+
+    center := (node.layout_last_frame.rect.xy + node.layout_last_frame.rect.zw) * 0.5;
+    outer_radius := min(node.layout_last_frame.size.x, node.layout_last_frame.size.y) * 0.5;
+    inner_radius := max(outer_radius - 20, outer_radius * 0.5);
+
+    hue := data.hsv.x;
+    theta := ToRads(hue);
+
+    p0 := Rotate(.{inner_radius, 0}, theta); // hue tip
+    p1 := Rotate(p0, PI * 0.666667); // white tip
+    p2 := Rotate(p1, PI * 0.666667); // black tip
+    p0 += center;
+    p1 += center;
+    p2 += center;
+
+    button := ButtonBehavior(node);
+    if button.held {
+        mouse := GetMousePosition(node.window);
+        mouse = ClampToTriangle(mouse, p0, p1, p2);
+
+        w_hue, w_white, w_black := BarycentricCoords(mouse, p0, p1, p2);
+
+        v := clamp(w_hue + w_white, 0, 1);
+        s := ifx v > 0 then clamp(w_hue / v, 0, 1) else 0;
+
+        data.hsv.y = s;
+        data.hsv.z = v;
+    }
 }
 
 ColorPickerHueWheel :: (parent : *Node, data : *ColorPickerData) -> *Node {
-    DrawHueWheel :: (draw_list : *DrawList, node : *Node) {
+    IsInside :: (node : *Node, point : Vec2f) -> bool {
+        if !node.parent {
+            return false;
+        }
+
+        data := GetUserData(node.parent, ColorPickerData);
+        if !data {
+            return false;
+        }
+
+        center := (node.rect.xy + node.rect.zw) * 0.5;
+        outer_radius := min(node.size.x, node.size.y) * 0.5;
+        inner_radius := max(outer_radius - 20, outer_radius * 0.5);
+
+        return IsInsideWheel(point, center, inner_radius, outer_radius);
+    }
+
+    Draw :: (draw_list : *DrawList, node : *Node) {
         if !node.parent {
             return;
         }
@@ -140,22 +210,23 @@ ColorPickerHueWheel :: (parent : *Node, data : *ColorPickerData) -> *Node {
     node := GetNode(parent);
     {
         SetSize(node, SizePx(250), SizePx(250));
-        SetDraw(node, DrawHueWheel);
         SetLayout(node, .None);
+        SetDraw(node, Draw);
+        SetIsInside(node, IsInside);
 
-        // cursor := GetNode(node);
-        // {
-        //     SetSize(cursor, SizePx(20), SizePx(20));
-        //     SetCornerRadius(cursor, 10);
-        //     SetBorderColor(cursor, 0xffffffff);
-        //     SetBorderSize(cursor, 2);
+        center := (node.layout_last_frame.rect.xy + node.layout_last_frame.rect.zw) * 0.5;
+        outer_radius := min(node.layout_last_frame.size.x, node.layout_last_frame.size.y) * 0.5;
+        inner_radius := max(outer_radius - 20, outer_radius * 0.5);
 
-        //     angle := ToRads(data.hsv.x);
+        hue := data.hsv.x;
 
-        //     center := Vec2f.{250, 250} * 0.5;
-        //     center += Rotate(Vec2f.{250 * 0.5 - 20 * 0.5, 0}, angle);
-        //     cursor.offset = center - Vec2f.{20, 20} * 0.5;
-        // }
+        button := ButtonBehavior(node);
+        if button.held {
+            mouse := GetMousePosition(node.window);
+            center_to_mouse := normalize(mouse - center);
+            hue := ToDegs(SignedAngle(.{1,0}, center_to_mouse));
+            data.hsv.x = hue;
+        }
     }
 
     return node;
@@ -192,12 +263,12 @@ ColorPicker :: (parent : *Node, color : *RGBA8, flags : ColorPickerFlags = 0, st
         hue_wheel := ColorPickerHueWheel(picker, data);
         sat_val_triangle := ColorPickerSaturationValueTriangle(hue_wheel, data);
 
-        if data.modifying_field == .None {
-            rgbaf := ColorVec4f(color.*);
-            data.rgb = rgbaf.xyz;
-            data.alpha = rgbaf.w;
-            data.hsv = RGBToHSVPreserving(data.rgb, data.hsv.x);
-        }
+        // if data.modifying_field == .None {
+        //     rgbaf := ColorVec4f(color.*);
+        //     data.rgb = rgbaf.xyz;
+        //     data.alpha = rgbaf.w;
+        //     data.hsv = RGBToHSVPreserving(data.rgb, data.hsv.x);
+        // }
 
         data.modifying_field = .None;
 

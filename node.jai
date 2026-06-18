@@ -550,6 +550,10 @@ BringForward :: (node : *Node) {
     node.z_index = 0x7fffffff;
 }
 
+SetIsInside :: inline (node : *Node, is_inside : type_of(Node.is_inside)) {
+    node.is_inside = is_inside;
+}
+
 SetDraw :: inline (node : *Node, draw : type_of(Node.draw)) {
     node.draw = draw;
 }
