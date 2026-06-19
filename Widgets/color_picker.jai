@@ -5,12 +5,12 @@ ColorPickerFlags :: enum_flags {
 HSVTriangleWheelStyle :: struct {
     wheel_thickness := 20.0;
     triangle_inset := 10.0;
-    border_size := 3.0;
-    border_color : RGBA8 = 0xf2f2f2ff;
+    border_size := 2.5;
+    border_color : RGBA8;
 
     wheel_cursor : struct {
         radius := 10.0;
-        border_color : RGBA8 = 0xf2f2f2ff;
+        border_color : RGBA8;
         border_size := 2.0;
     }
     triangle_cursor : type_of(wheel_cursor) = .{

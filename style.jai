@@ -622,6 +622,10 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
     {
         using theme.color_picker;
 
+        wheel.border_color = MakeTone(ChooseTextColor(base_background_color), 0.25);
+        wheel.wheel_cursor.border_color = wheel.border_color;
+        wheel.triangle_cursor.border_color = wheel.border_color;
+
         red_slider = theme.slider;
         green_slider = theme.slider;
         blue_slider = theme.slider;
