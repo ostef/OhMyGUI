@@ -161,7 +161,7 @@ Inflate :: inline (subshape : *Shape, amount : float) -> *Shape {
     shape := New(Shape ,, temp);
     shape.kind = .InflateOperation;
     shape.inflate_op.shape = subshape;
-    shape.inflate_op.amount = amount;
+    shape.inflate_op.radius = amount;
     shape.bounds = GetBounds(shape);
 
     return shape;
