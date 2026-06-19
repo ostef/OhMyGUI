@@ -2,7 +2,25 @@ ColorPickerFlags :: enum_flags {
     NoAlpha;
 }
 
+HSVTriangleWheelStyle :: struct {
+    wheel_thickness := 20.0;
+    triangle_inset := 10.0;
+    border_size := 3.0;
+    border_color : RGBA8 = 0xf2f2f2ff;
+
+    wheel_cursor : struct {
+        radius := 10.0;
+        border_color : RGBA8 = 0xf2f2f2ff;
+        border_size := 2.0;
+    }
+    triangle_cursor : type_of(wheel_cursor) = .{
+        radius=6
+    };
+}
+
 ColorPickerStyle :: struct {
+    wheel : HSVTriangleWheelStyle;
+
     red_slider : SliderStyle;
     green_slider : SliderStyle;
     blue_slider : SliderStyle;
@@ -31,7 +49,7 @@ ColorPickerData :: struct {
     };
 }
 
-GetHSVWheelGeometricData :: (rect : Vec4f, hsv : Vec3f) -> struct {
+GetHSVWheelGeometricData :: (style : *HSVTriangleWheelStyle, rect : Vec4f, hsv : Vec3f) -> struct {
     center : Vec2f;
     inner_radius : float;
     outer_radius : float;
@@ -40,12 +58,12 @@ GetHSVWheelGeometricData :: (rect : Vec4f, hsv : Vec3f) -> struct {
     black_point : Vec2f;
 } {
     center := (rect.xy + rect.zw) * 0.5;
-    outer_radius := min(rect.z - rect.x, rect.w - rect.y) * 0.5;
-    inner_radius := max(outer_radius - 20, outer_radius * 0.5);
+    outer_radius := min(rect.z - rect.x, rect.w - rect.y) * 0.5 - style.border_size;
+    inner_radius := max(outer_radius - style.wheel_thickness, outer_radius * 0.5);
 
     theta := ToRads(hsv.x);
 
-    hue_point := Rotate(.{inner_radius - 2, 0}, theta);
+    hue_point := Rotate(.{inner_radius - style.triangle_inset, 0}, theta);
     white_point := Rotate(hue_point, PI * 0.666667);
     black_point := Rotate(white_point, PI * 0.666667);
 
@@ -59,57 +77,103 @@ GetHSVWheelGeometricData :: (rect : Vec4f, hsv : Vec3f) -> struct {
     };
 }
 
-ColorPickerSaturationValueTriangle :: (parent : *Node, data : *ColorPickerData) {
+HSVTriangleWheel :: (parent : *Node, using data : *ColorPickerData, size : float, style : *HSVTriangleWheelStyle, location := #caller_location) {
+    Draw :: (draw_list : *DrawList, node : *Node) {
+        data := GetUserData(node, *ColorPickerData);
+        if !data {
+            return;
+        }
+
+        style := GetUserData(node, HSVTriangleWheelStyle);
+        if !style {
+            return;
+        }
+
+        using _ := data.*;
+        using _ := GetHSVWheelGeometricData(style, node.rect, hsv);
+
+        wheel_shape := Onion(Circle(outer_radius - style.wheel_thickness * 0.5), style.wheel_thickness * 0.5 + style.border_size);
+        triangle_shape := Inflate(Triangle(hue_point - center, white_point - center, black_point - center), style.border_size);
+        DrawShape(draw_list, Union(wheel_shape, triangle_shape, 1), center, style.border_color);
+    }
+
+    node := GetNode(parent, location);
+    {
+        SetSize(node, SizePx(size), SizePx(size));
+        SetLayout(node, .None);
+        SetDraw(node, Draw);
+        SetUserData(node, data);
+        SetUserData(node, style.*);
+
+        SaturationValueTriangle(node, data, style);
+        HueWheel(node, data, style);
+    }
+}
+
+SaturationValueTriangle :: (parent : *Node, using data : *ColorPickerData, style : *HSVTriangleWheelStyle, location := #caller_location) {
     IsInside :: (node : *Node, point : Vec2f) -> bool {
-        if !node.parent || !node.parent.parent {
+        if !node.parent {
             return false;
         }
 
-        data := GetUserData(node.parent.parent, ColorPickerData);
+        data := GetUserData(node.parent, *ColorPickerData);
         if !data {
             return false;
         }
 
-        using _ := GetHSVWheelGeometricData(node.rect, data.hsv);
+        style := GetUserData(node.parent, HSVTriangleWheelStyle);
+        if !style {
+            return false;
+        }
+
+        using _ := data.*;
+        using _ := GetHSVWheelGeometricData(style, node.rect, hsv);
 
         return IsInsideTriangle(point, hue_point, white_point, black_point);
     }
 
     Draw :: (draw_list : *DrawList, node : *Node) {
-        if !node.parent || !node.parent.parent {
+        if !node.parent {
             return;
         }
 
-        data := GetUserData(node.parent.parent, ColorPickerData);
+        data := GetUserData(node.parent, *ColorPickerData);
         if !data {
             return;
         }
 
-        using _ := GetHSVWheelGeometricData(node.rect, data.hsv);
+        style := GetUserData(node.parent, HSVTriangleWheelStyle);
+        if !style {
+            return;
+        }
+
+        using _ := data.*;
+        using _ := GetHSVWheelGeometricData(style, node.rect, hsv);
 
         DrawTriangle(draw_list, .{
             p0=hue_point, p1=white_point, p2=black_point,
-            c0=ColorU32(HSVToRGB(data.hsv.x, 1, 1), 1), c1=0xffffffff, c2=0x000000ff,
+            c0=ColorU32(HSVToRGB(hsv.x, 1, 1), 1), c1=0xffffffff, c2=0x000000ff,
         });
 
-        cursor := lerp(hue_point, white_point, 1 - data.hsv.y);
-        cursor = lerp(cursor, black_point, 1 - data.hsv.z);
+        cursor := lerp(hue_point, white_point, 1 - hsv.y);
+        cursor = lerp(cursor, black_point, 1 - hsv.z);
 
         DrawBox(draw_list, .{
             position=cursor,
-            size=.{10, 10},
-            corner_radiuses=.{5,5,5,5},
-            border_color=0xffffffff,
-            border_size=2,
+            size=.{style.triangle_cursor.radius * 2, style.triangle_cursor.radius * 2},
+            corner_radiuses=Vec4f.{1,1,1,1} * style.triangle_cursor.radius,
+            background_color=ColorU32(HSVToRGB(hsv), 1),
+            border_color=style.triangle_cursor.border_color,
+            border_size=style.triangle_cursor.border_size,
         });
     }
 
-    node := GetNode(parent);
+    node := GetNode(parent, location);
     SetSize(node, SizeFill(), SizeFill());
     SetDraw(node, Draw);
     SetIsInside(node, IsInside);
 
-    using _ := GetHSVWheelGeometricData(node.layout_last_frame.rect, data.hsv);
+    using _ := GetHSVWheelGeometricData(style, node.layout_last_frame.rect, hsv);
 
     button := ButtonBehavior(node);
     if button.held {
@@ -121,23 +185,29 @@ ColorPickerSaturationValueTriangle :: (parent : *Node, data : *ColorPickerData) 
         v := clamp(w_hue + w_white, 0, 1);
         s := ifx v > 0 then clamp(w_hue / v, 0, 1) else 0;
 
-        data.hsv.y = s;
-        data.hsv.z = v;
+        hsv.y = s;
+        hsv.z = v;
     }
 }
 
-ColorPickerHueWheel :: (parent : *Node, data : *ColorPickerData) -> *Node {
+HueWheel :: (parent : *Node, using data : *ColorPickerData, style : *HSVTriangleWheelStyle, location := #caller_location) -> *Node {
     IsInside :: (node : *Node, point : Vec2f) -> bool {
         if !node.parent {
             return false;
         }
 
-        data := GetUserData(node.parent, ColorPickerData);
+        data := GetUserData(node.parent, *ColorPickerData);
         if !data {
             return false;
         }
 
-        using _ := GetHSVWheelGeometricData(node.rect, data.hsv);
+        style := GetUserData(node.parent, HSVTriangleWheelStyle);
+        if !style {
+            return false;
+        }
+
+        using _ := data.*;
+        using _ := GetHSVWheelGeometricData(style, node.rect, hsv);
 
         return IsInsideRing(point, center, inner_radius, outer_radius);
     }
@@ -147,16 +217,18 @@ ColorPickerHueWheel :: (parent : *Node, data : *ColorPickerData) -> *Node {
             return;
         }
 
-        data := GetUserData(node.parent, ColorPickerData);
+        data := GetUserData(node.parent, *ColorPickerData);
         if !data {
             return;
         }
 
-        using _ := GetHSVWheelGeometricData(node.rect, data.hsv);
+        style := GetUserData(node.parent, HSVTriangleWheelStyle);
+        if !style {
+            return;
+        }
 
-        wheel_shape := Onion(Circle(outer_radius - 20 * 0.5), 26 * 0.5);
-        triangle_shape := Inflate(Triangle(hue_point - center, white_point - center, black_point - center), 3);
-        DrawShape(draw_list, Union(wheel_shape, triangle_shape, 1), center, 0xf2f2f2ff);
+        using _ := data.*;
+        using _ := GetHSVWheelGeometricData(style, node.rect, hsv);
 
         Resolution :: 100;
         theta := PI * 2 / Resolution;
@@ -192,27 +264,27 @@ ColorPickerHueWheel :: (parent : *Node, data : *ColorPickerData) -> *Node {
         }
 
         // Draw cursor ring
-        angle := ToRads(data.hsv.x);
-        cursor := center + Rotate(.{outer_radius - 20 * 0.5, 0}, angle);
+        angle := ToRads(hsv.x);
+        cursor := center + Rotate(.{outer_radius - style.wheel_thickness * 0.5, 0}, angle);
         DrawBox(draw_list, .{
             position=cursor,
-            size=.{20, 20},
-            corner_radiuses=.{10,10,10,10},
-            border_color=0xffffffff,
-            border_size=2,
+            size=.{style.wheel_cursor.radius * 2, style.wheel_cursor.radius * 2},
+            corner_radiuses=Vec4f.{1,1,1,1} * style.wheel_cursor.radius,
+            background_color=ColorU32(HSVToRGB(hsv.x, 1, 1), 1),
+            border_color=style.wheel_cursor.border_color,
+            border_size=style.wheel_cursor.border_size,
         });
     }
 
     node := GetNode(parent);
     {
-        SetSize(node, SizePx(250), SizePx(250));
-        SetLayout(node, .None);
+        SetSize(node, SizeFill(), SizeFill());
         SetDraw(node, Draw);
         SetIsInside(node, IsInside);
 
-        using _ := GetHSVWheelGeometricData(node.layout_last_frame.rect, data.hsv);
+        using _ := GetHSVWheelGeometricData(style, node.layout_last_frame.rect, hsv);
 
-        hue := data.hsv.x;
+        hue := hsv.x;
 
         button := ButtonBehavior(node);
         if button.held {
@@ -220,7 +292,7 @@ ColorPickerHueWheel :: (parent : *Node, data : *ColorPickerData) -> *Node {
             center_to_mouse := normalize(mouse - center);
             hue := ToDegs(SignedAngle(.{1,0}, center_to_mouse));
             hue = fmod_cycling(hue, 360);
-            data.hsv.x = hue;
+            hsv.x = hue;
         }
     }
 
@@ -255,8 +327,7 @@ ColorPicker :: (parent : *Node, color : *RGBA8, flags : ColorPickerFlags = 0, st
     {
         data := AddUserData(picker, ColorPickerData);
 
-        hue_wheel := ColorPickerHueWheel(picker, data);
-        sat_val_triangle := ColorPickerSaturationValueTriangle(hue_wheel, data);
+        HSVTriangleWheel(picker, data, 250, *style.wheel);
 
         // if data.modifying_field == .None {
         //     rgbaf := ColorVec4f(color.*);

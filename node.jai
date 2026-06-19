@@ -300,7 +300,7 @@ GetUserData :: inline (node : *Node, str_id : string, $T : Type, create := false
 GetUserData :: inline (node : *Node, id : ID, $T : Type, create := false) -> *T, is_new : bool, *NodeUserData {
     ptr, is_new, node := GetUserData(node, id, size_of(T), create);
     if is_new {
-        cast(*T, ptr).* = .{};
+        Initialize(cast(*T, ptr));
     }
 
     return xx ptr, is_new, node;
