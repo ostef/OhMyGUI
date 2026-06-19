@@ -52,15 +52,11 @@ ColorVec4f :: inline (rgba : RGBA8) -> Vec4f {
     return .{r / 255.0, g / 255.0, b / 255.0, a / 255.0};
 }
 
-RGBToHSV :: inline (r : float, g : float, b: float) -> Vec3f {
-    return RGBToHSV(.{r,g,b});
+RGBToHSV :: inline (rgb : Vec3f) -> Vec3f {
+    return RGBToHSV(rgb.x, rgb.y, rgb.z);
 }
 
-RGBToHSV :: (rgb : Vec3f) -> Vec3f {
-    r := rgb.x;
-    g := rgb.y;
-    b := rgb.z;
-
+RGBToHSV :: (r : float, g : float, b: float) -> Vec3f {
     rgb_min := min(r, g, b);
     rgb_max := max(r, g, b);
 
@@ -87,17 +83,19 @@ RGBToHSV :: (rgb : Vec3f) -> Vec3f {
         h = (171 / 255.0) + K * (r - g) / delta;
     }
 
+    if h < 0 {
+        h += 1;
+    }
+
     return .{h * 360, s, v};
 }
 
-HSVToRGB :: inline (h : float, s : float, v : float) -> Vec3f {
-    return HSVToRGB(.{h,s,v});
+HSVToRGB :: (hsv : Vec3f) -> Vec3f {
+    return HSVToRGB(hsv.x, hsv.y, hsv.z);
 }
 
-HSVToRGB :: (hsv : Vec3f) -> Vec3f {
-    h := hsv.x / 360;
-    s := hsv.y;
-    v := hsv.z;
+HSVToRGB :: inline (h : float, s : float, v : float) -> Vec3f {
+    h /= 360;
 
     p := Vec3f.{
         clamp(abs(fract(h + 1)       * 6 - 3) - 1, 0, 1),
