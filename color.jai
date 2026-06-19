@@ -86,6 +86,9 @@ RGBToHSV :: (r : float, g : float, b: float) -> Vec3f {
     if h < 0 {
         h += 1;
     }
+    if h >= 1 {
+        h -= 1;
+    }
 
     return .{h * 360, s, v};
 }
