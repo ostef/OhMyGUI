@@ -31,6 +31,40 @@ ColorPickerData :: struct {
     };
 }
 
+GetHSVWheelGeometricData :: (rect : Vec4f, hsv : Vec3f) -> struct {
+    center : Vec2f;
+    inner_radius : float;
+    outer_radius : float;
+    hue_point : Vec2f;
+    white_point : Vec2f;
+    black_point : Vec2f;
+} {
+    center := (rect.xy + rect.zw) * 0.5;
+    outer_radius := min(rect.z - rect.x, rect.w - rect.y) * 0.5;
+    inner_radius := max(outer_radius - 20, outer_radius * 0.5);
+
+    theta := ToRads(hsv.x);
+
+    hue_point := Rotate(.{inner_radius, 0}, theta);
+    white_point := Rotate(hue_point, PI * 0.666667);
+    black_point := Rotate(white_point, PI * 0.666667);
+
+    return .{
+        center,
+        inner_radius,
+        outer_radius,
+        center + hue_point,
+        center + white_point,
+        center + black_point,
+    };
+}
+
+HSVTriangleWheel :: (parent : *Node) {
+    Draw :: (draw_list : *DrawList, node : *Node) {
+
+    }
+}
+
 ColorPickerSaturationValueTriangle :: (parent : *Node, data : *ColorPickerData) {
     IsInside :: (node : *Node, point : Vec2f) -> bool {
         if !node.parent || !node.parent.parent {
@@ -42,18 +76,9 @@ ColorPickerSaturationValueTriangle :: (parent : *Node, data : *ColorPickerData) 
             return false;
         }
 
-        center := (node.rect.xy + node.rect.zw) * 0.5;
-        outer_radius := min(node.size.x, node.size.y) * 0.5;
-        inner_radius := max(outer_radius - 20, outer_radius * 0.5);
+        using _ := GetHSVWheelGeometricData(node.rect, data.hsv);
 
-        hue := data.hsv.x;
-        theta := ToRads(hue);
-
-        p0 := Rotate(.{inner_radius, 0}, theta);
-        p1 := Rotate(p0, PI * 0.666667);
-        p2 := Rotate(p1, PI * 0.666667);
-
-        return IsInsideTriangle(point - center, p0, p1, p2);
+        return IsInsideTriangle(point, hue_point, white_point, black_point);
     }
 
     Draw :: (draw_list : *DrawList, node : *Node) {
@@ -66,30 +91,18 @@ ColorPickerSaturationValueTriangle :: (parent : *Node, data : *ColorPickerData) 
             return;
         }
 
-        center := (node.rect.xy + node.rect.zw) * 0.5;
-        outer_radius := min(node.size.x, node.size.y) * 0.5;
-        inner_radius := max(outer_radius - 20, outer_radius * 0.5);
-
-        hue := data.hsv.x;
-        theta := ToRads(hue);
-
-        p0 := Rotate(.{inner_radius, 0}, theta);
-        p1 := Rotate(p0, PI * 0.666667);
-        p2 := Rotate(p1, PI * 0.666667);
-        c0 := ColorU32(HSVToRGB(hue, 1, 1), 1);
-        c1 := ColorU32(1,1,1,1);
-        c2 := ColorU32(0,0,0,1);
+        using _ := GetHSVWheelGeometricData(node.rect, data.hsv);
 
         DrawTriangle(draw_list, .{
-            p0=center + p0, p1=center + p1, p2=center + p2,
-            c0=c0, c1=c1, c2=c2,
+            p0=hue_point, p1=white_point, p2=black_point,
+            c0=ColorU32(HSVToRGB(data.hsv.x, 1, 1), 1), c1=0xffffffff, c2=0x000000ff,
         });
 
-        cursor := lerp(p0, p1, 1 - data.hsv.y);
-        cursor = lerp(cursor, p2, 1 - data.hsv.z);
+        cursor := lerp(hue_point, white_point, 1 - data.hsv.y);
+        cursor = lerp(cursor, black_point, 1 - data.hsv.z);
 
         DrawBox(draw_list, .{
-            position=center + cursor,
+            position=cursor,
             size=.{10, 10},
             corner_radiuses=.{5,5,5,5},
             border_color=0xffffffff,
@@ -102,26 +115,14 @@ ColorPickerSaturationValueTriangle :: (parent : *Node, data : *ColorPickerData) 
     SetDraw(node, Draw);
     SetIsInside(node, IsInside);
 
-    center := (node.layout_last_frame.rect.xy + node.layout_last_frame.rect.zw) * 0.5;
-    outer_radius := min(node.layout_last_frame.size.x, node.layout_last_frame.size.y) * 0.5;
-    inner_radius := max(outer_radius - 20, outer_radius * 0.5);
-
-    hue := data.hsv.x;
-    theta := ToRads(hue);
-
-    p0 := Rotate(.{inner_radius, 0}, theta); // hue tip
-    p1 := Rotate(p0, PI * 0.666667); // white tip
-    p2 := Rotate(p1, PI * 0.666667); // black tip
-    p0 += center;
-    p1 += center;
-    p2 += center;
+    using _ := GetHSVWheelGeometricData(node.layout_last_frame.rect, data.hsv);
 
     button := ButtonBehavior(node);
     if button.held {
         mouse := GetMousePosition(node.window);
-        mouse = ClampToTriangle(mouse, p0, p1, p2);
+        mouse = ClampToTriangle(mouse, hue_point, white_point, black_point);
 
-        w_hue, w_white, w_black := BarycentricCoords(mouse, p0, p1, p2);
+        w_hue, w_white, w_black := BarycentricCoords(mouse, hue_point, white_point, black_point);
 
         v := clamp(w_hue + w_white, 0, 1);
         s := ifx v > 0 then clamp(w_hue / v, 0, 1) else 0;
@@ -142,11 +143,9 @@ ColorPickerHueWheel :: (parent : *Node, data : *ColorPickerData) -> *Node {
             return false;
         }
 
-        center := (node.rect.xy + node.rect.zw) * 0.5;
-        outer_radius := min(node.size.x, node.size.y) * 0.5;
-        inner_radius := max(outer_radius - 20, outer_radius * 0.5);
+        using _ := GetHSVWheelGeometricData(node.rect, data.hsv);
 
-        return IsInsideWheel(point, center, inner_radius, outer_radius);
+        return IsInsideRing(point, center, inner_radius, outer_radius);
     }
 
     Draw :: (draw_list : *DrawList, node : *Node) {
@@ -159,9 +158,7 @@ ColorPickerHueWheel :: (parent : *Node, data : *ColorPickerData) -> *Node {
             return;
         }
 
-        center := (node.rect.xy + node.rect.zw) * 0.5;
-        outer_radius := min(node.size.x, node.size.y) * 0.5;
-        inner_radius := max(outer_radius - 20, outer_radius * 0.5);
+        using _ := GetHSVWheelGeometricData(node.rect, data.hsv);
 
         Resolution :: 100;
         theta := PI * 2 / Resolution;
@@ -196,6 +193,7 @@ ColorPickerHueWheel :: (parent : *Node, data : *ColorPickerData) -> *Node {
             });
         }
 
+        // Draw cursor ring
         angle := ToRads(data.hsv.x);
         cursor := center + Rotate(Vec2f.{outer_radius - 20 * 0.5, 0}, angle);
         DrawBox(draw_list, .{
@@ -214,9 +212,7 @@ ColorPickerHueWheel :: (parent : *Node, data : *ColorPickerData) -> *Node {
         SetDraw(node, Draw);
         SetIsInside(node, IsInside);
 
-        center := (node.layout_last_frame.rect.xy + node.layout_last_frame.rect.zw) * 0.5;
-        outer_radius := min(node.layout_last_frame.size.x, node.layout_last_frame.size.y) * 0.5;
-        inner_radius := max(outer_radius - 20, outer_radius * 0.5);
+        using _ := GetHSVWheelGeometricData(node.layout_last_frame.rect, data.hsv);
 
         hue := data.hsv.x;
 

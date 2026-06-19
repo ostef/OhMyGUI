@@ -154,7 +154,7 @@ IsInsideRect :: inline (p : Vec2f, rect : Vec4f) -> bool {
     return p.x > rect.x && p.x < rect.z && p.y > rect.y && p.y < rect.w;
 }
 
-IsInsideWheel :: inline (p : Vec2f, center : Vec2f, inner_radius : float, outer_radius : float) -> bool {
+IsInsideRing :: inline (p : Vec2f, center : Vec2f, inner_radius : float, outer_radius : float) -> bool {
     sq_dist := length_squared(p - center);
     return sq_dist > inner_radius * inner_radius && sq_dist < outer_radius * outer_radius;
 }
