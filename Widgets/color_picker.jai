@@ -225,6 +225,7 @@ ColorPickerHueWheel :: (parent : *Node, data : *ColorPickerData) -> *Node {
             mouse := GetMousePosition(node.window);
             center_to_mouse := normalize(mouse - center);
             hue := ToDegs(SignedAngle(.{1,0}, center_to_mouse));
+            hue = fmod_cycling(hue, 360);
             data.hsv.x = hue;
         }
     }
