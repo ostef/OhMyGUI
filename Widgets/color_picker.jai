@@ -45,7 +45,7 @@ GetHSVWheelGeometricData :: (rect : Vec4f, hsv : Vec3f) -> struct {
 
     theta := ToRads(hsv.x);
 
-    hue_point := Rotate(.{inner_radius, 0}, theta);
+    hue_point := Rotate(.{inner_radius - 2, 0}, theta);
     white_point := Rotate(hue_point, PI * 0.666667);
     black_point := Rotate(white_point, PI * 0.666667);
 
@@ -57,12 +57,6 @@ GetHSVWheelGeometricData :: (rect : Vec4f, hsv : Vec3f) -> struct {
         center + white_point,
         center + black_point,
     };
-}
-
-HSVTriangleWheel :: (parent : *Node) {
-    Draw :: (draw_list : *DrawList, node : *Node) {
-
-    }
 }
 
 ColorPickerSaturationValueTriangle :: (parent : *Node, data : *ColorPickerData) {
@@ -106,7 +100,7 @@ ColorPickerSaturationValueTriangle :: (parent : *Node, data : *ColorPickerData) 
             size=.{10, 10},
             corner_radiuses=.{5,5,5,5},
             border_color=0xffffffff,
-            border_size=1,
+            border_size=2,
         });
     }
 
@@ -160,6 +154,10 @@ ColorPickerHueWheel :: (parent : *Node, data : *ColorPickerData) -> *Node {
 
         using _ := GetHSVWheelGeometricData(node.rect, data.hsv);
 
+        wheel_shape := Onion(Circle(outer_radius - 20 * 0.5), 26 * 0.5);
+        triangle_shape := Inflate(Triangle(hue_point - center, white_point - center, black_point - center), 3);
+        DrawShape(draw_list, Union(wheel_shape, triangle_shape, 1), center, 0xf2f2f2ff);
+
         Resolution :: 100;
         theta := PI * 2 / Resolution;
         cost := cos(theta);
@@ -195,7 +193,7 @@ ColorPickerHueWheel :: (parent : *Node, data : *ColorPickerData) -> *Node {
 
         // Draw cursor ring
         angle := ToRads(data.hsv.x);
-        cursor := center + Rotate(Vec2f.{outer_radius - 20 * 0.5, 0}, angle);
+        cursor := center + Rotate(.{outer_radius - 20 * 0.5, 0}, angle);
         DrawBox(draw_list, .{
             position=cursor,
             size=.{20, 20},
