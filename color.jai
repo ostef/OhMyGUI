@@ -53,27 +53,28 @@ ColorVec4f :: inline (rgba : RGBA8) -> Vec4f {
 }
 
 RGBToHSV :: inline (rgb : Vec3f) -> Vec3f {
-    return RGBToHSV(rgb.x, rgb.y, rgb.z);
+    h, s, v := RGBToHSV(rgb.x, rgb.y, rgb.z);
+    return .{h, s, v};
 }
 
-RGBToHSV :: (r : float, g : float, b: float) -> Vec3f {
+RGBToHSV :: (r : $T, g : T, b: T) -> h : T, s : T, v : T {
     rgb_min := min(r, g, b);
     rgb_max := max(r, g, b);
 
     v := rgb_max;
 
     if v == 0 {
-        return .{};
+        return 0, 0, 0;
     }
 
     delta := rgb_max - rgb_min;
 
     s := delta / rgb_max;
     if s == 0 {
-        return .{0,0,v};
+        return 0, 0, v;
     }
 
-    h : float;
+    h : T;
     K :: 43 / 255.0;
     if rgb_max == r {
         h = 0 + K * (g - b) / delta;
@@ -90,27 +91,26 @@ RGBToHSV :: (r : float, g : float, b: float) -> Vec3f {
         h -= 1;
     }
 
-    return .{h * 360, s, v};
+    return h * 360, s, v;
 }
 
-HSVToRGB :: (hsv : Vec3f) -> Vec3f {
-    return HSVToRGB(hsv.x, hsv.y, hsv.z);
+HSVToRGB :: inline (hsv : Vec3f) -> Vec3f {
+    r, g, b := HSVToRGB(hsv.x, hsv.y, hsv.z);
+    return .{r, g, b};
 }
 
-HSVToRGB :: inline (h : float, s : float, v : float) -> Vec3f {
+HSVToRGB :: (h : $T, s : T, v : T) -> r : T, g : T, b : T {
     h /= 360;
 
-    p := Vec3f.{
-        clamp(abs(fract(h + 1)       * 6 - 3) - 1, 0, 1),
-        clamp(abs(fract(h + 2 / 3.0) * 6 - 3) - 1, 0, 1),
-        clamp(abs(fract(h + 1 / 3.0) * 6 - 3) - 1, 0, 1),
-    };
+    x := clamp(abs(fract(h + 1)       * 6 - 3) - 1, 0, 1);
+    y := clamp(abs(fract(h + 2 / 3.0) * 6 - 3) - 1, 0, 1);
+    z := clamp(abs(fract(h + 1 / 3.0) * 6 - 3) - 1, 0, 1);
 
-    p.x = lerp(1, p.x, s);
-    p.y = lerp(1, p.y, s);
-    p.z = lerp(1, p.z, s);
+    x = lerp(1, x, s);
+    y = lerp(1, y, s);
+    z = lerp(1, z, s);
 
-    return v * p;
+    return v * x, v * y, v * z;
 }
 
 Darken :: inline (rgba : RGBA8, amount : float) -> RGBA8 {
