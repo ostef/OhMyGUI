@@ -315,6 +315,13 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
 
     glBindVertexArray(g_dummy_vao);
 
+    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 0, buffer_handle, xx clip_boxes_offset, xx clip_boxes_size);
+    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 1, buffer_handle, xx boxes_offset, xx boxes_size);
+    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 2, buffer_handle, xx glyphs_offset, xx glyphs_size);
+    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 3, buffer_handle, xx triangles_offset, xx triangles_size);
+    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 4, buffer_handle, xx shape_drawings_offset, xx shape_drawings_size);
+    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 5, buffer_handle, xx shapes_offset, xx shapes_size);
+
     window = context.omg.windows;
     while window {
         defer {
@@ -322,18 +329,7 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
             window = window.next;
         }
 
-        SendDrawCommands(
-            *window.draw_list,
-            viewport_w,
-            viewport_h,
-            buffer_handle,
-            xx clip_boxes_offset,
-            xx boxes_offset,
-            xx glyphs_offset,
-            xx triangles_offset,
-            xx shape_drawings_offset,
-            xx shapes_offset
-        );
+        SendDrawCommands(*window.draw_list, viewport_w, viewport_h);
     }
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);

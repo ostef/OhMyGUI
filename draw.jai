@@ -589,25 +589,7 @@ CopyDrawListShaderData :: (
     }
 }
 
-SendDrawCommands :: (
-    draw_list : *DrawList,
-    viewport_w : u32,
-    viewport_h : u32,
-    buffer_handle : GLuint,
-    clip_boxes_offset : u32,
-    boxes_offset : u32,
-    glyphs_offset : u32,
-    triangles_offset : u32,
-    shape_drawings_offset : u32,
-    shapes_offset : u32
-) {
-    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 0, buffer_handle, xx clip_boxes_offset, xx (draw_list.clip_boxes.count * size_of(ShaderClipBox)));
-    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 1, buffer_handle, xx boxes_offset, xx (draw_list.boxes.count * size_of(ShaderBoxDrawing)));
-    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 2, buffer_handle, xx glyphs_offset, xx (draw_list.glyphs.count * size_of(ShaderGlyphDrawing)));
-    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 3, buffer_handle, xx triangles_offset, xx (draw_list.triangles.count * size_of(ShaderTriangleDrawing)));
-    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 4, buffer_handle, xx shape_drawings_offset, xx (draw_list.shapes.count * size_of(ShaderShapeDrawing)));
-    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 5, buffer_handle, xx shapes_offset, xx (draw_list.num_shapes * size_of(ShaderShape)));
-
+SendDrawCommands :: (draw_list : *DrawList, viewport_w : u32, viewport_h : u32) {
     current_shader : GLuint = 0;
     current_texture : GLuint = 0;
 
