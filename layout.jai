@@ -354,8 +354,9 @@ LayoutPosition :: (node : *Node) {
     cross_size := node.size[cross] - node.padding.xy[cross] - node.padding.zw[cross];
 
     cursor := ifx reverse
-        then floor(node.size[axis] - node.padding.zw[axis] - axis_align_offset + node.scroll[axis])
-        else ceil(node.padding.xy[axis] + axis_align_offset + node.scroll[axis]);
+        then floor(node.size[axis] - node.padding.zw[axis] - axis_align_offset)
+        else ceil(node.padding.xy[axis] + axis_align_offset);
+
     first := true;
     for :Children node {
         defer first = false;
@@ -374,6 +375,7 @@ LayoutPosition :: (node : *Node) {
         }
 
         it.relative_position += Round(it.offset);
+        it.relative_position += Round(node.scroll);
 
         it.rect.xy = node.rect.xy + it.relative_position;
         it.rect.zw = node.rect.xy + it.relative_position + it.size;
