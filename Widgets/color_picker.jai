@@ -34,6 +34,7 @@ ColorPickerStyle :: struct {
 
 ColorPickerData :: struct {
     hsv : HSV;
+    modifying_hsv : bool;
 }
 
 GetHSVWheelGeometricData :: (style : *HSVTriangleWheelStyle, rect : Vec4f, hsv : HSV) -> struct {
@@ -328,7 +329,10 @@ ColorPicker :: (parent : *Node, color : *Vec4f, flags : ColorPickerFlags = 0, st
         SetChildGap(picker, 12, 12);
 
         data := AddUserData(picker, ColorPickerData);
-        data.hsv = RGBToHSVPreserving(color.xyz, data.hsv);
+        if !data.modifying_hsv {
+            data.hsv = RGBToHSVPreserving(color.xyz, data.hsv);
+            data.modifying_hsv = false;
+        }
 
         left := GetNode(picker);
         SetSize(left, SizeFit(), SizeFit());
@@ -353,12 +357,12 @@ ColorPicker :: (parent : *Node, color : *Vec4f, flags : ColorPickerFlags = 0, st
 
         HorizontalSeparator(right);
 
-        modified_hsv := HSVTriangleWheel(left, data, 250, *style.wheel);
-        modified_hsv |= LabelSlider(right, "Hue", *data.hsv.hue, 0, 360, 1, style=*style.hue_slider);
-        modified_hsv |= LabelSlider(right, "Saturation", *data.hsv.saturation, 0, 1, 0.01, style=*style.saturation_slider);
-        modified_hsv |= LabelSlider(right, "Value", *data.hsv.value, 0, 1, 0.01, style=*style.value_slider);
+        data.modifying_hsv = HSVTriangleWheel(left, data, 250, *style.wheel);
+        data.modifying_hsv |= LabelSlider(right, "Hue", *data.hsv.hue, 0, 360, 1, style=*style.hue_slider);
+        data.modifying_hsv |= LabelSlider(right, "Saturation", *data.hsv.saturation, 0, 1, 0.01, style=*style.saturation_slider);
+        data.modifying_hsv |= LabelSlider(right, "Value", *data.hsv.value, 0, 1, 0.01, style=*style.value_slider);
 
-        if modified_hsv {
+        if data.modifying_hsv {
             color.xyz = HSVToRGB(data.hsv);
         }
 
