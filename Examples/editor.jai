@@ -117,17 +117,69 @@ EditorFrame :: () {
                 OMG.MenuItem(help_menu, "About");
             }
 
-            if OMG.Button(title_bar, OMG.SizePx(25), OMG.SizePx(25)) {
+            minimize, minimize_node := OMG.Button(title_bar, OMG.SizePx(25), OMG.SizePx(25));
+            OMG.SetCornerRadius(minimize_node, 25 * 0.5);
+            OMG.SetPadding(minimize_node, 5, 5);
+            if minimize {
                 SDL_MinimizeWindow(g_window);
             }
 
-            if OMG.Button(title_bar, OMG.SizePx(25), OMG.SizePx(25)) {
+            maximize, maximize_node := OMG.Button(title_bar, OMG.SizePx(25), OMG.SizePx(25));
+            OMG.SetCornerRadius(maximize_node, 25 * 0.5);
+            OMG.SetPadding(maximize_node, 5, 5);
+            if maximize {
                 SDL_MaximizeWindow(g_window);
             }
 
-            if OMG.Button(title_bar, OMG.SizePx(25), OMG.SizePx(25)) {
+            close, close_node := OMG.Button(title_bar, OMG.SizePx(25), OMG.SizePx(25));
+            OMG.SetCornerRadius(close_node, 25 * 0.5);
+            OMG.SetPadding(close_node, 5, 5);
+            if close {
                 SDL_Quit();
             }
+
+            minimize_icon := OMG.GetNode(minimize_node);
+            OMG.SetSize(minimize_icon, OMG.SizeFill(), OMG.SizeFill());
+            OMG.SetBackgroundColor(minimize_icon, OMG.ChooseTextColor(base_background_color));
+            OMG.SetDraw(minimize_icon, (draw_list : *OMG.DrawList, node : *OMG.Node) {
+                center := (node.rect.xy + node.rect.zw) * 0.5;
+                length := node.size.x * 0.5;
+
+                OMG.DrawBox(draw_list, .{
+                    position=center,
+                    size=.{length, 1},
+                    border_color=node.background_color,
+                    border_size=1,
+                });
+            });
+
+            maximize_icon := OMG.GetNode(maximize_node);
+            OMG.SetSize(maximize_icon, OMG.SizeFill(), OMG.SizeFill());
+            OMG.SetBackgroundColor(maximize_icon, OMG.ChooseTextColor(base_background_color));
+            OMG.SetDraw(maximize_icon, (draw_list : *OMG.DrawList, node : *OMG.Node) {
+                center := (node.rect.xy + node.rect.zw) * 0.5;
+                length := sqrt(0.5 * node.size.x * node.size.x) - 2;
+
+                OMG.DrawBox(draw_list, .{
+                    position=center,
+                    size=.{length, length},
+                    border_color=node.background_color,
+                    border_size=1,
+                });
+            });
+
+            close_icon := OMG.GetNode(close_node);
+            OMG.SetSize(close_icon, OMG.SizeFill(), OMG.SizeFill());
+            OMG.SetBackgroundColor(close_icon, OMG.ChooseTextColor(base_background_color));
+            OMG.SetDraw(close_icon, (draw_list : *OMG.DrawList, node : *OMG.Node) {
+                center := (node.rect.xy + node.rect.zw) * 0.5;
+                length := node.size.x;
+
+                a := OMG.Rotate(OMG.Box(1, length), PI * 0.25);
+                b := OMG.Rotate(OMG.Box(1, length), -PI * 0.25);
+                shape := OMG.Union(a, b);
+                OMG.DrawShape(draw_list, shape, center, node.background_color);
+            });
         }
 
         content := OMG.GetNode(root, "content");
