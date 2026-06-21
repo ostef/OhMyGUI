@@ -3,8 +3,8 @@
 ID :: u64;
 
 NodeFlags :: enum_flags u32 {
-    // In certain situations, the text of the node should be taken into account instead of the children
-    // (e.g. fit sizing)
+    // In certain situations, the text of the node should be taken into account instead
+    // of the children (e.g. fit sizing)
     TextNode;
     // Capture mouse focus when hovered if no other foreground node has captured it
     Focusable;
