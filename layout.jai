@@ -204,10 +204,8 @@ LayoutFixedAndFitSizing :: (node : *Node) {
     for :Children node {
         LayoutFixedAndFitSizing(it);
 
-        if node.child_layout_mode != .None {
-            node.children_size[axis] += it.size[axis];
-            node.children_size[cross] = max(node.children_size[cross], it.size[cross]);
-        }
+        node.children_size[axis] += it.size[axis];
+        node.children_size[cross] = max(node.children_size[cross], it.size[cross]);
     }
 
     text_size : Vec2f;
@@ -265,8 +263,13 @@ LayoutFillSizing :: (node : *Node) {
                 continue;
             }
 
+            prev_size := it.size[axis];
+
             it.size[axis] = floor(remaining_size * it.desired_size[axis].value);
             it.size[axis] = clamp(it.size[axis], it.min_size[axis], it.max_size[axis]);
+
+            added_size := it.size[axis] - prev_size;
+            node.children_size[axis] += added_size;
         }
     } else {
         total_weights := 0.0;
