@@ -1,15 +1,15 @@
-IsInsideDefault :: (node : *Node, point : Vec2f) -> bool {
+DefaultHitTest :: (node : *Node, point : Vec2f) -> bool {
     return IsInsideRect(point, node.layout_last_frame.clipped_rect);
 }
 
 IsHovered :: (node : *Node) -> bool {
-    if !node.is_inside {
+    if !node.hit_test {
         return false;
     }
 
     mouse := GetMousePosition(node.window);
 
-    return node.is_inside(node, mouse);
+    return node.hit_test(node, mouse);
 }
 
 ButtonResult :: struct {

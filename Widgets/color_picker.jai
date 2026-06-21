@@ -103,7 +103,7 @@ HSVTriangleWheel :: (parent : *Node, using data : *ColorPickerData, size : float
 }
 
 SaturationValueTriangle :: (parent : *Node, using data : *ColorPickerData, style : *HSVTriangleWheelStyle, location := #caller_location) -> bool {
-    IsInside :: (node : *Node, point : Vec2f) -> bool {
+    HitTest :: (node : *Node, point : Vec2f) -> bool {
         if !node.parent {
             return false;
         }
@@ -163,7 +163,7 @@ SaturationValueTriangle :: (parent : *Node, using data : *ColorPickerData, style
     node := GetNode(parent, location);
     SetSize(node, SizeFill(), SizeFill());
     SetDraw(node, Draw);
-    SetIsInside(node, IsInside);
+    SetHitTest(node, HitTest);
 
     using _ := GetHSVWheelGeometricData(style, node.layout_last_frame.rect, hsv);
 
@@ -185,7 +185,7 @@ SaturationValueTriangle :: (parent : *Node, using data : *ColorPickerData, style
 }
 
 HueWheel :: (parent : *Node, using data : *ColorPickerData, style : *HSVTriangleWheelStyle, location := #caller_location) -> bool {
-    IsInside :: (node : *Node, point : Vec2f) -> bool {
+    HitTest :: (node : *Node, point : Vec2f) -> bool {
         if !node.parent {
             return false;
         }
@@ -273,7 +273,7 @@ HueWheel :: (parent : *Node, using data : *ColorPickerData, style : *HSVTriangle
     node := GetNode(parent);
     SetSize(node, SizeFill(), SizeFill());
     SetDraw(node, Draw);
-    SetIsInside(node, IsInside);
+    SetHitTest(node, HitTest);
 
     using _ := GetHSVWheelGeometricData(style, node.layout_last_frame.rect, hsv);
 

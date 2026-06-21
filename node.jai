@@ -3,11 +3,18 @@
 ID :: u64;
 
 NodeFlags :: enum_flags u32 {
+    // In certain situations, the text of the node should be taken into account instead of the children
+    // (e.g. fit sizing)
     TextNode;
+    // Capture mouse focus when hovered if no other foreground node has captured it
     Focusable;
+    // Capture scroll focus when hovered if no other foreground node has captured it
     Scrollable;
+    // Before laying out nodes, sort the children based on z_index
     SortChildren;
+    // Don't clip nodes when drawing children nodes
     NoClip;
+    // Don't pad the clip box
     NoPaddedClip;
 }
 
@@ -97,7 +104,7 @@ Node :: struct {
     z_index : s32 = -1; // Used when the parent wants to sort children such as popups
 
     draw : (*DrawList, *Node) = DrawNodeDefault;
-    is_inside : (*Node, point : Vec2f) -> bool = IsInsideDefault;
+    hit_test : (*Node, point : Vec2f) -> bool = DefaultHitTest;
     user_data : *NodeUserData;
 
     window : *Window;
@@ -550,8 +557,8 @@ BringForward :: (node : *Node) {
     node.z_index = 0x7fffffff;
 }
 
-SetIsInside :: inline (node : *Node, is_inside : type_of(Node.is_inside)) {
-    node.is_inside = is_inside;
+SetHitTest :: inline (node : *Node, hit_test : type_of(Node.hit_test)) {
+    node.hit_test = hit_test;
 }
 
 SetDraw :: inline (node : *Node, draw : type_of(Node.draw)) {
