@@ -68,7 +68,7 @@ Slider :: (parent : *Node, value : *$T, min : T, max : T, step : T, style : *Sli
             SetSize(handle, SizePx(style.handle_size), SizePx(style.handle_size));
 
             range := fmax - fmin;
-            offset_max := slider.layout_last_frame.size[Axis.X] - style.handle_size;
+            offset_max := background.layout_last_frame.size[Axis.X] - style.handle_size;
 
             // Allow the user to click on the slider to interact with the scrollbar
             slider.flags |= .Focusable;
