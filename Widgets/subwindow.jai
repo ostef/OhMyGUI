@@ -254,10 +254,8 @@ Subwindow :: (
             then subwindow
             else SubwindowResizeHandles(subwindow, min_size, style);
 
-        title_bar : *Node;
-        if !(flags & .NoTitleBar) {
-            title_bar = SubwindowTitleBar(subwindow, title_and_content, title, flags, *style.title_bar);
-        }
+        title_bar := ifx !(flags & .NoTitleBar)
+            then SubwindowTitleBar(subwindow, title_and_content, title, flags, *style.title_bar);
 
         hscroll := (flags & .NoHorizontalScroll) == 0;
         vscroll := (flags & .NoVerticalScroll) == 0;
