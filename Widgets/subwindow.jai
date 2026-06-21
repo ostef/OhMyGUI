@@ -311,6 +311,7 @@ Subwindow :: (
         }
 
         Apply(subwindow, style.background);
+
         subwindow.padding = .{};
         subwindow.child_gap = .{};
     }

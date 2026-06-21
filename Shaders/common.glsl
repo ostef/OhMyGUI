@@ -164,3 +164,11 @@ float FxStrokeColor(float d, float blur, float size, float inset) {
 vec4 BlendEffect(vec4 a, vec4 b, float alpha) {
     return mix(a, vec4(b.rgb, 1), b.a * alpha);
 }
+
+float SampleClipBox(ClipBox clip, vec2 p, float aa) {
+    vec2 clip_size = clip.bounds.zw - clip.bounds.xy;
+    vec2 clip_position = (clip.bounds.xy + clip.bounds.zw) * 0.5;
+    float clip_d = PrimBox(p - clip_position, clip_size, clip.corner_radiuses);
+    return FxSolidColor(clip_d, aa);
+}
+

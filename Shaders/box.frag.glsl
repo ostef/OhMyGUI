@@ -56,11 +56,6 @@ void main() {
 
     if (box.clip_box_index >= 0) {
         ClipBox clip = u_clip_boxes[box.clip_box_index];
-        vec2 clip_size = clip.bounds.zw - clip.bounds.xy;
-        vec2 clip_position = (clip.bounds.xy + clip.bounds.zw) * 0.5;
-        float clip_d = PrimBox(p - clip_position, clip_size, clip.corner_radiuses);
-        float clip_a = FxSolidColor(clip_d, aa);
-
-        out_color *= clip_a;
+        out_color *= SampleClipBox(clip, p, aa);
     }
 }

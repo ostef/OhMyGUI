@@ -5,7 +5,10 @@ ClipBox :: struct {
     corner_radiuses : Vec4f;
 }
 
-ShaderClipBox :: ClipBox;
+ShaderClipBox :: struct {
+    bounds : Vec4f;
+    corner_radiuses : Vec4f;
+}
 
 BoxDrawing :: struct {
     size : Vec2f;
@@ -184,7 +187,8 @@ PushClipBox :: (draw_list : *DrawList, bounds : Vec4f, corner_radiuses : Vec4f =
 
     current_index := GetCurrentClipBoxIndex(draw_list);
     if current_index >= 0 {
-        box.bounds = ClipRect(box.bounds, draw_list.clip_boxes[current_index].bounds);
+        current := draw_list.clip_boxes[current_index];
+        box.bounds = ClipRect(box.bounds, current.bounds);
     }
 
     array_add(*draw_list.clip_box_stack, xx (draw_list.clip_boxes.count - 1));
@@ -532,7 +536,9 @@ CopyDrawListShaderData :: (
     draw_list.num_shapes = 0;
 
     for draw_list.clip_boxes {
-        array_add(clip_boxes, it);
+        box := array_add(clip_boxes);
+        box.bounds = it.bounds;
+        box.corner_radiuses = it.corner_radiuses;
     }
 
     for draw_list.boxes {
