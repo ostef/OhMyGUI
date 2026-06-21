@@ -5,7 +5,7 @@
       "label": "build",
       "type": "shell",
       "command": "jai",
-      "args": ["example.jai"],
+      "args": ["Examples/main.jai"],
       "group": {
         "kind": "build",
         "isDefault": true
