@@ -33,10 +33,10 @@ ColorPickerStyle :: struct {
 }
 
 ColorPickerData :: struct {
-    hsv : Vec3f;
+    hsv : HSV;
 }
 
-GetHSVWheelGeometricData :: (style : *HSVTriangleWheelStyle, rect : Vec4f, hsv : Vec3f) -> struct {
+GetHSVWheelGeometricData :: (style : *HSVTriangleWheelStyle, rect : Vec4f, hsv : HSV) -> struct {
     center : Vec2f;
     inner_radius : float;
     outer_radius : float;
@@ -48,7 +48,7 @@ GetHSVWheelGeometricData :: (style : *HSVTriangleWheelStyle, rect : Vec4f, hsv :
     outer_radius := min(rect.z - rect.x, rect.w - rect.y) * 0.5 - style.border_size;
     inner_radius := max(outer_radius - style.wheel_thickness, outer_radius * 0.5);
 
-    theta := ToRads(hsv.x);
+    theta := ToRads(hsv.hue);
 
     hue_point := Rotate(.{inner_radius - style.triangle_inset, 0}, theta);
     white_point := Rotate(hue_point, PI * 0.666667);
@@ -143,11 +143,11 @@ SaturationValueTriangle :: (parent : *Node, using data : *ColorPickerData, style
 
         DrawTriangle(draw_list, .{
             p0=hue_point, p1=white_point, p2=black_point,
-            c0=ColorU32(HSVToRGB(.{hsv.x, 1, 1}), 1), c1=0xffffffff, c2=0x000000ff,
+            c0=ColorU32(HSVToRGB(.{hsv.hue, 1, 1}), 1), c1=0xffffffff, c2=0x000000ff,
         });
 
-        cursor := lerp(hue_point, white_point, 1 - hsv.y);
-        cursor = lerp(cursor, black_point, 1 - hsv.z);
+        cursor := lerp(hue_point, white_point, 1 - hsv.saturation);
+        cursor = lerp(cursor, black_point, 1 - hsv.value);
 
         DrawBox(draw_list, .{
             position=cursor,
@@ -176,8 +176,8 @@ SaturationValueTriangle :: (parent : *Node, using data : *ColorPickerData, style
         v := clamp(w_hue + w_white, 0, 1);
         s := ifx v > 0 then clamp(w_hue / v, 0, 1) else 0;
 
-        hsv.y = s;
-        hsv.z = v;
+        hsv.saturation = s;
+        hsv.value = v;
     }
 
     return button.held;
@@ -257,13 +257,13 @@ HueWheel :: (parent : *Node, using data : *ColorPickerData, style : *HSVTriangle
         }
 
         // Draw cursor ring
-        angle := ToRads(hsv.x);
+        angle := ToRads(hsv.hue);
         cursor := center + Rotate(.{outer_radius - style.wheel_thickness * 0.5, 0}, angle);
         DrawBox(draw_list, .{
             position=cursor,
             size=.{style.wheel_cursor.radius * 2, style.wheel_cursor.radius * 2},
             corner_radiuses=Vec4f.{1,1,1,1} * style.wheel_cursor.radius,
-            background_color=ColorU32(HSVToRGB(.{hsv.x, 1, 1}), 1),
+            background_color=ColorU32(HSVToRGB(.{hsv.hue, 1, 1}), 1),
             border_color=style.wheel_cursor.border_color,
             border_size=style.wheel_cursor.border_size,
         });
@@ -276,7 +276,7 @@ HueWheel :: (parent : *Node, using data : *ColorPickerData, style : *HSVTriangle
 
     using _ := GetHSVWheelGeometricData(style, node.layout_last_frame.rect, hsv);
 
-    hue := hsv.x;
+    hue := hsv.hue;
 
     button := ButtonBehavior(node);
     if button.held {
@@ -284,27 +284,23 @@ HueWheel :: (parent : *Node, using data : *ColorPickerData, style : *HSVTriangle
         center_to_mouse := normalize(mouse - center);
         hue := ToDegs(SignedAngle(.{1,0}, center_to_mouse));
         hue = fmod_cycling(hue, 360);
-        hsv.x = hue;
+        hsv.hue = hue;
     }
 
     return button.held;
 }
 
-ColoredSlider :: (parent : *Node, value : *float, min : float, max : float, step : float, color0 : RGBA8, color1 : RGBA8, location := #caller_location) {
-
-}
-
 ColorPicker :: (parent : *Node, color : *Vec4f, flags : ColorPickerFlags = 0, style : *ColorPickerStyle = null, location := #caller_location) -> *Node {
-    RGBToHSVPreserving :: (rgb : Vec3f, current : Vec3f) -> Vec3f {
+    RGBToHSVPreserving :: (rgb : Vec3f, current : HSV) -> HSV {
         hsv := RGBToHSV(rgb);
-        if hsv.y == 0 || hsv.z == 0 {
-            hsv.x = current.x; // Preserve hue
+        if hsv.saturation == 0 || hsv.value == 0 {
+            hsv.hue = current.hue;
         }
-        if hsv.y == 0 {
-            hsv.z = current.z;
+        if hsv.saturation == 0 {
+            hsv.value = current.value;
         }
-        if hsv.z == 0 {
-            hsv.y = current.y;
+        if hsv.value == 0 {
+            hsv.saturation = current.saturation;
         }
 
         return hsv;
@@ -328,19 +324,11 @@ ColorPicker :: (parent : *Node, color : *Vec4f, flags : ColorPickerFlags = 0, st
     {
         SetLayout(picker, .LeftToRight);
         SetSize(picker, SizeFill(), SizeFit());
+        SetMinWidthFit(picker);
         SetChildGap(picker, 12, 12);
 
         data := AddUserData(picker, ColorPickerData);
-        hsv := RGBToHSV(color.xyz);
-        if hsv != data.hsv {
-            if hsv.y > 0 && hsv.z > 0 {
-                data.hsv.x = hsv.x;
-            }
-            if hsv.y > 0 {
-                data.hsv.z = hsv.z;
-            }
-            data.hsv.y = hsv.y;
-        }
+        data.hsv = RGBToHSVPreserving(color.xyz, data.hsv);
 
         left := GetNode(picker);
         SetSize(left, SizeFit(), SizeFit());
@@ -350,6 +338,7 @@ ColorPicker :: (parent : *Node, color : *Vec4f, flags : ColorPickerFlags = 0, st
 
         right := GetNode(picker);
         SetSize(right, SizeFill(), SizeFit());
+        SetMinWidth(right, 200);
         SetLayout(right, .TopToBottom);
 
         if LabelSlider(right, "Red", *color.x, 0, 1, 0.01, style=*style.red_slider) {
@@ -365,9 +354,9 @@ ColorPicker :: (parent : *Node, color : *Vec4f, flags : ColorPickerFlags = 0, st
         HorizontalSeparator(right);
 
         modified_hsv := HSVTriangleWheel(left, data, 250, *style.wheel);
-        modified_hsv |= LabelSlider(right, "Hue", *data.hsv.x, 0, 360, 1, style=*style.hue_slider);
-        modified_hsv |= LabelSlider(right, "Saturation", *data.hsv.y, 0, 1, 0.01, style=*style.saturation_slider);
-        modified_hsv |= LabelSlider(right, "Value", *data.hsv.z, 0, 1, 0.01, style=*style.value_slider);
+        modified_hsv |= LabelSlider(right, "Hue", *data.hsv.hue, 0, 360, 1, style=*style.hue_slider);
+        modified_hsv |= LabelSlider(right, "Saturation", *data.hsv.saturation, 0, 1, 0.01, style=*style.saturation_slider);
+        modified_hsv |= LabelSlider(right, "Value", *data.hsv.value, 0, 1, 0.01, style=*style.value_slider);
 
         if modified_hsv {
             color.xyz = HSVToRGB(data.hsv);
@@ -375,8 +364,7 @@ ColorPicker :: (parent : *Node, color : *Vec4f, flags : ColorPickerFlags = 0, st
 
         HorizontalSeparator(right);
 
-        if LabelSlider(right, "Opacity", *color.w, 0, 1, 0.01, style=*style.opacity_slider) {
-        }
+        LabelSlider(right, "Opacity", *color.w, 0, 1, 0.01, style=*style.opacity_slider);
     }
 
     return picker;

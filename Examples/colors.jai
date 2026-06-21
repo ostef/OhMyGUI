@@ -139,8 +139,13 @@ ColorSet :: (parent : *OMG.Node, rgb : OMG.Vec3f, location := #caller_location) 
             hsv := OMG.RGBToHSV(rgb);
             complementary_hsv := OMG.RGBToHSV(OMG.ComplementaryColor(rgb));
 
-            hsv = lerp(hsv, complementary_hsv, t);
-            hsv.x = fmod_cycling(hsv.x, 360);
+            hsv = .{
+                lerp(hsv.hue, complementary_hsv.hue, t),
+                lerp(hsv.saturation, complementary_hsv.saturation, t),
+                lerp(hsv.value, complementary_hsv.value, t),
+            };
+
+            hsv.hue = fmod_cycling(hsv.hue, 360);
 
             return OMG.HSVToRGB(hsv);
         });

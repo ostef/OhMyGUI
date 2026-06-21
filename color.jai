@@ -1,3 +1,13 @@
+HSV :: struct {
+    hue : float;
+    saturation : float;
+    value : float;
+}
+
+operator == :: inline (a : HSV, b : HSV) -> bool {
+    return a.hue == b.hue && a.saturation == b.saturation && a.value == b.value;
+}
+
 RGBA8 :: #type,isa u32; // We could make this a struct but then we wouldn't be able to use hex integer literals
 
 SetRGB :: inline (color : *RGBA8, rgb : Vec3f) -> RGBA8 {
@@ -52,7 +62,7 @@ ColorVec4f :: inline (rgba : RGBA8) -> Vec4f {
     return .{r / 255.0, g / 255.0, b / 255.0, a / 255.0};
 }
 
-RGBToHSV :: inline (rgb : Vec3f) -> Vec3f {
+RGBToHSV :: inline (rgb : Vec3f) -> HSV {
     h, s, v := RGBToHSV(rgb.x, rgb.y, rgb.z);
     return .{h, s, v};
 }
@@ -75,27 +85,27 @@ RGBToHSV :: (r : $T, g : T, b: T) -> h : T, s : T, v : T {
     }
 
     h : T;
-    K :: 43 / 255.0;
     if rgb_max == r {
-        h = 0 + K * (g - b) / delta;
+        h = 0 + (g - b) / delta;
     } else if rgb_max == g {
-        h = (85 / 255.0) + K * (b - r) / delta;
+        h = 2 + (b - r) / delta;
     } else {
-        h = (171 / 255.0) + K * (r - g) / delta;
+        h = 4 + (r - g) / delta;
     }
+    h *= 60;
 
     if h < 0 {
-        h += 1;
+        h += 360;
     }
-    if h >= 1 {
-        h -= 1;
+    if h >= 360 {
+        h -= 360;
     }
 
-    return h * 360, s, v;
+    return h, s, v;
 }
 
-HSVToRGB :: inline (hsv : Vec3f) -> Vec3f {
-    r, g, b := HSVToRGB(hsv.x, hsv.y, hsv.z);
+HSVToRGB :: inline (hsv : HSV) -> Vec3f {
+    r, g, b := HSVToRGB(hsv.hue, hsv.saturation, hsv.value);
     return .{r, g, b};
 }
 
@@ -119,7 +129,7 @@ Darken :: inline (rgba : RGBA8, amount : float) -> RGBA8 {
 
 Darken :: (rgb : Vec3f, amount : float) -> Vec3f {
     hsv := RGBToHSV(rgb);
-    hsv.z = clamp(hsv.z - amount, 0, 1);
+    hsv.value = clamp(hsv.value - amount, 0, 1);
 
     return HSVToRGB(hsv);
 }
@@ -130,7 +140,7 @@ Brighten :: inline (rgba : RGBA8, amount : float) -> RGBA8 {
 
 Brighten :: (rgb : Vec3f, amount : float) -> Vec3f {
     hsv := RGBToHSV(rgb);
-    hsv.z = clamp(hsv.z + amount, 0, 1);
+    hsv.value = clamp(hsv.value + amount, 0, 1);
 
     return HSVToRGB(hsv);
 }
@@ -141,8 +151,8 @@ Whiten :: inline (rgba : RGBA8, amount : float) -> RGBA8 {
 
 Whiten :: (rgb : Vec3f, amount : float) -> Vec3f {
     hsv := RGBToHSV(rgb);
-    hsv.y = clamp(hsv.y - amount, 0, 1);
-    hsv.z = clamp(hsv.z + amount, 0, 1);
+    hsv.saturation = clamp(hsv.saturation - amount, 0, 1);
+    hsv.value = clamp(hsv.value + amount, 0, 1);
 
     return HSVToRGB(hsv);
 }
@@ -155,8 +165,8 @@ MakeTone :: (rgb : Vec3f, t : float) -> Vec3f {
     t = clamp(t, 0, 1);
 
     hsv := RGBToHSV(rgb);
-    hsv.y = lerp(hsv.y, 0, t);
-    hsv.z = lerp(hsv.z, 0.5, t);
+    hsv.saturation = lerp(hsv.saturation, 0, t);
+    hsv.value = lerp(hsv.value, 0.5, t);
 
     return HSVToRGB(hsv);
 }
@@ -173,7 +183,7 @@ InvertColor :: (rgb : Vec3f, t := 1.0) -> Vec3f {
 
 ComplementaryColor :: (rgb : Vec3f) -> Vec3f {
     hsv := RGBToHSV(rgb);
-    hsv.x = fmod_cycling(hsv.x + 180, 360);
+    hsv.hue = fmod_cycling(hsv.hue + 180, 360);
 
     return HSVToRGB(hsv);
 }
@@ -182,10 +192,10 @@ SplitComplementaryColors :: (rgb : Vec3f, hue_shift := 30.0) -> Vec3f, Vec3f {
     hsv := RGBToHSV(rgb);
 
     a := hsv;
-    a.x = fmod_cycling(a.x + 180 - hue_shift, 360);
+    a.hue = fmod_cycling(a.hue + 180 - hue_shift, 360);
 
     b := hsv;
-    b.x = fmod_cycling(b.x + 180 + hue_shift, 360);
+    b.hue = fmod_cycling(b.hue + 180 + hue_shift, 360);
 
     return HSVToRGB(a), HSVToRGB(b);
 }
@@ -194,10 +204,10 @@ AnalogousColors :: (rgb : Vec3f, hue_shift := 30.0) -> Vec3f, Vec3f {
     hsv := RGBToHSV(rgb);
 
     a := hsv;
-    a.x = fmod_cycling(a.x - hue_shift, 360);
+    a.hue = fmod_cycling(a.hue - hue_shift, 360);
 
     b := hsv;
-    b.x = fmod_cycling(b.x + hue_shift, 360);
+    b.hue = fmod_cycling(b.hue + hue_shift, 360);
 
     return HSVToRGB(a), HSVToRGB(b);
 }
@@ -208,10 +218,10 @@ TriadicColors :: (rgb : Vec3f) -> Vec3f, Vec3f {
     K :: 360 / 3.0;
 
     a := hsv;
-    a.x = fmod_cycling(a.x + K, 360);
+    a.hue = fmod_cycling(a.hue + K, 360);
 
     b := hsv;
-    b.x = fmod_cycling(b.x - K, 360);
+    b.hue = fmod_cycling(b.hue - K, 360);
 
     return HSVToRGB(a), HSVToRGB(b);
 }
@@ -220,13 +230,13 @@ TetradicColors :: (rgb : Vec3f, hue_shift := 30.0) -> Vec3f, Vec3f, Vec3f {
     hsv := RGBToHSV(rgb);
 
     a := hsv;
-    a.x = fmod_cycling(a.x + hue_shift, 360); // Analogous
+    a.hue = fmod_cycling(a.hue + hue_shift, 360); // Analogous
 
     b := a;
-    b.x = fmod_cycling(b.x + 180, 360); // Complementary to analogous
+    b.hue = fmod_cycling(b.hue + 180, 360); // Complementary to analogous
 
     c := b;
-    c.x = fmod_cycling(c.x - hue_shift, 360); // Analogous to complementary to analogous (complementary of original color)
+    c.hue = fmod_cycling(c.hue - hue_shift, 360); // Analogous to complementary to analogous (complementary of original color)
 
     return HSVToRGB(a), HSVToRGB(b), HSVToRGB(c);
 }
@@ -235,13 +245,13 @@ SquareColors :: (rgb : Vec3f, hue_shift := 30.0) -> Vec3f, Vec3f, Vec3f {
     hsv := RGBToHSV(rgb);
 
     a := hsv;
-    a.x = fmod_cycling(a.x + 90, 360);
+    a.hue = fmod_cycling(a.hue + 90, 360);
 
     b := a;
-    b.x = fmod_cycling(b.x + 90, 360);
+    b.hue = fmod_cycling(b.hue + 90, 360);
 
     c := b;
-    c.x = fmod_cycling(c.x + 90, 360);
+    c.hue = fmod_cycling(c.hue + 90, 360);
 
     return HSVToRGB(a), HSVToRGB(b), HSVToRGB(c);
 }
