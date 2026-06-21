@@ -51,7 +51,7 @@ ClickableTextStateStyle :: struct {
 
 ClickableTextStyle :: StateStyle(ClickableTextStateStyle);
 
-ClickableText :: (parent : *Node, fmt_str : string, args : ..Any, style : *ClickableTextStyle = null, location := #caller_location) -> clicked : bool, *Node {
+ClickableText :: (parent : *Node, fmt_str : string, args : ..Any, style : *ClickableTextStyle = null, location := #caller_location) -> clicked : bool, double_clicked : bool, *Node {
     EnsureStyle(*style, "clickable_text");
 
     node := GetNode(parent, location);
@@ -66,7 +66,7 @@ ClickableText :: (parent : *Node, fmt_str : string, args : ..Any, style : *Click
         SetCursor(style.states[state].cursor);
     }
 
-    return button.released, node;
+    return button.released, button.double_clicked, node;
 }
 
 HorizontalSeparator :: (parent : *Node, space := 25.0, width := 1.0, style : *BoxStyle = null, location := #caller_location) -> *Node {

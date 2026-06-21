@@ -193,14 +193,17 @@ THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG!
 0123456789
 END
 
-                _, the_quick := OMG.ClickableText(main_viewport, Text);
+                _, _, the_quick := OMG.ClickableText(main_viewport, Text);
                 the_quick.text_size = 10 + (cos(g_time) + 2) * 0.5 * 30;
 
                 content_browser := Panel(left_side, "content_browser", "Content Browser");
                 {
                     OMG.SetHeight(content_browser, OMG.SizeFill(0.9));
 
-                    if OMG.ClickableText(content_browser, "Click Me!\nTwice!") {
+                    clicked, double_clicked := OMG.ClickableText(content_browser, "Click Me! Twice!");
+                    if double_clicked {
+                        print("Double clicked!\n");
+                    } else if clicked {
                         print("Clicked!\n");
                     }
 
