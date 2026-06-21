@@ -136,6 +136,8 @@ Scrollbar :: (parent : *Node, target : *Node, axis : Axis, style : *SliderStyle 
         background.desired_size[axis] = SizeFill();
         background.desired_size[GetCrossAxis(axis)] = SizeFit();
 
+        SetLayout(background, .None);
+
         ScrollViewBehavior(background, target, xx (1 << axis));
 
         handle = GetNode(background, "handle");

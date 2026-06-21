@@ -299,6 +299,7 @@ Subwindow :: (
             if vscroll {
                 axes |= .Y;
             }
+
             ScrollViewBehavior(content, axes);
 
             if hscrollbar && content.layout_last_frame.children_size.x > content.layout_last_frame.size.x - content.padding.x - content.padding.z {
