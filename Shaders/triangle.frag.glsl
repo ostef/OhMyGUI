@@ -32,7 +32,7 @@ void main() {
     out_color = vec4(0);
 
     float background = FxSolidColorWithAA(d, aa);
-    out_color = mix(out_color, in_color, background);
+    out_color = BlendEffect(out_color, in_color, background);
 
     if (triangle.clip_box_index >= 0) {
         ClipBox clip = u_clip_boxes[triangle.clip_box_index];

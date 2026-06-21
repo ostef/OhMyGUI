@@ -169,14 +169,14 @@ void main() {
         }
 
         float outer_shadow = FxSolidColor(shadow_d, aa + outer_shadow_blur);
-        out_color = mix(out_color, outer_shadow_color, outer_shadow);
+        out_color = BlendEffect(out_color, outer_shadow_color, outer_shadow);
     }
 
     float background = FxSolidColor(d, aa);
-    out_color = mix(out_color, background_color, background);
+    out_color = BlendEffect(out_color, background_color, background);
 
     float border = FxStrokeColor(d, aa, border_size, border_inset);
-    out_color = mix(out_color, border_color, border);
+    out_color = BlendEffect(out_color, border_color, border);
 
     if (drawing.clip_box_index >= 0) {
         ClipBox clip = u_clip_boxes[drawing.clip_box_index];

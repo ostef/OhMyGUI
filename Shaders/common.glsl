@@ -160,3 +160,7 @@ float FxStrokeColor(float d, float blur, float size, float inset) {
     float a = FxSolidColor(-(d + inset + size), blur) * FxSolidColor(d + inset, blur);
     return clamp(a, 0, 1);
 }
+
+vec4 BlendEffect(vec4 a, vec4 b, float alpha) {
+    return mix(a, vec4(b.rgb, 1), b.a * alpha);
+}

@@ -40,11 +40,11 @@ void main() {
         }
 
         float outer_shadow = FxSolidColor(shadow_d, aa + glyph.outer_shadow_blur);
-        out_color = mix(out_color, outer_shadow_color, outer_shadow);
+        out_color = BlendEffect(out_color, outer_shadow_color, outer_shadow);
     }
 
     float foreground = FxSolidColor(d, aa);
-    out_color = mix(out_color, foreground_color, foreground);
+    out_color = BlendEffect(out_color, foreground_color, foreground);
 
     if (glyph.clip_box_index >= 0) {
         ClipBox clip = u_clip_boxes[glyph.clip_box_index];
