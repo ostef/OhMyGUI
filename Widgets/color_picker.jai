@@ -297,9 +297,6 @@ ColorPicker :: (parent : *Node, color : *Vec4f, flags : ColorPickerFlags = 0, st
         if hsv.saturation == 0 || hsv.value == 0 {
             hsv.hue = current.hue;
         }
-        if hsv.saturation == 0 {
-            hsv.value = current.value;
-        }
         if hsv.value == 0 {
             hsv.saturation = current.saturation;
         }
