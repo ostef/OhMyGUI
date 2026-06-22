@@ -401,10 +401,6 @@ LayoutWrapText :: (node : *Node) {
         }
 
         node.size.y = iter.computed_size.y;
-
-        if begins_with(iter.text, "The quick") {
-            print_vars(iter.computed_size);
-        }
     }
 
     for :Children node {
