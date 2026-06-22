@@ -282,7 +282,7 @@ DrawTriangle :: (draw_list : *DrawList, triangle : TriangleDrawing) -> int {
     return draw_list.triangles.count - 1;
 }
 
-DrawText :: (draw_list : *DrawList, font : *Font, position : Vec2f, size : float, text : string, color : RGBA8, outer_shadow_color : RGBA8 = 0, outer_shadow_offset := Vec2f.{0,0}, outer_shadow_blur := 0.0, effects : TextEffects = 0) {
+DrawText :: (draw_list : *DrawList, font : *Font, position : Vec2f, size : float, text : string, bounds : Vec2f, color : RGBA8, outer_shadow_color : RGBA8 = 0, outer_shadow_offset := Vec2f.{0,0}, outer_shadow_blur := 0.0, effects : TextEffects = 0) {
     if !font || ((color & 0xff) == 0 && (outer_shadow_color & 0xff) == 0) {
         return;
     }
@@ -291,15 +291,16 @@ DrawText :: (draw_list : *DrawList, font : *Font, position : Vec2f, size : float
 
     iter : TextGlyphIterator;
     iter.font = font;
-    iter.size = size;
+    iter.font_size = size;
     iter.text = text;
-    for iter {
-        glyph_position := position + iter.pen + it.hori_bearing * iter.size;
-        glyph_position += it.size * iter.size * 0.5;
+    iter.bounds = bounds;
+    for :WordWrap iter {
+        glyph_position := position + iter.pen + it.hori_bearing * iter.font_size;
+        glyph_position += it.size * iter.font_size * 0.5;
 
         bounds := Vec4f.{
-            xy=glyph_position - it.texture_size * iter.size * 0.5,
-            zw=glyph_position + it.texture_size * iter.size * 0.5,
+            xy=glyph_position - it.texture_size * iter.font_size * 0.5,
+            zw=glyph_position + it.texture_size * iter.font_size * 0.5,
         };
 
         DrawGlyph(draw_list, .{
@@ -320,7 +321,6 @@ DrawText :: (draw_list : *DrawList, font : *Font, position : Vec2f, size : float
         iter.include_newlines = true;
 
         line_start : Vec2f;
-        new_line := true;
 
         underline_thickness := max(font.desired_underline_thickness * size, 1);
         underline_position := font.desired_underline_position * size;
@@ -328,15 +328,12 @@ DrawText :: (draw_list : *DrawList, font : *Font, position : Vec2f, size : float
             underline_position = ceil(underline_position);
         }
 
-        for iter {
-            if new_line {
+        for :WordWrap iter {
+            if iter.new_line {
                 line_start = position + iter.pen;
-                new_line = false;
             }
 
             if it.codepoint == #char "\n" {
-                new_line = true;
-
                 line_end := position + iter.pen;
 
                 if effects & .Underline {
@@ -357,7 +354,7 @@ DrawText :: (draw_list : *DrawList, font : *Font, position : Vec2f, size : float
             }
         }
 
-        if !new_line {
+        if !iter.new_line {
             line_end := position + iter.pen;
 
             if effects & .Underline {
@@ -430,6 +427,7 @@ DrawNodeDefault :: (draw_list : *DrawList, node : *Node) {
         node.rect.xy,
         node.text_size,
         node.text,
+        node.size,
         node.text_color,
         node.outer_shadow_color,
         node.outer_shadow_offset,

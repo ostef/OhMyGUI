@@ -81,13 +81,6 @@ LoadFontFromMemory :: (name : string, data : string, config : FontConfig) -> *Fo
             log_error("Could not initialize FreeType");
             return null;
         }
-
-        // @Todo: setting this works (get returns the value we passed) but does not change the resulting SDF
-        // Find what's wrong
-        // ft_err = FT_Property_Set(g_ft_lib, "sdf", "spread", *sdf_spread);
-        // if ft_err != xx FT_Err.Ok {
-        //     log_error("Could not set spread");
-        // }
     }
 
     existing_font := GetFont(name);
@@ -120,7 +113,6 @@ LoadFontFromMemory :: (name : string, data : string, config : FontConfig) -> *Fo
     font.desired_underline_thickness = FractToFloat(xx font.desired_underline_thickness) / cast(float, config.resolution);
 
     sdf_spread : s32 = 8;
-    // FT_Property_Get(g_ft_lib, "sdf", "spread", *sdf_spread);
     font.sdf_range = sdf_spread / cast(float, font.resolution);
 
     packer : RectPacker;
@@ -317,34 +309,39 @@ LoadGlyph :: (font : *Font, codepoint : u32, ft_face : FT_Face, packer : *RectPa
 #scope_export
 
 TextGlyphIterator :: struct {
-    font : *Font;
     text : string;
-    size : float;
-    include_newlines : bool;
-    pen : Vec2f;
+    font : *Font;
+    font_size : float;
     bounds : Vec2f;
+    include_newlines : bool;
+    new_line := true;
+    pen : Vec2f;
+    computed_size : Vec2f;
 }
 
 ResetPen :: (using iter : *TextGlyphIterator) {
+    new_line = true;
     pen = .{};
-    bounds = .{};
+    computed_size = .{};
 }
 
 IterText :: inline (node : *Node) -> TextGlyphIterator {
     return .{
-        font=node.font,
         text=node.text,
-        size=node.text_size,
+        font=node.font,
+        font_size=node.text_size,
     };
 }
 
 Newline :: (iter : *TextGlyphIterator) {
-    iter.bounds.x = max(iter.bounds.x, iter.pen.x);
+    iter.new_line = true;
+
+    iter.computed_size.x = max(iter.computed_size.x, iter.pen.x);
 
     iter.pen.x = 0;
-    iter.pen.y += (iter.font.descent + iter.font.ascent) * iter.size;
+    iter.pen.y += (iter.font.descent + iter.font.ascent) * iter.font_size;
 
-    iter.bounds.y = max(iter.bounds.y, iter.pen.y + iter.font.descent * iter.size);
+    iter.computed_size.y = max(iter.computed_size.y, iter.pen.y + iter.font.descent * iter.font_size);
 }
 
 for_expansion :: (iter : *TextGlyphIterator, body : Code, flags : For_Flags) #expand {
@@ -354,7 +351,10 @@ for_expansion :: (iter : *TextGlyphIterator, body : Code, flags : For_Flags) #ex
         return;
     }
 
-    iter.pen.y = iter.font.ascent * iter.size;
+    // @Todo @Hack
+    if iter.pen == .{} {
+        iter.pen.y = iter.font.ascent * iter.font_size;
+    }
 
     for codepoint, `it_index : iter.text {
         if codepoint == {
@@ -368,9 +368,9 @@ for_expansion :: (iter : *TextGlyphIterator, body : Code, flags : For_Flags) #ex
             Newline(iter);
 
         case #char "\t";
-            iter.pen.x = SnapUp(iter.pen.x + iter.font.space_advance * iter.size, iter.font.space_advance * 4 * iter.size);
-            iter.bounds.x = max(iter.bounds.x, iter.pen.x);
-            iter.bounds.y = max(iter.bounds.y, iter.pen.y + iter.font.descent * iter.size);
+            iter.pen.x = SnapUp(iter.pen.x + iter.font.space_advance * iter.font_size, iter.font.space_advance * 4 * iter.font_size);
+            iter.computed_size.x = max(iter.computed_size.x, iter.pen.x);
+            iter.computed_size.y = max(iter.computed_size.y, iter.pen.y + iter.font.descent * iter.font_size);
 
         case;
             glyph := GetGlyph(iter.font, codepoint);
@@ -384,22 +384,72 @@ for_expansion :: (iter : *TextGlyphIterator, body : Code, flags : For_Flags) #ex
             it = glyph;
             #insert body;
 
-            iter.bounds.x = max(iter.bounds.x, iter.pen.x + glyph.hori_advance * iter.size, iter.pen.x + (glyph.hori_bearing.x + glyph.size.x) * iter.size);
-            iter.bounds.y = max(iter.bounds.y, iter.pen.y + iter.font.descent * iter.size);
+            iter.computed_size.x = max(iter.computed_size.x, iter.pen.x + glyph.hori_advance * iter.font_size, iter.pen.x + (glyph.hori_bearing.x + glyph.size.x) * iter.font_size);
+            iter.computed_size.y = max(iter.computed_size.y, iter.pen.y + iter.font.descent * iter.font_size);
 
-            iter.pen.x += glyph.hori_advance * iter.size;
+            iter.pen.x += glyph.hori_advance * iter.font_size;
+
+            iter.new_line = false;
         }
     }
 
-    iter.bounds.y = max(iter.bounds.y, iter.pen.y + iter.font.descent * iter.size);
+    iter.computed_size.y = max(iter.computed_size.y, iter.pen.y + iter.font.descent * iter.font_size);
+}
+
+// for_expansion
+WordWrap :: (iter : *TextGlyphIterator, body : Code, flags : For_Flags) #expand {
+    if !iter.font {
+        return;
+    }
+
+    original_text := iter.text;
+    defer iter.text = original_text;
+
+    // @Todo @Hack
+    if iter.pen == .{} {
+        iter.pen.y = iter.font.ascent * iter.font_size;
+    }
+
+    `it : *Glyph;
+    `it_index := 0;
+    for :ByWord word, word_index : MakeUtf8String(iter.text) {
+        if !word.spaces {
+            word_text_length := 0.0;
+            for word.str {
+                glyph := GetGlyph(iter.font, it);
+                if !glyph {
+                    glyph = GetGlyph(iter.font, Unicode_Replacement);
+                    if !glyph {
+                        continue;
+                    }
+                }
+
+                word_text_length += glyph.hori_advance * iter.font_size;
+            }
+
+            if word_text_length < iter.bounds.x && iter.pen.x + word_text_length > iter.bounds.x {
+                Newline(iter);
+            }
+        }
+
+        iter.text = word.str.as_string;
+        for glyph, char_index : iter {
+            defer it_index += 1;
+
+            it = glyph;
+            #insert body;
+        }
+    }
+
+    iter.computed_size.y = max(iter.computed_size.y, iter.pen.y + iter.font.descent * iter.font_size);
 }
 
 CalculateTextSize :: (font : *Font, size : float, text : string) -> Vec2f {
     iter : TextGlyphIterator;
     iter.font = font;
-    iter.size = size;
+    iter.font_size = size;
     iter.text = text;
     for iter {}
 
-    return iter.bounds;
+    return iter.computed_size;
 }

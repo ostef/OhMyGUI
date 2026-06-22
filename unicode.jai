@@ -18,7 +18,7 @@ for_expansion :: (str : Utf8String, body : Code, flags : For_Flags) #expand {
     `it_index := 0;
     byte_index := 0;
     while byte_index < str.count {
-        `it, len := DecodeUtf8Character(cast([]u8) str.as_string, byte_index);
+        `it, len := DecodeUtf8Character(cast([]u8, str.as_string), byte_index);
 
         defer {
             it_index += 1;
@@ -33,18 +33,16 @@ for_expansion :: (str : Utf8String, body : Code, flags : For_Flags) #expand {
 ByWord :: (str : Utf8String, body : Code, flags : For_Flags) #expand {
     Word :: struct {
         start_byte_index, end_byte_index : s64;
-        str : string;
+        str : Utf8String;
         length : s64;
         spaces : bool;
     }
 
     `it : Word;
     `it_index := 0;
-    if str.count != 0
-        it.spaces == Basic.is_space(str.data[0]);
 
     while it.end_byte_index < str.count {
-        codepoint, codepoint_len := DecodeUtf8Character(cast([]u8) str.as_string, it.end_byte_index);
+        codepoint, codepoint_len := DecodeUtf8Character(cast([]u8, str.as_string), it.end_byte_index);
 
         defer {
             it.end_byte_index += codepoint_len;
@@ -52,8 +50,10 @@ ByWord :: (str : Utf8String, body : Code, flags : For_Flags) #expand {
             it_index += 1;
         }
 
-        space := codepoint < 128 && Basic.is_space(xx codepoint);
-        if it.spaces != space {
+        space := IsSpace(xx codepoint);
+        if it_index == 0 {
+            it.spaces = space;
+        } else if it.spaces != space {
             it.str.data = str.data + it.start_byte_index;
             it.str.count = it.end_byte_index - it.start_byte_index;
             #insert body;
@@ -245,6 +245,11 @@ EncodeCharacterAsUtf8 :: (codepoint : u32, buffer : []u8, byte_offset : s64) -> 
 }
 
 // @Todo: correctly handle non ascii characters
-IsAlpha :: (codepoint : u32) -> bool {
+IsAlpha :: inline (codepoint : u32) -> bool {
     return codepoint < 127 && is_alpha(xx codepoint);
+}
+
+// @Todo: correctly handle non ascii characters
+IsSpace :: inline (codepoint : u32) -> bool {
+    return codepoint < 127 && is_space(xx codepoint);
 }

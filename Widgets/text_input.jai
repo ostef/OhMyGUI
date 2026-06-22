@@ -545,6 +545,7 @@ DrawTextInputText :: (draw_list : *DrawList, node : *Node) {
             node.rect.xy,
             node.text_size,
             node.text,
+            node.size,
             node.text_color,
             node.outer_shadow_color,
             node.outer_shadow_offset,
@@ -562,12 +563,12 @@ DrawTextInputText :: (draw_list : *DrawList, node : *Node) {
     cursor_position := node.rect.xy;
     iter := IterText(node);
     for iter {
-        glyph_position := node.rect.xy + iter.pen + it.hori_bearing * iter.size;
-        glyph_position += it.size * iter.size * 0.5;
+        glyph_position := node.rect.xy + iter.pen + it.hori_bearing * iter.font_size;
+        glyph_position += it.size * iter.font_size * 0.5;
 
         bounds := Vec4f.{
-            xy=glyph_position - it.texture_size * iter.size * 0.5,
-            zw=glyph_position + it.texture_size * iter.size * 0.5,
+            xy=glyph_position - it.texture_size * iter.font_size * 0.5,
+            zw=glyph_position + it.texture_size * iter.font_size * 0.5,
         };
 
         DrawGlyph(draw_list, .{
@@ -583,18 +584,18 @@ DrawTextInputText :: (draw_list : *DrawList, node : *Node) {
         );
 
         if it_index == input.cursor {
-            cursor_position += Vec2f.{iter.pen.x, iter.pen.y - iter.font.ascent * iter.size};
+            cursor_position += Vec2f.{iter.pen.x, iter.pen.y - iter.font.ascent * iter.font_size};
         }
         if it_index == input.cursor + input.selection {
-            selection_position += Vec2f.{iter.pen.x, iter.pen.y - iter.font.ascent * iter.size};
+            selection_position += Vec2f.{iter.pen.x, iter.pen.y - iter.font.ascent * iter.font_size};
         }
     }
 
     if input.cursor == input.buffer.count {
-        cursor_position += Vec2f.{iter.pen.x, iter.pen.y - iter.font.ascent * iter.size};
+        cursor_position += Vec2f.{iter.pen.x, iter.pen.y - iter.font.ascent * iter.font_size};
     }
     if input.cursor + input.selection == input.buffer.count {
-        selection_position += Vec2f.{iter.pen.x, iter.pen.y - iter.font.ascent * iter.size};
+        selection_position += Vec2f.{iter.pen.x, iter.pen.y - iter.font.ascent * iter.font_size};
     }
 
     cursor_position.x = ceil(cursor_position.x);
@@ -686,15 +687,15 @@ TextInput :: (parent : *Node, flags : TextInputFlags = 0, style : *TextInputStyl
                 iter := IterText(text_node);
                 for iter {
                     glyph_rect : Vec4f;
-                    glyph_rect.xy = text_node.layout_last_frame.rect.xy + iter.pen - Vec2f.{0, iter.font.ascent * iter.size};
-                    glyph_rect.zw = glyph_rect.xy + Vec2f.{it.hori_advance, iter.font.ascent + iter.font.descent} * iter.size;
+                    glyph_rect.xy = text_node.layout_last_frame.rect.xy + iter.pen - Vec2f.{0, iter.font.ascent * iter.font_size};
+                    glyph_rect.zw = glyph_rect.xy + Vec2f.{it.hori_advance, iter.font.ascent + iter.font.descent} * iter.font_size;
 
                     if is_selecting && mouse.x >= glyph_rect.x && mouse.x < glyph_rect.z {
                         SetCursor(input, xx it_index, !input_button.pressed);
                     }
 
                     if it_index == input.cursor {
-                        cursor_position = .{iter.pen.x, iter.pen.y - iter.font.ascent * iter.size};
+                        cursor_position = .{iter.pen.x, iter.pen.y - iter.font.ascent * iter.font_size};
                     }
                 }
 
@@ -703,7 +704,7 @@ TextInput :: (parent : *Node, flags : TextInputFlags = 0, style : *TextInputStyl
                 }
 
                 if input.cursor == input.buffer.count {
-                    cursor_position = .{iter.pen.x, iter.pen.y - iter.font.ascent * iter.size};
+                    cursor_position = .{iter.pen.x, iter.pen.y - iter.font.ascent * iter.font_size};
                 }
 
                 if text_node.layout_last_frame.rect.x + cursor_position.x < input_field.layout_last_frame.rect.x + input_field.padding.x {

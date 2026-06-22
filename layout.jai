@@ -186,8 +186,13 @@ LayoutNodes :: (root : *Node) {
 
     SortChildren(root);
 
-    LayoutFixedAndFitSizing(root);
-    LayoutFillSizing(root);
+    LayoutFixedAndFitSizing(root, .X);
+    LayoutFillSizing(root, .X);
+
+    LayoutWrapText(root);
+
+    LayoutFixedAndFitSizing(root, .Y);
+    LayoutFillSizing(root, .Y);
 
     root.relative_position = .{0,0};
     root.rect.xy = .{0,0};
@@ -197,19 +202,21 @@ LayoutNodes :: (root : *Node) {
     LayoutPosition(root);
 }
 
-LayoutFixedAndFitSizing :: (node : *Node) {
-    axis := GetLayoutAxis(node);
-    cross := GetCrossAxis(axis);
+LayoutFixedAndFitSizing :: (node : *Node, axis : Axis) {
+    layout_axis := GetLayoutAxis(node);
 
     for :Children node {
-        LayoutFixedAndFitSizing(it);
+        LayoutFixedAndFitSizing(it, axis);
 
-        node.children_size[axis] += it.size[axis];
-        node.children_size[cross] = max(node.children_size[cross], it.size[cross]);
+        if layout_axis == axis {
+            node.children_size[axis] += it.size[axis];
+        } else {
+            node.children_size[axis] = max(node.children_size[axis], it.size[axis]);
+        }
     }
 
     text_size : Vec2f;
-    if node.flags & .TextNode && (node.desired_size.x.kind == .FitChildren || node.desired_size.y.kind == .FitChildren) {
+    if axis == .X && node.flags & .TextNode && node.desired_size.x.kind == .FitChildren {
         text_size = CalculateTextSize(node.font, node.text_size, node.text);
     }
 
@@ -222,122 +229,120 @@ LayoutFixedAndFitSizing :: (node : *Node) {
 
     // We should set the size to fit also if min size is set to fit and we want to fill the parent
     // We need this because otherwise a we can't have a parent that wants to fit with children that wants to fill with a min size of fit
-    should_fit : [2]bool = .[
-        node.desired_size.x.kind == .FitChildren || (node.desired_size.x.kind == .FillParent && node.min_size_fit[0]),
-        node.desired_size.y.kind == .FitChildren || (node.desired_size.y.kind == .FillParent && node.min_size_fit[1]),
-    ];
+    should_fit := node.desired_size[axis].kind == .FitChildren || (node.desired_size[axis].kind == .FillParent && node.min_size_fit[axis]);
 
-    for axis : Axis.[.X, .Y] {
-        if should_fit[axis] {
-            if node.flags & .TextNode {
+    if should_fit {
+        if node.flags & .TextNode {
+            if axis == .X {
                 node.size[axis] = ceil(text_size[axis]);
-            } else {
-                node.size[axis] = ceil(node.children_size[axis] + node.padding.xy[axis] + node.padding.zw[axis]);
             }
-            node.size[axis] = clamp(node.size[axis], node.min_size[axis], node.max_size[axis]);
-        } else if node.desired_size[axis].kind == .Pixels {
-            node.size[axis] = node.desired_size[axis].value;
-            node.size[axis] = clamp(node.size[axis], node.min_size[axis], node.max_size[axis]);
+        } else {
+            node.size[axis] = ceil(node.children_size[axis] + node.padding.xy[axis] + node.padding.zw[axis]);
         }
+        node.size[axis] = clamp(node.size[axis], node.min_size[axis], node.max_size[axis]);
+    } else if node.desired_size[axis].kind == .Pixels {
+        node.size[axis] = node.desired_size[axis].value;
+        node.size[axis] = clamp(node.size[axis], node.min_size[axis], node.max_size[axis]);
     }
 
     // Add child gap
-    if should_fit[axis] && !(node.flags & .TextNode) {
+    if layout_axis == axis && should_fit && !(node.flags & .TextNode) {
         node.size[axis] += ceil((node.num_children - 1) * node.child_gap[axis]);
         node.size[axis] = clamp(node.size[axis], node.min_size[axis], node.max_size[axis]);
     }
 }
 
-LayoutFillSizing :: (node : *Node) {
-    axis := GetLayoutAxis(node);
-    cross := GetCrossAxis(axis);
+LayoutFillSizing :: (node : *Node, axis : Axis) {
+    layout_axis := GetLayoutAxis(node);
 
-    if node.child_layout_mode == .None {
-        // Warning: the weight does not take into account siblings in None layout mode!
-        remaining_size := node.size[axis] - node.padding.xy[axis] - node.padding.zw[axis]
-            - node.children_size[axis]
-            - (node.num_children - 1) * node.child_gap[axis];
-        remaining_size = floor(remaining_size);
-        for :Children node {
-            if it.desired_size[axis].kind != .FillParent {
-                continue;
-            }
-
-            prev_size := it.size[axis];
-
-            it.size[axis] = floor(remaining_size * it.desired_size[axis].value);
-            it.size[axis] = clamp(it.size[axis], it.min_size[axis], it.max_size[axis]);
-
-            added_size := it.size[axis] - prev_size;
-            node.children_size[axis] += added_size;
-        }
-    } else {
-        total_weights := 0.0;
-        num_fill_children := 0;
-        for :Children node {
-            if it.desired_size[axis].kind != .FillParent {
-                continue;
-            }
-
-            total_weights += clamp(it.desired_size[axis].value, 0, 1);
-
-            if abs(it.size[axis] - it.min_size[axis]) < 0.00001 || abs(it.size[axis] - it.max_size[axis]) < 0.00001 {
-                continue;
-            }
-
-            num_fill_children += 1;
-        }
-
-        remaining_size := node.size[axis] - node.padding.xy[axis] - node.padding.zw[axis]
-            - node.children_size[axis]
-            - (node.num_children - 1) * node.child_gap[axis];
-        remaining_size = floor(remaining_size);
-        iter := 0;
-        while iter < 10 && num_fill_children > 0 && abs(remaining_size) > 0.00001 {
-            defer iter += 1;
-
+    if layout_axis == axis {
+        if node.child_layout_mode == .None {
+            // Warning: the weight does not take into account siblings in None layout mode!
+            remaining_size := node.size[axis] - node.padding.xy[axis] - node.padding.zw[axis]
+                - node.children_size[axis]
+                - (node.num_children - 1) * node.child_gap[axis];
+            remaining_size = floor(remaining_size);
             for :Children node {
-                if it.desired_size[axis].kind != .FillParent  {
-                    continue;
-                }
-
-                if abs(it.size[axis] - it.min_size[axis]) < 0.00001 || abs(it.size[axis] - it.max_size[axis]) < 0.00001 {
+                if it.desired_size[axis].kind != .FillParent {
                     continue;
                 }
 
                 prev_size := it.size[axis];
-                if total_weights > 0 {
-                    it.size[axis] += floor(remaining_size * it.desired_size[axis].value / total_weights);
-                }
-                it.size[axis] = clamp(it.size[axis], it.min_size[axis], it.max_size[axis]);
 
-                if abs(it.size[axis] - it.min_size[axis]) < 0.00001 || abs(it.size[axis] - it.max_size[axis]) < 0.00001 {
-                    num_fill_children -= 1;
-                }
+                it.size[axis] = floor(remaining_size * it.desired_size[axis].value);
+                it.size[axis] = clamp(it.size[axis], it.min_size[axis], it.max_size[axis]);
 
                 added_size := it.size[axis] - prev_size;
                 node.children_size[axis] += added_size;
             }
+        } else {
+            total_weights := 0.0;
+            num_fill_children := 0;
+            for :Children node {
+                if it.desired_size[axis].kind != .FillParent {
+                    continue;
+                }
 
-            if total_weights <= 0 {
-                break;
+                total_weights += clamp(it.desired_size[axis].value, 0, 1);
+
+                if abs(it.size[axis] - it.min_size[axis]) < 0.00001 || abs(it.size[axis] - it.max_size[axis]) < 0.00001 {
+                    continue;
+                }
+
+                num_fill_children += 1;
             }
 
-            remaining_size = node.size[axis] - node.padding.xy[axis] - node.padding.zw[axis]
+            remaining_size := node.size[axis] - node.padding.xy[axis] - node.padding.zw[axis]
                 - node.children_size[axis]
                 - (node.num_children - 1) * node.child_gap[axis];
             remaining_size = floor(remaining_size);
+            iter := 0;
+            while iter < 10 && num_fill_children > 0 && abs(remaining_size) > 0.00001 {
+                defer iter += 1;
+
+                for :Children node {
+                    if it.desired_size[axis].kind != .FillParent  {
+                        continue;
+                    }
+
+                    if abs(it.size[axis] - it.min_size[axis]) < 0.00001 || abs(it.size[axis] - it.max_size[axis]) < 0.00001 {
+                        continue;
+                    }
+
+                    prev_size := it.size[axis];
+                    if total_weights > 0 {
+                        it.size[axis] += floor(remaining_size * it.desired_size[axis].value / total_weights);
+                    }
+                    it.size[axis] = clamp(it.size[axis], it.min_size[axis], it.max_size[axis]);
+
+                    if abs(it.size[axis] - it.min_size[axis]) < 0.00001 || abs(it.size[axis] - it.max_size[axis]) < 0.00001 {
+                        num_fill_children -= 1;
+                    }
+
+                    added_size := it.size[axis] - prev_size;
+                    node.children_size[axis] += added_size;
+                }
+
+                if total_weights <= 0 {
+                    break;
+                }
+
+                remaining_size = node.size[axis] - node.padding.xy[axis] - node.padding.zw[axis]
+                    - node.children_size[axis]
+                    - (node.num_children - 1) * node.child_gap[axis];
+                remaining_size = floor(remaining_size);
+            }
         }
     }
 
     for :Children node {
-        if it.desired_size[cross].kind == .FillParent {
-            it.size[cross] = floor(node.size[cross] * it.desired_size[cross].value - node.padding.xy[cross] - node.padding.zw[cross]);
-            it.size[cross] = clamp(it.size[cross], it.min_size[cross], it.max_size[cross]);
-            node.children_size[cross] = max(node.children_size[cross], it.size[cross]);
+        if layout_axis != axis && it.desired_size[axis].kind == .FillParent {
+            it.size[axis] = floor(node.size[axis] * it.desired_size[axis].value - node.padding.xy[axis] - node.padding.zw[axis]);
+            it.size[axis] = clamp(it.size[axis], it.min_size[axis], it.max_size[axis]);
+            node.children_size[axis] = max(node.children_size[axis], it.size[axis]);
         }
 
-        LayoutFillSizing(it);
+        LayoutFillSizing(it, axis);
     }
 }
 
@@ -382,5 +387,27 @@ LayoutPosition :: (node : *Node) {
         it.clipped_rect = ClipRect(it.rect, node.rect);
 
         LayoutPosition(it);
+    }
+}
+
+LayoutWrapText :: (node : *Node) {
+    if node.flags & .TextNode && node.desired_size.y.kind == .FitChildren {
+        iter : TextGlyphIterator;
+        iter.font = node.font;
+        iter.font_size = node.text_size;
+        iter.text = node.text;
+        iter.bounds = node.size;
+        for :WordWrap iter {
+        }
+
+        node.size.y = iter.computed_size.y;
+
+        if begins_with(iter.text, "The quick") {
+            print_vars(iter.computed_size);
+        }
+    }
+
+    for :Children node {
+        LayoutWrapText(it);
     }
 }
