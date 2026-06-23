@@ -94,7 +94,7 @@ ResizeHandle :: enum {
     BottomRight;
 }
 
-SubwindowResize :: (subwindow : *Node, handle : *Node, min_size : Vec2f, direction : ResizeHandle) {
+SubwindowResizeBehavior :: (subwindow : *Node, handle : *Node, min_size : Vec2f, direction : ResizeHandle) {
     Cursors :: SystemCursor.[
         .ResizeVertical,
         .ResizeVertical,
@@ -208,14 +208,14 @@ SubwindowResizeHandles :: (subwindow : *Node, min_size : Vec2f, style : *Subwind
     resize_br := GetNode(bottom, "resize_br");
     SetSize(resize_br, SizePx(style.corner_resize_handle_size), SizePx(style.corner_resize_handle_size));
 
-    SubwindowResize(subwindow, resize_t, min_size, .Top);
-    SubwindowResize(subwindow, resize_b, min_size, .Bottom);
-    SubwindowResize(subwindow, resize_l, min_size, .Left);
-    SubwindowResize(subwindow, resize_r, min_size, .Right);
-    SubwindowResize(subwindow, resize_tl, min_size, .TopLeft);
-    SubwindowResize(subwindow, resize_tr, min_size, .TopRight);
-    SubwindowResize(subwindow, resize_bl, min_size, .BottomLeft);
-    SubwindowResize(subwindow, resize_br, min_size, .BottomRight);
+    SubwindowResizeBehavior(subwindow, resize_t, min_size, .Top);
+    SubwindowResizeBehavior(subwindow, resize_b, min_size, .Bottom);
+    SubwindowResizeBehavior(subwindow, resize_l, min_size, .Left);
+    SubwindowResizeBehavior(subwindow, resize_r, min_size, .Right);
+    SubwindowResizeBehavior(subwindow, resize_tl, min_size, .TopLeft);
+    SubwindowResizeBehavior(subwindow, resize_tr, min_size, .TopRight);
+    SubwindowResizeBehavior(subwindow, resize_bl, min_size, .BottomLeft);
+    SubwindowResizeBehavior(subwindow, resize_br, min_size, .BottomRight);
 
     return title_and_content;
 }

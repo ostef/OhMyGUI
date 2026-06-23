@@ -1,4 +1,3 @@
-
 SliderStateStyle :: struct {
     background : BoxStyle;
     fill : BoxStyle;
