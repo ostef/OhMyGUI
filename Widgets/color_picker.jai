@@ -13,7 +13,7 @@ HSVTriangleWheelStyle :: struct {
     outer_shadow_blur : float;
     outer_shadow_offset : Vec2f;
 
-    wheel_cursor : struct {
+    CursorStateStyle :: struct {
         radius := 10.0;
         border_color : RGBA8;
         border_size := 2.0;
@@ -21,9 +21,9 @@ HSVTriangleWheelStyle :: struct {
         outer_shadow_blur : float;
         outer_shadow_offset : Vec2f;
     }
-    triangle_cursor : type_of(wheel_cursor) = .{
-        radius=6
-    };
+
+    wheel_cursor : StateStyle(CursorStateStyle);
+    triangle_cursor : StateStyle(CursorStateStyle);
 }
 
 ColorPickerStyle :: struct {
@@ -166,17 +166,18 @@ SaturationValueTriangle :: (parent : *Node, using data : *ColorPickerData, style
 
         cursor := lerp(hue_point, white_point, 1 - hsv.saturation);
         cursor = lerp(cursor, black_point, 1 - hsv.value);
+        cursor_style := style.triangle_cursor.states[GetState(node)];
 
         DrawBox(draw_list, .{
             position=cursor,
-            size=Vec2f.{1,1} * (style.triangle_cursor.radius * 2),
-            corner_radiuses=Vec4f.{1,1,1,1} * style.triangle_cursor.radius,
+            size=Vec2f.{1,1} * (cursor_style.radius * 2),
+            corner_radiuses=Vec4f.{1,1,1,1} * cursor_style.radius,
             background_color=ColorU32(HSVToRGB(hsv), 1),
-            border_color=style.triangle_cursor.border_color,
-            border_size=style.triangle_cursor.border_size,
-            outer_shadow_color=style.triangle_cursor.outer_shadow_color,
-            outer_shadow_offset=style.triangle_cursor.outer_shadow_offset,
-            outer_shadow_blur=style.triangle_cursor.outer_shadow_blur,
+            border_color=cursor_style.border_color,
+            border_size=cursor_style.border_size,
+            outer_shadow_color=cursor_style.outer_shadow_color,
+            outer_shadow_offset=cursor_style.outer_shadow_offset,
+            outer_shadow_blur=cursor_style.outer_shadow_blur,
         });
     }
 
@@ -280,17 +281,18 @@ HueWheel :: (parent : *Node, using data : *ColorPickerData, style : *HSVTriangle
         // Draw cursor ring
         angle := ToRads(hsv.hue);
         cursor := center + Rotate(.{outer_radius - style.wheel_thickness * 0.5, 0}, angle);
+        cursor_style := style.wheel_cursor.states[GetState(node)];
 
         DrawBox(draw_list, .{
             position=cursor,
-            size=Vec2f.{1,1} * (style.wheel_cursor.radius * 2),
-            corner_radiuses=Vec4f.{1,1,1,1} * style.wheel_cursor.radius,
+            size=Vec2f.{1,1} * (cursor_style.radius * 2),
+            corner_radiuses=Vec4f.{1,1,1,1} * cursor_style.radius,
             background_color=ColorU32(HSVToRGB(.{hsv.hue, 1, 1}), 1),
-            border_color=style.wheel_cursor.border_color,
-            border_size=style.wheel_cursor.border_size,
-            outer_shadow_color=style.wheel_cursor.outer_shadow_color,
-            outer_shadow_offset=style.wheel_cursor.outer_shadow_offset,
-            outer_shadow_blur=style.wheel_cursor.outer_shadow_blur,
+            border_color=cursor_style.border_color,
+            border_size=cursor_style.border_size,
+            outer_shadow_color=cursor_style.outer_shadow_color,
+            outer_shadow_offset=cursor_style.outer_shadow_offset,
+            outer_shadow_blur=cursor_style.outer_shadow_blur,
         });
     }
 

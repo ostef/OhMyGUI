@@ -629,13 +629,28 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         wheel.outer_shadow_color = ColorU32(0,0,0,0.5);
         wheel.outer_shadow_blur = 5;
 
-        wheel.wheel_cursor.border_color = wheel.border_color;
-        wheel.wheel_cursor.outer_shadow_color = ColorU32(0,0,0,0.5);
-        wheel.wheel_cursor.outer_shadow_blur = 2;
+        wheel.wheel_cursor.normal.border_color = wheel.border_color;
+        wheel.wheel_cursor.normal.outer_shadow_color = ColorU32(0,0,0,0.5);
+        wheel.wheel_cursor.normal.outer_shadow_blur = 2;
 
-        wheel.triangle_cursor.border_color = wheel.border_color;
-        wheel.triangle_cursor.outer_shadow_color = ColorU32(0,0,0,0.5);
-        wheel.triangle_cursor.outer_shadow_blur = 2;
+        wheel.wheel_cursor.focused = wheel.wheel_cursor.normal;
+
+        wheel.wheel_cursor.hot = wheel.wheel_cursor.focused;
+        wheel.wheel_cursor.hot.radius += 5;
+
+        wheel.wheel_cursor.active = wheel.wheel_cursor.hot;
+
+        wheel.triangle_cursor.normal.radius = 6;
+        wheel.triangle_cursor.normal.border_color = wheel.border_color;
+        wheel.triangle_cursor.normal.outer_shadow_color = ColorU32(0,0,0,0.5);
+        wheel.triangle_cursor.normal.outer_shadow_blur = 2;
+
+        wheel.triangle_cursor.focused = wheel.triangle_cursor.normal;
+
+        wheel.triangle_cursor.hot = wheel.triangle_cursor.focused;
+        wheel.triangle_cursor.hot.radius += 5;
+
+        wheel.triangle_cursor.active = wheel.triangle_cursor.hot;
 
         red_slider = theme.slider;
         green_slider = theme.slider;
