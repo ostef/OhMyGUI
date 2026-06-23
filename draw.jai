@@ -262,7 +262,7 @@ IsClipped :: (draw_list : *DrawList, bounds : Vec4f) -> bool {
     }
 
     clipped := ClipRect(bounds, draw_list.clip_boxes[index].bounds);
-    return clipped.x >= clipped.z || clipped.y >= clipped.w;
+    return clipped.x > clipped.z || clipped.y > clipped.w;
 }
 
 DrawBox :: inline (draw_list : *DrawList, position : Vec2f, size : Vec2f, color : RGBA8, corner_radiuses := Vec4f.{}) -> int {
