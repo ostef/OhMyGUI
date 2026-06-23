@@ -5,13 +5,19 @@ ColorPickerFlags :: enum_flags {
 HSVTriangleWheelStyle :: struct {
     wheel_thickness := 20.0;
     triangle_inset := 10.0;
-    border_size := 2.5;
+    border_size := 2.0;
     border_color : RGBA8;
+    outer_shadow_color : RGBA8;
+    outer_shadow_blur : float;
+    outer_shadow_offset : Vec2f;
 
     wheel_cursor : struct {
         radius := 10.0;
         border_color : RGBA8;
         border_size := 2.0;
+        outer_shadow_color : RGBA8;
+        outer_shadow_blur : float;
+        outer_shadow_offset : Vec2f;
     }
     triangle_cursor : type_of(wheel_cursor) = .{
         radius=6
@@ -82,7 +88,14 @@ HSVTriangleWheel :: (parent : *Node, using data : *ColorPickerData, size : float
 
         wheel_shape := Onion(Circle(outer_radius - style.wheel_thickness * 0.5), style.wheel_thickness * 0.5 + style.border_size);
         triangle_shape := Inflate(Triangle(hue_point - center, white_point - center, black_point - center), style.border_size);
-        DrawShape(draw_list, Union(wheel_shape, triangle_shape, 1), center, style.border_color);
+        DrawShape(draw_list, .{
+            shape=Union(wheel_shape, triangle_shape, 1),
+            position=center,
+            background_color=style.border_color,
+            outer_shadow_color=style.outer_shadow_color,
+            outer_shadow_offset=style.outer_shadow_offset,
+            outer_shadow_blur=style.outer_shadow_blur,
+        });
     }
 
     modified := false;
@@ -152,11 +165,14 @@ SaturationValueTriangle :: (parent : *Node, using data : *ColorPickerData, style
 
         DrawBox(draw_list, .{
             position=cursor,
-            size=.{style.triangle_cursor.radius * 2, style.triangle_cursor.radius * 2},
+            size=Vec2f.{1,1} * (style.triangle_cursor.radius * 2),
             corner_radiuses=Vec4f.{1,1,1,1} * style.triangle_cursor.radius,
             background_color=ColorU32(HSVToRGB(hsv), 1),
             border_color=style.triangle_cursor.border_color,
             border_size=style.triangle_cursor.border_size,
+            outer_shadow_color=style.triangle_cursor.outer_shadow_color,
+            outer_shadow_offset=style.triangle_cursor.outer_shadow_offset,
+            outer_shadow_blur=style.triangle_cursor.outer_shadow_blur,
         });
     }
 
@@ -260,13 +276,17 @@ HueWheel :: (parent : *Node, using data : *ColorPickerData, style : *HSVTriangle
         // Draw cursor ring
         angle := ToRads(hsv.hue);
         cursor := center + Rotate(.{outer_radius - style.wheel_thickness * 0.5, 0}, angle);
+
         DrawBox(draw_list, .{
             position=cursor,
-            size=.{style.wheel_cursor.radius * 2, style.wheel_cursor.radius * 2},
+            size=Vec2f.{1,1} * (style.wheel_cursor.radius * 2),
             corner_radiuses=Vec4f.{1,1,1,1} * style.wheel_cursor.radius,
             background_color=ColorU32(HSVToRGB(.{hsv.hue, 1, 1}), 1),
             border_color=style.wheel_cursor.border_color,
             border_size=style.wheel_cursor.border_size,
+            outer_shadow_color=style.wheel_cursor.outer_shadow_color,
+            outer_shadow_offset=style.wheel_cursor.outer_shadow_offset,
+            outer_shadow_blur=style.wheel_cursor.outer_shadow_blur,
         });
     }
 

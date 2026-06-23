@@ -622,9 +622,18 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
     {
         using theme.color_picker;
 
-        wheel.border_color = MakeTone(ChooseTextColor(base_background_color), 0.25);
+        wheel.border_color = MakeTone(0xffffffff, 0.3);
+        wheel.outer_shadow_offset = .{wheel.border_size * 0.5, wheel.border_size * 0.5};
+        wheel.outer_shadow_color = ColorU32(0,0,0,0.5);
+        wheel.outer_shadow_blur = 5;
+
         wheel.wheel_cursor.border_color = wheel.border_color;
+        wheel.wheel_cursor.outer_shadow_color = ColorU32(0,0,0,0.5);
+        wheel.wheel_cursor.outer_shadow_blur = 2;
+
         wheel.triangle_cursor.border_color = wheel.border_color;
+        wheel.triangle_cursor.outer_shadow_color = ColorU32(0,0,0,0.5);
+        wheel.triangle_cursor.outer_shadow_blur = 2;
 
         red_slider = theme.slider;
         green_slider = theme.slider;
