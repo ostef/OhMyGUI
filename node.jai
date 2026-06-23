@@ -6,6 +6,8 @@ NodeFlags :: enum_flags u32 {
     // In certain situations, the text of the node should be taken into account instead
     // of the children (e.g. fit sizing)
     TextNode;
+    // Wrap the text when it goes outside the node width
+    WrapText;
     // Capture mouse focus when hovered if no other foreground node has captured it
     Focusable;
     // Capture scroll focus when hovered if no other foreground node has captured it

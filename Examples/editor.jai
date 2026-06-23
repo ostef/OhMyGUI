@@ -247,6 +247,7 @@ END
 
                 _, _, the_quick := OMG.ClickableText(main_viewport, Text);
                 OMG.SetWidth(the_quick, OMG.SizeFill());
+                the_quick.flags |= .WrapText;
                 the_quick.text_size = 10 + (cos(g_time) + 2) * 0.5 * 30;
 
                 content_browser := Panel(left_side, "content_browser", "Content Browser");

@@ -216,15 +216,12 @@ LayoutFixedAndFitSizing :: (node : *Node, axis : Axis) {
     }
 
     text_size : Vec2f;
-    if axis == .X && node.flags & .TextNode && node.desired_size.x.kind == .FitChildren {
+    if (node.flags & .TextNode) && (axis == .X || !(node.flags & .WrapText)) && node.desired_size[axis].kind == .FitChildren {
         text_size = CalculateTextSize(node.font, node.text_size, node.text);
     }
 
-    if node.min_size_fit[0] {
-        node.min_size.x = node.children_size.x + node.padding.x + node.padding.z;
-    }
-    if node.min_size_fit[1] {
-        node.min_size.y = node.children_size.y + node.padding.y + node.padding.w;
+    if node.min_size_fit[axis] {
+        node.min_size[axis] = node.children_size[axis] + node.padding.xy[axis] + node.padding.zw[axis];
     }
 
     // We should set the size to fit also if min size is set to fit and we want to fill the parent
@@ -233,7 +230,7 @@ LayoutFixedAndFitSizing :: (node : *Node, axis : Axis) {
 
     if should_fit {
         if node.flags & .TextNode {
-            if axis == .X {
+            if axis == .X || !(node.flags & .WrapText) {
                 node.size[axis] = ceil(text_size[axis]);
             }
         } else {
@@ -391,7 +388,7 @@ LayoutPosition :: (node : *Node) {
 }
 
 LayoutWrapText :: (node : *Node) {
-    if node.flags & .TextNode && node.desired_size.y.kind == .FitChildren {
+    if (node.flags & .TextNode) && (node.flags & .WrapText) && node.desired_size.y.kind == .FitChildren {
         iter : TextGlyphIterator;
         iter.font = node.font;
         iter.font_size = node.text_size;

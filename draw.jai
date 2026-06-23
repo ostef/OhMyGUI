@@ -24,6 +24,28 @@ BoxDrawing :: struct {
     clip_box_index : s32;
 }
 
+GetRealBounds :: (box : BoxDrawing) -> Vec4f {
+    bounds := Vec4f.{
+        xy=box.position - box.size * 0.5,
+        zw=box.position + box.size * 0.5,
+    };
+
+    bounds.x -= max(-box.border_inset, 0);
+    bounds.y -= max(-box.border_inset, 0);
+    bounds.z += max(-box.border_inset, 0);
+    bounds.w += max(-box.border_inset, 0);
+
+    bounds.x -= max(box.outer_shadow_blur, 0);
+    bounds.y -= max(box.outer_shadow_blur, 0);
+    bounds.z += max(box.outer_shadow_blur, 0);
+    bounds.w += max(box.outer_shadow_blur, 0);
+
+    bounds.xy = min(bounds.xy, bounds.xy + box.outer_shadow_offset);
+    bounds.zw = max(bounds.zw, bounds.zw + box.outer_shadow_offset);
+
+    return bounds;
+}
+
 ShaderBoxDrawing :: struct {
     size_and_position : Vec4f;
     corner_radiuses : Vec4f;
@@ -60,6 +82,20 @@ GlyphDrawing :: struct {
     clip_box_index : s32;
 }
 
+GetRealBounds :: (glyph : GlyphDrawing) -> Vec4f {
+    bounds := glyph.bounds;
+
+    bounds.x -= max(glyph.outer_shadow_blur, 0);
+    bounds.y -= max(glyph.outer_shadow_blur, 0);
+    bounds.z += max(glyph.outer_shadow_blur, 0);
+    bounds.w += max(glyph.outer_shadow_blur, 0);
+
+    bounds.xy = min(bounds.xy, bounds.xy + glyph.outer_shadow_offset);
+    bounds.zw = max(bounds.zw, bounds.zw + glyph.outer_shadow_offset);
+
+    return bounds;
+}
+
 ShaderGlyphDrawing :: GlyphDrawing;
 
 ShaderShape :: struct {
@@ -79,6 +115,27 @@ ShapeDrawing :: struct {
     outer_shadow_offset : Vec2f;
     outer_shadow_blur : float;
     clip_box_index : s32;
+}
+
+GetRealBounds :: (shape : ShapeDrawing) -> Vec4f {
+    bounds := GetBounds(shape.shape);
+    bounds.xy += shape.position;
+    bounds.zw += shape.position;
+
+    bounds.x -= max(-shape.border_inset, 0);
+    bounds.y -= max(-shape.border_inset, 0);
+    bounds.z += max(-shape.border_inset, 0);
+    bounds.w += max(-shape.border_inset, 0);
+
+    bounds.x -= max(shape.outer_shadow_blur, 0);
+    bounds.y -= max(shape.outer_shadow_blur, 0);
+    bounds.z += max(shape.outer_shadow_blur, 0);
+    bounds.w += max(shape.outer_shadow_blur, 0);
+
+    bounds.xy = min(bounds.xy, bounds.xy + shape.outer_shadow_offset);
+    bounds.zw = max(bounds.zw, bounds.zw + shape.outer_shadow_offset);
+
+    return bounds;
 }
 
 ShaderShapeDrawing :: struct {
@@ -224,6 +281,10 @@ DrawBox :: (draw_list : *DrawList, box : BoxDrawing, texture : TextureHandle = 0
         return -1;
     }
 
+    if IsClipped(draw_list, GetRealBounds(box)) {
+        return -1;
+    }
+
     draw_call := GetCurrentDrawCall(draw_list);
     if !draw_call || draw_call.kind != .Boxes || draw_call.texture != texture {
         draw_call = array_add(*draw_list.draw_calls);
@@ -243,6 +304,10 @@ DrawBox :: (draw_list : *DrawList, box : BoxDrawing, texture : TextureHandle = 0
 
 DrawGlyph :: (draw_list : *DrawList, glyph : GlyphDrawing, texture : TextureHandle) -> int {
     if (glyph.color & 0xff) == 0 && (glyph.outer_shadow_color & 0xff) == 0 {
+        return -1;
+    }
+
+    if IsClipped(draw_list, GetRealBounds(glyph)) {
         return -1;
     }
 
@@ -292,7 +357,46 @@ DrawTriangle :: (draw_list : *DrawList, triangle : TriangleDrawing) -> int {
     return draw_list.triangles.count - 1;
 }
 
-DrawText :: (draw_list : *DrawList, font : *Font, position : Vec2f, size : float, text : string, bounds : Vec2f, color : RGBA8, outer_shadow_color : RGBA8 = 0, outer_shadow_offset := Vec2f.{0,0}, outer_shadow_blur := 0.0, effects : TextEffects = 0) {
+DrawText :: (
+    draw_list : *DrawList,
+    font : *Font,
+    position : Vec2f,
+    size : float,
+    text : string,
+    color : RGBA8,
+    outer_shadow_color : RGBA8 = 0,
+    outer_shadow_offset := Vec2f.{0,0},
+    outer_shadow_blur := 0.0,
+    effects : TextEffects = 0
+) {
+    DrawWrappedText(
+        draw_list,
+        font,
+        position,
+        size,
+        text,
+        .{FLOAT32_INFINITY, FLOAT32_INFINITY},
+        color,
+        outer_shadow_color,
+        outer_shadow_offset,
+        outer_shadow_blur,
+        effects
+    );
+}
+
+DrawWrappedText :: (
+    draw_list : *DrawList,
+    font : *Font,
+    position : Vec2f,
+    size : float,
+    text : string,
+    bounds : Vec2f,
+    color : RGBA8,
+    outer_shadow_color : RGBA8 = 0,
+    outer_shadow_offset := Vec2f.{0,0},
+    outer_shadow_blur := 0.0,
+    effects : TextEffects = 0
+) {
     if !font || ((color & 0xff) == 0 && (outer_shadow_color & 0xff) == 0) {
         return;
     }
@@ -401,6 +505,10 @@ DrawShape :: (draw_list : *DrawList, drawing : ShapeDrawing, texture : TextureHa
         return -1;
     }
 
+    if IsClipped(draw_list, GetRealBounds(drawing)) {
+        return -1;
+    }
+
     draw_call := GetCurrentDrawCall(draw_list);
     if !draw_call || draw_call.kind != .Shapes || draw_call.texture != texture {
         draw_call = array_add(*draw_list.draw_calls);
@@ -432,18 +540,32 @@ DrawNodeDefault :: (draw_list : *DrawList, node : *Node) {
         outer_shadow_blur=node.outer_shadow_blur,
     });
 
-    DrawText(draw_list,
-        node.font,
-        node.rect.xy,
-        node.text_size,
-        node.text,
-        node.size,
-        node.text_color,
-        node.outer_shadow_color,
-        node.outer_shadow_offset,
-        node.outer_shadow_blur,
-        node.text_effects
-    );
+    if node.flags & .WrapText {
+        DrawWrappedText(draw_list,
+            node.font,
+            node.rect.xy,
+            node.text_size,
+            node.text,
+            node.size,
+            node.text_color,
+            node.outer_shadow_color,
+            node.outer_shadow_offset,
+            node.outer_shadow_blur,
+            node.text_effects
+        );
+    } else {
+        DrawText(draw_list,
+            node.font,
+            node.rect.xy,
+            node.text_size,
+            node.text,
+            node.text_color,
+            node.outer_shadow_color,
+            node.outer_shadow_offset,
+            node.outer_shadow_blur,
+            node.text_effects
+        );
+    }
 }
 
 FlattenShapes :: (shape : *Shape, buffer : *[..]ShaderShape) -> u32 {

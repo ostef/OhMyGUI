@@ -545,7 +545,6 @@ DrawTextInputText :: (draw_list : *DrawList, node : *Node) {
             node.rect.xy,
             node.text_size,
             node.text,
-            node.size,
             node.text_color,
             node.outer_shadow_color,
             node.outer_shadow_offset,
