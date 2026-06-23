@@ -332,37 +332,3 @@ ReadCompileTimeFile :: (filename : string, location := #caller_location) -> stri
 
     return contents;
 }
-
-#scope_file
-
-DrawNodes :: (draw_list : *DrawList, node : *Node) {
-    if node.draw {
-        node.draw(draw_list, node);
-    }
-
-    if node.clipped_rect.x >= node.clipped_rect.z || node.clipped_rect.y >= node.clipped_rect.w {
-        return;
-    }
-
-    position := (node.rect.xy + node.rect.zw) * 0.5;
-    if node.num_children > 0 {
-        if !(node.flags & .NoClip) {
-            if node.flags & .NoPaddedClip {
-                PushClipBox(*node.window.draw_list, node.rect, node.corner_radiuses);
-            } else {
-                bounds := node.rect;
-                bounds.xy += node.padding.xy;
-                bounds.zw -= node.padding.zw;
-                PushClipBox(*node.window.draw_list, bounds, node.corner_radiuses);
-            }
-        }
-
-        for :Children node {
-            DrawNodes(draw_list, it);
-        }
-
-        if !(node.flags & .NoClip) {
-            PopClipBox(*node.window.draw_list);
-        }
-    }
-}
