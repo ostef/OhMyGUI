@@ -622,6 +622,8 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
     {
         using theme.color_picker;
 
+        wheel.padding = .{5,5,5,5};
+
         wheel.border_color = MakeTone(0xffffffff, 0.3);
         wheel.outer_shadow_offset = .{wheel.border_size * 0.5, wheel.border_size * 0.5};
         wheel.outer_shadow_color = ColorU32(0,0,0,0.5);

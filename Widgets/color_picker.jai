@@ -3,6 +3,8 @@ ColorPickerFlags :: enum_flags {
 }
 
 HSVTriangleWheelStyle :: struct {
+    padding : Vec4f;
+
     wheel_thickness := 20.0;
     triangle_inset := 10.0;
     border_size := 2.0;
@@ -84,10 +86,11 @@ HSVTriangleWheel :: (parent : *Node, using data : *ColorPickerData, size : float
         }
 
         using _ := data.*;
-        using _ := GetHSVWheelGeometricData(style, node.rect, hsv);
+        using _ := GetHSVWheelGeometricData(style, InflateBounds(node.rect, node.padding * -1), hsv);
 
         wheel_shape := Onion(Circle(outer_radius - style.wheel_thickness * 0.5), style.wheel_thickness * 0.5 + style.border_size);
         triangle_shape := Inflate(Triangle(hue_point - center, white_point - center, black_point - center), style.border_size);
+
         DrawShape(draw_list, .{
             shape=Union(wheel_shape, triangle_shape, 1),
             position=center,
@@ -107,6 +110,7 @@ HSVTriangleWheel :: (parent : *Node, using data : *ColorPickerData, size : float
         SetDraw(node, Draw);
         SetUserData(node, data);
         SetUserData(node, style.*);
+        SetPadding(node, style.padding);
 
         modified |= SaturationValueTriangle(node, data, style);
         modified |= HueWheel(node, data, style);
