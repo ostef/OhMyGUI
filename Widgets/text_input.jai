@@ -556,7 +556,9 @@ DrawTextInputText :: (draw_list : *DrawList, node : *Node) {
 
     sdf_range := node.font.sdf_range * node.text_size;
 
-    selection_box_index := ifx node.parent.state_flags & .Active && input.selection != 0 then DrawBox(draw_list, .{background_color=0xffffffff}) else -1;
+    selection_box_index := ifx node.parent.state_flags & .Active && input.selection != 0
+        then DrawBox(draw_list, .{size=.{FLOAT32_INFINITY, FLOAT32_INFINITY}, background_color=0xffffffff})
+        else -1;
 
     selection_position := node.rect.xy;
     cursor_position := node.rect.xy;
