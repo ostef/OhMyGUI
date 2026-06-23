@@ -111,6 +111,7 @@ HSVTriangleWheel :: (parent : *Node, using data : *ColorPickerData, size : float
         SetUserData(node, data);
         SetUserData(node, style.*);
         SetPadding(node, style.padding);
+        node.flags |= .NoPaddedClip;
 
         modified |= SaturationValueTriangle(node, data, style);
         modified |= HueWheel(node, data, style);
@@ -182,6 +183,7 @@ SaturationValueTriangle :: (parent : *Node, using data : *ColorPickerData, style
     }
 
     node := GetNode(parent, location);
+    node.flags |= .NoClip;
     SetSize(node, SizeFill(), SizeFill());
     SetDraw(node, Draw);
     SetHitTest(node, HitTest);
@@ -297,6 +299,7 @@ HueWheel :: (parent : *Node, using data : *ColorPickerData, style : *HSVTriangle
     }
 
     node := GetNode(parent);
+    node.flags |= .NoClip;
     SetSize(node, SizeFill(), SizeFill());
     SetDraw(node, Draw);
     SetHitTest(node, HitTest);
