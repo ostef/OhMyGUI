@@ -198,6 +198,16 @@ PopClipBox :: (draw_list : *DrawList) {
     pop(*draw_list.clip_box_stack);
 }
 
+IsClipped :: (draw_list : *DrawList, bounds : Vec4f) -> bool {
+    index := GetCurrentClipBoxIndex(draw_list);
+    if index < 0 {
+        return false;
+    }
+
+    clipped := ClipRect(bounds, draw_list.clip_boxes[index].bounds);
+    return clipped.x >= clipped.z || clipped.y >= clipped.w;
+}
+
 DrawBox :: inline (draw_list : *DrawList, position : Vec2f, size : Vec2f, color : RGBA8, corner_radiuses := Vec4f.{}) -> int {
     return DrawBox(draw_list, .{
             size=size,
@@ -678,7 +688,7 @@ SendDrawCommands :: (draw_list : *DrawList, viewport_w : u32, viewport_h : u32) 
 }
 
 DrawNodes :: (draw_list : *DrawList, node : *Node) {
-    if node.clipped_rect.x >= node.clipped_rect.z || node.clipped_rect.y >= node.clipped_rect.w {
+    if IsClipped(draw_list, node.rect) {
         return;
     }
 
