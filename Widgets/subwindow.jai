@@ -30,6 +30,7 @@ SubwindowStyle :: struct {
     vertical_scrollbar : SliderStyle;
     horizontal_scrollbar : SliderStyle;
     resize_handle_size := 8.0;
+    resize_handle_inset := -8.0;
     corner_resize_handle_size := 12.0;
 }
 
@@ -167,11 +168,9 @@ SubwindowResizeHandles :: (subwindow : *Node, min_size : Vec2f, style : *Subwind
     SetLayout(subwindow, .None);
 
     title_and_content := GetNode(subwindow, "title_and_content");
-    SetSize(title_and_content, SizeFill(), SizeFill());
     SetLayout(title_and_content, .TopToBottom);
 
     resize_handles := GetNode(subwindow, "resize_handles");
-    SetSize(resize_handles, SizeFill(), SizeFill());
     SetLayout(resize_handles, .TopToBottom);
 
     top := GetNode(resize_handles, "top");
@@ -217,6 +216,13 @@ SubwindowResizeHandles :: (subwindow : *Node, min_size : Vec2f, style : *Subwind
     SubwindowResizeBehavior(subwindow, resize_bl, min_size, .BottomLeft);
     SubwindowResizeBehavior(subwindow, resize_br, min_size, .BottomRight);
 
+    resize_handles.desired_size = subwindow.desired_size;
+
+    title_and_content.desired_size = subwindow.desired_size;
+    title_and_content.desired_size.x.value -= max(-style.resize_handle_inset * 2, 0);
+    title_and_content.desired_size.y.value -= max(-style.resize_handle_inset * 2, 0);
+    title_and_content.offset = Vec2f.{1,1} * max(-style.resize_handle_inset, 0);
+
     return title_and_content;
 }
 
@@ -237,6 +243,11 @@ Subwindow :: (
     {
         if is_new {
             SetSize(subwindow, SizePx(initial_size.x), SizePx(initial_size.y));
+
+            if !(flags & .NoResize) {
+                subwindow.desired_size.x.value += max(-style.resize_handle_inset * 2, 0);
+                subwindow.desired_size.y.value += max(-style.resize_handle_inset * 2, 0);
+            }
         } else {
             SetSize(subwindow, SizePx(subwindow.layout_last_frame.size.x), SizePx(subwindow.layout_last_frame.size.y));
         }
@@ -308,10 +319,11 @@ Subwindow :: (
             }
         }
 
-        Apply(subwindow, style.background);
+        Apply(title_and_content, style.background);
 
-        subwindow.padding = .{};
-        subwindow.child_gap = .{};
+        subwindow.flags |= .NoClip;
+        title_and_content.padding = .{};
+        title_and_content.child_gap = .{};
     }
 
     return content, subwindow;
