@@ -34,7 +34,7 @@ SubwindowStyle :: struct {
     corner_resize_handle_size := 12.0;
 }
 
-SubwindowMoveBehavior :: (subwindow : *Node, node : *Node, title_bar_size : Vec2f) {
+SubwindowMoveBehavior :: (subwindow : *Node, node : *Node, avail_area : Vec4f, title_bar_size : Vec2f) {
     interaction := ButtonBehavior(node);
 
     if node.state_flags & .Focused && IsMouseButtonPressed(.Left) {
@@ -54,22 +54,17 @@ SubwindowMoveBehavior :: (subwindow : *Node, node : *Node, title_bar_size : Vec2
         original_offset := context.omg.mouse_captured_node_value.xy;
         subwindow.offset = original_offset + mouse_delta;
 
-        avail_area := subwindow.parent.layout_last_frame.size;
-        subwindow.offset = clamp(subwindow.offset, .{0, 0}, avail_area - title_bar_size);
+        subwindow.offset = clamp(subwindow.offset, avail_area.xy, avail_area.zw - title_bar_size);
     }
 }
 
-SubwindowTitleBar :: (subwindow : *Node, parent : *Node, title : string, flags : SubwindowFlags, style : *SubwindowTitleBarStyle) -> *Node {
+SubwindowTitleBar :: (subwindow : *Node, parent : *Node, title : string, style : *SubwindowTitleBarStyle) -> *Node {
     node := GetNode(parent, "title_bar");
     {
         SetSize(node, SizeFill(), SizeFit());
 
         text := GetNode(node, "text");
         SetText(text, title);
-
-        if !(flags & .NoMove) {
-            SubwindowMoveBehavior(subwindow, node, node.layout_last_frame.size);
-        }
 
         state := GetState(node);
         Apply(node, style.states[state].background);
@@ -95,7 +90,7 @@ ResizeHandle :: enum {
     BottomRight;
 }
 
-SubwindowResizeBehavior :: (subwindow : *Node, handle : *Node, min_size : Vec2f, direction : ResizeHandle) {
+SubwindowResizeBehavior :: (subwindow : *Node, handle : *Node, min_size : Vec2f, avail_area : Vec4f, direction : ResizeHandle) {
     Cursors :: SystemCursor.[
         .ResizeVertical,
         .ResizeVertical,
@@ -123,7 +118,6 @@ SubwindowResizeBehavior :: (subwindow : *Node, handle : *Node, min_size : Vec2f,
 
     if button.held {
         mouse_delta := GetMousePosition() - context.omg.mouse_captured_at;
-        parent_rect := subwindow.parent.layout_last_frame.rect;
         new_rect := ScreenToWindow(subwindow.window, context.omg.mouse_captured_node_value);
         to_modify : struct {x: bool; y: bool; z: bool; w: bool;}
 
@@ -139,20 +133,20 @@ SubwindowResizeBehavior :: (subwindow : *Node, handle : *Node, min_size : Vec2f,
         }
 
         if to_modify.x {
-            new_rect.x = clamp(new_rect.x + mouse_delta.x, parent_rect.x, new_rect.z - min_size.x);
+            new_rect.x = clamp(new_rect.x + mouse_delta.x, avail_area.x, new_rect.z - min_size.x);
         }
         if to_modify.y {
-            new_rect.y = clamp(new_rect.y + mouse_delta.y, parent_rect.y, new_rect.w - min_size.y);
-            new_rect.y = min(new_rect.y, parent_rect.w - min_size.y); // Keep title bar visible
+            new_rect.y = clamp(new_rect.y + mouse_delta.y, avail_area.y, new_rect.w - min_size.y);
+            new_rect.y = min(new_rect.y, avail_area.w - min_size.y); // Keep title bar visible
         }
         if to_modify.z {
-            new_rect.z = clamp(new_rect.z + mouse_delta.x, new_rect.x + min_size.x, parent_rect.z);
+            new_rect.z = clamp(new_rect.z + mouse_delta.x, new_rect.x + min_size.x, avail_area.z);
         }
         if to_modify.w {
-            new_rect.w = clamp(new_rect.w + mouse_delta.y, new_rect.y + min_size.y, parent_rect.w);
+            new_rect.w = clamp(new_rect.w + mouse_delta.y, new_rect.y + min_size.y, avail_area.w);
         }
 
-        new_offset := new_rect.xy - parent_rect.xy;
+        new_offset := new_rect.xy - subwindow.parent.layout_last_frame.rect.xy;
         new_size := new_rect.zw - new_rect.xy;
 
         subwindow.offset = new_offset;
@@ -207,14 +201,17 @@ SubwindowResizeHandles :: (subwindow : *Node, min_size : Vec2f, style : *Subwind
     resize_br := GetNode(bottom, "resize_br");
     SetSize(resize_br, SizePx(style.corner_resize_handle_size), SizePx(style.corner_resize_handle_size));
 
-    SubwindowResizeBehavior(subwindow, resize_t, min_size, .Top);
-    SubwindowResizeBehavior(subwindow, resize_b, min_size, .Bottom);
-    SubwindowResizeBehavior(subwindow, resize_l, min_size, .Left);
-    SubwindowResizeBehavior(subwindow, resize_r, min_size, .Right);
-    SubwindowResizeBehavior(subwindow, resize_tl, min_size, .TopLeft);
-    SubwindowResizeBehavior(subwindow, resize_tr, min_size, .TopRight);
-    SubwindowResizeBehavior(subwindow, resize_bl, min_size, .BottomLeft);
-    SubwindowResizeBehavior(subwindow, resize_br, min_size, .BottomRight);
+    avail_area := subwindow.parent.layout_last_frame.rect;
+    avail_area = InflateBounds(avail_area, Vec4f.{1,1,1,1} * max(-style.resize_handle_inset, 0));
+
+    SubwindowResizeBehavior(subwindow, resize_t, min_size, avail_area, .Top);
+    SubwindowResizeBehavior(subwindow, resize_b, min_size, avail_area, .Bottom);
+    SubwindowResizeBehavior(subwindow, resize_l, min_size, avail_area, .Left);
+    SubwindowResizeBehavior(subwindow, resize_r, min_size, avail_area, .Right);
+    SubwindowResizeBehavior(subwindow, resize_tl, min_size, avail_area, .TopLeft);
+    SubwindowResizeBehavior(subwindow, resize_tr, min_size, avail_area, .TopRight);
+    SubwindowResizeBehavior(subwindow, resize_bl, min_size, avail_area, .BottomLeft);
+    SubwindowResizeBehavior(subwindow, resize_br, min_size, avail_area, .BottomRight);
 
     resize_handles.desired_size = subwindow.desired_size;
 
@@ -265,8 +262,22 @@ Subwindow :: (
             then subwindow
             else SubwindowResizeHandles(subwindow, min_size, style);
 
+        avail_area := subwindow.parent.layout_last_frame.rect;
+        if !(flags & .NoResize) {
+            avail_area = InflateBounds(avail_area, Vec4f.{1,1,1,1} * max(-style.resize_handle_inset, 0));
+        }
+
         title_bar := ifx !(flags & .NoTitleBar)
-            then SubwindowTitleBar(subwindow, title_and_content, title, flags, *style.title_bar);
+            then SubwindowTitleBar(subwindow, title_and_content, title, *style.title_bar);
+
+        title_bar_size := ifx title_bar then title_bar.layout_last_frame.size;
+        if !(flags & .NoResize) {
+            title_bar_size += Vec2f.{1,1} * max(-style.resize_handle_inset * 2, 0);
+        }
+
+        if title_bar && !(flags & .NoMove) {
+            SubwindowMoveBehavior(subwindow, title_bar, avail_area, title_bar_size);
+        }
 
         hscroll := (flags & .NoHorizontalScroll) == 0;
         vscroll := (flags & .NoVerticalScroll) == 0;
@@ -298,7 +309,7 @@ Subwindow :: (
             content.child_gap = style.background.child_gap;
 
             if !(flags & .NoMove) && !(flags & .NoMoveFromBackground) {
-                SubwindowMoveBehavior(subwindow, content, ifx title_bar then title_bar.layout_last_frame.size);
+                SubwindowMoveBehavior(subwindow, content, avail_area, title_bar_size);
             }
 
             axes : AxisFlags;
