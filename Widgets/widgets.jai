@@ -8,6 +8,7 @@
 LabelAndContentStyle :: struct {
     padding : Vec4f;
     child_gap : Vec2f;
+    child_align := Vec2f.{0,0.5};
     text : TextStyle;
     text_fill := 0.35;
 }
@@ -17,6 +18,7 @@ LabelAndContent :: (parent : *Node, label : string, style : *LabelAndContentStyl
 
     node := GetNode(parent, location);
     SetSize(node, SizeFill(), SizeFit());
+    SetChildAlign(node, style.child_align);
     SetLayout(node, .LeftToRight);
     SetPadding(node, style.padding);
 

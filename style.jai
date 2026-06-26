@@ -649,6 +649,9 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
 
         wheel.triangle_cursor.active = wheel.triangle_cursor.hot;
 
+        label_and_slider = theme.label_and_content;
+        label_and_slider.text_fill = 0.1;
+
         dynamic_rgb_slider_color = true;
         dynamic_hsv_slider_color = true;
         dynamic_opacity_slider_color = true;

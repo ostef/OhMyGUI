@@ -840,3 +840,33 @@ DrawNodes :: (draw_list : *DrawList, node : *Node) {
         }
     }
 }
+
+DrawCheckerboard :: (draw_list : *DrawList, rect : Vec4f, white : RGBA8, black : RGBA8) {
+    if white & 0xff == 0 && black & 0xff == 0 {
+        return;
+    }
+
+    if rect.x >= rect.z || rect.y >= rect.w {
+        return;
+    }
+
+    checker_size := (rect.w - rect.y) * 0.5;
+    white_square_x := false;
+    px := rect.x;
+    while px < rect.z {
+        py := rect.y;
+        white_square := white_square_x;
+        while py < rect.w {
+            size := Vec2f.{checker_size, checker_size};
+            position := Vec2f.{px, py} + size * 0.5;
+
+            DrawBox(draw_list, position, size, ifx white_square then white else black);
+
+            white_square = !white_square;
+            py += checker_size;
+        }
+
+        white_square_x = !white_square_x;
+        px += checker_size;
+    }
+}

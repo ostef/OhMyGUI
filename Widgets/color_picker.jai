@@ -29,6 +29,8 @@ HSVTriangleWheelStyle :: struct {
 ColorPickerStyle :: struct {
     wheel : HSVTriangleWheelStyle;
 
+    label_and_slider : LabelAndContentStyle;
+
     red_slider : SliderStyle;
     green_slider : SliderStyle;
     blue_slider : SliderStyle;
@@ -357,27 +359,7 @@ ColoredSlider :: (parent : *Node, value : *float, min : float, max : float, step
 
         PushClipBox(draw_list, node.rect, node.corner_radiuses);
 
-        if checkerboard_white & 0xff != 0 && checkerboard_black & 0xff != 0 {
-            checker_size := node.size.y * 0.5;
-            white_x := false;
-            px := node.rect.x;
-            while px < node.rect.z {
-                py := node.rect.y;
-                white := white_x;
-                while py < node.rect.w {
-                    size := Vec2f.{checker_size, checker_size};
-                    position := Vec2f.{px, py} + size * 0.5;
-
-                    DrawBox(draw_list, position, size, ifx white then checkerboard_white else checkerboard_black);
-
-                    white = !white;
-                    py += checker_size;
-                }
-
-                white_x = !white_x;
-                px += checker_size;
-            }
-        }
+        DrawCheckerboard(draw_list, node.rect, checkerboard_white, checkerboard_black);
 
         if hue {
             resolution := cast(int, Max(node.size.x / 5.0, 30));
@@ -439,12 +421,18 @@ ColorPicker :: (parent : *Node, color : *Vec4f, flags : ColorPickerFlags = 0, st
         return hsv;
     }
 
-    LabelSlider :: (parent : *Node, label : string, value : *float, min : float, max : float, step : float, style : *SliderStyle, dynamic_color : bool, location := #caller_location) -> bool, slider : *Node {
-        content := LabelAndContent(parent, label, location=location);
+    LabelSlider :: (
+        parent : *Node,
+        label : string,
+        value : *float, min : float, max : float, step : float,
+        label_and_content_style : *LabelAndContentStyle, style : *SliderStyle, dynamic_color : bool,
+        location := #caller_location
+    ) -> bool, slider : *Node {
+        content := LabelAndContent(parent, label, style=label_and_content_style, location=location);
 
         _, slider := ColoredSlider(content, value, min, max, step, style, dynamic_color);
 
-        text := Text(content, "%", FormatFloat.{value=value.*, trailing_width=2});
+        text := Text(content, "%", FormatFloat.{value=value.*, trailing_width=2}, style=*label_and_content_style.text);
         approx_max_text_size := CalculateTextSize(text.font, text.text_size, "00.00");
         SetWidth(text, SizePx(approx_max_text_size.x));
 
@@ -477,9 +465,9 @@ ColorPicker :: (parent : *Node, color : *Vec4f, flags : ColorPickerFlags = 0, st
         SetMinWidth(right, 200);
         SetLayout(right, .TopToBottom);
 
-        r_modified, r_slider := LabelSlider(right, "Red", *color.x, 0, 1, 0.01, style=*style.red_slider, dynamic_color=style.dynamic_rgb_slider_color);
-        g_modified, g_slider := LabelSlider(right, "Green", *color.y, 0, 1, 0.01, style=*style.green_slider, dynamic_color=style.dynamic_rgb_slider_color);
-        b_modified, b_slider := LabelSlider(right, "Blue", *color.z, 0, 1, 0.01, style=*style.blue_slider, dynamic_color=style.dynamic_rgb_slider_color);
+        r_modified, r_slider := LabelSlider(right, "R", *color.x, 0, 1, 0.01, *style.label_and_slider, *style.red_slider, style.dynamic_rgb_slider_color);
+        g_modified, g_slider := LabelSlider(right, "G", *color.y, 0, 1, 0.01, *style.label_and_slider, *style.green_slider, style.dynamic_rgb_slider_color);
+        b_modified, b_slider := LabelSlider(right, "B", *color.z, 0, 1, 0.01, *style.label_and_slider, *style.blue_slider, style.dynamic_rgb_slider_color);
 
         if style.dynamic_rgb_slider_color {
             SetUserData(r_slider, ColoredSliderData.{
@@ -504,9 +492,9 @@ ColorPicker :: (parent : *Node, color : *Vec4f, flags : ColorPickerFlags = 0, st
 
         data.modifying_hsv = HSVTriangleWheel(left, data, 250, *style.wheel);
 
-        h_modified, h_slider := LabelSlider(right, "Hue", *data.hsv.hue, 0, 360, 1, style=*style.hue_slider, dynamic_color=style.dynamic_hsv_slider_color);
-        s_modified, s_slider := LabelSlider(right, "Saturation", *data.hsv.saturation, 0, 1, 0.01, style=*style.saturation_slider, dynamic_color=style.dynamic_hsv_slider_color);
-        v_modified, v_slider := LabelSlider(right, "Value", *data.hsv.value, 0, 1, 0.01, style=*style.value_slider, dynamic_color=style.dynamic_hsv_slider_color);
+        h_modified, h_slider := LabelSlider(right, "H", *data.hsv.hue, 0, 360, 1, *style.label_and_slider, *style.hue_slider, style.dynamic_hsv_slider_color);
+        s_modified, s_slider := LabelSlider(right, "S", *data.hsv.saturation, 0, 1, 0.01, *style.label_and_slider, *style.saturation_slider, style.dynamic_hsv_slider_color);
+        v_modified, v_slider := LabelSlider(right, "V", *data.hsv.value, 0, 1, 0.01, *style.label_and_slider, *style.value_slider, style.dynamic_hsv_slider_color);
 
         data.modifying_hsv |= h_modified | s_modified | v_modified;
         if data.modifying_hsv {
@@ -528,7 +516,7 @@ ColorPicker :: (parent : *Node, color : *Vec4f, flags : ColorPickerFlags = 0, st
         if !(flags & .NoAlpha) {
             HorizontalSeparator(right);
 
-            _, opacity_slider := LabelSlider(right, "Opacity", *color.w, 0, 1, 0.01, style=*style.opacity_slider, dynamic_color=style.dynamic_opacity_slider_color);
+            _, opacity_slider := LabelSlider(right, "A", *color.w, 0, 1, 0.01, *style.label_and_slider, *style.opacity_slider, style.dynamic_opacity_slider_color);
 
             if style.dynamic_opacity_slider_color {
                 SetUserData(opacity_slider, ColoredSliderData.{
