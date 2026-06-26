@@ -267,7 +267,7 @@ Subwindow :: (
 
         avail_area := subwindow.parent.layout_last_frame.rect;
         if !(flags & .NoResize) {
-            avail_area = InflateBounds(avail_area, Vec4f.{1,1,1,1} * max(-style.resize_handle_inset, 0));
+            avail_area = InflateBounds(avail_area, Vec4f.{xy=resize_handles_expand,zw=resize_handles_expand});
         }
 
         title_bar := ifx !(flags & .NoTitleBar)
@@ -275,7 +275,7 @@ Subwindow :: (
 
         title_bar_size := ifx title_bar then title_bar.layout_last_frame.size;
         if !(flags & .NoResize) {
-            title_bar_size += Vec2f.{1,1} * max(-style.resize_handle_inset * 2, 0);
+            title_bar_size += resize_handles_expand * 2;
         }
 
         if title_bar && !(flags & .NoMove) {
