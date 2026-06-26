@@ -168,7 +168,7 @@ void main() {
             shadow_d = d;
         }
 
-        float outer_shadow = FxSolidColor(shadow_d, aa + outer_shadow_blur);
+        float outer_shadow = FxOuterShadow(shadow_d, aa + outer_shadow_blur, background_color.a, border_color.a, border_size, border_inset);
         out_color = BlendEffect(out_color, outer_shadow_color, outer_shadow);
     }
 

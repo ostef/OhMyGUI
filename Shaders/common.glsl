@@ -161,6 +161,13 @@ float FxStrokeColor(float d, float blur, float size, float inset) {
     return clamp(a, 0, 1);
 }
 
+float FxOuterShadow(float d, float blur, float background_alpha, float border_alpha, float border_size, float border_inset) {
+    float outer_shadow_background = FxSolidColor(d, blur) * float(background_alpha > 0);
+    float outer_shadow_border = FxStrokeColor(d, blur, border_size, border_inset) * float(border_alpha > 0);
+
+    return max(outer_shadow_background, outer_shadow_border);
+}
+
 vec4 BlendEffect(vec4 a, vec4 b, float alpha) {
     return mix(a, vec4(b.rgb, 1), b.a * alpha);
 }
