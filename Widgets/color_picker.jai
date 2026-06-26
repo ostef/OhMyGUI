@@ -381,7 +381,6 @@ ColoredSlider :: (parent : *Node, value : *float, min : float, max : float, step
 
         if hue {
             resolution := cast(int, Max(node.size.x / 5.0, 30));
-            print_vars(resolution);
 
             t := 0.0;
             for i : 0..resolution - 1 {
