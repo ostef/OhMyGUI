@@ -31,7 +31,7 @@ SubwindowStyle :: struct {
     horizontal_scrollbar : ScrollbarStyle;
     resize_handle_size := 8.0;
     resize_handle_inset := -8.0;
-    corner_resize_handle_size := 12.0;
+    corner_resize_handle_size := 20.0;
 }
 
 SubwindowMoveBehavior :: (subwindow : *Node, node : *Node, avail_area : Vec4f, title_bar_size : Vec2f) {
@@ -201,24 +201,25 @@ SubwindowResizeHandles :: (subwindow : *Node, min_size : Vec2f, style : *Subwind
     resize_br := GetNode(bottom, "resize_br");
     SetSize(resize_br, SizePx(style.corner_resize_handle_size), SizePx(style.corner_resize_handle_size));
 
+    resize_handles_expand := Vec2f.{1,1} * max(-style.resize_handle_inset, 0);
     avail_area := subwindow.parent.layout_last_frame.rect;
-    avail_area = InflateBounds(avail_area, Vec4f.{1,1,1,1} * max(-style.resize_handle_inset, 0));
+    avail_area = InflateBounds(avail_area, Vec4f.{xy=resize_handles_expand,zw=resize_handles_expand});
 
-    SubwindowResizeBehavior(subwindow, resize_t, min_size, avail_area, .Top);
-    SubwindowResizeBehavior(subwindow, resize_b, min_size, avail_area, .Bottom);
-    SubwindowResizeBehavior(subwindow, resize_l, min_size, avail_area, .Left);
-    SubwindowResizeBehavior(subwindow, resize_r, min_size, avail_area, .Right);
-    SubwindowResizeBehavior(subwindow, resize_tl, min_size, avail_area, .TopLeft);
-    SubwindowResizeBehavior(subwindow, resize_tr, min_size, avail_area, .TopRight);
-    SubwindowResizeBehavior(subwindow, resize_bl, min_size, avail_area, .BottomLeft);
-    SubwindowResizeBehavior(subwindow, resize_br, min_size, avail_area, .BottomRight);
+    SubwindowResizeBehavior(subwindow, resize_t, min_size + resize_handles_expand * 2, avail_area, .Top);
+    SubwindowResizeBehavior(subwindow, resize_b, min_size + resize_handles_expand * 2, avail_area, .Bottom);
+    SubwindowResizeBehavior(subwindow, resize_l, min_size + resize_handles_expand * 2, avail_area, .Left);
+    SubwindowResizeBehavior(subwindow, resize_r, min_size + resize_handles_expand * 2, avail_area, .Right);
+    SubwindowResizeBehavior(subwindow, resize_tl, min_size + resize_handles_expand * 2, avail_area, .TopLeft);
+    SubwindowResizeBehavior(subwindow, resize_tr, min_size + resize_handles_expand * 2, avail_area, .TopRight);
+    SubwindowResizeBehavior(subwindow, resize_bl, min_size + resize_handles_expand * 2, avail_area, .BottomLeft);
+    SubwindowResizeBehavior(subwindow, resize_br, min_size + resize_handles_expand * 2, avail_area, .BottomRight);
 
     resize_handles.desired_size = subwindow.desired_size;
 
     title_and_content.desired_size = subwindow.desired_size;
-    title_and_content.desired_size.x.value -= max(-style.resize_handle_inset * 2, 0);
-    title_and_content.desired_size.y.value -= max(-style.resize_handle_inset * 2, 0);
-    title_and_content.offset = Vec2f.{1,1} * max(-style.resize_handle_inset, 0);
+    title_and_content.desired_size.x.value -= resize_handles_expand.x * 2;
+    title_and_content.desired_size.y.value -= resize_handles_expand.y * 2;
+    title_and_content.offset = resize_handles_expand;
 
     return title_and_content;
 }
@@ -235,16 +236,18 @@ Subwindow :: (
 ) -> content : *Node, subwindow : *Node {
     EnsureStyle(*style, "subwindow");
 
+    resize_handles_expand := ifx !(flags & .NoResize) then Vec2f.{1,1} * max(-style.resize_handle_inset, 0);
+
     content, subwindow : *Node;
     subwindow=, is_new := GetPopupNode(window, str_id);
     {
         if is_new {
             SetSize(subwindow, SizePx(initial_size.x), SizePx(initial_size.y));
 
-            if !(flags & .NoResize) {
-                subwindow.desired_size.x.value += max(-style.resize_handle_inset * 2, 0);
-                subwindow.desired_size.y.value += max(-style.resize_handle_inset * 2, 0);
-            }
+            subwindow.desired_size.x.value += resize_handles_expand.x * 2;
+            subwindow.desired_size.y.value += resize_handles_expand.y * 2;
+
+            subwindow.offset -= resize_handles_expand;
         } else {
             SetSize(subwindow, SizePx(subwindow.layout_last_frame.size.x), SizePx(subwindow.layout_last_frame.size.y));
         }
