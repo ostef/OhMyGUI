@@ -139,7 +139,12 @@ SaturationValueTriangle :: (parent : *Node, using data : *ColorPickerData, style
         using _ := data.*;
         using _ := GetHSVWheelGeometricData(style, node.rect, hsv);
 
-        return IsInsideTriangle(point, hue_point, white_point, black_point);
+        cursor := lerp(hue_point, white_point, 1 - hsv.saturation);
+        cursor = lerp(cursor, black_point, 1 - hsv.value);
+        cursor_style := style.triangle_cursor.states[GetState(node)];
+
+        return IsInsideTriangle(point, hue_point, white_point, black_point)
+            || IsInsideCircle(point, cursor, cursor_style.radius);
     }
 
     Draw :: (draw_list : *DrawList, node : *Node) {
@@ -226,7 +231,12 @@ HueWheel :: (parent : *Node, using data : *ColorPickerData, style : *HSVTriangle
         using _ := data.*;
         using _ := GetHSVWheelGeometricData(style, node.rect, hsv);
 
-        return IsInsideRing(point, center, inner_radius, outer_radius);
+        angle := ToRads(hsv.hue);
+        cursor := center + Rotate(.{outer_radius - style.wheel_thickness * 0.5, 0}, angle);
+        cursor_style := style.wheel_cursor.states[GetState(node)];
+
+        return IsInsideRing(point, center, inner_radius, outer_radius)
+            || IsInsideCircle(point, cursor, cursor_style.radius);
     }
 
     Draw :: (draw_list : *DrawList, node : *Node) {
