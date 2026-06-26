@@ -27,8 +27,8 @@ SubwindowTitleBarStyle :: StateStyle(SubwindowTitleBarStateStyle);
 SubwindowStyle :: struct {
     title_bar : SubwindowTitleBarStyle;
     background : BoxStyle;
-    vertical_scrollbar : ScrollbarStyle;
-    horizontal_scrollbar : ScrollbarStyle;
+    vertical_scrollbar : SliderStyle;
+    horizontal_scrollbar : SliderStyle;
     resize_handle_size := 8.0;
     resize_handle_inset := -8.0;
     corner_resize_handle_size := 20.0;

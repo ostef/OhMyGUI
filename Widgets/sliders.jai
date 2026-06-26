@@ -7,7 +7,7 @@ SliderStateStyle :: struct {
 SliderStyle :: struct {
     using _ : StateStyle(SliderStateStyle);
     background_size : float;
-    handle_size : float;
+    handle_size : Vec2f;
 }
 
 SetColors :: (using style : *SliderStyle, base_background_color : RGBA8, base_fill_color : RGBA8, base_handle_color : RGBA8) {
@@ -44,7 +44,7 @@ Slider :: (parent : *Node, value : *$T, min : T, max : T, step : T, style : *Sli
 
     slider = GetNode(parent, location=location);
     {
-        SetSize(slider, SizeFill(), SizePx(Max(style.background_size, style.handle_size)));
+        SetSize(slider, SizeFill(), SizeFit());
         SetLayout(slider, .None);
         SetChildAlign(slider, 0, 0.5);
         SetDraw(slider, null);
@@ -64,10 +64,10 @@ Slider :: (parent : *Node, value : *$T, min : T, max : T, step : T, style : *Sli
 
         handle = GetNode(slider, "handle");
         {
-            SetSize(handle, SizePx(style.handle_size), SizePx(style.handle_size));
+            SetSize(handle, SizePx(style.handle_size.x), SizePx(style.handle_size.y));
 
             range := fmax - fmin;
-            offset_max := background.layout_last_frame.size[Axis.X] - style.handle_size;
+            offset_max := background.layout_last_frame.size[Axis.X] - style.handle_size[Axis.X];
 
             // Allow the user to click on the slider to interact with the scrollbar
             slider.flags |= .Focusable;
@@ -81,7 +81,7 @@ Slider :: (parent : *Node, value : *$T, min : T, max : T, step : T, style : *Sli
                 handle_result.held = true;
 
                 mouse := GetMousePosition(slider.window)[Axis.X];
-                new_offset := mouse - slider.layout_last_frame.rect.xy[Axis.X] - style.handle_size * 0.5;
+                new_offset := mouse - slider.layout_last_frame.rect.xy[Axis.X] - style.handle_size[Axis.X] * 0.5;
                 new_value := (new_offset / offset_max) * range;
 
                 fvalue = Snap(clamp(new_value, fmin, fmax), fstep);
@@ -122,12 +122,7 @@ Slider :: (parent : *Node, value : *$T, min : T, max : T, step : T, style : *Sli
     return fvalue_original != fvalue, slider, background, handle;
 }
 
-ScrollbarStyle :: struct {
-    #as using _ : SliderStyle;
-    min_handle_length : float;
-}
-
-Scrollbar :: (parent : *Node, target : *Node, axis : Axis, style : *ScrollbarStyle = null, location := #caller_location) -> background : *Node, handle : *Node {
+Scrollbar :: (parent : *Node, target : *Node, axis : Axis, style : *SliderStyle = null, location := #caller_location) -> background : *Node, handle : *Node {
     EnsureStyle(*style, "scrollbar");
 
     background, handle : *Node;
@@ -149,8 +144,8 @@ Scrollbar :: (parent : *Node, target : *Node, axis : Axis, style : *ScrollbarSty
             ratio := size / children_size;
 
             handle.desired_size[axis] = SizeFill(ratio);
-            handle.desired_size[GetCrossAxis(axis)] = SizePx(style.handle_size);
-            handle.min_size[axis] = style.min_handle_length;
+            handle.desired_size[GetCrossAxis(axis)] = SizePx(style.handle_size[GetCrossAxis(axis)]);
+            handle.min_size[axis] = style.handle_size[axis];
 
             // offset = (scroll / scrollable) * offset_max
             // offset / offset_max = scroll / scrollable

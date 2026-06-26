@@ -325,7 +325,7 @@ DefaultTheme :: struct {
     button_accent : ButtonStyle;
     toggle : ButtonStyle;
     slider : SliderStyle;
-    scrollbar : ScrollbarStyle;
+    scrollbar : SliderStyle;
     text_input : TextInputStyle;
     checkbox : CheckboxStyle;
     menu_bar : BoxStyle;
@@ -447,10 +447,10 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         using theme.slider;
 
         background_size = 8;
-        handle_size = 15;
+        handle_size = .{15,15};
 
         normal.background.corner_radiuses = Vec4f.{1,1,1,1} * background_size * 0.5;
-        normal.handle.corner_radiuses = Vec4f.{1,1,1,1} * handle_size * 0.5;
+        normal.handle.corner_radiuses = Vec4f.{1,1,1,1} * handle_size.x * 0.5;
 
         focused = normal;
         hot = normal;
@@ -465,11 +465,10 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
     {
         using theme.scrollbar;
 
-        handle_size = 8;
-        min_handle_length = 32;
+        handle_size = .{8,32};
 
         normal.background.corner_radiuses = Vec4f.{1,1,1,1} * background_size * 0.5;
-        normal.handle.corner_radiuses = Vec4f.{1,1,1,1} * handle_size * 0.5;
+        normal.handle.corner_radiuses = Vec4f.{1,1,1,1} * handle_size.x * 0.5;
 
         focused = normal;
         hot = normal;
@@ -650,20 +649,73 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
 
         wheel.triangle_cursor.active = wheel.triangle_cursor.hot;
 
-        red_slider = theme.slider;
-        green_slider = theme.slider;
-        blue_slider = theme.slider;
-        hue_slider = theme.slider;
-        saturation_slider = theme.slider;
-        value_slider = theme.slider;
-        opacity_slider = theme.slider;
+        dynamic_rgb_slider_color = true;
+        dynamic_hsv_slider_color = true;
+        dynamic_opacity_slider_color = true;
 
-        red := MakeTone(ColorU32(1,0,0,1), 0.3);
-        green := MakeTone(ColorU32(0,1,0,1), 0.3);
-        blue := MakeTone(ColorU32(0,0,1,1), 0.3);
-        SetColors(*red_slider, MakeTone(base_background_color, 0.3), Whiten(red, 0.1), red);
-        SetColors(*green_slider, MakeTone(base_background_color, 0.3), Whiten(green, 0.1), green);
-        SetColors(*blue_slider, MakeTone(base_background_color, 0.3), Whiten(blue, 0.1), blue);
+        slider_base : SliderStyle;
+        slider_base.background_size = 21;
+        slider_base.handle_size = .{15,23};
+
+        slider_base.normal.background.corner_radiuses = .{4,4,4,4};
+        slider_base.normal.background.border_size = 1;
+        slider_base.normal.background.border_color = MakeTone(button_base_background_color, 0.3);
+
+        slider_base.normal.handle.background_color = 0;
+        slider_base.normal.handle.corner_radiuses = .{3,3,3,3};
+        slider_base.normal.handle.border_color = wheel.border_color;
+        slider_base.normal.handle.border_size = 2;
+        slider_base.normal.handle.outer_shadow_color = ColorU32(0,0,0,0.5);
+        slider_base.normal.handle.outer_shadow_blur = 2;
+
+        slider_base.focused = slider_base.normal;
+        slider_base.hot = slider_base.focused;
+        slider_base.active = slider_base.hot;
+
+        red_slider = slider_base;
+        green_slider = slider_base;
+        blue_slider = slider_base;
+        hue_slider = slider_base;
+        saturation_slider = slider_base;
+        value_slider = slider_base;
+        opacity_slider = slider_base;
+
+        red_slider.focused.handle = red_slider.normal.handle;
+        red_slider.hot.handle = red_slider.focused.handle;
+        red_slider.active.handle = red_slider.hot.handle;
+
+        green_slider.normal.handle = red_slider.normal.handle;
+        green_slider.focused.handle = green_slider.normal.handle;
+        green_slider.hot.handle = green_slider.focused.handle;
+        green_slider.active.handle = green_slider.hot.handle;
+
+        blue_slider.normal.handle = red_slider.normal.handle;
+        blue_slider.focused.handle = blue_slider.normal.handle;
+        blue_slider.hot.handle = blue_slider.focused.handle;
+        blue_slider.active.handle = blue_slider.hot.handle;
+
+        hue_slider.normal.handle = red_slider.normal.handle;
+        hue_slider.focused.handle = hue_slider.normal.handle;
+        hue_slider.hot.handle = hue_slider.focused.handle;
+        hue_slider.active.handle = hue_slider.hot.handle;
+
+        saturation_slider.normal.handle = red_slider.normal.handle;
+        saturation_slider.focused.handle = saturation_slider.normal.handle;
+        saturation_slider.hot.handle = saturation_slider.focused.handle;
+        saturation_slider.active.handle = saturation_slider.hot.handle;
+
+        value_slider.normal.handle = red_slider.normal.handle;
+        value_slider.focused.handle = value_slider.normal.handle;
+        value_slider.hot.handle = value_slider.focused.handle;
+        value_slider.active.handle = value_slider.hot.handle;
+
+        opacity_slider.normal.handle = red_slider.normal.handle;
+        opacity_slider.focused.handle = opacity_slider.normal.handle;
+        opacity_slider.hot.handle = opacity_slider.focused.handle;
+        opacity_slider.active.handle = opacity_slider.hot.handle;
+
+        opacity_checkerboard_white = MakeTone(0xffffffff, 0.5);
+        opacity_checkerboard_black = MakeTone(0x000000ff, 0.5);
     }
     SetStyle(theme, "color_picker", theme.color_picker);
 }
