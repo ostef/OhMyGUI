@@ -122,7 +122,12 @@ Slider :: (parent : *Node, value : *$T, min : T, max : T, step : T, style : *Sli
     return fvalue_original != fvalue, slider, background, handle;
 }
 
-Scrollbar :: (parent : *Node, target : *Node, axis : Axis, style : *SliderStyle = null, location := #caller_location) -> background : *Node, handle : *Node {
+ScrollbarStyle :: struct {
+    #as using _ : SliderStyle;
+    min_handle_length : float;
+}
+
+Scrollbar :: (parent : *Node, target : *Node, axis : Axis, style : *ScrollbarStyle = null, location := #caller_location) -> background : *Node, handle : *Node {
     EnsureStyle(*style, "scrollbar");
 
     background, handle : *Node;
@@ -145,6 +150,7 @@ Scrollbar :: (parent : *Node, target : *Node, axis : Axis, style : *SliderStyle 
 
             handle.desired_size[axis] = SizeFill(ratio);
             handle.desired_size[GetCrossAxis(axis)] = SizePx(style.handle_size);
+            handle.min_size[axis] = style.min_handle_length;
 
             // offset = (scroll / scrollable) * offset_max
             // offset / offset_max = scroll / scrollable

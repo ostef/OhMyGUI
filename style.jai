@@ -325,7 +325,7 @@ DefaultTheme :: struct {
     button_accent : ButtonStyle;
     toggle : ButtonStyle;
     slider : SliderStyle;
-    scrollbar : SliderStyle;
+    scrollbar : ScrollbarStyle;
     text_input : TextInputStyle;
     checkbox : CheckboxStyle;
     menu_bar : BoxStyle;
@@ -466,6 +466,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         using theme.scrollbar;
 
         handle_size = 8;
+        min_handle_length = 32;
 
         normal.background.corner_radiuses = Vec4f.{1,1,1,1} * background_size * 0.5;
         normal.handle.corner_radiuses = Vec4f.{1,1,1,1} * handle_size * 0.5;
