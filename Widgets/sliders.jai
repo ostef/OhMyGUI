@@ -49,12 +49,11 @@ Slider :: (parent : *Node, value : *$T, min : T, max : T, step : T, axis := Axis
         SetLayout(slider, .None);
         SetDraw(slider, null);
 
-        slider.child_align[axis] = 0;
         slider.child_align[cross] = 0.5;
         slider.desired_size[axis] = SizeFill();
         slider.desired_size[cross] = SizeFit();
-        slider.padding.xy[axis] = style.handle_size[axis];
-        slider.padding.zw[axis] = style.handle_size[axis];
+        slider.padding.xy[axis] = style.handle_size[axis] * 0.5;
+        slider.padding.zw[axis] = style.handle_size[axis] * 0.5;
         slider.flags |= .NoPaddedClip;
 
         scroll := ScrollBehavior(slider);
@@ -154,8 +153,8 @@ Scrollbar :: (parent : *Node, target : *Node, axis : Axis, style : *SliderStyle 
             ratio := size / children_size;
 
             handle.desired_size[axis] = SizeFill(ratio);
-            handle.desired_size[GetCrossAxis(axis)] = SizePx(style.handle_size[GetCrossAxis(axis)]);
-            handle.min_size[axis] = style.handle_size[axis];
+            handle.desired_size[GetCrossAxis(axis)] = SizePx(style.handle_size.x);
+            handle.min_size[axis] = style.handle_size.y;
 
             // offset = (scroll / scrollable) * offset_max
             // offset / offset_max = scroll / scrollable
