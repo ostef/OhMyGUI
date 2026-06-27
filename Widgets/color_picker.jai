@@ -415,12 +415,14 @@ ColoredSlider :: (parent : *Node, value : *float, min : float, max : float, step
             t := 0.0;
             for i : 0..resolution - 1 {
                 t0 := node.rect.xy[axis] + t * node.size[axis];
-                c0 := ColorU32(HSVToRGB(.{t * 360, hsv.saturation, hsv.value}), 1);
+                h0 := ifx axis == .X then t * 360 else 360 - t * 360;
+                c0 := ColorU32(HSVToRGB(.{h0, hsv.saturation, hsv.value}), 1);
 
                 t += 1.0 / resolution;
 
                 t1 := node.rect.xy[axis] + t * node.size[axis];
-                c1 := ColorU32(HSVToRGB(.{t * 360, hsv.saturation, hsv.value}), 1);
+                h1 := ifx axis == .X then t * 360 else 360 - t * 360;
+                c1 := ColorU32(HSVToRGB(.{h1, hsv.saturation, hsv.value}), 1);
 
                 p0 : Vec2f;
                 p0[axis] = t0;
@@ -444,18 +446,18 @@ ColoredSlider :: (parent : *Node, value : *float, min : float, max : float, step
                 DrawTriangle(draw_list, .{p0=p0, p1=p1, p2=p2, c0=c0, c1=c1, c2=c1});
             }
         } else {
-            c0 := ifx axis == .X then start_color else end_color;
-            c1 := start_color;
-            c2 := start_color;
+            c0 := start_color;
+            c1 := ifx axis == .X then start_color else end_color;
+            c2 := ifx axis == .X then start_color else end_color;
 
             DrawTriangle(draw_list, .{
                 p0=.{node.rect.x, node.rect.w}, p1=.{node.rect.x, node.rect.y}, p2=.{node.rect.z, node.rect.y},
                 c0=c0, c1=c1, c2=c2,
             });
 
-            c0 = ifx axis == .X then start_color else end_color;
-            c1 = start_color;
-            c2 = ifx axis == .X then start_color else end_color;
+            c0 = start_color;
+            c1 = ifx axis == .X then start_color else end_color;
+            c2 = start_color;
 
             DrawTriangle(draw_list, .{
                 p0=.{node.rect.x, node.rect.w}, p1=.{node.rect.z, node.rect.y}, p2=.{node.rect.z, node.rect.w},
@@ -468,7 +470,7 @@ ColoredSlider :: (parent : *Node, value : *float, min : float, max : float, step
         DrawNodeDefault(draw_list, node);
     }
 
-    modified, slider, background, handle := Slider(parent, value, min, max, step, axis=.Y, style=style, location=location);
+    modified, slider, background, handle := Slider(parent, value, max, min, step, axis=.Y, style=style, location=location);
     if dynamic_color {
         SetDraw(background, DrawBackground);
     }
@@ -498,9 +500,22 @@ ColorPicker :: (parent : *Node, color : *Vec4f, flags : ColorPickerFlags = 0, st
         label_and_content_style : *LabelAndContentStyle, style : *SliderStyle, dynamic_color : bool,
         location := #caller_location
     ) -> bool, slider : *Node {
-        // content := LabelAndContent(parent, label, style=label_and_content_style, location=location);
+        node := GetNode(parent, location);
+        SetSize(node, SizeFit(), SizeFill());
+        SetChildAlign(node, label_and_content_style.child_align.y, label_and_content_style.child_align.x);
+        SetLayout(node, .TopToBottom);
+        SetPadding(node, label_and_content_style.padding);
 
-        _, slider := ColoredSlider(parent, value, min, max, step, style, dynamic_color, location=location);
+        text := Text(node, "%", label, style=*label_and_content_style.text);
+        SetSize(text, SizeFit(), SizeFit());
+        SetLayout(text, .LeftToRight);
+
+        content := GetNode(node);
+        SetSize(content, SizeFit(), SizeFill());
+        SetLayout(content, .LeftToRight);
+        SetChildGap(content, label_and_content_style.child_gap);
+
+        _, slider := ColoredSlider(content, value, min, max, step, style, dynamic_color);
 
         // text := Text(content, "%", FormatFloat.{value=value.*, trailing_width=2}, style=*label_and_content_style.text);
         // approx_max_text_size := CalculateTextSize(text.font, text.text_size, "00.00");
@@ -514,9 +529,7 @@ ColorPicker :: (parent : *Node, color : *Vec4f, flags : ColorPickerFlags = 0, st
     picker := GetNode(parent, location);
     {
         SetLayout(picker, .LeftToRight);
-        SetSize(picker, SizeFill(), SizeFit());
-        SetMinWidthFit(picker);
-        SetChildGap(picker, 12, 12);
+        SetSize(picker, SizeFit(), SizeFit());
 
         data := AddUserData(picker, ColorPickerData);
         if !data.modifying_hsv {
@@ -531,9 +544,7 @@ ColorPicker :: (parent : *Node, color : *Vec4f, flags : ColorPickerFlags = 0, st
         Separator(picker);
 
         right := GetNode(picker);
-        // SetSize(right, SizeFill(), SizeFit());
         SetSize(right, SizeFit(), SizeFill());
-        SetMinWidth(right, 200);
         SetLayout(right, .LeftToRight);
 
         r_modified, r_slider := LabelSlider(right, "R", *color.x, 0, 1, 0.01, *style.label_and_slider, *style.red_slider, style.dynamic_rgb_slider_color);
