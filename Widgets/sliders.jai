@@ -38,6 +38,9 @@ Slider :: (parent : *Node, value : *$T, min : T, max : T, step : T, axis := Axis
     fmax := cast(float, max);
     fstep := ifx GetModState() == .Shift then 0.0 else cast(float, step);
 
+    real_min := Min(fmin, fmax);
+    real_max := Max(fmin, fmax);
+
     defer if value && fvalue_original != fvalue {
         value.* = xx fvalue;
     }
@@ -58,9 +61,11 @@ Slider :: (parent : *Node, value : *$T, min : T, max : T, step : T, axis := Axis
 
         scroll := ScrollBehavior(slider);
         if scroll.y != 0 {
-            fvalue = Snap(clamp(fvalue + sign(scroll.y) * fstep, fmin, fmax), fstep);
+            fvalue = clamp(fvalue + sign(fmax - fmin) * sign(scroll.y) * cast(float, step), real_min, real_max);
+            fvalue = Snap(fvalue, fstep);
         } else if scroll.x != 0 {
-            fvalue = Snap(clamp(fvalue + sign(scroll.x) * fstep, fmin, fmax), fstep);
+            fvalue = clamp(fvalue + sign(fmax - fmin) * sign(scroll.x) * cast(float, step), real_min, real_max);
+            fvalue = Snap(fvalue, fstep);
         }
 
         background = GetNode(slider, "background");
@@ -75,7 +80,6 @@ Slider :: (parent : *Node, value : *$T, min : T, max : T, step : T, axis := Axis
         {
             SetSize(handle, SizePx(style.handle_size[axis]), SizePx(style.handle_size[cross]));
 
-            range := fmax - fmin;
             offset_max := background.layout_last_frame.size[axis];
 
             // Allow the user to click on the slider to interact with the scrollbar
@@ -91,14 +95,14 @@ Slider :: (parent : *Node, value : *$T, min : T, max : T, step : T, axis := Axis
 
                 mouse := GetMousePosition(slider.window)[axis];
                 new_offset := mouse - slider.layout_last_frame.rect.xy[axis] - style.handle_size.x * 0.5;
-                new_value := (new_offset / offset_max) * range;
+                new_value := lerp(fmin, fmax, clamp(new_offset / offset_max, 0, 1));
 
-                fvalue = Snap(clamp(new_value, fmin, fmax), fstep);
+                fvalue = Snap(new_value, fstep);
             }
 
             if handle_result.pressed {
                 context.omg.mouse_captured_node_value = .{};
-                context.omg.mouse_captured_node_value.xy[axis] = (fvalue / range) * offset_max;
+                context.omg.mouse_captured_node_value.xy[axis] = InverseLerp(fmin, fmax, fvalue) * offset_max;
             }
 
             if handle_result.held {
@@ -106,12 +110,12 @@ Slider :: (parent : *Node, value : *$T, min : T, max : T, step : T, axis := Axis
 
                 new_offset := GetMousePosition()[axis] - context.omg.mouse_captured_at[axis];
                 new_offset += context.omg.mouse_captured_node_value.xy[axis];
-                new_value := (new_offset / offset_max) * range;
+                new_value := lerp(fmin, fmax, clamp(new_offset / offset_max, 0, 1));
 
-                fvalue = Snap(clamp(new_value, fmin, fmax), fstep);
+                fvalue = Snap(new_value, fstep);
             }
 
-            handle.offset[axis] = (fvalue / range) * offset_max - style.handle_size.x * 0.5;
+            handle.offset[axis] = InverseLerp(fmin, fmax, fvalue) * offset_max - style.handle_size.x * 0.5;
         }
 
         fill = GetNode(background, "fill");

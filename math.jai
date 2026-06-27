@@ -347,3 +347,8 @@ ToRads :: inline (angle_in_degrees : float) -> float {
 ToDegs :: inline (angle_in_radians : float) -> float {
     return angle_in_radians * 180.0 / PI;
 }
+
+InverseLerp :: inline (a : float, b : float, t : float) -> float {
+    return (t - a) / (b - a);
+}
+
