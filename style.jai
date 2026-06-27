@@ -659,16 +659,19 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
 
         slider_base : SliderStyle;
         slider_base.background_size = 21;
-        slider_base.handle_size = .{15,23};
+        slider_base.handle_size = .{8,23};
 
         slider_base.normal.background.corner_radiuses = .{4,4,4,4};
         slider_base.normal.background.border_size = 1;
         slider_base.normal.background.border_color = MakeTone(button_base_background_color, 0.3);
 
-        slider_base.normal.handle.background_color = 0;
-        slider_base.normal.handle.corner_radiuses = .{3,3,3,3};
-        slider_base.normal.handle.border_color = wheel.border_color;
-        slider_base.normal.handle.border_size = 2;
+        // slider_base.normal.handle.background_color = 0;
+        // slider_base.normal.handle.corner_radiuses = .{3,3,3,3};
+        // slider_base.normal.handle.border_color = wheel.border_color;
+        // slider_base.normal.handle.border_size = 2;
+        slider_base.normal.handle.background_color = wheel.border_color;
+        // slider_base.normal.handle.border_color = MakeTone(button_base_background_color, 0.3);
+        // slider_base.normal.handle.border_size = 1;
         slider_base.normal.handle.outer_shadow_color = ColorU32(0,0,0,0.5);
         slider_base.normal.handle.outer_shadow_blur = 2;
 

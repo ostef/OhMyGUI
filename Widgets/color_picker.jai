@@ -347,6 +347,36 @@ ColoredSliderData :: struct {
 }
 
 ColoredSlider :: (parent : *Node, value : *float, min : float, max : float, step : float, style : *SliderStyle, dynamic_color : bool, location := #caller_location) -> bool, slider : *Node, background : *Node, handle : *Node {
+    DrawTriangularCursor :: (draw_list : *DrawList, node : *Node) {
+        a := node.rect.xy;
+        b := Vec2f.{node.rect.z, node.rect.y};
+        c := a + Rotate(Vec2f.{node.rect.z - node.rect.x, 0}, PI / 3);
+        DrawShape(draw_list, .{
+            shape=Triangle(a, b, c),
+            background_color=node.background_color,
+            border_color=node.border_color,
+            border_size=node.border_size,
+            border_inset=node.border_inset,
+            outer_shadow_color=node.outer_shadow_color,
+            outer_shadow_offset=node.outer_shadow_offset,
+            outer_shadow_blur=node.outer_shadow_blur,
+        });
+
+        a = Vec2f.{node.rect.x, node.rect.w};
+        b = node.rect.zw;
+        c = a + Rotate(Vec2f.{node.rect.z - node.rect.x, 0}, -PI / 3);
+        DrawShape(draw_list, .{
+            shape=Triangle(a, b, c),
+            background_color=node.background_color,
+            border_color=node.border_color,
+            border_size=node.border_size,
+            border_inset=node.border_inset,
+            outer_shadow_color=node.outer_shadow_color,
+            outer_shadow_offset=node.outer_shadow_offset,
+            outer_shadow_blur=node.outer_shadow_blur,
+        });
+    }
+
     DrawBackground :: (draw_list : *DrawList, node : *Node) {
         if !node.parent {
             return;
@@ -404,6 +434,8 @@ ColoredSlider :: (parent : *Node, value : *float, min : float, max : float, step
     if dynamic_color {
         SetDraw(background, DrawBackground);
     }
+
+    SetDraw(handle, DrawTriangularCursor);
 
     return modified, slider, background, handle;
 }
