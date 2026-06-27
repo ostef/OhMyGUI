@@ -208,7 +208,7 @@ LayoutFixedAndFitSizing :: (node : *Node, axis : Axis) {
     for :Children node {
         LayoutFixedAndFitSizing(it, axis);
 
-        if layout_axis == axis {
+        if node.child_layout_mode != .None && layout_axis == axis {
             node.children_size[axis] += it.size[axis];
         } else {
             node.children_size[axis] = max(node.children_size[axis], it.size[axis]);
@@ -243,7 +243,7 @@ LayoutFixedAndFitSizing :: (node : *Node, axis : Axis) {
     }
 
     // Add child gap
-    if layout_axis == axis && should_fit && !(node.flags & .TextNode) {
+    if node.child_layout_mode != .None && layout_axis == axis && should_fit && !(node.flags & .TextNode) {
         node.size[axis] += ceil((node.num_children - 1) * node.child_gap[axis]);
         node.size[axis] = clamp(node.size[axis], node.min_size[axis], node.max_size[axis]);
     }
@@ -252,88 +252,86 @@ LayoutFixedAndFitSizing :: (node : *Node, axis : Axis) {
 LayoutFillSizing :: (node : *Node, axis : Axis) {
     layout_axis := GetLayoutAxis(node);
 
-    if layout_axis == axis {
-        if node.child_layout_mode == .None {
-            // Warning: the weight does not take into account siblings in None layout mode!
-            remaining_size := node.size[axis] - node.padding.xy[axis] - node.padding.zw[axis]
-                - node.children_size[axis]
-                - (node.num_children - 1) * node.child_gap[axis];
-            remaining_size = floor(remaining_size);
-            for :Children node {
-                if it.desired_size[axis].kind != .FillParent {
-                    continue;
-                }
-
-                prev_size := it.size[axis];
-
-                it.size[axis] = floor(remaining_size * it.desired_size[axis].value);
-                it.size[axis] = clamp(it.size[axis], it.min_size[axis], it.max_size[axis]);
-
-                added_size := it.size[axis] - prev_size;
-                node.children_size[axis] += added_size;
+    if node.child_layout_mode == .None {
+        // Warning: the weight does not take into account siblings in None layout mode!
+        remaining_size := node.size[axis] - node.padding.xy[axis] - node.padding.zw[axis]
+            - node.children_size[axis]
+            - (node.num_children - 1) * node.child_gap[axis];
+        remaining_size = floor(remaining_size);
+        for :Children node {
+            if it.desired_size[axis].kind != .FillParent {
+                continue;
             }
-        } else {
-            total_weights := 0.0;
-            num_fill_children := 0;
+
+            prev_size := it.size[axis];
+
+            it.size[axis] = floor(remaining_size * it.desired_size[axis].value);
+            it.size[axis] = clamp(it.size[axis], it.min_size[axis], it.max_size[axis]);
+
+            added_size := it.size[axis] - prev_size;
+            node.children_size[axis] += added_size;
+        }
+    } else if layout_axis == axis {
+        total_weights := 0.0;
+        num_fill_children := 0;
+        for :Children node {
+            if it.desired_size[axis].kind != .FillParent {
+                continue;
+            }
+
+            total_weights += clamp(it.desired_size[axis].value, 0, 1);
+
+            if abs(it.size[axis] - it.min_size[axis]) < 0.00001 || abs(it.size[axis] - it.max_size[axis]) < 0.00001 {
+                continue;
+            }
+
+            num_fill_children += 1;
+        }
+
+        remaining_size := node.size[axis] - node.padding.xy[axis] - node.padding.zw[axis]
+            - node.children_size[axis]
+            - (node.num_children - 1) * node.child_gap[axis];
+        remaining_size = floor(remaining_size);
+        iter := 0;
+        while iter < 10 && num_fill_children > 0 && abs(remaining_size) > 0.00001 {
+            defer iter += 1;
+
             for :Children node {
-                if it.desired_size[axis].kind != .FillParent {
+                if it.desired_size[axis].kind != .FillParent  {
                     continue;
                 }
-
-                total_weights += clamp(it.desired_size[axis].value, 0, 1);
 
                 if abs(it.size[axis] - it.min_size[axis]) < 0.00001 || abs(it.size[axis] - it.max_size[axis]) < 0.00001 {
                     continue;
                 }
 
-                num_fill_children += 1;
+                prev_size := it.size[axis];
+                if total_weights > 0 {
+                    it.size[axis] += floor(remaining_size * it.desired_size[axis].value / total_weights);
+                }
+                it.size[axis] = clamp(it.size[axis], it.min_size[axis], it.max_size[axis]);
+
+                if abs(it.size[axis] - it.min_size[axis]) < 0.00001 || abs(it.size[axis] - it.max_size[axis]) < 0.00001 {
+                    num_fill_children -= 1;
+                }
+
+                added_size := it.size[axis] - prev_size;
+                node.children_size[axis] += added_size;
             }
 
-            remaining_size := node.size[axis] - node.padding.xy[axis] - node.padding.zw[axis]
+            if total_weights <= 0 {
+                break;
+            }
+
+            remaining_size = node.size[axis] - node.padding.xy[axis] - node.padding.zw[axis]
                 - node.children_size[axis]
                 - (node.num_children - 1) * node.child_gap[axis];
             remaining_size = floor(remaining_size);
-            iter := 0;
-            while iter < 10 && num_fill_children > 0 && abs(remaining_size) > 0.00001 {
-                defer iter += 1;
-
-                for :Children node {
-                    if it.desired_size[axis].kind != .FillParent  {
-                        continue;
-                    }
-
-                    if abs(it.size[axis] - it.min_size[axis]) < 0.00001 || abs(it.size[axis] - it.max_size[axis]) < 0.00001 {
-                        continue;
-                    }
-
-                    prev_size := it.size[axis];
-                    if total_weights > 0 {
-                        it.size[axis] += floor(remaining_size * it.desired_size[axis].value / total_weights);
-                    }
-                    it.size[axis] = clamp(it.size[axis], it.min_size[axis], it.max_size[axis]);
-
-                    if abs(it.size[axis] - it.min_size[axis]) < 0.00001 || abs(it.size[axis] - it.max_size[axis]) < 0.00001 {
-                        num_fill_children -= 1;
-                    }
-
-                    added_size := it.size[axis] - prev_size;
-                    node.children_size[axis] += added_size;
-                }
-
-                if total_weights <= 0 {
-                    break;
-                }
-
-                remaining_size = node.size[axis] - node.padding.xy[axis] - node.padding.zw[axis]
-                    - node.children_size[axis]
-                    - (node.num_children - 1) * node.child_gap[axis];
-                remaining_size = floor(remaining_size);
-            }
         }
     }
 
     for :Children node {
-        if layout_axis != axis && it.desired_size[axis].kind == .FillParent {
+        if (node.child_layout_mode == .None || layout_axis != axis) && it.desired_size[axis].kind == .FillParent {
             it.size[axis] = floor(node.size[axis] * it.desired_size[axis].value - node.padding.xy[axis] - node.padding.zw[axis]);
             it.size[axis] = clamp(it.size[axis], it.min_size[axis], it.max_size[axis]);
             node.children_size[axis] = max(node.children_size[axis], it.size[axis]);
