@@ -52,8 +52,8 @@ Slider :: (parent : *Node, value : *$T, min : T, max : T, step : T, axis := Axis
         slider.child_align[cross] = 0.5;
         slider.desired_size[axis] = SizeFill();
         slider.desired_size[cross] = SizeFit();
-        slider.padding.xy[axis] = style.handle_size[axis] * 0.5;
-        slider.padding.zw[axis] = style.handle_size[axis] * 0.5;
+        slider.padding.xy[axis] = style.handle_size.x * 0.5;
+        slider.padding.zw[axis] = style.handle_size.x * 0.5;
         slider.flags |= .NoPaddedClip;
 
         scroll := ScrollBehavior(slider);
@@ -73,7 +73,7 @@ Slider :: (parent : *Node, value : *$T, min : T, max : T, step : T, axis := Axis
 
         handle = GetNode(slider, "handle");
         {
-            SetSize(handle, SizePx(style.handle_size.x), SizePx(style.handle_size.y));
+            SetSize(handle, SizePx(style.handle_size[axis]), SizePx(style.handle_size[cross]));
 
             range := fmax - fmin;
             offset_max := background.layout_last_frame.size[axis];
@@ -90,7 +90,7 @@ Slider :: (parent : *Node, value : *$T, min : T, max : T, step : T, axis := Axis
                 handle_result.held = true;
 
                 mouse := GetMousePosition(slider.window)[axis];
-                new_offset := mouse - slider.layout_last_frame.rect.xy[axis] - style.handle_size[axis] * 0.5;
+                new_offset := mouse - slider.layout_last_frame.rect.xy[axis] - style.handle_size.x * 0.5;
                 new_value := (new_offset / offset_max) * range;
 
                 fvalue = Snap(clamp(new_value, fmin, fmax), fstep);
@@ -111,7 +111,7 @@ Slider :: (parent : *Node, value : *$T, min : T, max : T, step : T, axis := Axis
                 fvalue = Snap(clamp(new_value, fmin, fmax), fstep);
             }
 
-            handle.offset[axis] = (fvalue / range) * offset_max - style.handle_size[axis] * 0.5;
+            handle.offset[axis] = (fvalue / range) * offset_max - style.handle_size.x * 0.5;
         }
 
         fill = GetNode(background, "fill");
@@ -153,8 +153,8 @@ Scrollbar :: (parent : *Node, target : *Node, axis : Axis, style : *SliderStyle 
             ratio := size / children_size;
 
             handle.desired_size[axis] = SizeFill(ratio);
-            handle.desired_size[GetCrossAxis(axis)] = SizePx(style.handle_size.x);
-            handle.min_size[axis] = style.handle_size.y;
+            handle.desired_size[GetCrossAxis(axis)] = SizePx(style.handle_size.y);
+            handle.min_size[axis] = style.handle_size.x;
 
             // offset = (scroll / scrollable) * offset_max
             // offset / offset_max = scroll / scrollable

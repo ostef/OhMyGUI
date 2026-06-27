@@ -465,10 +465,10 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
     {
         using theme.scrollbar;
 
-        handle_size = .{8,32};
+        handle_size = .{32,8};
 
         normal.background.corner_radiuses = Vec4f.{1,1,1,1} * background_size * 0.5;
-        normal.handle.corner_radiuses = Vec4f.{1,1,1,1} * handle_size.x * 0.5;
+        normal.handle.corner_radiuses = Vec4f.{1,1,1,1} * handle_size.y * 0.5;
 
         focused = normal;
         hot = normal;
@@ -659,8 +659,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
 
         slider_base : SliderStyle;
         slider_base.background_size = 21;
-        // slider_base.handle_size = .{8,23};
-        slider_base.handle_size = .{23,8};
+        slider_base.handle_size = .{8,25};
 
         slider_base.normal.background.corner_radiuses = .{4,4,4,4};
         slider_base.normal.background.border_size = 1;
