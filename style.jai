@@ -663,6 +663,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
 
         slider_base.normal.background.corner_radiuses = .{4,4,4,4};
         slider_base.normal.background.border_size = 1;
+        slider_base.normal.background.border_inset = -1;
         slider_base.normal.background.border_color = MakeTone(button_base_background_color, 0.3);
 
         // slider_base.normal.handle.background_color = 0;

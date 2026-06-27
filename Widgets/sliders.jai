@@ -47,7 +47,9 @@ Slider :: (parent : *Node, value : *$T, min : T, max : T, step : T, style : *Sli
         SetSize(slider, SizeFill(), SizeFit());
         SetLayout(slider, .None);
         SetChildAlign(slider, 0, 0.5);
+        SetPadding(slider, style.handle_size.x * 0.5, 0, style.handle_size.x * 0.5, 0);
         SetDraw(slider, null);
+        slider.flags |= .NoClip;
 
         scroll := ScrollBehavior(slider);
         if scroll.y != 0 {
@@ -67,7 +69,7 @@ Slider :: (parent : *Node, value : *$T, min : T, max : T, step : T, style : *Sli
             SetSize(handle, SizePx(style.handle_size.x), SizePx(style.handle_size.y));
 
             range := fmax - fmin;
-            offset_max := background.layout_last_frame.size[Axis.X] - style.handle_size[Axis.X];
+            offset_max := background.layout_last_frame.size[Axis.X];
 
             // Allow the user to click on the slider to interact with the scrollbar
             slider.flags |= .Focusable;
@@ -102,7 +104,7 @@ Slider :: (parent : *Node, value : *$T, min : T, max : T, step : T, style : *Sli
                 fvalue = Snap(clamp(new_value, fmin, fmax), fstep);
             }
 
-            handle.offset[Axis.X] = (fvalue / range) * offset_max;
+            handle.offset[Axis.X] = (fvalue / range) * offset_max - style.handle_size[Axis.X] * 0.5;
         }
 
         fill = GetNode(background, "fill");
