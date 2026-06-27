@@ -344,9 +344,26 @@ LayoutFillSizing :: (node : *Node, axis : Axis) {
 }
 
 LayoutPosition :: (node : *Node) {
+    if node.child_layout_mode == .None {
+        remaining_size := node.size - node.padding.xy - node.padding.zw - node.children_size;
+
+        for :Children node {
+            it.relative_position = ceil(node.padding.xy + Scale(node.size - it.size, node.child_align));
+            it.relative_position += Round(it.offset);
+            it.relative_position += Round(node.scroll);
+
+            it.rect.xy = node.rect.xy + it.relative_position;
+            it.rect.zw = node.rect.xy + it.relative_position + it.size;
+            it.clipped_rect = ClipRect(it.rect, node.rect);
+
+            LayoutPosition(it);
+        }
+
+        return;
+    }
+
     axis := GetLayoutAxis(node);
     cross := GetCrossAxis(axis);
-    no_positioning := node.child_layout_mode == .None;
     reverse := IsLayoutReverseDirection(node);
 
     remaining_size := node.size[axis] - node.padding.xy[axis] - node.padding.zw[axis]
@@ -363,7 +380,7 @@ LayoutPosition :: (node : *Node) {
     for :Children node {
         defer first = false;
 
-        if !no_positioning && reverse {
+        if reverse {
             cursor -= it.size[axis] + node.child_gap[axis] * cast(float, !first);
             cursor = floor(cursor);
         }
@@ -371,7 +388,7 @@ LayoutPosition :: (node : *Node) {
         it.relative_position[axis] = cursor;
         it.relative_position[cross] = ceil(node.padding.xy[cross] + (cross_size - it.size[cross]) * node.child_align[cross]);
 
-        if !no_positioning && !reverse {
+        if !reverse {
             cursor += it.size[axis] + node.child_gap[axis];
             cursor = ceil(cursor);
         }

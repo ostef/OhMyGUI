@@ -33,6 +33,13 @@ SignedAngle :: inline (a : Vec2f, b : Vec2f) -> float {
     return s * acos(d);
 }
 
+Scale :: inline (a : Vec2f, b : Vec2f) -> Vec2f {
+    return .{
+        a.x * b.x,
+        a.y * b.y,
+    };
+}
+
 min :: inline (v : Vec2f) -> Vec2f {
     return .{min(v.x), min(v.y)};
 }
@@ -291,6 +298,10 @@ Rotate :: inline (v : Vec2f, angle : float) -> Vec2f {
         v.x * ct - v.y * st,
         v.x * st + v.y * ct,
     };
+}
+
+ceil :: inline (value : Vec2f) -> Vec2f {
+    return .{ceil(value.x), ceil(value.y)};
 }
 
 Round :: inline (value : float) -> float {
