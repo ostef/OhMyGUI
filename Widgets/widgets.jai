@@ -71,6 +71,14 @@ ClickableText :: (parent : *Node, fmt_str : string, args : ..Any, style : *Click
     return button.released, button.double_clicked, node;
 }
 
+Separator :: (parent : *Node, space := 25.0, width := 1.0, style : *BoxStyle = null, location := #caller_location) -> *Node {
+    if parent.child_layout_mode == .TopToBottom || parent.child_layout_mode == .BottomToTop {
+        return HorizontalSeparator(parent, space, width, style, location);
+    } else {
+        return VerticalSeparator(parent, space, width, style, location);
+    }
+}
+
 HorizontalSeparator :: (parent : *Node, space := 25.0, width := 1.0, style : *BoxStyle = null, location := #caller_location) -> *Node {
     EnsureStyle(*style, "separator");
 
