@@ -659,7 +659,8 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
 
         slider_base : SliderStyle;
         slider_base.background_size = 21;
-        slider_base.handle_size = .{8,23};
+        // slider_base.handle_size = .{8,23};
+        slider_base.handle_size = .{23,8};
 
         slider_base.normal.background.corner_radiuses = .{4,4,4,4};
         slider_base.normal.background.border_size = 1;

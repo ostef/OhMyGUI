@@ -348,9 +348,20 @@ ColoredSliderData :: struct {
 
 ColoredSlider :: (parent : *Node, value : *float, min : float, max : float, step : float, style : *SliderStyle, dynamic_color : bool, location := #caller_location) -> bool, slider : *Node, background : *Node, handle : *Node {
     DrawTriangularCursor :: (draw_list : *DrawList, node : *Node) {
-        a := node.rect.xy;
-        b := Vec2f.{node.rect.z, node.rect.y};
-        c := a + Rotate(Vec2f.{node.rect.z - node.rect.x, 0}, PI / 3);
+        if !node.parent {
+            return;
+        }
+
+        axis := ifx node.parent.desired_size.x.kind == .FitChildren
+            then Axis.Y else Axis.X;
+        cross := GetCrossAxis(axis);
+
+        a := ifx axis == .X then node.rect.xy else Vec2f.{node.rect.x, node.rect.w};
+        b := ifx axis == .X then Vec2f.{node.rect.z, node.rect.y} else node.rect.xy;
+
+        c := ifx axis == .X then Vec2f.{node.size.x,0} else Vec2f.{0,-node.size.y};
+        c = a + Rotate(c, PI / 3);
+
         DrawShape(draw_list, .{
             shape=Triangle(a, b, c),
             background_color=node.background_color,
@@ -362,9 +373,12 @@ ColoredSlider :: (parent : *Node, value : *float, min : float, max : float, step
             outer_shadow_blur=node.outer_shadow_blur,
         });
 
-        a = Vec2f.{node.rect.x, node.rect.w};
-        b = node.rect.zw;
-        c = a + Rotate(Vec2f.{node.rect.z - node.rect.x, 0}, -PI / 3);
+        a = ifx axis == .X then Vec2f.{node.rect.x, node.rect.w} else node.rect.zw;
+        b = ifx axis == .X then node.rect.zw else Vec2f.{node.rect.z, node.rect.y};
+
+        c = ifx axis == .X then Vec2f.{node.size.x,0} else Vec2f.{0,-node.size.y};
+        c = a + Rotate(c, -PI / 3);
+
         DrawShape(draw_list, .{
             shape=Triangle(a, b, c),
             background_color=node.background_color,
@@ -387,41 +401,65 @@ ColoredSlider :: (parent : *Node, value : *float, min : float, max : float, step
             return;
         }
 
+        axis := ifx node.parent.desired_size.x.kind == .FitChildren
+            then Axis.Y else Axis.X;
+        cross := GetCrossAxis(axis);
+
         PushClipBox(draw_list, node.rect, node.corner_radiuses);
 
-        DrawCheckerboard(draw_list, node.rect, checkerboard_white, checkerboard_black);
+        DrawCheckerboard(draw_list, node.rect, node.size[cross] * 0.5, checkerboard_white, checkerboard_black);
 
         if hue {
             resolution := cast(int, Max(node.size.x / 5.0, 30));
 
             t := 0.0;
             for i : 0..resolution - 1 {
-                x0 := node.rect.x + t * node.size.x;
+                t0 := node.rect.xy[axis] + t * node.size[axis];
                 c0 := ColorU32(HSVToRGB(.{t * 360, hsv.saturation, hsv.value}), 1);
 
                 t += 1.0 / resolution;
 
-                x1 := node.rect.x + t * node.size.x;
+                t1 := node.rect.xy[axis] + t * node.size[axis];
                 c1 := ColorU32(HSVToRGB(.{t * 360, hsv.saturation, hsv.value}), 1);
 
-                DrawTriangle(draw_list, .{
-                    p0=.{x0, node.rect.w}, p1=.{x0, node.rect.y}, p2=.{x1, node.rect.y},
-                    c0=c0, c1=c0, c2=c1,
-                });
+                p0 : Vec2f;
+                p0[axis] = t0;
+                p0[cross] = node.rect.zw[cross];
 
-                DrawTriangle(draw_list, .{
-                    p0=.{x0, node.rect.w}, p1=.{x1, node.rect.y}, p2=.{x1, node.rect.w},
-                    c0=c0, c1=c1, c2=c1,
-                });
+                p1 : Vec2f;
+                p1[axis] = t0;
+                p1[cross] = node.rect.xy[cross];
+
+                p2 : Vec2f;
+                p2[axis] = t1;
+                p2[cross] = node.rect.xy[cross];
+
+                DrawTriangle(draw_list, .{p0=p0, p1=p1, p2=p2, c0=c0, c1=c0, c2=c1});
+
+                p1 = p2;
+
+                p2[axis] = t1;
+                p2[cross] = node.rect.zw[cross];
+
+                DrawTriangle(draw_list, .{p0=p0, p1=p1, p2=p2, c0=c0, c1=c1, c2=c1});
             }
         } else {
+            c0 := ifx axis == .X then start_color else end_color;
+            c1 := start_color;
+            c2 := start_color;
+
             DrawTriangle(draw_list, .{
                 p0=.{node.rect.x, node.rect.w}, p1=.{node.rect.x, node.rect.y}, p2=.{node.rect.z, node.rect.y},
-                c0=start_color, c1=start_color, c2=end_color,
+                c0=c0, c1=c1, c2=c2,
             });
+
+            c0 = ifx axis == .X then start_color else end_color;
+            c1 = start_color;
+            c2 = ifx axis == .X then start_color else end_color;
+
             DrawTriangle(draw_list, .{
                 p0=.{node.rect.x, node.rect.w}, p1=.{node.rect.z, node.rect.y}, p2=.{node.rect.z, node.rect.w},
-                c0=start_color, c1=end_color, c2=end_color,
+                c0=c0, c1=c1, c2=c2,
             });
         }
 
@@ -430,7 +468,7 @@ ColoredSlider :: (parent : *Node, value : *float, min : float, max : float, step
         DrawNodeDefault(draw_list, node);
     }
 
-    modified, slider, background, handle := Slider(parent, value, min, max, step, style=style, location=location);
+    modified, slider, background, handle := Slider(parent, value, min, max, step, axis=.Y, style=style, location=location);
     if dynamic_color {
         SetDraw(background, DrawBackground);
     }
@@ -460,13 +498,13 @@ ColorPicker :: (parent : *Node, color : *Vec4f, flags : ColorPickerFlags = 0, st
         label_and_content_style : *LabelAndContentStyle, style : *SliderStyle, dynamic_color : bool,
         location := #caller_location
     ) -> bool, slider : *Node {
-        content := LabelAndContent(parent, label, style=label_and_content_style, location=location);
+        // content := LabelAndContent(parent, label, style=label_and_content_style, location=location);
 
-        _, slider := ColoredSlider(content, value, min, max, step, style, dynamic_color);
+        _, slider := ColoredSlider(parent, value, min, max, step, style, dynamic_color, location=location);
 
-        text := Text(content, "%", FormatFloat.{value=value.*, trailing_width=2}, style=*label_and_content_style.text);
-        approx_max_text_size := CalculateTextSize(text.font, text.text_size, "00.00");
-        SetWidth(text, SizePx(approx_max_text_size.x));
+        // text := Text(content, "%", FormatFloat.{value=value.*, trailing_width=2}, style=*label_and_content_style.text);
+        // approx_max_text_size := CalculateTextSize(text.font, text.text_size, "00.00");
+        // SetWidth(text, SizePx(approx_max_text_size.x));
 
         return slider.state_flags & .Active != 0, slider;
     }
@@ -490,12 +528,13 @@ ColorPicker :: (parent : *Node, color : *Vec4f, flags : ColorPickerFlags = 0, st
         SetSize(left, SizeFit(), SizeFit());
         SetLayout(left, .TopToBottom);
 
-        VerticalSeparator(picker);
+        Separator(picker);
 
         right := GetNode(picker);
-        SetSize(right, SizeFill(), SizeFit());
+        // SetSize(right, SizeFill(), SizeFit());
+        SetSize(right, SizeFit(), SizeFill());
         SetMinWidth(right, 200);
-        SetLayout(right, .TopToBottom);
+        SetLayout(right, .LeftToRight);
 
         r_modified, r_slider := LabelSlider(right, "R", *color.x, 0, 1, 0.01, *style.label_and_slider, *style.red_slider, style.dynamic_rgb_slider_color);
         g_modified, g_slider := LabelSlider(right, "G", *color.y, 0, 1, 0.01, *style.label_and_slider, *style.green_slider, style.dynamic_rgb_slider_color);
@@ -520,7 +559,7 @@ ColorPicker :: (parent : *Node, color : *Vec4f, flags : ColorPickerFlags = 0, st
             data.hsv = RGBToHSVPreserving(color.xyz, data.hsv);
         }
 
-        HorizontalSeparator(right);
+        Separator(right);
 
         data.modifying_hsv = HSVTriangleWheel(left, data, 250, *style.wheel);
 
@@ -546,7 +585,7 @@ ColorPicker :: (parent : *Node, color : *Vec4f, flags : ColorPickerFlags = 0, st
         }
 
         if !(flags & .NoAlpha) {
-            HorizontalSeparator(right);
+            Separator(right);
 
             _, opacity_slider := LabelSlider(right, "A", *color.w, 0, 1, 0.01, *style.label_and_slider, *style.opacity_slider, style.dynamic_opacity_slider_color);
 

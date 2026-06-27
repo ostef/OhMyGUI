@@ -27,8 +27,10 @@ SetColors :: (using style : *SliderStyle, base_background_color : RGBA8, base_fi
     active.handle.background_color = Whiten(base_handle_color, 0.1);
 }
 
-Slider :: (parent : *Node, value : *$T, min : T, max : T, step : T, style : *SliderStyle = null, location := #caller_location) -> bool, slider : *Node, background : *Node, handle : *Node {
+Slider :: (parent : *Node, value : *$T, min : T, max : T, step : T, axis := Axis.X, style : *SliderStyle = null, location := #caller_location) -> bool, slider : *Node, background : *Node, handle : *Node {
     EnsureStyle(*style, "slider");
+
+    cross := GetCrossAxis(axis);
 
     fvalue_original := ifx value then cast(float, value.*);
     fvalue := ifx value then cast(float, value.*);
@@ -44,12 +46,16 @@ Slider :: (parent : *Node, value : *$T, min : T, max : T, step : T, style : *Sli
 
     slider = GetNode(parent, location=location);
     {
-        SetSize(slider, SizeFill(), SizeFit());
         SetLayout(slider, .None);
-        SetChildAlign(slider, 0, 0.5);
-        SetPadding(slider, style.handle_size.x * 0.5, 0, style.handle_size.x * 0.5, 0);
         SetDraw(slider, null);
-        slider.flags |= .NoClip;
+
+        slider.child_align[axis] = 0;
+        slider.child_align[cross] = 0.5;
+        slider.desired_size[axis] = SizeFill();
+        slider.desired_size[cross] = SizeFit();
+        slider.padding.xy[axis] = style.handle_size[axis];
+        slider.padding.zw[axis] = style.handle_size[axis];
+        slider.flags |= .NoPaddedClip;
 
         scroll := ScrollBehavior(slider);
         if scroll.y != 0 {
@@ -60,8 +66,10 @@ Slider :: (parent : *Node, value : *$T, min : T, max : T, step : T, style : *Sli
 
         background = GetNode(slider, "background");
         {
-            SetSize(background, SizeFill(), SizePx(style.background_size));
             SetLayout(background, .None);
+
+            background.desired_size[axis] = SizeFill();
+            background.desired_size[cross] = SizePx(style.background_size);
         }
 
         handle = GetNode(slider, "handle");
@@ -69,7 +77,7 @@ Slider :: (parent : *Node, value : *$T, min : T, max : T, step : T, style : *Sli
             SetSize(handle, SizePx(style.handle_size.x), SizePx(style.handle_size.y));
 
             range := fmax - fmin;
-            offset_max := background.layout_last_frame.size[Axis.X];
+            offset_max := background.layout_last_frame.size[axis];
 
             // Allow the user to click on the slider to interact with the scrollbar
             slider.flags |= .Focusable;
@@ -82,8 +90,8 @@ Slider :: (parent : *Node, value : *$T, min : T, max : T, step : T, style : *Sli
                 handle_result.pressed = true;
                 handle_result.held = true;
 
-                mouse := GetMousePosition(slider.window)[Axis.X];
-                new_offset := mouse - slider.layout_last_frame.rect.xy[Axis.X] - style.handle_size[Axis.X] * 0.5;
+                mouse := GetMousePosition(slider.window)[axis];
+                new_offset := mouse - slider.layout_last_frame.rect.xy[axis] - style.handle_size[axis] * 0.5;
                 new_value := (new_offset / offset_max) * range;
 
                 fvalue = Snap(clamp(new_value, fmin, fmax), fstep);
@@ -91,20 +99,20 @@ Slider :: (parent : *Node, value : *$T, min : T, max : T, step : T, style : *Sli
 
             if handle_result.pressed {
                 context.omg.mouse_captured_node_value = .{};
-                context.omg.mouse_captured_node_value.xy[Axis.X] = (fvalue / range) * offset_max;
+                context.omg.mouse_captured_node_value.xy[axis] = (fvalue / range) * offset_max;
             }
 
             if handle_result.held {
                 handle.state_flags |= .Active;
 
-                new_offset := GetMousePosition()[Axis.X] - context.omg.mouse_captured_at[Axis.X];
-                new_offset += context.omg.mouse_captured_node_value.xy[Axis.X];
+                new_offset := GetMousePosition()[axis] - context.omg.mouse_captured_at[axis];
+                new_offset += context.omg.mouse_captured_node_value.xy[axis];
                 new_value := (new_offset / offset_max) * range;
 
                 fvalue = Snap(clamp(new_value, fmin, fmax), fstep);
             }
 
-            handle.offset[Axis.X] = (fvalue / range) * offset_max - style.handle_size[Axis.X] * 0.5;
+            handle.offset[axis] = (fvalue / range) * offset_max - style.handle_size[axis] * 0.5;
         }
 
         fill = GetNode(background, "fill");

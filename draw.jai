@@ -841,7 +841,7 @@ DrawNodes :: (draw_list : *DrawList, node : *Node) {
     }
 }
 
-DrawCheckerboard :: (draw_list : *DrawList, rect : Vec4f, white : RGBA8, black : RGBA8) {
+DrawCheckerboard :: (draw_list : *DrawList, rect : Vec4f, checker_size : float, white : RGBA8, black : RGBA8) {
     if white & 0xff == 0 && black & 0xff == 0 {
         return;
     }
@@ -850,7 +850,6 @@ DrawCheckerboard :: (draw_list : *DrawList, rect : Vec4f, white : RGBA8, black :
         return;
     }
 
-    checker_size := (rect.w - rect.y) * 0.5;
     white_square_x := false;
     px := rect.x;
     while px < rect.z {
