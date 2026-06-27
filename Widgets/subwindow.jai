@@ -30,7 +30,7 @@ SubwindowStyle :: struct {
     vertical_scrollbar : SliderStyle;
     horizontal_scrollbar : SliderStyle;
     resize_handle_size := 8.0;
-    resize_handle_inset := -8.0;
+    resize_handle_inset := -6.0;
     corner_resize_handle_size := 20.0;
 }
 
