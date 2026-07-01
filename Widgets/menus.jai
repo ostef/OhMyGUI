@@ -12,7 +12,7 @@ MenuBar :: (parent : *Node, str_id : string, style : *BoxStyle = null) -> *Node 
     return node;
 }
 
-MenuItem :: (parent : *Node, text : string, style : *ButtonStyle = null, location := #caller_location) -> clicked : bool, *Node {
+MenuItem :: (parent : *Node, text : string, selected := false, style : *ButtonStyle = null, location := #caller_location) -> clicked : bool, *Node {
     EnsureStyle(*style, "menu_item");
 
     node := GetNode(parent, location);
@@ -22,6 +22,10 @@ MenuItem :: (parent : *Node, text : string, style : *ButtonStyle = null, locatio
 
         text_node := GetNode(node, "text");
         SetText(text_node, text);
+
+        if selected {
+            node.state_flags |= .Active;
+        }
 
         button := ButtonBehavior(node);
 
