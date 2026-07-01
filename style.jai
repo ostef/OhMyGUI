@@ -664,7 +664,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         slider_base.normal.background.corner_radiuses = .{4,4,4,4};
         slider_base.normal.background.border_size = 1;
         slider_base.normal.background.border_inset = -1;
-        slider_base.normal.background.border_color = MakeTone(button_base_background_color, 0.3);
+        slider_base.normal.background.border_color = MakeTone(base_background_color, 0.3);
 
         // slider_base.normal.handle.background_color = 0;
         // slider_base.normal.handle.corner_radiuses = .{3,3,3,3};
@@ -724,6 +724,12 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
 
         opacity_checkerboard_white = MakeTone(0xffffffff, 0.5);
         opacity_checkerboard_black = MakeTone(0x000000ff, 0.5);
+
+        preview_box.corner_radiuses = .{5,5,5,5};
+        preview_box.border_size = 1;
+        preview_box.border_color = wheel.border_color;
+        preview_box.outer_shadow_color = ColorU32(0,0,0,0.5);
+        preview_box.outer_shadow_blur = 2;
     }
     SetStyle(theme, "color_picker", theme.color_picker);
 }

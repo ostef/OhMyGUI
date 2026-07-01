@@ -301,9 +301,4 @@ END
 
     subwindow := OMG.Subwindow(window, "Hello Subwindow", "hello_subwindow", .{550, 400});
     OMG.ColorPicker(subwindow, *g_color);
-
-    box := OMG.GetNode(subwindow);
-    OMG.SetSize(box, OMG.SizePx(35), OMG.SizePx(35));
-    OMG.SetBackgroundColor(box, g_color);
-    OMG.SetCornerRadius(box, 5);
 }

@@ -770,6 +770,10 @@ SetOuterShadowColor :: inline (node : *Node, color : Vec4f) {
     node.outer_shadow_color = ColorU32(color);
 }
 
+SetOuterShadowColor :: inline (node : *Node, color : RGBA8) {
+    node.outer_shadow_color = color;
+}
+
 SetOuterShadowOpacity :: inline (node : *Node, alpha : float) {
     SetAlpha(*node.outer_shadow_color, alpha);
 }

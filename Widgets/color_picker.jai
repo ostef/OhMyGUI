@@ -45,9 +45,17 @@ ColorPickerStyle :: struct {
     dynamic_opacity_slider_color := true;
     opacity_checkerboard_white : RGBA8;
     opacity_checkerboard_black : RGBA8;
+
+    preview_box : BoxStyle;
 }
 
 ColorPickerData :: struct {
+    mode : enum {
+        HSVWheel;
+        HSVSliders;
+        RGBSliders;
+    } = .HSVSliders;
+
     hsv : HSV;
     modifying_hsv : bool;
 }
@@ -80,7 +88,7 @@ GetHSVWheelGeometricData :: (style : *HSVTriangleWheelStyle, rect : Vec4f, hsv :
     };
 }
 
-HSVTriangleWheel :: (parent : *Node, using data : *ColorPickerData, size : float, style : *HSVTriangleWheelStyle, location := #caller_location) -> bool {
+HSVTriangleWheel :: (parent : *Node, using data : *ColorPickerData, style : *HSVTriangleWheelStyle, location := #caller_location) -> bool, *Node {
     Draw :: (draw_list : *DrawList, node : *Node) {
         data := GetUserData(node, *ColorPickerData);
         if !data {
@@ -112,7 +120,7 @@ HSVTriangleWheel :: (parent : *Node, using data : *ColorPickerData, size : float
 
     node := GetNode(parent, location);
     {
-        SetSize(node, SizePx(size), SizePx(size));
+        SetSize(node, SizeFill(), SizeFill());
         SetLayout(node, .None);
         SetDraw(node, Draw);
         SetUserData(node, data);
@@ -124,11 +132,15 @@ HSVTriangleWheel :: (parent : *Node, using data : *ColorPickerData, size : float
         modified |= HueWheel(node, data, style);
     }
 
-    return modified;
+    return modified, node;
 }
 
 SaturationValueTriangle :: (parent : *Node, using data : *ColorPickerData, style : *HSVTriangleWheelStyle, location := #caller_location) -> bool {
     HitTest :: (node : *Node, point : Vec2f) -> bool {
+        if !IsInsideRect(point, node.layout_last_frame.clipped_rect) {
+            return false;
+        }
+
         if !node.parent {
             return false;
         }
@@ -221,6 +233,10 @@ SaturationValueTriangle :: (parent : *Node, using data : *ColorPickerData, style
 
 HueWheel :: (parent : *Node, using data : *ColorPickerData, style : *HSVTriangleWheelStyle, location := #caller_location) -> bool {
     HitTest :: (node : *Node, point : Vec2f) -> bool {
+        if !IsInsideRect(point, node.layout_last_frame.clipped_rect) {
+            return false;
+        }
+
         if !node.parent {
             return false;
         }
@@ -346,6 +362,8 @@ ColoredSliderData :: struct {
     end_color : RGBA8;
 }
 
+Color_Picker_Slider_Axis :: Axis.X;
+
 ColoredSlider :: (parent : *Node, value : *float, min : float, max : float, step : float, style : *SliderStyle, dynamic_color : bool, location := #caller_location) -> bool, slider : *Node, background : *Node, handle : *Node {
     DrawTriangularCursor :: (draw_list : *DrawList, node : *Node) {
         if !node.parent {
@@ -448,7 +466,7 @@ ColoredSlider :: (parent : *Node, value : *float, min : float, max : float, step
         } else {
             c0 := start_color;
             c1 := ifx axis == .X then start_color else end_color;
-            c2 := ifx axis == .X then start_color else end_color;
+            c2 := end_color;
 
             DrawTriangle(draw_list, .{
                 p0=.{node.rect.x, node.rect.w}, p1=.{node.rect.x, node.rect.y}, p2=.{node.rect.z, node.rect.y},
@@ -456,8 +474,8 @@ ColoredSlider :: (parent : *Node, value : *float, min : float, max : float, step
             });
 
             c0 = start_color;
-            c1 = ifx axis == .X then start_color else end_color;
-            c2 = start_color;
+            c1 = end_color;
+            c2 = ifx axis == .X then end_color else start_color;
 
             DrawTriangle(draw_list, .{
                 p0=.{node.rect.x, node.rect.w}, p1=.{node.rect.z, node.rect.y}, p2=.{node.rect.z, node.rect.w},
@@ -470,7 +488,11 @@ ColoredSlider :: (parent : *Node, value : *float, min : float, max : float, step
         DrawNodeDefault(draw_list, node);
     }
 
-    modified, slider, background, handle := Slider(parent, value, max, min, step, axis=.Y, style=style, location=location);
+    if Color_Picker_Slider_Axis == .Y {
+        swap(*max, *min);
+    }
+
+    modified, slider, background, handle := Slider(parent, value, min, max, step, axis=Color_Picker_Slider_Axis, style=style, location=location);
     if dynamic_color {
         SetDraw(background, DrawBackground);
     }
@@ -480,7 +502,7 @@ ColoredSlider :: (parent : *Node, value : *float, min : float, max : float, step
     return modified, slider, background, handle;
 }
 
-ColorPicker :: (parent : *Node, color : *Vec4f, flags : ColorPickerFlags = 0, style : *ColorPickerStyle = null, location := #caller_location) -> *Node {
+ColorPicker :: (parent : *Node, color : *Vec4f, previous_color := Vec4f.{0,0,0,0}, size := 400.0, flags : ColorPickerFlags = 0, style : *ColorPickerStyle = null, location := #caller_location) -> *Node {
     RGBToHSVPreserving :: (rgb : Vec3f, current : HSV) -> HSV {
         hsv := RGBToHSV(rgb);
         if hsv.saturation == 0 || hsv.value == 0 {
@@ -501,17 +523,33 @@ ColorPicker :: (parent : *Node, color : *Vec4f, flags : ColorPickerFlags = 0, st
         location := #caller_location
     ) -> bool, slider : *Node {
         node := GetNode(parent, location);
-        SetSize(node, SizeFit(), SizeFill());
-        SetChildAlign(node, label_and_content_style.child_align.y, label_and_content_style.child_align.x);
-        SetLayout(node, .TopToBottom);
+        if Color_Picker_Slider_Axis == .X {
+            SetSize(node, SizeFill(), SizeFit());
+            SetChildAlign(node, label_and_content_style.child_align);
+            SetLayout(node, .LeftToRight);
+        } else {
+            SetSize(node, SizeFit(), SizeFill());
+            SetChildAlign(node, label_and_content_style.child_align.y, label_and_content_style.child_align.x);
+            SetLayout(node, .TopToBottom);
+        }
+
         SetPadding(node, label_and_content_style.padding);
 
         text := Text(node, "%", label, style=*label_and_content_style.text);
-        SetSize(text, SizeFit(), SizeFit());
+        if Color_Picker_Slider_Axis == .X {
+            SetSize(text, SizeFill(label_and_content_style.text_fill), SizeFit());
+        } else {
+            SetSize(text, SizeFit(), SizeFit());
+        }
         SetLayout(text, .LeftToRight);
 
         content := GetNode(node);
-        SetSize(content, SizeFit(), SizeFill());
+        if Color_Picker_Slider_Axis == .X {
+            SetSize(content, SizeFill(), SizeFit());
+        } else {
+            SetSize(content, SizeFit(), SizeFill());
+        }
+
         SetLayout(content, .LeftToRight);
         SetChildGap(content, label_and_content_style.child_gap);
 
@@ -529,7 +567,8 @@ ColorPicker :: (parent : *Node, color : *Vec4f, flags : ColorPickerFlags = 0, st
     picker := GetNode(parent, location);
     {
         SetLayout(picker, .LeftToRight);
-        SetSize(picker, SizeFit(), SizeFit());
+        SetSize(picker, SizeFill(), SizeFill());
+        SetChildGap(picker, 0, 10);
 
         data := AddUserData(picker, ColorPickerData);
         if !data.modifying_hsv {
@@ -538,67 +577,36 @@ ColorPicker :: (parent : *Node, color : *Vec4f, flags : ColorPickerFlags = 0, st
         }
 
         left := GetNode(picker);
-        SetSize(left, SizeFit(), SizeFit());
         SetLayout(left, .TopToBottom);
-
-        Separator(picker);
+        SetSize(left, SizeFill(0.8), SizeFill());
 
         right := GetNode(picker);
-        SetSize(right, SizeFit(), SizeFill());
-        SetLayout(right, .LeftToRight);
+        SetLayout(right, .TopToBottom);
+        SetSize(right, SizeFill(0.2), SizeFill());
 
-        r_modified, r_slider := LabelSlider(right, "R", *color.x, 0, 1, 0.01, *style.label_and_slider, *style.red_slider, style.dynamic_rgb_slider_color);
-        g_modified, g_slider := LabelSlider(right, "G", *color.y, 0, 1, 0.01, *style.label_and_slider, *style.green_slider, style.dynamic_rgb_slider_color);
-        b_modified, b_slider := LabelSlider(right, "B", *color.z, 0, 1, 0.01, *style.label_and_slider, *style.blue_slider, style.dynamic_rgb_slider_color);
+        top := GetNode(left);
+        SetSize(top, SizeFill(), SizeFit());
+        SetLayout(top, .LeftToRight);
+        SetPadding(top, 4, 4);
+        SetChildAlign(top, 0.5, 0.5);
+        SetChildGap(top, 4, 4);
 
-        if style.dynamic_rgb_slider_color {
-            SetUserData(r_slider, ColoredSliderData.{
-                start_color=ColorU32(0, color.y, color.z, 1),
-                end_color  =ColorU32(1, color.y, color.z, 1),
-            });
-            SetUserData(g_slider, ColoredSliderData.{
-                start_color=ColorU32(color.x, 0, color.z, 1),
-                end_color  =ColorU32(color.x, 1, color.z, 1),
-            });
-            SetUserData(b_slider, ColoredSliderData.{
-                start_color=ColorU32(color.x, color.y, 0, 1),
-                end_color  =ColorU32(color.x, color.y, 1, 1),
-            });
+        if MenuItem(top, "HSV Wheel", selected=data.mode == .HSVWheel) {
+            data.mode = .HSVWheel;
+        }
+        if MenuItem(top, "HSV Sliders", selected=data.mode == .HSVSliders) {
+            data.mode = .HSVSliders;
+        }
+        if MenuItem(top, "RGB Sliders", selected=data.mode == .RGBSliders) {
+            data.mode = .RGBSliders;
         }
 
-        if r_modified || g_modified || b_modified {
-            data.hsv = RGBToHSVPreserving(color.xyz, data.hsv);
-        }
-
-        Separator(right);
-
-        data.modifying_hsv = HSVTriangleWheel(left, data, 250, *style.wheel);
-
-        h_modified, h_slider := LabelSlider(right, "H", *data.hsv.hue, 0, 360, 1, *style.label_and_slider, *style.hue_slider, style.dynamic_hsv_slider_color);
-        s_modified, s_slider := LabelSlider(right, "S", *data.hsv.saturation, 0, 1, 0.01, *style.label_and_slider, *style.saturation_slider, style.dynamic_hsv_slider_color);
-        v_modified, v_slider := LabelSlider(right, "V", *data.hsv.value, 0, 1, 0.01, *style.label_and_slider, *style.value_slider, style.dynamic_hsv_slider_color);
-
-        data.modifying_hsv |= h_modified | s_modified | v_modified;
-        if data.modifying_hsv {
-            color.xyz = HSVToRGB(data.hsv);
-        }
-
-        if style.dynamic_hsv_slider_color {
-            SetUserData(h_slider, ColoredSliderData.{hue=true, hsv=data.hsv});
-            SetUserData(s_slider, ColoredSliderData.{
-                start_color=ColorU32(HSVToRGB(.{data.hsv.hue, 0, data.hsv.value}), 1),
-                end_color  =ColorU32(HSVToRGB(.{data.hsv.hue, 1, data.hsv.value}), 1),
-            });
-            SetUserData(v_slider, ColoredSliderData.{
-                start_color=ColorU32(HSVToRGB(.{data.hsv.hue, data.hsv.saturation, 0}), 1),
-                end_color  =ColorU32(HSVToRGB(.{data.hsv.hue, data.hsv.saturation, 1}), 1),
-            });
-        }
+        bottom := GetNode(left);
+        SetSize(bottom, SizeFill(), SizeFill());
+        SetLayout(bottom, .TopToBottom);
 
         if !(flags & .NoAlpha) {
-            Separator(right);
-
-            _, opacity_slider := LabelSlider(right, "A", *color.w, 0, 1, 0.01, *style.label_and_slider, *style.opacity_slider, style.dynamic_opacity_slider_color);
+            _, opacity_slider := LabelSlider(bottom, "A", *color.w, 0, 1, 0.01, *style.label_and_slider, *style.opacity_slider, style.dynamic_opacity_slider_color);
 
             if style.dynamic_opacity_slider_color {
                 SetUserData(opacity_slider, ColoredSliderData.{
@@ -608,7 +616,117 @@ ColorPicker :: (parent : *Node, color : *Vec4f, flags : ColorPickerFlags = 0, st
                     end_color  =ColorU32(color.xyz, 1),
                 });
             }
+
+            Separator(bottom);
         }
+
+        if data.mode == {
+        case .HSVWheel;
+            hsv_wheel : *Node;
+            data.modifying_hsv, hsv_wheel = HSVTriangleWheel(bottom, data, *style.wheel);
+            SetMinSize(hsv_wheel, size * 0.5, size * 0.5);
+
+        case .HSVSliders;
+            h_modified, h_slider := LabelSlider(bottom, "H", *data.hsv.hue, 0, 360, 1, *style.label_and_slider, *style.hue_slider, style.dynamic_hsv_slider_color);
+            s_modified, s_slider := LabelSlider(bottom, "S", *data.hsv.saturation, 0, 1, 0.01, *style.label_and_slider, *style.saturation_slider, style.dynamic_hsv_slider_color);
+            v_modified, v_slider := LabelSlider(bottom, "V", *data.hsv.value, 0, 1, 0.01, *style.label_and_slider, *style.value_slider, style.dynamic_hsv_slider_color);
+
+            data.modifying_hsv |= h_modified | s_modified | v_modified;
+
+            if style.dynamic_hsv_slider_color {
+                SetUserData(h_slider, ColoredSliderData.{hue=true, hsv=data.hsv});
+                SetUserData(s_slider, ColoredSliderData.{
+                    start_color=ColorU32(HSVToRGB(.{data.hsv.hue, 0, data.hsv.value}), 1),
+                    end_color  =ColorU32(HSVToRGB(.{data.hsv.hue, 1, data.hsv.value}), 1),
+                });
+                SetUserData(v_slider, ColoredSliderData.{
+                    start_color=ColorU32(HSVToRGB(.{data.hsv.hue, data.hsv.saturation, 0}), 1),
+                    end_color  =ColorU32(HSVToRGB(.{data.hsv.hue, data.hsv.saturation, 1}), 1),
+                });
+            }
+
+        case .RGBSliders;
+            r_modified, r_slider := LabelSlider(bottom, "R", *color.x, 0, 1, 0.01, *style.label_and_slider, *style.red_slider, style.dynamic_rgb_slider_color);
+            g_modified, g_slider := LabelSlider(bottom, "G", *color.y, 0, 1, 0.01, *style.label_and_slider, *style.green_slider, style.dynamic_rgb_slider_color);
+            b_modified, b_slider := LabelSlider(bottom, "B", *color.z, 0, 1, 0.01, *style.label_and_slider, *style.blue_slider, style.dynamic_rgb_slider_color);
+
+            if style.dynamic_rgb_slider_color {
+                SetUserData(r_slider, ColoredSliderData.{
+                    start_color=ColorU32(0, color.y, color.z, 1),
+                    end_color  =ColorU32(1, color.y, color.z, 1),
+                });
+                SetUserData(g_slider, ColoredSliderData.{
+                    start_color=ColorU32(color.x, 0, color.z, 1),
+                    end_color  =ColorU32(color.x, 1, color.z, 1),
+                });
+                SetUserData(b_slider, ColoredSliderData.{
+                    start_color=ColorU32(color.x, color.y, 0, 1),
+                    end_color  =ColorU32(color.x, color.y, 1, 1),
+                });
+            }
+
+            if r_modified || g_modified || b_modified {
+                data.hsv = RGBToHSVPreserving(color.xyz, data.hsv);
+            }
+        }
+
+        if data.modifying_hsv {
+            color.xyz = HSVToRGB(data.hsv);
+        }
+
+        SetPadding(right, 10, 10);
+        SetChildGap(right, 5, 5);
+
+        DrawPreview :: (draw_list : *DrawList, node : *Node) {
+            DrawBox(draw_list, .{
+                size=node.rect.zw - node.rect.xy,
+                position=(node.rect.xy + node.rect.zw) * 0.5,
+                corner_radiuses=node.corner_radiuses,
+                background_color=0xffffffff,
+                outer_shadow_color=node.outer_shadow_color,
+                outer_shadow_offset=node.outer_shadow_offset,
+                outer_shadow_blur=node.outer_shadow_blur,
+            });
+
+            checkerboard_colors := GetUserData(node, CheckerboardColors);
+            if checkerboard_colors {
+                PushClipBox(draw_list, node.rect, node.corner_radiuses);
+                DrawCheckerboard(draw_list, node.rect, node.size.y / 3, checkerboard_colors.white, checkerboard_colors.black);
+                PopClipBox(draw_list);
+            }
+
+            DrawBox(draw_list, .{
+                size=node.rect.zw - node.rect.xy,
+                position=(node.rect.xy + node.rect.zw) * 0.5,
+                corner_radiuses=node.corner_radiuses,
+                background_color=node.background_color,
+                border_color=node.border_color,
+                border_size=node.border_size,
+                border_inset=node.border_inset,
+            });
+        }
+
+        CheckerboardColors :: struct {
+            white : RGBA8;
+            black : RGBA8;
+        }
+
+        SetChildAlign(right, 0.5, 0.5);
+        right.flags |= .NoPaddedClip;
+
+        current_preview := GetNode(right);
+        SetSize(current_preview, SizePx(50), SizePx(40));
+        SetDraw(current_preview, DrawPreview);
+        SetUserData(current_preview, CheckerboardColors.{style.opacity_checkerboard_white, style.opacity_checkerboard_black});
+        Apply(current_preview, style.preview_box);
+        SetBackgroundColor(current_preview, ColorU32(color));
+
+        previous_preview := GetNode(right);
+        SetSize(previous_preview, SizePx(50), SizePx(40));
+        SetDraw(previous_preview, DrawPreview);
+        SetUserData(previous_preview, CheckerboardColors.{style.opacity_checkerboard_white, style.opacity_checkerboard_black});
+        Apply(previous_preview, style.preview_box);
+        SetBackgroundColor(previous_preview, ColorU32(previous_color));
     }
 
     return picker;
