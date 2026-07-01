@@ -843,6 +843,7 @@ PickColorButton :: (parent : *Node, color : *Vec4f, previous_color : Vec4f, data
 
     if data.picking_color {
         SetMouseCapture(pick_button);
+        SetCursor(GetSystemCursor(.EyeDropper));
 
         color.* = ColorVec4f(GetColorAtMousePosition());
         data.hsv = RGBToHSVPreserving(color.xyz, data.hsv);

@@ -107,6 +107,7 @@ SystemCursor :: enum u8 {
     ResizeAll;
     Forbidden;
     Hand;
+    EyeDropper;
 
     Count;
 }
@@ -135,6 +136,9 @@ InitSystemCursors :: () {
     g_system_cursors[SystemCursor.Forbidden] = SDL_CreateSystemCursor(NO);
     g_system_cursors[SystemCursor.Hand] = SDL_CreateSystemCursor(HAND);
 
+    Eyedropper_Contents :: #run ReadCompileTimeFile("eyedropper-cursor.png");
+    g_system_cursors[SystemCursor.EyeDropper] = CreateCursorFromFileContents(Eyedropper_Contents, 0, 1);
+
     SetCursor(g_system_cursors[SystemCursor.Arrow]);
 }
 
@@ -158,6 +162,62 @@ HasCursorControl :: (node : *Node) -> bool {
     }
 
     return node.state_flags != 0;
+}
+
+CreateCursorFromFileContents :: (contents : string, hot_x_01 : float, hot_y_01 : float) -> *Cursor {
+    #import "stb_image";
+
+    w, h : s32;
+    stbi_set_flip_vertically_on_load(0);
+    data := stbi_load_from_memory(contents.data, xx contents.count, *w, *h, null, 4);
+    if !data {
+        log_error("Could not create cursor image");
+        return null;
+    }
+
+    defer stbi_image_free(data);
+
+    return CreateCursorFromRGBA8Pixels(data, xx w, xx h, hot_x_01, hot_y_01);
+}
+
+CreateCursorFromFile :: (filename : string, hot_x_01 : float, hot_y_01 : float) -> *Cursor {
+    #import "stb_image";
+
+    w, h : s32;
+    stbi_set_flip_vertically_on_load(0);
+    data := stbi_load(tprint("%\0", filename).data, *w, *h, null, 4);
+    if !data {
+        log_error("Could not create cursor image '%'", filename);
+        return null;
+    }
+
+    defer stbi_image_free(data);
+
+    return CreateCursorFromRGBA8Pixels(data, xx w, xx h, hot_x_01, hot_y_01);
+}
+
+CreateCursorFromRGBA8Pixels :: (pixels : *void, width : u32, height : u32, hot_x_01 : float, hot_y_01 : float) -> *Cursor {
+    SDL_PIXELFORMAT_RGBA8888 :: 0x16462004;
+    SDL_PIXELFORMAT_ABGR8888 :: 0x16762004;
+
+    surface := SDL_CreateRGBSurfaceWithFormatFrom(pixels, width, height, 4, width * 4, SDL_PIXELFORMAT_ABGR8888);
+    defer SDL_FreeSurface(surface);
+
+    if !surface {
+        log_error("Could not create SDL surface for cursor image");
+        return null;
+    }
+
+    hot_x := cast(s32, (cast(s32, width) - 1) * hot_x_01);
+    hot_y := cast(s32, (cast(s32, height) - 1) * hot_y_01);
+
+    result := SDL_CreateColorCursor(surface, hot_x, hot_y);
+    if !result {
+        log_error("Could not create SDL cursor: %", to_string(SDL_GetError()));
+        return null;
+    }
+
+    return result;
 }
 
 AnimFunc :: enum u8 {

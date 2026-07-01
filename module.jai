@@ -232,12 +232,6 @@ Render :: () {
     omg := context.omg;
     omg.layout_time_last_frame = 0;
 
-    if omg.cursor_this_frame {
-        SDL_SetCursor(omg.cursor_this_frame);
-    } else {
-        SDL_SetCursor(GetSystemCursor(.Arrow));
-    }
-
     if omg.id_offset_stack.count > 0 {
         log_error("Mismatching number of push/pop for ID offset stack");
         omg.id_offset_stack.count = 0;
@@ -250,6 +244,12 @@ Render :: () {
         SDL_CaptureMouse(1);
     }
     omg.mouse_captured_this_frame = false;
+
+    if omg.cursor_this_frame {
+        SDL_SetCursor(omg.cursor_this_frame);
+    } else {
+        SDL_SetCursor(GetSystemCursor(.Arrow));
+    }
 
     window := omg.windows;
     while window {
