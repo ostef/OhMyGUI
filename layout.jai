@@ -352,7 +352,7 @@ LayoutPosition :: (node : *Node) {
 
             it.rect.xy = node.rect.xy + it.relative_position;
             it.rect.zw = node.rect.xy + it.relative_position + it.size;
-            it.clipped_rect = ClipRect(it.rect, node.rect);
+            it.clipped_rect = ClipRect(it.rect, node.clipped_rect);
 
             LayoutPosition(it);
         }
@@ -396,7 +396,7 @@ LayoutPosition :: (node : *Node) {
 
         it.rect.xy = node.rect.xy + it.relative_position;
         it.rect.zw = node.rect.xy + it.relative_position + it.size;
-        it.clipped_rect = ClipRect(it.rect, node.rect);
+        it.clipped_rect = ClipRect(it.rect, node.clipped_rect);
 
         LayoutPosition(it);
     }
