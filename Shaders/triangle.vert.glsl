@@ -19,8 +19,11 @@ void main() {
     vec2 center_p1 = normalize(center - triangle.p1) * 3;
     vec2 center_p2 = normalize(center - triangle.p2) * 3;
 
+    // const vec2 positions[] = vec2[](
+    //     triangle.p0 - center_p0, triangle.p1 - center_p1, triangle.p2 - center_p2
+    // );
     const vec2 positions[] = vec2[](
-        triangle.p0 - center_p0, triangle.p1 - center_p1, triangle.p2 - center_p2
+        triangle.p0, triangle.p1, triangle.p2
     );
 
     gl_Position.xy = (positions[gl_VertexID] / u_viewport_size) * 2 - vec2(1);
