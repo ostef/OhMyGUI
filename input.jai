@@ -368,10 +368,6 @@ HandleInputEvent :: (event : SDL_Event) {
         }
 
     case SDL_MOUSEBUTTONDOWN;
-        if event.button.button > 2 {
-            return;
-        }
-
         mouse_button := SDLMouseButtonToMouseButton(event.button.button);
         if event.button.clicks > 1 {
             omg.input.mouse_button_states[mouse_button] |= .Repeated | .Down;
@@ -380,10 +376,6 @@ HandleInputEvent :: (event : SDL_Event) {
         }
 
     case SDL_MOUSEBUTTONUP;
-        if event.button.button > 2 {
-            return;
-        }
-
         mouse_button := SDLMouseButtonToMouseButton(event.button.button);
         omg.input.mouse_button_states[mouse_button] &= ~.Down;
         omg.input.mouse_button_states[mouse_button] |= .Released;
