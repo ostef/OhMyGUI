@@ -61,10 +61,10 @@ Slider :: (parent : *Node, value : *$T, min : T, max : T, step : T, axis := Axis
 
         scroll := ScrollBehavior(slider);
         if scroll.y != 0 {
-            fvalue = clamp(fvalue + sign(fmax - fmin) * sign(scroll.y) * cast(float, step), real_min, real_max);
+            fvalue = clamp(fvalue - sign(fmax - fmin) * sign(scroll.y) * cast(float, step), real_min, real_max);
             fvalue = Snap(fvalue, fstep);
         } else if scroll.x != 0 {
-            fvalue = clamp(fvalue + sign(fmax - fmin) * sign(scroll.x) * cast(float, step), real_min, real_max);
+            fvalue = clamp(fvalue - sign(fmax - fmin) * sign(scroll.x) * cast(float, step), real_min, real_max);
             fvalue = Snap(fvalue, fstep);
         }
 
