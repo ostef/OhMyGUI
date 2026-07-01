@@ -615,9 +615,9 @@ ColorPicker :: (parent : *Node, color : *Vec4f, previous_color := Vec4f.{0,0,0,0
 
         _, slider := ColoredSlider(content, value, min, max, step, style, dynamic_color);
 
-        // text := Text(content, "%", FormatFloat.{value=value.*, trailing_width=2}, style=*label_and_content_style.text);
-        // approx_max_text_size := CalculateTextSize(text.font, text.text_size, "00.00");
-        // SetWidth(text, SizePx(approx_max_text_size.x));
+        value_text := Text(content, "%", FormatFloat.{value=value.*, trailing_width=2}, style=*label_and_content_style.text);
+        approx_max_text_size := CalculateTextSize(value_text.font, value_text.text_size, "00.00");
+        SetWidth(value_text, SizePx(approx_max_text_size.x));
 
         return slider.state_flags & .Active != 0, slider;
     }
@@ -639,6 +639,7 @@ ColorPicker :: (parent : *Node, color : *Vec4f, previous_color := Vec4f.{0,0,0,0
         left := GetNode(picker);
         SetLayout(left, .TopToBottom);
         SetSize(left, SizeFill(0.8), SizeFill());
+        SetPadding(left, 5, 5);
 
         right := GetNode(picker);
         SetLayout(right, .TopToBottom);
