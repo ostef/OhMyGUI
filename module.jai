@@ -245,6 +245,9 @@ Render :: () {
 
     if !omg.mouse_captured_this_frame {
         omg.mouse_capturing_node = null;
+        SDL_CaptureMouse(0);
+    } else {
+        SDL_CaptureMouse(1);
     }
     omg.mouse_captured_this_frame = false;
 
