@@ -363,8 +363,6 @@ ColoredSliderData :: struct {
     end_color : RGBA8;
 }
 
-Color_Picker_Slider_Axis :: Axis.X;
-
 ColoredSlider :: (parent : *Node, value : *float, min : float, max : float, step : float, style : *SliderStyle, dynamic_color : bool, location := #caller_location) -> bool, slider : *Node, background : *Node, handle : *Node {
     DrawTriangularCursor :: (draw_list : *DrawList, node : *Node) {
         if !node.parent {
@@ -489,11 +487,7 @@ ColoredSlider :: (parent : *Node, value : *float, min : float, max : float, step
         DrawNodeDefault(draw_list, node);
     }
 
-    if Color_Picker_Slider_Axis == .Y {
-        swap(*max, *min);
-    }
-
-    modified, slider, background, handle := Slider(parent, value, min, max, step, axis=Color_Picker_Slider_Axis, style=style, location=location);
+    modified, slider, background, handle := Slider(parent, value, min, max, step, style=style, location=location);
     if dynamic_color {
         SetDraw(background, DrawBackground);
     }
@@ -583,32 +577,18 @@ ColorPicker :: (parent : *Node, color : *Vec4f, previous_color := Vec4f.{0,0,0,0
         location := #caller_location
     ) -> bool, slider : *Node {
         node := GetNode(parent, location);
-        if Color_Picker_Slider_Axis == .X {
-            SetSize(node, SizeFill(), SizeFit());
-            SetChildAlign(node, label_and_content_style.child_align);
-            SetLayout(node, .LeftToRight);
-        } else {
-            SetSize(node, SizeFit(), SizeFill());
-            SetChildAlign(node, label_and_content_style.child_align.y, label_and_content_style.child_align.x);
-            SetLayout(node, .TopToBottom);
-        }
+        SetSize(node, SizeFill(), SizeFit());
+        SetChildAlign(node, label_and_content_style.child_align);
+        SetLayout(node, .LeftToRight);
 
         SetPadding(node, label_and_content_style.padding);
 
         text := Text(node, "%", label, style=*label_and_content_style.text);
-        if Color_Picker_Slider_Axis == .X {
-            SetSize(text, SizeFill(label_and_content_style.text_fill), SizeFit());
-        } else {
-            SetSize(text, SizeFit(), SizeFit());
-        }
+        SetSize(text, SizeFill(label_and_content_style.text_fill), SizeFit());
         SetLayout(text, .LeftToRight);
 
         content := GetNode(node);
-        if Color_Picker_Slider_Axis == .X {
-            SetSize(content, SizeFill(), SizeFit());
-        } else {
-            SetSize(content, SizeFit(), SizeFill());
-        }
+        SetSize(content, SizeFill(), SizeFit());
 
         SetLayout(content, .LeftToRight);
         SetChildGap(content, label_and_content_style.child_gap);
