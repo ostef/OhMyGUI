@@ -46,7 +46,7 @@ ColorPickerStyle :: struct {
     opacity_checkerboard_white : RGBA8;
     opacity_checkerboard_black : RGBA8;
 
-    preview_box : BoxStyle;
+    preview : ColorPreviewStyle;
 }
 
 ColorPickerData :: struct {
@@ -502,6 +502,65 @@ ColoredSlider :: (parent : *Node, value : *float, min : float, max : float, step
     return modified, slider, background, handle;
 }
 
+ColorPreviewStyle :: struct {
+    using box : BoxStyle;
+    opacity_checkerboard_white : RGBA8;
+    opacity_checkerboard_black : RGBA8;
+}
+
+ColorPreview :: (parent : *Node, color : RGBA8, style : *ColorPreviewStyle, location := #caller_location) -> *Node {
+    Draw :: (draw_list : *DrawList, node : *Node) {
+        DrawBox(draw_list, .{
+            size=node.size,
+            position=(node.rect.xy + node.rect.zw) * 0.5,
+            corner_radiuses=node.corner_radiuses,
+            background_color=0xffffffff,
+            outer_shadow_color=node.outer_shadow_color,
+            outer_shadow_offset=node.outer_shadow_offset,
+            outer_shadow_blur=node.outer_shadow_blur,
+        });
+
+        style := GetUserData(node, ColorPreviewStyle);
+        if style {
+            PushClipBox(draw_list, node.rect, node.corner_radiuses);
+            DrawCheckerboard(draw_list, node.rect, node.size.y / 3, style.opacity_checkerboard_white, style.opacity_checkerboard_black);
+            PopClipBox(draw_list);
+        }
+
+        DrawBox(draw_list, .{
+            size=.{node.size.x * 0.5, node.size.y},
+            position=(node.rect.xy + node.rect.zw) * 0.5 - .{node.size.x * 0.25, 0},
+            corner_radiuses=.{node.corner_radiuses.x,0,node.corner_radiuses.z,0},
+            background_color=SetAlpha(node.background_color, 1),
+        });
+
+        DrawBox(draw_list, .{
+            size=.{node.size.x * 0.5 + 1, node.size.y},
+            position=(node.rect.xy + node.rect.zw) * 0.5 + .{node.size.x * 0.25 - 1, 0},
+            corner_radiuses=.{0,node.corner_radiuses.y,0,node.corner_radiuses.w},
+            background_color=node.background_color,
+        });
+
+        DrawBox(draw_list, .{
+            size=node.size,
+            position=(node.rect.xy + node.rect.zw) * 0.5,
+            corner_radiuses=node.corner_radiuses,
+            border_color=node.border_color,
+            border_size=node.border_size,
+            border_inset=node.border_inset,
+        });
+    }
+
+    node := GetNode(parent, location=location);
+    SetSize(node, SizePx(50), SizePx(40));
+    SetDraw(node, Draw);
+    SetUserData(node, style.*);
+    Apply(node, style.box);
+    SetBackgroundColor(node, color);
+
+    return node;
+}
+
 ColorPicker :: (parent : *Node, color : *Vec4f, previous_color := Vec4f.{0,0,0,0}, size := 400.0, flags : ColorPickerFlags = 0, style : *ColorPickerStyle = null, location := #caller_location) -> *Node {
     RGBToHSVPreserving :: (rgb : Vec3f, current : HSV) -> HSV {
         hsv := RGBToHSV(rgb);
@@ -677,56 +736,11 @@ ColorPicker :: (parent : *Node, color : *Vec4f, previous_color := Vec4f.{0,0,0,0
         SetPadding(right, 10, 10);
         SetChildGap(right, 5, 5);
 
-        DrawPreview :: (draw_list : *DrawList, node : *Node) {
-            DrawBox(draw_list, .{
-                size=node.rect.zw - node.rect.xy,
-                position=(node.rect.xy + node.rect.zw) * 0.5,
-                corner_radiuses=node.corner_radiuses,
-                background_color=0xffffffff,
-                outer_shadow_color=node.outer_shadow_color,
-                outer_shadow_offset=node.outer_shadow_offset,
-                outer_shadow_blur=node.outer_shadow_blur,
-            });
-
-            checkerboard_colors := GetUserData(node, CheckerboardColors);
-            if checkerboard_colors {
-                PushClipBox(draw_list, node.rect, node.corner_radiuses);
-                DrawCheckerboard(draw_list, node.rect, node.size.y / 3, checkerboard_colors.white, checkerboard_colors.black);
-                PopClipBox(draw_list);
-            }
-
-            DrawBox(draw_list, .{
-                size=node.rect.zw - node.rect.xy,
-                position=(node.rect.xy + node.rect.zw) * 0.5,
-                corner_radiuses=node.corner_radiuses,
-                background_color=node.background_color,
-                border_color=node.border_color,
-                border_size=node.border_size,
-                border_inset=node.border_inset,
-            });
-        }
-
-        CheckerboardColors :: struct {
-            white : RGBA8;
-            black : RGBA8;
-        }
-
         SetChildAlign(right, 0.5, 0.5);
         right.flags |= .NoPaddedClip;
 
-        current_preview := GetNode(right);
-        SetSize(current_preview, SizePx(50), SizePx(40));
-        SetDraw(current_preview, DrawPreview);
-        SetUserData(current_preview, CheckerboardColors.{style.opacity_checkerboard_white, style.opacity_checkerboard_black});
-        Apply(current_preview, style.preview_box);
-        SetBackgroundColor(current_preview, ColorU32(color));
-
-        previous_preview := GetNode(right);
-        SetSize(previous_preview, SizePx(50), SizePx(40));
-        SetDraw(previous_preview, DrawPreview);
-        SetUserData(previous_preview, CheckerboardColors.{style.opacity_checkerboard_white, style.opacity_checkerboard_black});
-        Apply(previous_preview, style.preview_box);
-        SetBackgroundColor(previous_preview, ColorU32(previous_color));
+        ColorPreview(right, ColorU32(color), *style.preview);
+        ColorPreview(right, ColorU32(previous_color), *style.preview);
     }
 
     return picker;

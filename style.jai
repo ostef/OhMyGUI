@@ -725,11 +725,13 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         opacity_checkerboard_white = MakeTone(0xffffffff, 0.5);
         opacity_checkerboard_black = MakeTone(0x000000ff, 0.5);
 
-        preview_box.corner_radiuses = .{5,5,5,5};
-        preview_box.border_size = 1;
-        preview_box.border_color = wheel.border_color;
-        preview_box.outer_shadow_color = ColorU32(0,0,0,0.5);
-        preview_box.outer_shadow_blur = 2;
+        preview.corner_radiuses = .{5,5,5,5};
+        preview.border_size = 1;
+        preview.border_color = wheel.border_color;
+        preview.outer_shadow_color = ColorU32(0,0,0,0.5);
+        preview.outer_shadow_blur = 2;
+        preview.opacity_checkerboard_white = opacity_checkerboard_white;
+        preview.opacity_checkerboard_black = opacity_checkerboard_black;
     }
     SetStyle(theme, "color_picker", theme.color_picker);
 }
