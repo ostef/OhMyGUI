@@ -52,9 +52,8 @@ ColorPickerStyle :: struct {
 ColorPickerData :: struct {
     mode : enum {
         HSVWheel;
-        HSVSliders;
-        RGBSliders;
-    } = .HSVSliders;
+        Sliders;
+    } = .Sliders;
 
     hsv : HSV;
     modifying_hsv : bool;
@@ -653,11 +652,8 @@ ColorPicker :: (parent : *Node, color : *Vec4f, previous_color := Vec4f.{0,0,0,0
         if MenuItem(top, "HSV Wheel", selected=data.mode == .HSVWheel) {
             data.mode = .HSVWheel;
         }
-        if MenuItem(top, "HSV Sliders", selected=data.mode == .HSVSliders) {
-            data.mode = .HSVSliders;
-        }
-        if MenuItem(top, "RGB Sliders", selected=data.mode == .RGBSliders) {
-            data.mode = .RGBSliders;
+        if MenuItem(top, "Sliders", selected=data.mode == .Sliders) {
+            data.mode = .Sliders;
         }
 
         bottom := GetNode(left);
@@ -685,7 +681,7 @@ ColorPicker :: (parent : *Node, color : *Vec4f, previous_color := Vec4f.{0,0,0,0
             data.modifying_hsv, hsv_wheel = HSVTriangleWheel(bottom, data, *style.wheel);
             SetMinSize(hsv_wheel, size * 0.5, size * 0.5);
 
-        case .HSVSliders;
+        case .Sliders;
             h_modified, h_slider := LabelSlider(bottom, "H", *data.hsv.hue, 0, 360, 1, *style.label_and_slider, *style.hue_slider, style.dynamic_hsv_slider_color);
             s_modified, s_slider := LabelSlider(bottom, "S", *data.hsv.saturation, 0, 1, 0.01, *style.label_and_slider, *style.saturation_slider, style.dynamic_hsv_slider_color);
             v_modified, v_slider := LabelSlider(bottom, "V", *data.hsv.value, 0, 1, 0.01, *style.label_and_slider, *style.value_slider, style.dynamic_hsv_slider_color);
@@ -704,7 +700,8 @@ ColorPicker :: (parent : *Node, color : *Vec4f, previous_color := Vec4f.{0,0,0,0
                 });
             }
 
-        case .RGBSliders;
+            Separator(bottom);
+
             r_modified, r_slider := LabelSlider(bottom, "R", *color.x, 0, 1, 0.01, *style.label_and_slider, *style.red_slider, style.dynamic_rgb_slider_color);
             g_modified, g_slider := LabelSlider(bottom, "G", *color.y, 0, 1, 0.01, *style.label_and_slider, *style.green_slider, style.dynamic_rgb_slider_color);
             b_modified, b_slider := LabelSlider(bottom, "B", *color.z, 0, 1, 0.01, *style.label_and_slider, *style.blue_slider, style.dynamic_rgb_slider_color);
