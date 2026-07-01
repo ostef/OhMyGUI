@@ -568,7 +568,7 @@ RGBToHSVPreserving :: (rgb : Vec3f, current : HSV) -> HSV {
     return hsv;
 }
 
-ColorPicker :: (parent : *Node, color : *Vec4f, previous_color := Vec4f.{0,0,0,0}, size := 400.0, flags : ColorPickerFlags = 0, style : *ColorPickerStyle = null, location := #caller_location) -> *Node {
+ColorPicker :: (parent : *Node, color : *Vec4f, previous_color := Vec4f.{0,0,0,0}, flags : ColorPickerFlags = 0, style : *ColorPickerStyle = null, location := #caller_location) -> *Node {
     LabelSlider :: (
         parent : *Node,
         label : string,
@@ -663,7 +663,7 @@ ColorPicker :: (parent : *Node, color : *Vec4f, previous_color := Vec4f.{0,0,0,0
         case .HSVWheel;
             hsv_wheel : *Node;
             data.modifying_hsv, hsv_wheel = HSVTriangleWheel(bottom, data, *style.wheel);
-            SetMinSize(hsv_wheel, size * 0.5, size * 0.5);
+            SetMinSize(hsv_wheel, 200, 200);
 
         case .Sliders;
             h_modified, h_slider := LabelSlider(bottom, "H", *data.hsv.hue, 0, 360, 1, *style.label_and_slider, *style.hue_slider, style.dynamic_hsv_slider_color);
