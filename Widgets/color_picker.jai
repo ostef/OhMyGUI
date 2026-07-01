@@ -57,6 +57,8 @@ ColorPickerData :: struct {
 
     hsv : HSV;
     modifying_hsv : bool;
+    color_before_picking : Vec4f;
+    picking_color : bool;
 }
 
 GetHSVWheelGeometricData :: (style : *HSVTriangleWheelStyle, rect : Vec4f, hsv : HSV) -> struct {
@@ -560,19 +562,19 @@ ColorPreview :: (parent : *Node, color : RGBA8, style : *ColorPreviewStyle, loca
     return node;
 }
 
-ColorPicker :: (parent : *Node, color : *Vec4f, previous_color := Vec4f.{0,0,0,0}, size := 400.0, flags : ColorPickerFlags = 0, style : *ColorPickerStyle = null, location := #caller_location) -> *Node {
-    RGBToHSVPreserving :: (rgb : Vec3f, current : HSV) -> HSV {
-        hsv := RGBToHSV(rgb);
-        if hsv.saturation == 0 || hsv.value == 0 {
-            hsv.hue = current.hue;
-        }
-        if hsv.value == 0 {
-            hsv.saturation = current.saturation;
-        }
-
-        return hsv;
+RGBToHSVPreserving :: (rgb : Vec3f, current : HSV) -> HSV {
+    hsv := RGBToHSV(rgb);
+    if hsv.saturation == 0 || hsv.value == 0 {
+        hsv.hue = current.hue;
+    }
+    if hsv.value == 0 {
+        hsv.saturation = current.saturation;
     }
 
+    return hsv;
+}
+
+ColorPicker :: (parent : *Node, color : *Vec4f, previous_color := Vec4f.{0,0,0,0}, size := 400.0, flags : ColorPickerFlags = 0, style : *ColorPickerStyle = null, location := #caller_location) -> *Node {
     LabelSlider :: (
         parent : *Node,
         label : string,
@@ -641,6 +643,7 @@ ColorPicker :: (parent : *Node, color : *Vec4f, previous_color := Vec4f.{0,0,0,0
         right := GetNode(picker);
         SetLayout(right, .TopToBottom);
         SetSize(right, SizeFill(0.2), SizeFill());
+        SetMinWidthFit(right);
 
         top := GetNode(left);
         SetSize(top, SizeFill(), SizeFit());
@@ -736,10 +739,159 @@ ColorPicker :: (parent : *Node, color : *Vec4f, previous_color := Vec4f.{0,0,0,0
         SetChildAlign(right, 0.5, 0.5);
         right.flags |= .NoPaddedClip;
 
-        ColorPreview(right, ColorU32(color), *style.preview);
-        ColorPreview(right, ColorU32(previous_color), *style.preview);
+        previews := GetNode(right);
+        previews.flags |= .NoClip;
+        SetLayout(previews, .LeftToRight);
+        SetSize(previews, SizeFit(), SizeFit());
+        SetChildGap(previews, 5, 5);
+
+        current := GetNode(previews);
+        SetLayout(current, .TopToBottom);
+        SetSize(current, SizeFit(), SizeFit());
+
+        Text(current, "New");
+        ColorPreview(current, ColorU32(color), *style.preview);
+
+        previous := GetNode(previews);
+        SetLayout(previous, .TopToBottom);
+        SetSize(previous, SizeFit(), SizeFit());
+
+        Text(previous, "Old");
+        previous_preview := ColorPreview(previous, ColorU32(previous_color), *style.preview);
+
+        if ButtonBehavior(previous_preview).released {
+            color.* = previous_color;
+            data.hsv = RGBToHSVPreserving(color.xyz, data.hsv);
+        }
+
+        if previous_preview.state_flags & .Focused {
+            SetCursor(GetSystemCursor(.Hand));
+        }
+
+        PickColorButton(right, color, previous_color, data);
+
+        ok_cancel := GetNode(right);
+        SetLayout(ok_cancel, .LeftToRight);
+        SetChildGap(ok_cancel, 5, 5);
+        SetHeight(ok_cancel, SizeFill());
+        SetChildAlign(ok_cancel, 0, 1);
+
+        ok, ok_node := Button(ok_cancel, "Ok", style=GetStyle("button_accent", ButtonStyle));
+        cancel, cancel_node := Button(ok_cancel, "Cancel");
     }
 
     return picker;
 }
 
+PickColorButton :: (parent : *Node, color : *Vec4f, previous_color : Vec4f, data : *ColorPickerData, location := #caller_location) -> *Node {
+    DrawPickColorIcon :: (draw_list : *DrawList, position : Vec2f, size : float, color : RGBA8) {
+        width := size * 0.17;
+        height := size - width;
+
+        shaft := Union(
+            Box(width, height, width * 0.5),
+            Move(Circle(width * 0.2), 0, height * 0.5 + width * 0.2),
+            size * 0.01
+        );
+
+        outline_thickness := size * 0.03;
+
+        handle_size := height * 0.35;
+        handle := Union(
+            Move(Box(width + 2 * outline_thickness, handle_size, width * 0.5, width * 0.5, 0, 0), 0, -height * 0.5 + handle_size * 0.5),
+            Move(Box((width + 2 * outline_thickness) * 1.4, width * 0.5, size * 0.03), 0, -height * 0.5 + handle_size)
+        );
+
+        shaft = Rotate(shaft, PI * 0.25);
+        handle = Rotate(handle, PI * 0.25);
+
+        shaft_outline := Onion(shaft, outline_thickness * 0.5);
+        ink := Inter(shaft, Move(Box(size, size * 0.5), 0, size * 0.4));
+        shape := Union(Union(shaft_outline, ink), handle);
+
+        DrawShape(draw_list, shape, position, color);
+    }
+
+    DrawPickColorIcon :: (draw_list : *DrawList, node : *Node) {
+        size := min(node.size.x, node.size.y);
+        size = sqrt(2 * size * size);
+
+        DrawPickColorIcon(draw_list, (node.rect.xy + node.rect.zw) * 0.5, size, node.text_color);
+    }
+
+    clicked, pick_button := Toggle(parent, SizePx(32), SizePx(32), *data.picking_color, location=location);
+    pick_button.flags |= .NoPaddedClip;
+    pick_button.padding = .{7,7,7,7};
+
+    if clicked {
+        data.color_before_picking = color.*;
+    }
+
+    accept := IsMouseButtonPressed(.Left);
+    cancel := IsMouseButtonPressed(.Right) || IsKeyPressed(.Escape);
+
+    if data.picking_color && accept {
+        color.* = ColorVec4f(GetColorAtMousePosition());
+        data.hsv = RGBToHSVPreserving(color.xyz, data.hsv);
+        data.picking_color = false;
+    }
+    if data.picking_color && cancel {
+        color.* = data.color_before_picking;
+        data.hsv = RGBToHSVPreserving(color.xyz, data.hsv);
+        data.picking_color = false;
+    }
+
+    if data.picking_color {
+        SetMouseCapture(pick_button);
+
+        color.* = ColorVec4f(GetColorAtMousePosition());
+        data.hsv = RGBToHSVPreserving(color.xyz, data.hsv);
+    }
+
+    btn_style := GetStyle("button", ButtonStyle);
+
+    pick_icon := GetNode(pick_button);
+    SetSize(pick_icon, SizeFill(), SizeFill());
+    SetDraw(pick_icon, DrawPickColorIcon);
+
+    state := GetState(pick_button);
+    SetTextColor(pick_icon, btn_style.states[state].text.text_color);
+
+    return pick_button;
+}
+
+GetColorAtMousePosition :: inline () -> RGBA8 {
+    mouse := GetMousePosition();
+    return GetColorFromScreen(xx mouse.x, xx mouse.y);
+}
+
+#if OS == .WINDOWS {
+
+GetColorFromScreen :: (x : int, y : int) -> RGBA8 {
+    User32 :: #library,system "User32";
+    Gdi32 :: #library,system "Gdi32";
+
+    GetDC :: (hwnd : *void) -> *void #foreign User32;
+    ReleaseDC :: (hwnd : *void, hdc : *void) -> s32 #foreign User32;
+    GetPixel :: (hdc : *void, x : s32, y : s32) -> u32 #foreign Gdi32;
+
+    monitor := GetDC(null);
+    defer ReleaseDC(null, monitor);
+
+    color := GetPixel(monitor, xx x, xx y);
+    r := cast(u32, (color >>  0) & 0xff);
+    g := cast(u32, (color >>  8) & 0xff);
+    b := cast(u32, (color >> 16) & 0xff);
+    a := cast(u32, 0xff);
+    rgba := cast(RGBA8, (r << 24) | (g << 16) | (b << 8) | (a << 0));
+
+    return rgba;
+}
+
+} else {
+
+GetColorFromScreen :: (x : int, y : int) -> RGBA8 {
+    return 0;
+}
+
+}
