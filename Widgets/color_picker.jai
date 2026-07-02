@@ -53,6 +53,7 @@ ColorPickerData :: struct {
     mode : enum {
         HSVWheel;
         Sliders;
+        Inputs;
     } = .Sliders;
 
     hsv : HSV;
@@ -639,6 +640,9 @@ ColorPicker :: (parent : *Node, color : *Vec4f, previous_color := Vec4f.{0,0,0,0
         if MenuItem(top, "Sliders", selected=data.mode == .Sliders) {
             data.mode = .Sliders;
         }
+        if MenuItem(top, "Inputs", selected=data.mode == .Inputs) {
+            data.mode = .Inputs;
+        }
 
         bottom := GetNode(left);
         SetSize(bottom, SizeFill(), SizeFill());
@@ -708,6 +712,58 @@ ColorPicker :: (parent : *Node, color : *Vec4f, previous_color := Vec4f.{0,0,0,0
             if r_modified || g_modified || b_modified {
                 data.hsv = RGBToHSVPreserving(color.xyz, data.hsv);
             }
+
+        case .Inputs;
+            label_and_content_style := GetStyle("label_and_content", LabelAndContentStyle).*;
+            label_and_content_style.text_fill = 0.2;
+
+            hsv_inputs := GetNode(bottom);
+            SetSize(hsv_inputs, SizeFill(), SizeFit());
+            SetMinWidthFit(hsv_inputs);
+            SetLayout(hsv_inputs, .LeftToRight);
+            SetChildGap(hsv_inputs, 4, 0);
+
+            h_field := LabelAndContent(hsv_inputs, "H", style=*label_and_content_style);
+            data.modifying_hsv |= NumberInput(h_field, *data.hsv.hue);
+
+            s_field := LabelAndContent(hsv_inputs, "S", style=*label_and_content_style);
+            data.modifying_hsv |= NumberInput(s_field, *data.hsv.saturation);
+
+            v_field := LabelAndContent(hsv_inputs, "V", style=*label_and_content_style);
+            data.modifying_hsv |= NumberInput(v_field, *data.hsv.value);
+
+            hsva_field := LabelAndContent(hsv_inputs, "A", style=*label_and_content_style);
+            NumberInput(hsva_field, *color.w);
+
+            rgb_inputs := GetNode(bottom);
+            SetSize(rgb_inputs, SizeFill(), SizeFit());
+            SetMinWidthFit(rgb_inputs);
+            SetLayout(rgb_inputs, .LeftToRight);
+            SetChildGap(rgb_inputs, 4, 0);
+
+            r_field := LabelAndContent(rgb_inputs, "R", style=*label_and_content_style);
+            rgb_modified := NumberInput(r_field, *color.x);
+
+            g_field := LabelAndContent(rgb_inputs, "G", style=*label_and_content_style);
+            rgb_modified |= NumberInput(g_field, *color.y);
+
+            b_field := LabelAndContent(rgb_inputs, "B", style=*label_and_content_style);
+            rgb_modified |= NumberInput(b_field, *color.z);
+
+            rgba_field := LabelAndContent(rgb_inputs, "A", style=*label_and_content_style);
+            NumberInput(rgba_field, *color.w);
+
+            hex_field := LabelAndContent(bottom, "Hex", style=*label_and_content_style);
+
+            hex := cast(u32, ColorU32(color));
+            if NumberInput(hex_field, *hex) {
+                color.* = ColorVec4f(xx hex);
+                rgb_modified = true;
+            }
+
+            if rgb_modified {
+                data.hsv = RGBToHSVPreserving(color.xyz, data.hsv);
+            }
         }
 
         if data.modifying_hsv {
@@ -725,6 +781,8 @@ ColorPicker :: (parent : *Node, color : *Vec4f, previous_color := Vec4f.{0,0,0,0
         SetLayout(previews, .LeftToRight);
         SetSize(previews, SizeFit(), SizeFit());
         SetChildGap(previews, 5, 5);
+        SetChildAlign(previews, 0.5, 1);
+        SetPadding(previews, 0, 10);
 
         current := GetNode(previews);
         SetLayout(current, .TopToBottom);
@@ -749,7 +807,7 @@ ColorPicker :: (parent : *Node, color : *Vec4f, previous_color := Vec4f.{0,0,0,0
             SetCursor(GetSystemCursor(.Hand));
         }
 
-        PickColorButton(right, color, previous_color, data);
+        PickColorButton(previews, color, previous_color, data);
 
         ok_cancel := GetNode(right);
         SetLayout(ok_cancel, .LeftToRight);
@@ -758,6 +816,7 @@ ColorPicker :: (parent : *Node, color : *Vec4f, previous_color := Vec4f.{0,0,0,0
         SetChildAlign(ok_cancel, 0, 1);
 
         ok, ok_node := Button(ok_cancel, "Ok", style=GetStyle("button_accent", ButtonStyle));
+        SetMinWidth(ok_node, 60);
         cancel, cancel_node := Button(ok_cancel, "Cancel");
     }
 
