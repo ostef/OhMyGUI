@@ -31,6 +31,9 @@ void main() {
     vec4 outer_shadow_color = ColorVec4(box.outer_shadow_color);
     vec2 outer_shadow_offset = box.outer_shadow_offset;
     float outer_shadow_blur = box.outer_shadow_blur;
+    vec4 inner_shadow_color = ColorVec4(box.inner_shadow_color);
+    vec2 inner_shadow_offset = box.inner_shadow_offset;
+    float inner_shadow_blur = box.inner_shadow_blur;
 
     float d = PrimBox(p - box_position, box_size, box_corner_radiuses);
 
@@ -50,6 +53,18 @@ void main() {
 
     float background = FxSolidColor(d, aa);
     out_color = BlendEffect(out_color, background_color, background);
+
+    if (inner_shadow_color.a > 0) {
+        float shadow_d;
+        if (inner_shadow_offset != vec2(0)) {
+            shadow_d = PrimBox(p - box_position - inner_shadow_offset, box_size, box_corner_radiuses);
+        } else {
+            shadow_d = d;
+        }
+
+        float inner_shadow = FxInnerShadow(shadow_d, aa + inner_shadow_blur, background);
+        out_color = BlendEffect(out_color, inner_shadow_color, inner_shadow);
+    }
 
     float border = FxStrokeColor(d, aa, border_size, border_inset);
     out_color = BlendEffect(out_color, border_color, border);

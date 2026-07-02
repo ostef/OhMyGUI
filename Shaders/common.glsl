@@ -15,6 +15,9 @@ struct Box {
     uint outer_shadow_color;
     vec2 outer_shadow_offset;
     float outer_shadow_blur;
+    uint inner_shadow_color;
+    vec2 inner_shadow_offset;
+    float inner_shadow_blur;
 };
 
 struct Glyph {
@@ -25,6 +28,9 @@ struct Glyph {
     uint outer_shadow_color;
     vec2 outer_shadow_offset;
     float outer_shadow_blur;
+    uint inner_shadow_color;
+    vec2 inner_shadow_offset;
+    float inner_shadow_blur;
     int clip_box_index;
 };
 
@@ -50,6 +56,9 @@ struct ShapeDrawing {
     uint outer_shadow_color;
     vec2 outer_shadow_offset;
     float outer_shadow_blur;
+    uint inner_shadow_color;
+    vec2 inner_shadow_offset;
+    float inner_shadow_blur;
 };
 
 vec4 ColorVec4(uint rgba) {
@@ -166,6 +175,10 @@ float FxOuterShadow(float d, float blur, float background_alpha, float border_al
     float outer_shadow_border = FxStrokeColor(d, blur, border_size, border_inset) * float(border_alpha > 0);
 
     return max(outer_shadow_background, outer_shadow_border);
+}
+
+float FxInnerShadow(float d, float blur, float background_alpha) {
+    return FxSolidColor(-d, blur) * background_alpha;
 }
 
 vec4 BlendEffect(vec4 a, vec4 b, float alpha) {

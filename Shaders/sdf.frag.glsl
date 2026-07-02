@@ -155,6 +155,9 @@ void main() {
     vec4 outer_shadow_color = ColorVec4(drawing.outer_shadow_color);
     vec2 outer_shadow_offset = drawing.outer_shadow_offset;
     float outer_shadow_blur = drawing.outer_shadow_blur;
+    vec4 inner_shadow_color = ColorVec4(drawing.inner_shadow_color);
+    vec2 inner_shadow_offset = drawing.inner_shadow_offset;
+    float inner_shadow_blur = drawing.inner_shadow_blur;
 
     float d = EvalSDF(p - drawing.position, drawing.first_shape_index, drawing.num_shapes);
 
@@ -174,6 +177,18 @@ void main() {
 
     float background = FxSolidColor(d, aa);
     out_color = BlendEffect(out_color, background_color, background);
+
+    if (inner_shadow_color.a > 0) {
+        float shadow_d;
+        if (inner_shadow_offset != vec2(0)) {
+            shadow_d = EvalSDF(p - drawing.position - inner_shadow_offset, drawing.first_shape_index, drawing.num_shapes);
+        } else {
+            shadow_d = d;
+        }
+
+        float inner_shadow = FxInnerShadow(shadow_d, aa + inner_shadow_blur, background);
+        out_color = BlendEffect(out_color, inner_shadow_color, inner_shadow);
+    }
 
     float border = FxStrokeColor(d, aa, border_size, border_inset);
     out_color = BlendEffect(out_color, border_color, border);

@@ -159,6 +159,9 @@ Node :: struct {
         outer_shadow_blur : float;
         outer_shadow_offset : Vec2f;
         outer_shadow_color : RGBA8;
+        inner_shadow_blur : float;
+        inner_shadow_offset : Vec2f;
+        inner_shadow_color : RGBA8;
         text_color : RGBA8;
         text_effects : TextEffects;
     };
@@ -780,4 +783,32 @@ SetOuterShadowOpacity :: inline (node : *Node, alpha : float) {
 
 SetOuterShadowBlur :: inline (node : *Node, blur : float) {
     node.outer_shadow_blur = blur;
+}
+
+SetInnerShadowOffset :: inline (node : *Node, x : float, y : float) {
+    node.inner_shadow_offset = .{x,y};
+}
+
+SetInnerShadowOffset :: inline (node : *Node, offset : Vec2f) {
+    node.inner_shadow_offset = offset;
+}
+
+SetInnerShadowColor :: inline (node : *Node, r : float, g : float, b : float, a : float) {
+    node.inner_shadow_color = ColorU32(r, g, b, a);
+}
+
+SetInnerShadowColor :: inline (node : *Node, color : Vec4f) {
+    node.inner_shadow_color = ColorU32(color);
+}
+
+SetInnerShadowColor :: inline (node : *Node, color : RGBA8) {
+    node.inner_shadow_color = color;
+}
+
+SetInnerShadowOpacity :: inline (node : *Node, alpha : float) {
+    SetAlpha(*node.inner_shadow_color, alpha);
+}
+
+SetInnerShadowBlur :: inline (node : *Node, blur : float) {
+    node.inner_shadow_blur = blur;
 }

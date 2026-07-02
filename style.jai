@@ -46,6 +46,9 @@ BoxStyle :: struct {
     outer_shadow_blur : float;
     outer_shadow_offset : Vec2f;
     outer_shadow_color : RGBA8;
+    inner_shadow_blur : float;
+    inner_shadow_offset : Vec2f;
+    inner_shadow_color : RGBA8;
 }
 
 Apply :: inline (node : *Node, style : BoxStyle) {
@@ -59,6 +62,9 @@ Apply :: inline (node : *Node, style : BoxStyle) {
     node.outer_shadow_blur = style.outer_shadow_blur;
     node.outer_shadow_offset = style.outer_shadow_offset;
     node.outer_shadow_color = style.outer_shadow_color;
+    node.inner_shadow_blur = style.inner_shadow_blur;
+    node.inner_shadow_offset = style.inner_shadow_offset;
+    node.inner_shadow_color = style.inner_shadow_color;
 }
 
 TextStyle :: struct {
@@ -69,6 +75,9 @@ TextStyle :: struct {
     outer_shadow_blur : float;
     outer_shadow_offset : Vec2f;
     outer_shadow_color : RGBA8;
+    inner_shadow_blur : float;
+    inner_shadow_offset : Vec2f;
+    inner_shadow_color : RGBA8;
 }
 
 Apply :: inline (node : *Node, style : TextStyle) {
@@ -79,6 +88,9 @@ Apply :: inline (node : *Node, style : TextStyle) {
     node.outer_shadow_blur = style.outer_shadow_blur;
     node.outer_shadow_offset = style.outer_shadow_offset;
     node.outer_shadow_color = style.outer_shadow_color;
+    node.inner_shadow_blur = style.inner_shadow_blur;
+    node.inner_shadow_offset = style.inner_shadow_offset;
+    node.inner_shadow_color = style.inner_shadow_color;
 }
 
 StateStyle :: struct(T : Type) {
@@ -454,7 +466,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
     {
         using theme.button;
 
-        normal.background.corner_radiuses = .{10,10,10,10};
+        normal.background.corner_radiuses = .{6,6,6,6};
         normal.background.padding = .{10,10,10,10};
         normal.background.child_gap = .{4,4};
         normal.text.font = GetDefaultFont();
@@ -474,20 +486,10 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
     {
         using theme.button_accent;
 
-        normal.background.corner_radiuses = .{10,10,10,10};
-        normal.background.padding = .{10,10,10,10};
-        normal.background.child_gap = .{4,4};
-        normal.text.font = GetDefaultFont();
-        normal.text.text_size = 16;
-
-        focused = normal;
-        hot = normal;
-        active = normal;
-        disabled = normal;
+        theme.button_accent = theme.button;
 
         SetColors(*theme.button_accent, base_accent_color);
 
-        disabled = normal;
         SetAlpha(*disabled.text.text_color, 0.5);
     }
     SetStyle(theme, "button_accent", theme.button_accent);
@@ -546,9 +548,14 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
 
         cursor.background_color = ChooseTextColor(base_background_color);
 
-        normal.background.corner_radiuses = .{10,10,10,10};
-        normal.background.padding = .{10,10,10,10};
+        normal.background.corner_radiuses = .{6,6,6,6};
+        normal.background.padding = .{10,6,10,6};
         normal.background.child_gap = .{4,4};
+        normal.background.border_size = 1;
+        normal.background.border_color = MakeTone(button_base_background_color, 0.3);
+        normal.background.inner_shadow_blur = 5;
+        // normal.background.inner_shadow_offset = .{-5,-5};
+        normal.background.inner_shadow_color = ColorU32(0,0,0,0.7);
         normal.text.font = GetDefaultFont();
         normal.text.text_size = 16;
 

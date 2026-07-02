@@ -24,6 +24,7 @@ void main() {
     vec2 glyph_position = (glyph.bounds.xy + glyph.bounds.zw) * 0.5;
     vec4 foreground_color = ColorVec4(glyph.color);
     vec4 outer_shadow_color = ColorVec4(glyph.outer_shadow_color);
+    vec4 inner_shadow_color = ColorVec4(glyph.inner_shadow_color);
 
     float d = PrimTexture(p - glyph_position, u_texture, glyph_size, glyph.uv_bounds, glyph.sdf_range);
 
@@ -45,6 +46,18 @@ void main() {
 
     float foreground = FxSolidColor(d, aa);
     out_color = BlendEffect(out_color, foreground_color, foreground);
+
+    if (inner_shadow_color.a > 0) {
+        float shadow_d;
+        if (glyph.inner_shadow_offset != vec2(0)) {
+            shadow_d = PrimTexture(p - glyph_position - glyph.inner_shadow_offset, u_texture, glyph_size, glyph.uv_bounds, glyph.sdf_range);
+        } else {
+            shadow_d = d;
+        }
+
+        float inner_shadow = FxInnerShadow(shadow_d, aa + glyph.inner_shadow_blur, foreground);
+        out_color = BlendEffect(out_color, inner_shadow_color, inner_shadow);
+    }
 
     if (glyph.clip_box_index >= 0) {
         ClipBox clip = u_clip_boxes[glyph.clip_box_index];

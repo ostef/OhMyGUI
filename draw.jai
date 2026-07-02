@@ -21,6 +21,9 @@ BoxDrawing :: struct {
     outer_shadow_color : RGBA8;
     outer_shadow_offset : Vec2f;
     outer_shadow_blur : float;
+    inner_shadow_color : RGBA8;
+    inner_shadow_offset : Vec2f;
+    inner_shadow_blur : float;
     clip_box_index : s32;
 }
 
@@ -56,6 +59,9 @@ ShaderBoxDrawing :: struct {
     outer_shadow_color : u32;
     outer_shadow_offset : Vec2f;
     outer_shadow_blur : float;
+    inner_shadow_color : u32;
+    inner_shadow_offset : Vec2f;
+    inner_shadow_blur : float;
     padding : [3]u32;
 }
 
@@ -79,6 +85,9 @@ GlyphDrawing :: struct {
     outer_shadow_color : u32;
     outer_shadow_offset : Vec2f;
     outer_shadow_blur : float;
+    inner_shadow_color : u32;
+    inner_shadow_offset : Vec2f;
+    inner_shadow_blur : float;
     clip_box_index : s32;
 }
 
@@ -114,6 +123,9 @@ ShapeDrawing :: struct {
     outer_shadow_color : RGBA8;
     outer_shadow_offset : Vec2f;
     outer_shadow_blur : float;
+    inner_shadow_color : RGBA8;
+    inner_shadow_offset : Vec2f;
+    inner_shadow_blur : float;
     clip_box_index : s32;
 }
 
@@ -150,6 +162,9 @@ ShaderShapeDrawing :: struct {
     outer_shadow_color : u32;
     outer_shadow_offset : Vec2f;
     outer_shadow_blur : float;
+    inner_shadow_color : u32;
+    inner_shadow_offset : Vec2f;
+    inner_shadow_blur : float;
     padding : [3]u32;
 }
 
@@ -367,6 +382,9 @@ DrawText :: (
     outer_shadow_color : RGBA8 = 0,
     outer_shadow_offset := Vec2f.{0,0},
     outer_shadow_blur := 0.0,
+    inner_shadow_color : RGBA8 = 0,
+    inner_shadow_offset := Vec2f.{0,0},
+    inner_shadow_blur := 0.0,
     effects : TextEffects = 0
 ) {
     DrawWrappedText(
@@ -380,6 +398,9 @@ DrawText :: (
         outer_shadow_color,
         outer_shadow_offset,
         outer_shadow_blur,
+        inner_shadow_color,
+        inner_shadow_offset,
+        inner_shadow_blur,
         effects
     );
 }
@@ -395,6 +416,9 @@ DrawWrappedText :: (
     outer_shadow_color : RGBA8 = 0,
     outer_shadow_offset := Vec2f.{0,0},
     outer_shadow_blur := 0.0,
+    inner_shadow_color : RGBA8 = 0,
+    inner_shadow_offset := Vec2f.{0,0},
+    inner_shadow_blur := 0.0,
     effects : TextEffects = 0
 ) {
     if !font || ((color & 0xff) == 0 && (outer_shadow_color & 0xff) == 0) {
@@ -425,6 +449,9 @@ DrawWrappedText :: (
                 outer_shadow_color=outer_shadow_color,
                 outer_shadow_offset=outer_shadow_offset,
                 outer_shadow_blur=outer_shadow_blur,
+                inner_shadow_color=inner_shadow_color,
+                inner_shadow_offset=inner_shadow_offset,
+                inner_shadow_blur=inner_shadow_blur,
             },
             font.texture
         );
@@ -538,6 +565,9 @@ DrawNodeDefault :: (draw_list : *DrawList, node : *Node) {
         outer_shadow_color=node.outer_shadow_color,
         outer_shadow_offset=node.outer_shadow_offset,
         outer_shadow_blur=node.outer_shadow_blur,
+        inner_shadow_color=node.inner_shadow_color,
+        inner_shadow_offset=node.inner_shadow_offset,
+        inner_shadow_blur=node.inner_shadow_blur,
     });
 
     if node.flags & .WrapText {
@@ -551,6 +581,9 @@ DrawNodeDefault :: (draw_list : *DrawList, node : *Node) {
             node.outer_shadow_color,
             node.outer_shadow_offset,
             node.outer_shadow_blur,
+            node.inner_shadow_color,
+            node.inner_shadow_offset,
+            node.inner_shadow_blur,
             node.text_effects
         );
     } else {
@@ -563,6 +596,9 @@ DrawNodeDefault :: (draw_list : *DrawList, node : *Node) {
             node.outer_shadow_color,
             node.outer_shadow_offset,
             node.outer_shadow_blur,
+            node.inner_shadow_color,
+            node.inner_shadow_offset,
+            node.inner_shadow_blur,
             node.text_effects
         );
     }
@@ -683,6 +719,9 @@ CopyDrawListShaderData :: (
         box.outer_shadow_color = it.outer_shadow_color;
         box.outer_shadow_offset = it.outer_shadow_offset;
         box.outer_shadow_blur = it.outer_shadow_blur;
+        box.inner_shadow_color = it.inner_shadow_color;
+        box.inner_shadow_offset = it.inner_shadow_offset;
+        box.inner_shadow_blur = it.inner_shadow_blur;
         box.clip_box_index = ifx it.clip_box_index >= 0
             then cast(s32, draw_list.gpu_buffer_clip_boxes_offset) + it.clip_box_index
             else -1;
@@ -719,6 +758,9 @@ CopyDrawListShaderData :: (
         drawing.outer_shadow_color = it.outer_shadow_color;
         drawing.outer_shadow_offset = it.outer_shadow_offset;
         drawing.outer_shadow_blur = it.outer_shadow_blur;
+        drawing.inner_shadow_color = it.inner_shadow_color;
+        drawing.inner_shadow_offset = it.inner_shadow_offset;
+        drawing.inner_shadow_blur = it.inner_shadow_blur;
         drawing.clip_box_index = ifx it.clip_box_index >= 0
             then cast(s32, draw_list.gpu_buffer_clip_boxes_offset) + it.clip_box_index
             else -1;
