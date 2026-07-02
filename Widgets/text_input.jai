@@ -657,30 +657,47 @@ TextInputFlags :: enum_flags {
     Password;
 }
 
-NumberInput :: (parent : *Node, value : *$T/.[u8,s8,u16,s16,u32,s32,u64,s64,float32,float64], flags : TextInputFlags = 0, style : *TextInputStyle = null, location := #caller_location) -> submitted : bool, *Node {
-    submitted, node := TextInput(parent, flags, style, location);
+NumberInputFlags :: enum_flags {
+    Hexadecimal;
+    FixedLength;
+}
+
+NumberInput :: (parent : *Node, value : *$T/.[u8,s8,u16,s16,u32,s32,u64,s64,float32,float64], min : T, max : T, flags : NumberInputFlags = 0, style : *TextInputStyle = null, location := #caller_location) -> submitted : bool, *Node {
+    submitted, node := TextInput(parent, 0, style, location);
 
     if submitted {
         str := GetTextInputResult(node);
 
         #if T == float32 {
             result, ok, remainder := string_to_float(str);
-            if ok {
+            if ok && remainder.count == 0 {
                 value.* = result;
             }
         } else #if T == float64 {
             result, ok, remainder := string_to_float64(str);
-            if ok {
+            if ok && remainder.count == 0 {
                 value.* = result;
             }
         } else {
-            result, ok, remainder := string_to_int(str, T=T);
-            if ok {
+            base := ifx flags & .Hexadecimal then 16 else 10;
+            result, ok, remainder := string_to_int(str, base=base, T=T);
+            if ok && remainder.count == 0 {
                 value.* = result;
             }
         }
     } else if !(node.state_flags & .Active) {
-        SetTextInputResult(node, tprint("%", value.*));
+        str : string;
+        if flags & .Hexadecimal && type_info(T).type == .INTEGER {
+            str = tprint("%", FormatInt.{value=value.*, base=16, minimum_digits=ifx flags & .FixedLength then size_of(T) * 2 else 1});
+        } else {
+            str = tprint("%", value.*);
+        }
+
+        SetTextInputResult(node, str);
+    }
+
+    if submitted {
+        value.* = clamp(value.*, min, max);
     }
 
     return submitted, node;
