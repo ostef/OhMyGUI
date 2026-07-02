@@ -467,7 +467,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         using theme.button;
 
         normal.background.corner_radiuses = .{6,6,6,6};
-        normal.background.padding = .{10,10,10,10};
+        normal.background.padding = .{10,6,10,6};
         normal.background.child_gap = .{4,4};
         normal.text.font = GetDefaultFont();
         normal.text.text_size = 16;
