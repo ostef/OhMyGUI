@@ -717,46 +717,49 @@ ColorPicker :: (parent : *Node, color : *Vec4f, previous_color := Vec4f.{0,0,0,0
             label_and_content_style := GetStyle("label_and_content", LabelAndContentStyle).*;
             label_and_content_style.text_fill = 0.2;
 
-            hsv_inputs := GetNode(bottom);
+            inputs := GetNode(bottom);
+            SetSize(inputs, SizeFill(), SizeFit());
+            SetLayout(inputs, .TopToBottom);
+            SetChildGap(inputs, 4, 6);
+
+            hsv_inputs := GetNode(inputs);
             SetSize(hsv_inputs, SizeFill(), SizeFit());
-            SetMinWidthFit(hsv_inputs);
             SetLayout(hsv_inputs, .LeftToRight);
             SetChildGap(hsv_inputs, 4, 0);
 
             h_field := LabelAndContent(hsv_inputs, "H", style=*label_and_content_style);
-            data.modifying_hsv |= NumberInput(h_field, *data.hsv.hue);
+            data.modifying_hsv |= NumberInput(h_field, *data.hsv.hue, 0, 360);
 
             s_field := LabelAndContent(hsv_inputs, "S", style=*label_and_content_style);
-            data.modifying_hsv |= NumberInput(s_field, *data.hsv.saturation);
+            data.modifying_hsv |= NumberInput(s_field, *data.hsv.saturation, 0, 1);
 
             v_field := LabelAndContent(hsv_inputs, "V", style=*label_and_content_style);
-            data.modifying_hsv |= NumberInput(v_field, *data.hsv.value);
+            data.modifying_hsv |= NumberInput(v_field, *data.hsv.value, 0, 1);
 
             hsva_field := LabelAndContent(hsv_inputs, "A", style=*label_and_content_style);
-            NumberInput(hsva_field, *color.w);
+            NumberInput(hsva_field, *color.w, 0, 1);
 
-            rgb_inputs := GetNode(bottom);
+            rgb_inputs := GetNode(inputs);
             SetSize(rgb_inputs, SizeFill(), SizeFit());
-            SetMinWidthFit(rgb_inputs);
             SetLayout(rgb_inputs, .LeftToRight);
             SetChildGap(rgb_inputs, 4, 0);
 
             r_field := LabelAndContent(rgb_inputs, "R", style=*label_and_content_style);
-            rgb_modified := NumberInput(r_field, *color.x);
+            rgb_modified := NumberInput(r_field, *color.x, 0, 1);
 
             g_field := LabelAndContent(rgb_inputs, "G", style=*label_and_content_style);
-            rgb_modified |= NumberInput(g_field, *color.y);
+            rgb_modified |= NumberInput(g_field, *color.y, 0, 1);
 
             b_field := LabelAndContent(rgb_inputs, "B", style=*label_and_content_style);
-            rgb_modified |= NumberInput(b_field, *color.z);
+            rgb_modified |= NumberInput(b_field, *color.z, 0, 1);
 
             rgba_field := LabelAndContent(rgb_inputs, "A", style=*label_and_content_style);
-            NumberInput(rgba_field, *color.w);
+            NumberInput(rgba_field, *color.w, 0, 1);
 
-            hex_field := LabelAndContent(bottom, "Hex", style=*label_and_content_style);
+            hex_field := LabelAndContent(inputs, "Hex", style=*label_and_content_style);
 
             hex := cast(u32, ColorU32(color));
-            if NumberInput(hex_field, *hex) {
+            if NumberInput(hex_field, *hex, 0, 0xffffffff, flags=.Hexadecimal | .FixedLength) {
                 color.* = ColorVec4f(xx hex);
                 rgb_modified = true;
             }
