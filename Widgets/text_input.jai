@@ -30,6 +30,29 @@ DestroyTextInputData :: (node : *Node, data : *void) {
     array_free(edit_history);
 }
 
+ClearTextInputData :: (data : *TextInputData) {
+    data.selection = 0;
+    data.cursor = 0;
+    array_reset_keeping_memory(*data.edit_history);
+    array_reset_keeping_memory(*data.edit_buffer);
+    data.edit_history_cursor = -1;
+
+    array_reset_keeping_memory(*data.buffer);
+}
+
+SetTextInputResult :: (node : *Node, str : string) {
+    data := GetUserData(node, TextInputData);
+    if !data {
+        return;
+    }
+
+    ClearTextInputData(data);
+
+    for MakeUtf8String(str) {
+        array_add(*data.buffer, it);
+    }
+}
+
 GetTextInputResultUtf32 :: (node : *Node) -> []u32 {
     data := GetUserData(node, TextInputData);
     if !data {
@@ -632,6 +655,35 @@ DrawTextInputText :: (draw_list : *DrawList, node : *Node) {
 
 TextInputFlags :: enum_flags {
     Password;
+}
+
+NumberInput :: (parent : *Node, value : *$T/.[u8,s8,u16,s16,u32,s32,u64,s64,float32,float64], flags : TextInputFlags = 0, style : *TextInputStyle = null, location := #caller_location) -> submitted : bool, *Node {
+    submitted, node := TextInput(parent, flags, style, location);
+
+    if submitted {
+        str := GetTextInputResult(node);
+
+        #if T == float32 {
+            result, ok, remainder := string_to_float(str);
+            if ok {
+                value.* = result;
+            }
+        } else #if T == float64 {
+            result, ok, remainder := string_to_float64(str);
+            if ok {
+                value.* = result;
+            }
+        } else {
+            result, ok, remainder := string_to_int(str, T=T);
+            if ok {
+                value.* = result;
+            }
+        }
+    } else if !(node.state_flags & .Active) {
+        SetTextInputResult(node, tprint("%", value.*));
+    }
+
+    return submitted, node;
 }
 
 TextInput :: (parent : *Node, flags : TextInputFlags = 0, style : *TextInputStyle = null, location := #caller_location) -> submitted : bool, *Node {
