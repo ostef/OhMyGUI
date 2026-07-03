@@ -130,8 +130,8 @@ HSVTriangleWheel :: (parent : *Node, using data : *ColorPickerData, style : *HSV
         SetPadding(node, style.padding);
         node.flags |= .NoPaddedClip;
 
-        modified |= SaturationValueTriangle(node, data, style);
         modified |= HueWheel(node, data, style);
+        modified |= SaturationValueTriangle(node, data, style);
     }
 
     return modified, node;
