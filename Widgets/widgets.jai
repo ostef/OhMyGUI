@@ -6,8 +6,8 @@
 #load "color_picker.jai";
 
 LabelAndContentStyle :: struct {
-    padding : Vec4f;
-    child_gap : Vec2f;
+    padding : Vec4b;
+    child_gap : Vec2b;
     child_align := Vec2f.{0,0.5};
     text : TextStyle;
     text_fill := 0.35;
@@ -150,4 +150,48 @@ Tooltip :: (fmt_str : string, args : ..Any, window : *Window = null) -> *Node {
     Text(tooltip, fmt_str, ..args, style=*style.text);
 
     return tooltip;
+}
+
+ScrollBehavior :: (node : *Node) -> Vec2f {
+    node.flags |= .Scrollable;
+
+    if context.omg.scroll_focused_node == node {
+        return GetMouseWheel();
+    }
+
+    return .{};
+}
+
+ScrollViewBehavior :: (node : *Node, axis : AxisFlags) {
+    ScrollViewBehavior(node, node, axis);
+}
+
+ScrollViewBehavior :: (node : *Node, target : *Node, axis : AxisFlags) {
+    scroll := ScrollBehavior(node);
+
+    if axis & .X {
+        SetContentScrollX(target, target.scroll.x + scroll.x);
+    }
+
+    if axis & .Y {
+        SetContentScrollY(target, target.scroll.y + scroll.y);
+    }
+}
+
+SetContentScroll :: inline (node : *Node, axis : Axis, value : float) {
+    if axis == .X {
+        SetContentScrollX(node, value);
+    } else {
+        SetContentScrollY(node, value);
+    }
+}
+
+SetContentScrollX :: inline (node : *Node, value : float) {
+    avail_scroll := node.layout_last_frame.size.x - node.padding.x - node.padding.z - node.layout_last_frame.children_size.x;
+    node.scroll.x = clamp(value, avail_scroll, 0);
+}
+
+SetContentScrollY :: inline (node : *Node, value : float) {
+    avail_scroll := node.layout_last_frame.size.y - node.padding.y - node.padding.w - node.layout_last_frame.children_size.y;
+    node.scroll.y = clamp(value, avail_scroll, 0);
 }

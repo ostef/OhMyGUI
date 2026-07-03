@@ -2,8 +2,43 @@ Vec2f :: Vector2;
 Vec3f :: Vector3;
 Vec4f :: Vector4;
 
-operator*[] :: inline (v : Vec2f, index : int) -> *float {
-    assert(index >= 0 && index < 2);
+Vec2b :: struct {
+    x, y : s8;
+
+    #overlay(x)
+    component : [2]s8;
+}
+
+ToVec2f :: inline (v : Vec2b) -> Vec2f {
+    return .{xx v.x, xx v.y};
+}
+
+Vec4b :: struct {
+    x, y, z, w : s8;
+
+    #overlay(x)
+    xy : Vec2b;
+
+    #overlay(y)
+    yz : Vec2b;
+
+    #overlay(z)
+    zw : Vec2b;
+
+    #overlay(x)
+    component : [4]s8;
+}
+
+ToVec4f :: inline (v : Vec4b) -> Vec4f {
+    return .{xx v.x, xx v.y, xx v.z, xx v.w};
+}
+
+operator*[] :: inline (v : Vec2f, $$index : int) -> *float {
+    #if is_constant(index) {
+        #assert index >= 0 && index < 2;
+    } else {
+        assert(index >= 0 && index < 2);
+    }
     return *v.component[index];
 }
 
@@ -11,13 +46,43 @@ operator*[] :: inline (v : Vec2f, axis : Axis) -> *float {
     return *v.component[axis];
 }
 
-operator*[] :: inline (v : Vec3f, index : int) -> *float {
-    assert(index >= 0 && index < 3);
+operator*[] :: inline (v : Vec3f, $$index : int) -> *float {
+    #if is_constant(index) {
+        #assert index >= 0 && index < 3;
+    } else {
+        assert(index >= 0 && index < 3);
+    }
     return *v.component[index];
 }
 
-operator*[] :: inline (v : Vec4f, index : int) -> *float {
-    assert(index >= 0 && index < 4);
+operator*[] :: inline (v : Vec4f, $$index : int) -> *float {
+    #if is_constant(index) {
+        #assert index >= 0 && index < 4;
+    } else {
+        assert(index >= 0 && index < 4);
+    }
+    return *v.component[index];
+}
+
+operator*[] :: inline (v : Vec2b, $$index : int) -> *s8 {
+    #if is_constant(index) {
+        #assert index >= 0 && index < 2;
+    } else {
+        assert(index >= 0 && index < 2);
+    }
+    return *v.component[index];
+}
+
+operator*[] :: inline (v : Vec2b, axis : Axis) -> *s8 {
+    return *v.component[axis];
+}
+
+operator*[] :: inline (v : Vec4b, $$index : int) -> *s8 {
+    #if is_constant(index) {
+        #assert index >= 0 && index < 4;
+    } else {
+        assert(index >= 0 && index < 4);
+    }
     return *v.component[index];
 }
 

@@ -35,8 +35,8 @@ GetStyle :: (theme : *Theme, name : string, $T : Type) -> *T {
 }
 
 BoxStyle :: struct {
-    padding : Vec4f;
-    child_gap : Vec2f;
+    padding : Vec4b;
+    child_gap : Vec2b;
 
     corner_radiuses : Vec4f;
     background_color : RGBA8;

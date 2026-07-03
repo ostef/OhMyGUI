@@ -867,8 +867,8 @@ DrawNodes :: (draw_list : *DrawList, node : *Node) {
                 PushClipBox(*node.window.draw_list, node.rect, node.corner_radiuses);
             } else {
                 bounds := node.rect;
-                bounds.xy += node.padding.xy;
-                bounds.zw -= node.padding.zw;
+                bounds.xy += ToVec2f(node.padding.xy);
+                bounds.zw -= ToVec2f(node.padding.zw);
                 PushClipBox(*node.window.draw_list, bounds, node.corner_radiuses);
             }
         }

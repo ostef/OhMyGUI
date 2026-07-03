@@ -55,8 +55,8 @@ Slider :: (parent : *Node, value : *$T, min : T, max : T, step : T, axis := Axis
         slider.child_align[cross] = 0.5;
         slider.desired_size[axis] = SizeFill();
         slider.desired_size[cross] = SizeFit();
-        slider.padding.xy[axis] = style.handle_size.x * 0.5;
-        slider.padding.zw[axis] = style.handle_size.x * 0.5;
+        slider.padding.xy[axis] = xx (style.handle_size.x * 0.5);
+        slider.padding.zw[axis] = xx (style.handle_size.x * 0.5);
         slider.flags |= .NoPaddedClip;
 
         scroll := ScrollBehavior(slider);

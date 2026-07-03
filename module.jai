@@ -15,7 +15,6 @@
 #load "node.jai";
 #load "style.jai";
 #load "layout.jai";
-#load "interaction.jai";
 
 #load "Widgets/widgets.jai";
 
@@ -48,6 +47,8 @@ Context :: struct {
     mouse_captured_node_value : Vec4f = .{FLOAT32_NAN, FLOAT32_NAN, FLOAT32_NAN, FLOAT32_NAN}; // Value that nodes can specify upon capturing the mouse
     scroll_focused_node : *Node;
 }
+
+#add_context omg : *Context;
 
 GetTheme :: inline () -> *Theme {
     return context.omg.theme;
@@ -140,7 +141,39 @@ DestroyWindow :: (window : *Window) {
     free(window);
 }
 
-#add_context omg : *Context;
+ScreenToWindow :: (window : *Window, point : Vec2f) -> Vec2f {
+    wx, wy : s32;
+    SDL_GetWindowPosition(window.sdl_window, *wx, *wy);
+
+    return point - Vec2f.{xx wx, xx wy};
+}
+
+ScreenToWindow :: (window : *Window, rect : Vec4f) -> Vec4f {
+    wx, wy : s32;
+    SDL_GetWindowPosition(window.sdl_window, *wx, *wy);
+
+    return .{
+        xy=rect.xy - Vec2f.{xx wx, xx wy},
+        zw=rect.zw - Vec2f.{xx wx, xx wy},
+    };
+}
+
+WindowToScreen :: (window : *Window, point : Vec2f) -> Vec2f {
+    wx, wy : s32;
+    SDL_GetWindowPosition(window.sdl_window, *wx, *wy);
+
+    return point + Vec2f.{xx wx, xx wy};
+}
+
+WindowToScreen :: (window : *Window, rect : Vec4f) -> Vec4f {
+    wx, wy : s32;
+    SDL_GetWindowPosition(window.sdl_window, *wx, *wy);
+
+    return .{
+        xy=rect.xy + Vec2f.{xx wx, xx wy},
+        zw=rect.zw + Vec2f.{xx wx, xx wy},
+    };
+}
 
 Init :: () {
     context.omg = New(Context);
@@ -201,7 +234,58 @@ HandleEvent :: (event : SDL_Event) {
     HandleInputEvent(event);
 }
 
+SetMouseFocus :: inline (node : *Node) {
+    if context.omg.mouse_focused_node {
+        context.omg.mouse_focused_node.state_flags &= ~.Focused;
+    }
+
+    context.omg.mouse_focused_node = node;
+
+    if node {
+        node.state_flags |= .Focused;
+    }
+}
+
+SetScrollFocus :: inline (node : *Node) {
+    context.omg.scroll_focused_node = node;
+}
+
+SetMouseCapture :: inline (node : *Node) {
+    SetMouseCapture(node, .{});
+}
+
+SetMouseCapture :: inline (node : *Node, node_value : Vec4f) {
+    if context.omg.mouse_capturing_node != node {
+        context.omg.mouse_captured_at = GetMousePosition();
+        context.omg.mouse_captured_node_value = node_value;
+    }
+
+    context.omg.mouse_capturing_node = node;
+    context.omg.mouse_captured_this_frame = true;
+}
+
 NewFrame :: (delta_time : float) {
+    FindMouseFocus :: (node : *Node) {
+        omg := context.omg;
+
+        if node.parent && IsHovered(node) {
+            omg.mouse_hovered_node = node;
+
+            if !omg.mouse_capturing_node || omg.mouse_capturing_node == node {
+                if node.flags & .Focusable {
+                    omg.mouse_focused_node = node;
+                }
+                if node.flags & .Scrollable {
+                    omg.scroll_focused_node = node;
+                }
+            }
+        }
+
+        for :Children node {
+            FindMouseFocus(it);
+        }
+    }
+
     omg := context.omg;
 
     omg.frame_index += 1;

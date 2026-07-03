@@ -220,13 +220,13 @@ LayoutFixedAndFitSizing :: (node : *Node, axis : Axis) {
         text_size = CalculateTextSize(node.font, node.text_size, node.text);
     }
 
-    if node.min_size_fit[axis] {
+    if node.min_size_fit & xx (1 << axis) {
         node.min_size[axis] = node.children_size[axis] + node.padding.xy[axis] + node.padding.zw[axis];
     }
 
     // We should set the size to fit also if min size is set to fit and we want to fill the parent
     // We need this because otherwise a we can't have a parent that wants to fit with children that wants to fill with a min size of fit
-    should_fit := node.desired_size[axis].kind == .FitChildren || (node.desired_size[axis].kind == .FillParent && node.min_size_fit[axis]);
+    should_fit := node.desired_size[axis].kind == .FitChildren || (node.desired_size[axis].kind == .FillParent && (node.min_size_fit & xx (1 << axis)) != 0);
 
     if should_fit {
         if node.flags & .TextNode {
@@ -244,7 +244,7 @@ LayoutFixedAndFitSizing :: (node : *Node, axis : Axis) {
 
     // Add child gap
     if node.child_layout_mode != .None && layout_axis == axis && should_fit && !(node.flags & .TextNode) {
-        node.size[axis] += ceil((node.num_children - 1) * node.child_gap[axis]);
+        node.size[axis] += ceil((node.num_children - 1) * cast(float, node.child_gap[axis]));
         node.size[axis] = clamp(node.size[axis], node.min_size[axis], node.max_size[axis]);
     }
 }
@@ -343,10 +343,10 @@ LayoutFillSizing :: (node : *Node, axis : Axis) {
 
 LayoutPosition :: (node : *Node) {
     if node.child_layout_mode == .None {
-        remaining_size := node.size - node.padding.xy - node.padding.zw - node.children_size;
+        remaining_size := node.size - ToVec2f(node.padding.xy) - ToVec2f(node.padding.zw) - node.children_size;
 
         for :Children node {
-            it.relative_position = ceil(node.padding.xy + Scale(node.size - it.size, node.child_align));
+            it.relative_position = ceil(ToVec2f(node.padding.xy) + Scale(node.size - it.size, node.child_align));
             it.relative_position += Round(it.offset);
             it.relative_position += Round(node.scroll);
 

@@ -1,3 +1,35 @@
+ButtonResult :: struct {
+    pressed : bool;
+    double_clicked : bool;
+    held : bool;
+    released : bool;
+}
+
+ButtonBehavior :: (node : *Node) -> ButtonResult {
+    node.flags |= .Focusable;
+
+    if (IsMouseButtonReleased(.Left) || IsMouseButtonDown(.Left)) && context.omg.mouse_capturing_node == node {
+        SetMouseCapture(node);
+        SetMouseFocus(node);
+    } else if node.state_flags & .Focused && IsMouseButtonPressed(.Left) {
+        SetMouseCapture(node);
+    }
+
+    if context.omg.mouse_capturing_node == node {
+        node.state_flags |= .Hot;
+    }
+
+    result : ButtonResult;
+    if node.state_flags & .Hot {
+        result.held = true;
+        result.pressed = IsHovered(node) && IsMouseButtonPressed(.Left);
+        result.double_clicked = IsHovered(node) && IsMouseButtonDoubleClicked(.Left);
+        result.released = IsHovered(node) && IsMouseButtonReleased(.Left);
+    }
+
+    return result;
+}
+
 ButtonStateStyle :: struct {
     background : BoxStyle;
     text : TextStyle;

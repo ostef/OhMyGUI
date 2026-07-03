@@ -131,21 +131,24 @@ Node :: struct {
 
     // User controlled properties mostly related to layout, reset each frame except for scroll and offset
     using properties : struct {
-        flags : NodeFlags;
-
         font : *Font;
         text : string;
         text_size : float;
 
+        flags : NodeFlags;
+
         offset : Vec2f; // NOT reset each frame
         scroll : Vec2f; // NOT reset each frame
+        child_align : Vec2f;
         desired_size := Size2D.{.{kind=.FitChildren}, .{kind=.FitChildren}};
         min_size := Vec2f.{-FLOAT32_INFINITY, -FLOAT32_INFINITY};
         max_size := Vec2f.{ FLOAT32_INFINITY,  FLOAT32_INFINITY};
-        min_size_fit : [2]bool;
-        padding : Vec4f;
-        child_gap : Vec2f;
-        child_align : Vec2f;
+        min_size_fit : enum_flags u8 {
+            Width;
+            Height;
+        };
+        child_gap : Vec2b;
+        padding : Vec4b;
         child_layout_mode := LayoutMode.LeftToRight;
     };
 
@@ -168,6 +171,8 @@ Node :: struct {
 
     state_flags : NodeStateFlags;
 }
+
+#run print("%\n", size_of(Node));
 
 // for_expansion
 Children :: (node : *Node, body : Code, flags : For_Flags) #expand {
@@ -213,6 +218,20 @@ PrevFrameChildren :: (node : *Node, body : Code, flags : For_Flags) #expand {
 
         #insert body;
     }
+}
+
+DefaultHitTest :: (node : *Node, point : Vec2f) -> bool {
+    return IsInsideRect(point, node.layout_last_frame.clipped_rect);
+}
+
+IsHovered :: (node : *Node) -> bool {
+    if !node.hit_test {
+        return false;
+    }
+
+    mouse := GetMousePosition(node.window);
+
+    return node.hit_test(node, mouse);
 }
 
 IsInTree :: (node : *Node, of : *Node) -> bool {
@@ -585,7 +604,11 @@ SetMinWidth :: inline (node : *Node, size : float) {
 }
 
 SetMinWidthFit :: inline (node : *Node, fit := true) {
-    node.min_size_fit[0] = fit;
+    if fit {
+        node.min_size_fit |= .Width;
+    } else {
+        node.min_size_fit &= ~.Width;
+    }
 }
 
 SetMaxWidth :: inline (node : *Node, size : float) {
@@ -612,7 +635,11 @@ SetMinHeight :: inline (node : *Node, size : float) {
 }
 
 SetMinHeightFit :: inline (node : *Node, fit := true) {
-    node.min_size_fit[1] = fit;
+    if fit {
+        node.min_size_fit |= .Height;
+    } else {
+        node.min_size_fit &= ~.Height;
+    }
 }
 
 SetMaxHeight :: inline (node : *Node, size : float) {
@@ -645,8 +672,8 @@ SetMinSize :: inline (node : *Node, x : float, y : float) {
 }
 
 SetMinSizeFit :: inline (node : *Node, x := true, y := true) {
-    node.min_size_fit[0] = x;
-    node.min_size_fit[1] = y;
+    SetMinWidthFit(node, x);
+    SetMinHeightFit(node, y);
 }
 
 SetMaxSize :: inline (node : *Node, size : Vec2f) {
@@ -657,23 +684,23 @@ SetMaxSize :: inline (node : *Node, x : float, y : float) {
     node.max_size = .{x, y};
 }
 
-SetPadding :: inline (node : *Node, padding : Vec4f) {
+SetPadding :: inline (node : *Node, padding : Vec4b) {
     node.padding = padding;
 }
 
-SetPadding :: inline (node : *Node, x : float, y : float) {
+SetPadding :: inline (node : *Node, x : s8, y : s8) {
     node.padding = .{x, y, x, y};
 }
 
-SetPadding :: inline (node : *Node, left : float, top : float, right : float, bottom : float) {
+SetPadding :: inline (node : *Node, left : s8, top : s8, right : s8, bottom : s8) {
     node.padding = .{left, top, right, bottom};
 }
 
-SetChildGap :: inline (node : *Node, gap : Vec2f) {
+SetChildGap :: inline (node : *Node, gap : Vec2b) {
     node.child_gap = gap;
 }
 
-SetChildGap :: inline (node : *Node, x : float, y : float) {
+SetChildGap :: inline (node : *Node, x : s8, y : s8) {
     node.child_gap = .{x, y};
 }
 
