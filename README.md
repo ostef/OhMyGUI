@@ -28,7 +28,6 @@ Widgets:
 * Progress bar
 * Combo boxes
 * Multi line text input
-* Number text input
 * Trees
 * Submenus
 * Popups
