@@ -67,21 +67,43 @@ Window :: struct {
     draw_list : DrawList;
 }
 
-GetWindow :: (window : *SDL_Window, create := true) -> *Window {
-    w := context.omg.windows;
-    while w {
-        if w.sdl_window == window {
-            return w;
+// for_expansion
+Windows :: (ctx : *Context, body : Code, flags : For_Flags) #expand {
+    `it := ctx.windows;
+    `it_index := 0;
+    while it {
+        next := it.next;
+        defer {
+            it = next;
+            it_index += 1;
         }
 
-        w = w.next;
+        #insert body;
+    }
+}
+
+GetMouseHoveredWindow :: () -> *Window {
+    for :Windows context.omg {
+        if SDL_GetWindowFlags(it.sdl_window) & SDL_WINDOW_MOUSE_FOCUS {
+            return it;
+        }
+    }
+
+    return null;
+}
+
+GetWindow :: (window : *SDL_Window, create := true) -> *Window {
+    for :Windows context.omg {
+        if it.sdl_window == window {
+            return it;
+        }
     }
 
     if !create {
         return null;
     }
 
-    w = New(Window);
+    w := New(Window);
     InitDrawList(*w.draw_list);
     w.sdl_window = window;
     w.next = context.omg.windows;
@@ -197,31 +219,24 @@ NewFrame :: (delta_time : float) {
         it.state_flags = (it.state_flags & .CurrentFrame) << (Num_Node_States - 1);
     }
 
-    window := omg.windows;
-    while window {
-        defer window = window.next;
-
-        if window.root_node {
-            FindMouseFocus(window.root_node);
+    for :Windows omg {
+        if it.root_node {
+            FindMouseFocus(it.root_node);
         }
 
-        if window.popup_root_node {
-            FindMouseFocus(window.popup_root_node);
+        if it.popup_root_node {
+            FindMouseFocus(it.popup_root_node);
         }
     }
 
-    window = omg.windows;
-    while window {
-        defer window = window.next;
-
-        if window.root_node {
-            TouchNode(window.root_node);
+    for :Windows omg {
+        if it.root_node {
+            TouchNode(it.root_node);
         }
-        if window.popup_root_node {
-            TouchNode(window.popup_root_node);
+        if it.popup_root_node {
+            TouchNode(it.popup_root_node);
         }
     }
-
 
     if omg.mouse_focused_node {
         omg.mouse_focused_node.state_flags |= .Focused;
@@ -251,38 +266,35 @@ Render :: () {
         SDL_SetCursor(GetSystemCursor(.Arrow));
     }
 
-    window := omg.windows;
-    while window {
-        defer window = window.next;
-
+    for :Windows omg {
         w, h : s32;
-        SDL_GetWindowSize(window.sdl_window, *w, *h);
+        SDL_GetWindowSize(it.sdl_window, *w, *h);
 
         layout_start := current_time_monotonic();
 
-        if window.root_node {
-            SetSize(window.root_node, SizePx(xx w), SizePx(xx h));
+        if it.root_node {
+            SetSize(it.root_node, SizePx(xx w), SizePx(xx h));
 
-            LayoutNodes(window.root_node);
+            LayoutNodes(it.root_node);
         }
 
-        if window.popup_root_node {
-            SetLayout(window.popup_root_node, .None);
-            SetChildAlign(window.popup_root_node, 0, 0);
-            SetSize(window.popup_root_node, SizePx(xx w), SizePx(xx h));
-            window.popup_root_node.flags |= .SortChildren;
+        if it.popup_root_node {
+            SetLayout(it.popup_root_node, .None);
+            SetChildAlign(it.popup_root_node, 0, 0);
+            SetSize(it.popup_root_node, SizePx(xx w), SizePx(xx h));
+            it.popup_root_node.flags |= .SortChildren;
 
-            LayoutNodes(window.popup_root_node);
+            LayoutNodes(it.popup_root_node);
         }
 
         layout_end := current_time_monotonic();
         omg.layout_time_last_frame = xx to_float64_seconds(layout_end - layout_start);
 
-        if window.root_node {
-            DrawNodes(*window.draw_list, window.root_node);
+        if it.root_node {
+            DrawNodes(*it.draw_list, it.root_node);
         }
-        if window.popup_root_node {
-            DrawNodes(*window.draw_list, window.popup_root_node);
+        if it.popup_root_node {
+            DrawNodes(*it.draw_list, it.popup_root_node);
         }
     }
 

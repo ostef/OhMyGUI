@@ -548,11 +548,31 @@ ColorPreview :: (parent : *Node, color : RGBA8, style : *ColorPreviewStyle, loca
     }
 
     node := GetNode(parent, location=location);
+    node.flags |= .Focusable;
+
     SetSize(node, SizePx(50), SizePx(40));
     SetDraw(node, Draw);
     SetUserData(node, style.*);
     Apply(node, style.box);
     SetBackgroundColor(node, color);
+
+    if IsHovered(node) {
+        r, g, b, a := GetRGBAU8(color);
+        rgba := ColorVec4f(color);
+        hsv := RGBToHSV(rgba.xyz);
+        Tooltip(
+            "R: %  G: %  B: %  A: %\n%, %, %, %\n\n#%",
+            FormatInt.{value=r, minimum_digits=3, padding=" "},
+            FormatInt.{value=g, minimum_digits=3, padding=" "},
+            FormatInt.{value=b, minimum_digits=3, padding=" "},
+            FormatInt.{value=a, minimum_digits=3, padding=" "},
+            FormatFloat.{value=rgba.x, trailing_width=3, zero_removal=.NO},
+            FormatFloat.{value=rgba.y, trailing_width=3, zero_removal=.NO},
+            FormatFloat.{value=rgba.z, trailing_width=3, zero_removal=.NO},
+            FormatFloat.{value=rgba.w, trailing_width=3, zero_removal=.NO},
+            FormatInt.{value=cast(u32, color), base=16, minimum_digits=8},
+        );
+    }
 
     return node;
 }

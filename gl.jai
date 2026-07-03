@@ -253,12 +253,9 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
     shape_drawings : [..]ShaderShapeDrawing;
     shapes : [..]ShaderShape;
 
-    window := context.omg.windows;
-    while window {
-        defer window = window.next;
-
+    for :Windows context.omg {
         CopyDrawListShaderData(
-            *window.draw_list,
+            *it.draw_list,
             *clip_boxes,
             *boxes,
             *glyphs,
@@ -322,14 +319,10 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
     glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 4, buffer_handle, xx shape_drawings_offset, xx shape_drawings_size);
     glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 5, buffer_handle, xx shapes_offset, xx shapes_size);
 
-    window = context.omg.windows;
-    while window {
-        defer {
-            ClearDrawList(*window.draw_list);
-            window = window.next;
-        }
+    for :Windows context.omg {
+        defer ClearDrawList(*it.draw_list);
 
-        SendDrawCommands(*window.draw_list, viewport_w, viewport_h);
+        SendDrawCommands(*it.draw_list, viewport_w, viewport_h);
     }
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);

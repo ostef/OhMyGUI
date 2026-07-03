@@ -406,6 +406,7 @@ DefaultTheme :: struct {
     separator : BoxStyle;
     subwindow : SubwindowStyle;
     color_picker : ColorPickerStyle;
+    tooltip : TooltipStyle;
 }
 
 g_default_theme_light : DefaultTheme;
@@ -801,4 +802,23 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         preview.opacity_checkerboard_black = opacity_checkerboard_black;
     }
     SetStyle(theme, "color_picker", theme.color_picker);
+
+    {
+        using theme.tooltip;
+
+        background.corner_radiuses = .{3,3,3,3};
+        background.padding = .{6,6,6,6};
+
+        background.background_color = base_background_color;
+        background.border_color = MakeTone(base_background_color, 0.3);
+        background.border_size = 1;
+
+        background.outer_shadow_color = ColorU32(0,0,0,0.5);
+        background.outer_shadow_offset = .{3,3};
+        background.outer_shadow_blur = 5;
+
+        text = theme.text;
+        text.text_size = floor(text.text_size * 0.9);
+    }
+    SetStyle(theme, "tooltip", theme.tooltip);
 }

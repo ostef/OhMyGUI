@@ -109,3 +109,45 @@ VerticalSeparator :: (parent : *Node, space := 25.0, width := 1.0, style : *BoxS
 
     return node;
 }
+
+Tooltip :: (window : *Window = null) -> *Node {
+    if !window {
+        window = GetMouseHoveredWindow();
+        if !window {
+            return null;
+        }
+    }
+
+    style := GetStyle("tooltip", TooltipStyle);
+    mouse_pos := GetMousePosition(window);
+
+    node := GetPopupNode(window, "tooltip");
+    {
+        BringForward(node);
+
+        SetSize(node, SizeFit(), SizeFit());
+        node.offset = mouse_pos + .{16, 16};
+
+        Apply(node, style.background);
+    }
+
+    return node;
+}
+
+TooltipStyle :: struct {
+    background : BoxStyle;
+    text : TextStyle;
+}
+
+Tooltip :: (fmt_str : string, args : ..Any, window : *Window = null) -> *Node {
+    tooltip := Tooltip(window);
+    if !tooltip {
+        return null;
+    }
+
+    style := GetStyle("tooltip", TooltipStyle);
+
+    Text(tooltip, fmt_str, ..args, style=*style.text);
+
+    return tooltip;
+}

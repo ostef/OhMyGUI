@@ -62,6 +62,15 @@ ColorVec4f :: inline (rgba : RGBA8) -> Vec4f {
     return .{r / 255.0, g / 255.0, b / 255.0, a / 255.0};
 }
 
+GetRGBAU8 :: inline (rgba : RGBA8) -> r : u8, g : u8, b : u8, a : u8 {
+    r := (cast(u32, rgba) >> 24) & 0xff;
+    g := (cast(u32, rgba) >> 16) & 0xff;
+    b := (cast(u32, rgba) >> 8)  & 0xff;
+    a := (cast(u32, rgba) >> 0)  & 0xff;
+
+    return xx r, xx g, xx b, xx a;
+}
+
 RGBToHSV :: inline (rgb : Vec3f) -> HSV {
     h, s, v := RGBToHSV(rgb.x, rgb.y, rgb.z);
     return .{h, s, v};
