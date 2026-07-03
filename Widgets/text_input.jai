@@ -658,42 +658,116 @@ TextInputFlags :: enum_flags {
     Password;
 }
 
-NumberInputFlags :: enum_flags {
-    Hexadecimal;
-    FixedLength;
+ParseIntInput :: (str : string, $T : Type) -> bool, T {
+    _s := str;
+    base := 10;
+    if begins_with(_s, "0x") {
+        advance(*_s, 2);
+        base = 16;
+    }
+
+    value, ok, remainder := string_to_int(_s, base, T);
+
+    return ok && remainder.count == 0, value;
 }
 
-NumberInput :: (parent : *Node, value : *$T/.[u8,s8,u16,s16,u32,s32,u64,s64,float32,float64], min : T, max : T, flags : NumberInputFlags = 0, style : *TextInputStyle = null, location := #caller_location) -> submitted : bool, *Node {
-    submitted, node := TextInput(parent, 0, style, location);
+FloatInput :: (
+    parent : *Node,
+    value : *$T/.[float32, float64],
+    min : T, max : T,
+    trailing_digits := 3,
+    style : *TextInputStyle = null,
+    location := #caller_location
+) -> submitted : bool, *Node {
+    user : struct {
+        trailing_digits : int;
+    } = .{trailing_digits};
+
+    FromString :: (str : string, user_data : *void) -> bool, T {
+        using _ := cast(*type_of(user), user_data);
+
+        v, ok, remainder := string_to_float64(str);
+        return ok && remainder.count == 0, xx v;
+    }
+
+    ToString :: (value : T, user_data : *void) -> string {
+        using _ := cast(*type_of(user), user_data);
+        return trim(tprint("%", FormatFloat.{value=value, trailing_width=trailing_digits}));
+    }
+
+    submitted, node := NumberInput(parent, value, min, max, *user, FromString, ToString, style=style, location=location);
+
+    return submitted, node;
+}
+
+IntInput :: (
+    parent : *Node,
+    value : *$T/.[u8,s8,u16,s16,u32,s32,u64,s64],
+    min : T, max : T,
+    base := 10,
+    min_digits := 1,
+    style : *TextInputStyle = null,
+    location := #caller_location
+) -> submitted : bool, *Node {
+    user : struct {
+        base : int;
+        min_digits : int;
+    } = .{base, min_digits};
+
+    FromString :: (str : string, user_data : *void) -> bool, T {
+        using _ := cast(*type_of(user), user_data);
+
+        v, ok, remainder := string_to_int(str, base=base, T=T);
+        return ok && remainder.count == 0, v;
+    }
+
+    ToString :: (value : T, user_data : *void) -> string {
+        using _ := cast(*type_of(user), user_data);
+        return tprint("%", FormatInt.{value=value, base=base, minimum_digits=min_digits});
+    }
+
+    submitted, node := NumberInput(parent, value, min, max, *user, FromString, ToString, style=style, location=location);
+
+    return submitted, node;
+}
+
+NumberInput :: (
+    parent : *Node,
+    value : *$T/.[u8,s8,u16,s16,u32,s32,u64,s64,float32,float64],
+    min : T, max : T,
+    user_data := null,
+    from_string : (str : string, user_data := null) -> (bool, T) = null,
+    to_string : (value : T, user_data := null) -> string = null,
+    flags : TextInputFlags = 0,
+    style : *TextInputStyle = null,
+    location := #caller_location
+) -> submitted : bool, *Node {
+    submitted, node := TextInput(parent, flags, style, location);
 
     if submitted {
         str := GetTextInputResult(node);
 
         #if T == float32 {
-            result, ok, remainder := string_to_float(str);
-            if ok && remainder.count == 0 {
+            f := ifx from_string then from_string else (str : string, user_data := null) -> (bool, T) { v, ok, remainder := string_to_float(str); return ok && remainder.count == 0, v; };
+            ok, result := f(str, user_data);
+            if ok {
                 value.* = result;
             }
         } else #if T == float64 {
-            result, ok, remainder := string_to_float64(str);
-            if ok && remainder.count == 0 {
+            f := ifx from_string then from_string else (str : string, user_data := null) -> (bool, T) { v, ok, remainder := string_to_float64(str); return ok && remainder.count == 0, v; };
+            ok, result := f(str, user_data);
+            if ok {
                 value.* = result;
             }
         } else {
-            base := ifx flags & .Hexadecimal then 16 else 10;
-            result, ok, remainder := string_to_int(str, base=base, T=T);
-            if ok && remainder.count == 0 {
+            f := ifx from_string then from_string else (str : string, user_data := null) -> (bool, T) { v, ok, remainder := string_to_int(str, T=T); return ok && remainder.count == 0, v; };
+            ok, result := f(str, user_data);
+            if ok {
                 value.* = result;
             }
         }
     } else if !(node.state_flags & .Active) {
-        str : string;
-        if flags & .Hexadecimal && type_info(T).type == .INTEGER {
-            str = tprint("%", FormatInt.{value=value.*, base=16, minimum_digits=ifx flags & .FixedLength then size_of(T) * 2 else 1});
-        } else {
-            str = tprint("%", value.*);
-        }
-
+        str := ifx to_string then to_string(value.*, user_data) else trim(tprint("%", value.*));
         SetTextInputResult(node, str);
     }
 
