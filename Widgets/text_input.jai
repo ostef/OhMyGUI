@@ -527,6 +527,7 @@ TextInputBehavior :: (node : *Node) -> *TextInputData, submitted : bool, ButtonR
 TextInputStateStyle :: struct {
     background : BoxStyle;
     text : TextStyle;
+    cursor : *Cursor;
 }
 
 TextInputStyle :: struct {
@@ -722,6 +723,10 @@ TextInput :: (parent : *Node, flags : TextInputFlags = 0, style : *TextInputStyl
             state := GetState(input_field);
             Apply(input_field, style.states[state].background);
             Apply(text_node, style.states[state].text);
+
+            if HasCursorControl(input_field) {
+                SetCursor(style.states[state].cursor);
+            }
 
             if flags & .Password {
                 password_codepoint : u32 = style.password_codepoint;

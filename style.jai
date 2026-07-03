@@ -170,7 +170,7 @@ HasCursorControl :: (node : *Node) -> bool {
         return false;
     }
     if node.state_flags & .Active {
-        return context.omg.mouse_capturing_node == node;
+        return context.omg.mouse_capturing_node == node || (node.state_flags & ~.Active) != 0;
     }
 
     return node.state_flags != 0;
@@ -560,9 +560,10 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         normal.text.text_size = 16;
 
         focused = normal;
-        hot = normal;
-        active = normal;
-        disabled = normal;
+        focused.cursor = GetSystemCursor(.IBeam);
+        hot = focused;
+        active = hot;
+        disabled = active;
 
         SetColors(*theme.text_input, button_base_background_color, base_accent_color);
 
