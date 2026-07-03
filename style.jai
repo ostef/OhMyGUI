@@ -555,7 +555,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         normal.background.border_size = 1;
         normal.background.border_color = MakeTone(button_base_background_color, 0.3);
         normal.background.inner_shadow_blur = 5;
-        normal.background.inner_shadow_color = ColorU32(0, 0, 0, 0.5);
+        normal.background.inner_shadow_color = SetAlpha(Darken(button_base_background_color, 0.2), 0.7);
         normal.text.font = GetDefaultFont();
         normal.text.text_size = 16;
 
