@@ -789,13 +789,15 @@ SendDrawCommands :: (draw_list : *DrawList, viewport_w : u32, viewport_h : u32) 
             num_vertices = 6;
             first_instance = it.first + draw_list.gpu_buffer_boxes_offset;
 
-            if current_shader != g_shader_box {
-                glUseProgram(g_shader_box);
-                current_shader = g_shader_box;
+            if current_shader != g_shader_box.handle {
+                glUseProgram(g_shader_box.handle);
+                current_shader = g_shader_box.handle;
 
-                u_viewport_size := glGetUniformLocation(current_shader, "u_viewport_size");
-                if u_viewport_size >= 0 {
-                    glUniform2f(u_viewport_size, xx viewport_w, xx viewport_h);
+                if g_shader_box.u_base_instance >= 0 {
+                    glUniform1i(g_shader_box.u_base_instance, xx first_instance);
+                }
+                if g_shader_box.u_viewport_size >= 0 {
+                    glUniform2f(g_shader_box.u_viewport_size, xx viewport_w, xx viewport_h);
                 }
             }
 
@@ -803,13 +805,15 @@ SendDrawCommands :: (draw_list : *DrawList, viewport_w : u32, viewport_h : u32) 
             num_vertices = 6;
             first_instance = it.first + draw_list.gpu_buffer_glyphs_offset;
 
-            if current_shader != g_shader_glyph {
-                glUseProgram(g_shader_glyph);
-                current_shader = g_shader_glyph;
+            if current_shader != g_shader_glyph.handle {
+                glUseProgram(g_shader_glyph.handle);
+                current_shader = g_shader_glyph.handle;
 
-                u_viewport_size := glGetUniformLocation(current_shader, "u_viewport_size");
-                if u_viewport_size >= 0 {
-                    glUniform2f(u_viewport_size, xx viewport_w, xx viewport_h);
+                if g_shader_glyph.u_base_instance >= 0 {
+                    glUniform1i(g_shader_glyph.u_base_instance, xx first_instance);
+                }
+                if g_shader_glyph.u_viewport_size >= 0 {
+                    glUniform2f(g_shader_glyph.u_viewport_size, xx viewport_w, xx viewport_h);
                 }
             }
 
@@ -817,13 +821,15 @@ SendDrawCommands :: (draw_list : *DrawList, viewport_w : u32, viewport_h : u32) 
             num_vertices = 3;
             first_instance = it.first + draw_list.gpu_buffer_triangles_offset;
 
-            if current_shader != g_shader_triangle {
-                glUseProgram(g_shader_triangle);
-                current_shader = g_shader_triangle;
+            if current_shader != g_shader_triangle.handle {
+                glUseProgram(g_shader_triangle.handle);
+                current_shader = g_shader_triangle.handle;
 
-                u_viewport_size := glGetUniformLocation(current_shader, "u_viewport_size");
-                if u_viewport_size >= 0 {
-                    glUniform2f(u_viewport_size, xx viewport_w, xx viewport_h);
+                if g_shader_triangle.u_base_instance >= 0 {
+                    glUniform1i(g_shader_triangle.u_base_instance, xx first_instance);
+                }
+                if g_shader_triangle.u_viewport_size >= 0 {
+                    glUniform2f(g_shader_triangle.u_viewport_size, xx viewport_w, xx viewport_h);
                 }
             }
 
@@ -831,13 +837,15 @@ SendDrawCommands :: (draw_list : *DrawList, viewport_w : u32, viewport_h : u32) 
             num_vertices = 6;
             first_instance = it.first + draw_list.gpu_buffer_shape_drawings_offset;
 
-            if current_shader != g_shader_sdf {
-                glUseProgram(g_shader_sdf);
-                current_shader = g_shader_sdf;
+            if current_shader != g_shader_sdf.handle {
+                glUseProgram(g_shader_sdf.handle);
+                current_shader = g_shader_sdf.handle;
 
-                u_viewport_size := glGetUniformLocation(current_shader, "u_viewport_size");
-                if u_viewport_size >= 0 {
-                    glUniform2f(u_viewport_size, xx viewport_w, xx viewport_h);
+                if g_shader_sdf.u_base_instance >= 0 {
+                    glUniform1i(g_shader_sdf.u_base_instance, xx first_instance);
+                }
+                if g_shader_sdf.u_viewport_size >= 0 {
+                    glUniform2f(g_shader_sdf.u_viewport_size, xx viewport_w, xx viewport_h);
                 }
             }
         }

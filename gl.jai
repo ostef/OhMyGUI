@@ -11,10 +11,17 @@ g_color_framebuffer : GLuint;
 g_color_texture_width : u32;
 g_color_texture_height : u32;
 
-g_shader_sdf : GLuint;
-g_shader_box : GLuint;
-g_shader_glyph : GLuint;
-g_shader_triangle : GLuint;
+Shader :: struct {
+    handle : GLuint;
+    u_base_instance : GLint;
+    u_viewport_size : GLint;
+}
+
+g_shader_sdf : Shader;
+g_shader_box : Shader;
+g_shader_glyph : Shader;
+g_shader_triangle : Shader;
+
 g_dummy_vao : GLuint;
 
 g_num_frames_in_flight : int;
@@ -29,7 +36,16 @@ g_storage_buffer_offset_alignment : s32;
 
 g_last_frame_gpu_time : float;
 
-LoadShader :: (name : string, vertex_source : string, fragment_source : string) -> GLuint {
+GLBufferBinding :: enum {
+    ClipBoxes;
+    Boxes;
+    Glyphs;
+    Triangles;
+    ShapeDrawings;
+    Shapes;
+}
+
+LoadShader :: (name : string, vertex_source : string, fragment_source : string) -> Shader {
     status, log_length : GLint;
 
     vertex_shader := glCreateShader(GL_VERTEX_SHADER);
@@ -52,7 +68,7 @@ LoadShader :: (name : string, vertex_source : string, fragment_source : string) 
 
         log_error("Could not compile vertex shader '%': %", name, message);
 
-        return 0;
+        return .{};
     }
 
     fragment_length := cast(s32, fragment_source.count);
@@ -69,7 +85,7 @@ LoadShader :: (name : string, vertex_source : string, fragment_source : string) 
 
         log_error("Could not compile fragment shader '%': %", name, message);
 
-        return 0;
+        return .{};
     }
 
     program := glCreateProgram();
@@ -92,10 +108,41 @@ LoadShader :: (name : string, vertex_source : string, fragment_source : string) 
 
         log_error("Could not compile shader '%': %", name, message);
 
-        return 0;
+        return .{};
     }
 
-    return program;
+    // Setup binding indices
+    result : Shader;
+    result.handle = program;
+    result.u_base_instance = glGetUniformLocation(program, "u_base_instance");
+    result.u_viewport_size = glGetUniformLocation(program, "u_viewport_size");
+
+    clip_boxes_index := glGetProgramResourceIndex(program, GL_SHADER_STORAGE_BLOCK, "ClipBoxData");
+    if clip_boxes_index != GL_INVALID_INDEX {
+        glShaderStorageBlockBinding(program, clip_boxes_index, xx GLBufferBinding.ClipBoxes);
+    }
+    boxes_index := glGetProgramResourceIndex(program, GL_SHADER_STORAGE_BLOCK, "BoxData");
+    if boxes_index != GL_INVALID_INDEX {
+        glShaderStorageBlockBinding(program, boxes_index, xx GLBufferBinding.Boxes);
+    }
+    glyphs_index := glGetProgramResourceIndex(program, GL_SHADER_STORAGE_BLOCK, "GlyphData");
+    if glyphs_index != GL_INVALID_INDEX {
+        glShaderStorageBlockBinding(program, glyphs_index, xx GLBufferBinding.Glyphs);
+    }
+    triangles_index := glGetProgramResourceIndex(program, GL_SHADER_STORAGE_BLOCK, "TriangleData");
+    if triangles_index != GL_INVALID_INDEX {
+        glShaderStorageBlockBinding(program, triangles_index, xx GLBufferBinding.Triangles);
+    }
+    shape_drawings_index := glGetProgramResourceIndex(program, GL_SHADER_STORAGE_BLOCK, "ShapeDrawingData");
+    if shape_drawings_index != GL_INVALID_INDEX {
+        glShaderStorageBlockBinding(program, shape_drawings_index, xx GLBufferBinding.ShapeDrawings);
+    }
+    shapes_index := glGetProgramResourceIndex(program, GL_SHADER_STORAGE_BLOCK, "ShapeData");
+    if shapes_index != GL_INVALID_INDEX {
+        glShaderStorageBlockBinding(program, shapes_index, xx GLBufferBinding.Shapes);
+    }
+
+    return result;
 }
 
 #scope_export
@@ -120,22 +167,22 @@ InitGL :: (num_frames_in_flight := 2, frame_data_buffer_size := 1 * 1024 * 1024)
     SDF_Fragment_Shader :: #run join(Common_Shader, "#line 1\n", ReadCompileTimeFile("Shaders/sdf.frag.glsl"));
 
     g_shader_box = LoadShader("Box", Box_Vertex_Shader, Box_Fragment_Shader);
-    if !g_shader_box {
+    if !g_shader_box.handle {
         return false;
     }
 
     g_shader_glyph = LoadShader("Glyph", Glyph_Vertex_Shader, Glyph_Fragment_Shader);
-    if !g_shader_glyph {
+    if !g_shader_glyph.handle {
         return false;
     }
 
     g_shader_triangle = LoadShader("Triangle", Triangle_Vertex_Shader, Triangle_Fragment_Shader);
-    if !g_shader_triangle {
+    if !g_shader_triangle.handle {
         return false;
     }
 
     g_shader_sdf = LoadShader("SDF", SDF_Vertex_Shader, SDF_Fragment_Shader);
-    if !g_shader_sdf {
+    if !g_shader_sdf.handle {
         return false;
     }
 
@@ -194,8 +241,14 @@ TerminateGL :: () {
     glDeleteQueries(xx (g_timestamp_queries.count * 2), xx g_timestamp_queries.data);
     free(g_timestamp_queries.data);
 
-    glDeleteProgram(g_shader_sdf);
-    g_shader_sdf = 0;
+    glDeleteProgram(g_shader_box.handle);
+    g_shader_sdf.handle = 0;
+    glDeleteProgram(g_shader_glyph.handle);
+    g_shader_sdf.handle = 0;
+    glDeleteProgram(g_shader_triangle.handle);
+    g_shader_sdf.handle = 0;
+    glDeleteProgram(g_shader_sdf.handle);
+    g_shader_sdf.handle = 0;
 
     glDeleteVertexArrays(1, *g_dummy_vao);
     g_dummy_vao = 0;
@@ -312,12 +365,12 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
 
     glBindVertexArray(g_dummy_vao);
 
-    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 0, buffer_handle, xx clip_boxes_offset, xx clip_boxes_size);
-    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 1, buffer_handle, xx boxes_offset, xx boxes_size);
-    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 2, buffer_handle, xx glyphs_offset, xx glyphs_size);
-    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 3, buffer_handle, xx triangles_offset, xx triangles_size);
-    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 4, buffer_handle, xx shape_drawings_offset, xx shape_drawings_size);
-    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 5, buffer_handle, xx shapes_offset, xx shapes_size);
+    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, xx GLBufferBinding.ClipBoxes, buffer_handle, xx clip_boxes_offset, xx clip_boxes_size);
+    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, xx GLBufferBinding.Boxes, buffer_handle, xx boxes_offset, xx boxes_size);
+    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, xx GLBufferBinding.Glyphs, buffer_handle, xx glyphs_offset, xx glyphs_size);
+    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, xx GLBufferBinding.Triangles, buffer_handle, xx triangles_offset, xx triangles_size);
+    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, xx GLBufferBinding.ShapeDrawings, buffer_handle, xx shape_drawings_offset, xx shape_drawings_size);
+    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, xx GLBufferBinding.Shapes, buffer_handle, xx shapes_offset, xx shapes_size);
 
     for :Windows context.omg {
         defer ClearDrawList(*it.draw_list);

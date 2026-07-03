@@ -18,13 +18,13 @@ struct Shape {
 #define Shape_MorphOperation 205
 #define Shape_TransformOperation 206
 
-layout(binding=0, std430) readonly buffer ClipData {
+layout(std430) readonly buffer ClipBoxData {
     ClipBox u_clip_boxes[];
 };
-layout(binding=4, std430) readonly buffer DrawingData {
+layout(std430) readonly buffer ShapeDrawingData {
     ShapeDrawing u_shape_drawings[];
 };
-layout(binding=5, std430) readonly buffer ShapeData {
+layout(std430) readonly buffer ShapeData {
     Shape u_shapes[];
 };
 uniform vec2 u_viewport_size;

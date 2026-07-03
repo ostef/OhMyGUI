@@ -1,7 +1,7 @@
-layout(binding=0, std430) readonly buffer ClipData {
+layout(std430) readonly buffer ClipBoxData {
     ClipBox u_clip_boxes[];
 };
-layout(binding=3, std430) readonly buffer TriangleData {
+layout(std430) readonly buffer TriangleData {
     Triangle u_triangles[];
 };
 

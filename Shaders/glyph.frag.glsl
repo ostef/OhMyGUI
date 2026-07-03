@@ -1,9 +1,9 @@
 // Simplified and "baked" version of the general SDF renderer for text
 
-layout(binding=0, std430) readonly buffer ClipData {
+layout(std430) readonly buffer ClipBoxData {
     ClipBox u_clip_boxes[];
 };
-layout(binding=2, std430) readonly buffer GlyphData {
+layout(std430) readonly buffer GlyphData {
     Glyph u_glyphs[];
 };
 

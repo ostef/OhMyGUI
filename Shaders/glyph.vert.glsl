@@ -1,7 +1,8 @@
-layout(binding=2, std430) readonly buffer GlyphData {
+layout(std430) readonly buffer GlyphData {
     Glyph u_glyphs[];
 };
 
+uniform int u_base_instance;
 uniform vec2 u_viewport_size;
 
 layout(location=0) out flat uint out_glyph_index;

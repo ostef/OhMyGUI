@@ -1,7 +1,8 @@
-layout(binding=1, std430) readonly buffer BoxData {
+layout(std430) readonly buffer BoxData {
     Box u_boxes[];
 };
 
+uniform int u_base_instance;
 uniform vec2 u_viewport_size;
 
 layout(location=0) out flat uint out_box_index;

@@ -1,4 +1,6 @@
-#version 460 core
+#version 430 core
+
+#define gl_BaseInstance u_base_instance
 
 struct ClipBox {
     vec4 bounds;
@@ -191,4 +193,3 @@ float SampleClipBox(ClipBox clip, vec2 p, float aa) {
     float clip_d = PrimBox(p - clip_position, clip_size, clip.corner_radiuses);
     return FxSolidColor(clip_d, aa);
 }
-

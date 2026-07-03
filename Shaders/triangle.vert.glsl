@@ -1,7 +1,8 @@
-layout(binding=3, std430) readonly buffer TriangleData {
+layout(std430) readonly buffer TriangleData {
     Triangle u_triangles[];
 };
 
+uniform int u_base_instance;
 uniform vec2 u_viewport_size;
 
 layout(location=0) out flat uint out_triangle_index;

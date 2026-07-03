@@ -1,6 +1,8 @@
-layout(binding=4, std430) readonly buffer DrawingData {
+layout(std430) readonly buffer ShapeDrawingData {
     ShapeDrawing u_shape_drawings[];
 };
+
+uniform int u_base_instance;
 uniform vec2 u_viewport_size;
 
 layout(location=0) out flat uint out_shape_drawing_index;

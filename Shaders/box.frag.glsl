@@ -1,9 +1,9 @@
 // Simplified and "baked" version of the general SDF renderer for node boxes
 
-layout(binding=0, std430) readonly buffer ClipData {
+layout(std430) readonly buffer ClipBoxData {
     ClipBox u_clip_boxes[];
 };
-layout(binding=1, std430) readonly buffer BoxData {
+layout(std430) readonly buffer BoxData {
     Box u_boxes[];
 };
 
