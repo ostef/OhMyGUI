@@ -79,7 +79,13 @@ EditorFrame :: () {
 
             file_menu := OMG.Menu(title_menu_bar, "File");
             if file_menu {
-                OMG.MenuItem(file_menu, "New");
+                new_menu := OMG.SubMenu(file_menu, "New");
+                if new_menu {
+                    OMG.MenuItem(new_menu, "World");
+                    OMG.MenuItem(new_menu, "Entity");
+                    OMG.MenuItem(new_menu, "Component");
+                }
+
                 OMG.MenuItem(file_menu, "Open");
                 OMG.MenuItem(file_menu, "Save");
                 OMG.MenuItem(file_menu, "Save As");
@@ -299,6 +305,6 @@ END
         }
     }
 
-    subwindow := OMG.Subwindow(window, "Hello Subwindow", "hello_subwindow", .{550, 400});
-    OMG.ColorPicker(subwindow, *g_color);
+    // subwindow := OMG.Subwindow(window, "Hello Subwindow", "hello_subwindow", .{550, 400});
+    // OMG.ColorPicker(subwindow, *g_color);
 }
