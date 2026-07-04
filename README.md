@@ -14,13 +14,13 @@ Tree based immediate mode GUI library in Jai inspired by Clay and PanGui. For no
 * SDF shape renderer: describe shapes using SDF primitives and operations, draw them with a border, background color and outer shadow
 
 ## Planned/Todo
-* Gradients
 * Transitions/animations
 * UI element wrapping
 * Multiple windows
 * Default icon library
 * Keyboard navigation
 * Clip fade-out
+* Custom drawing commands and shaders
 
 Widgets:
 * Tables

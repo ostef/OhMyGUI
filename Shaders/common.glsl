@@ -2,6 +2,8 @@
 
 #define gl_BaseInstance u_base_instance
 
+#define Pi 3.14159265359
+
 struct ClipBox {
     vec4 bounds;
     vec4 corner_radiuses;
@@ -10,28 +12,37 @@ struct ClipBox {
 struct Box {
     vec4 size_and_position;
     vec4 corner_radiuses;
-    int clip_box_index;
-    uint background_color;
     vec2 border_size_and_inset;
-    uint border_color;
-    uint outer_shadow_color;
     vec2 outer_shadow_offset;
+    vec2 inner_shadow_offset;
+    vec2 background_gradient_vector;
+    vec2 border_gradient_vector;
+    float background_gradient_offset;
+    float border_gradient_offset;
+    uint background_color;
+    uint background_color2;
+    uint border_color;
+    uint border_color2;
+    uint outer_shadow_color;
     float outer_shadow_blur;
     uint inner_shadow_color;
-    vec2 inner_shadow_offset;
     float inner_shadow_blur;
+    int clip_box_index;
 };
 
 struct Glyph {
     vec4 bounds;
     vec4 uv_bounds;
     vec2 sdf_range;
-    uint color;
-    uint outer_shadow_color;
     vec2 outer_shadow_offset;
+    vec2 inner_shadow_offset;
+    vec2 gradient_vector;
+    float gradient_offset;
+    uint color;
+    uint color2;
+    uint outer_shadow_color;
     float outer_shadow_blur;
     uint inner_shadow_color;
-    vec2 inner_shadow_offset;
     float inner_shadow_blur;
     int clip_box_index;
 };
@@ -49,17 +60,23 @@ struct Triangle {
 struct ShapeDrawing {
     vec4 bounds;
     vec2 position;
+    vec2 border_size_and_inset;
+    vec2 outer_shadow_offset;
+    vec2 inner_shadow_offset;
+    vec2 background_gradient_vector;
+    vec2 border_gradient_vector;
+    float background_gradient_offset;
+    float border_gradient_offset;
     uint first_shape_index;
     uint num_shapes;
     int clip_box_index;
     uint background_color;
-    vec2 border_size_and_inset;
+    uint background_color2;
     uint border_color;
+    uint border_color2;
     uint outer_shadow_color;
-    vec2 outer_shadow_offset;
     float outer_shadow_blur;
     uint inner_shadow_color;
-    vec2 inner_shadow_offset;
     float inner_shadow_blur;
 };
 
@@ -181,6 +198,35 @@ float FxOuterShadow(float d, float blur, float background_alpha, float border_al
 
 float FxInnerShadow(float d, float blur, float background_alpha) {
     return FxSolidColor(-d, blur) * background_alpha;
+}
+
+// Gradient noise from Jorge Jimenez's presentation:
+// http://www.iryoku.com/next-generation-post-processing-in-call-of-duty-advanced-warfare
+// Prevents color banding on large gradients
+float GradientNoise(vec2 uv) {
+    vec3 magic = vec3(0.06711056, 0.00583715, 52.9829189);
+
+    return fract(magic.z * fract(dot(uv, magic.xy)));
+}
+
+vec4 FxGradientColor(vec2 p, vec2 from, vec2 to, vec4 from_color, vec4 to_color) {
+    vec2 from_to = to - from;
+
+    float gradient = dot(p - from, from_to) / dot(from_to, from_to);
+    gradient = clamp(gradient, 0, 1);
+    gradient = smoothstep(0, 1, gradient);
+
+    vec4 color = mix(from_color, to_color, gradient);
+    color += float(gradient > 0 && gradient < 1) * (1 / 255.0) * GradientNoise(p);
+
+    return color;
+}
+
+vec4 FxGradientColorInBox(vec2 p, vec2 box_position, vec2 box_size, float offset, vec2 vector, vec4 from_color, vec4 to_color) {
+    vec2 from = box_position + normalize(vector) * box_size * (offset - 0.5) - vector * 0.5;
+    vec2 to = from + vector;
+
+    return FxGradientColor(p, from, to, from_color, to_color);
 }
 
 vec4 BlendEffect(vec4 a, vec4 b, float alpha) {

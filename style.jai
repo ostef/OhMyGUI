@@ -40,7 +40,13 @@ BoxStyle :: struct {
 
     corner_radiuses : Vec4f;
     background_color : RGBA8;
+    background_color2 : RGBA8;
+    background_gradient_offset : float;
+    background_gradient_vector : Vec2f;
     border_color : RGBA8;
+    border_color2 : RGBA8;
+    border_gradient_offset : float;
+    border_gradient_vector : Vec2f;
     border_size : float;
     border_inset : float;
     outer_shadow_blur : float;
@@ -56,7 +62,13 @@ Apply :: inline (node : *Node, style : BoxStyle) {
     node.child_gap = style.child_gap;
     node.corner_radiuses = style.corner_radiuses;
     node.background_color = style.background_color;
+    node.background_color2 = style.background_color2;
+    node.background_gradient_offset = style.background_gradient_offset;
+    node.background_gradient_vector = style.background_gradient_vector;
     node.border_color = style.border_color;
+    node.border_color2 = style.border_color2;
+    node.border_gradient_offset = style.border_gradient_offset;
+    node.border_gradient_vector = style.border_gradient_vector;
     node.border_size = style.border_size;
     node.border_inset = style.border_inset;
     node.outer_shadow_blur = style.outer_shadow_blur;
@@ -71,6 +83,9 @@ TextStyle :: struct {
     font : *Font;
     text_size : float;
     text_color : RGBA8;
+    text_color2 : RGBA8;
+    text_gradient_offset : float;
+    text_gradient_vector : Vec2f;
     text_effects : TextEffects;
     outer_shadow_blur : float;
     outer_shadow_offset : Vec2f;
@@ -84,6 +99,9 @@ Apply :: inline (node : *Node, style : TextStyle) {
     node.font = style.font;
     node.text_size = style.text_size;
     node.text_color = style.text_color;
+    node.text_color2 = style.text_color2;
+    node.text_gradient_offset = style.text_gradient_offset;
+    node.text_gradient_vector = style.text_gradient_vector;
     node.text_effects = style.text_effects;
     node.outer_shadow_blur = style.outer_shadow_blur;
     node.outer_shadow_offset = style.outer_shadow_offset;
@@ -470,6 +488,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         normal.background.corner_radiuses = .{6,6,6,6};
         normal.background.padding = .{10,6,10,6};
         normal.background.child_gap = .{4,4};
+
         normal.text.font = GetDefaultFont();
         normal.text.text_size = 16;
 

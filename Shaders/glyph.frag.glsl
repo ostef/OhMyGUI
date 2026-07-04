@@ -23,6 +23,7 @@ void main() {
     vec2 glyph_size = glyph.bounds.zw - glyph.bounds.xy;
     vec2 glyph_position = (glyph.bounds.xy + glyph.bounds.zw) * 0.5;
     vec4 foreground_color = ColorVec4(glyph.color);
+    vec4 foreground_color2 = ColorVec4(glyph.color2);
     vec4 outer_shadow_color = ColorVec4(glyph.outer_shadow_color);
     vec4 inner_shadow_color = ColorVec4(glyph.inner_shadow_color);
 
@@ -45,6 +46,8 @@ void main() {
     }
 
     float foreground = FxSolidColor(d, aa);
+    foreground_color = FxGradientColorInBox(p, glyph_position, glyph_size, glyph.gradient_offset, glyph.gradient_vector, foreground_color, foreground_color2);
+
     out_color = BlendEffect(out_color, foreground_color, foreground);
 
     if (inner_shadow_color.a > 0) {

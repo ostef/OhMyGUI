@@ -15,7 +15,13 @@ BoxDrawing :: struct {
     position : Vec2f;
     corner_radiuses : Vec4f;
     background_color : RGBA8;
+    background_color2 : RGBA8;
+    background_gradient_offset : float;
+    background_gradient_vector : Vec2f;
     border_color : RGBA8;
+    border_color2 : RGBA8;
+    border_gradient_offset : float;
+    border_gradient_vector : Vec2f;
     border_size : float;
     border_inset : float;
     outer_shadow_color : RGBA8;
@@ -52,16 +58,22 @@ GetRealBounds :: (box : BoxDrawing) -> Vec4f {
 ShaderBoxDrawing :: struct {
     size_and_position : Vec4f;
     corner_radiuses : Vec4f;
-    clip_box_index : s32;
-    background_color : u32;
     border_size_and_inset : Vec2f;
-    border_color : u32;
-    outer_shadow_color : u32;
     outer_shadow_offset : Vec2f;
+    inner_shadow_offset : Vec2f;
+    background_gradient_vector : Vec2f;
+    border_gradient_vector : Vec2f;
+    background_gradient_offset : float;
+    border_gradient_offset : float;
+    background_color : u32;
+    background_color2 : u32;
+    border_color : u32;
+    border_color2 : u32;
+    outer_shadow_color : u32;
     outer_shadow_blur : float;
     inner_shadow_color : u32;
-    inner_shadow_offset : Vec2f;
     inner_shadow_blur : float;
+    clip_box_index : s32;
     padding : [3]u32;
 }
 
@@ -82,6 +94,9 @@ GlyphDrawing :: struct {
     uv_bounds : Vec4f;
     sdf_range : Vec2f;
     color : u32;
+    color2 : u32;
+    gradient_vector : Vec2f;
+    gradient_offset : float;
     outer_shadow_color : u32;
     outer_shadow_offset : Vec2f;
     outer_shadow_blur : float;
@@ -105,7 +120,22 @@ GetRealBounds :: (glyph : GlyphDrawing) -> Vec4f {
     return bounds;
 }
 
-ShaderGlyphDrawing :: GlyphDrawing;
+ShaderGlyphDrawing :: struct {
+    bounds : Vec4f;
+    uv_bounds : Vec4f;
+    sdf_range : Vec2f;
+    outer_shadow_offset : Vec2f;
+    inner_shadow_offset : Vec2f;
+    gradient_vector : Vec2f;
+    gradient_offset : float;
+    color : u32;
+    color2 : u32;
+    outer_shadow_color : u32;
+    outer_shadow_blur : float;
+    inner_shadow_color : u32;
+    inner_shadow_blur : float;
+    clip_box_index : s32;
+}
 
 ShaderShape :: struct {
     kind : u32;
@@ -117,7 +147,13 @@ ShapeDrawing :: struct {
     shape : *Shape;
     position : Vec2f;
     background_color : RGBA8;
+    background_color2 : u32;
+    background_gradient_vector : Vec2f;
+    background_gradient_offset : float;
     border_color : RGBA8;
+    border_color2 : u32;
+    border_gradient_vector : Vec2f;
+    border_gradient_offset : float;
     border_size : float;
     border_inset : float;
     outer_shadow_color : RGBA8;
@@ -153,17 +189,23 @@ GetRealBounds :: (shape : ShapeDrawing) -> Vec4f {
 ShaderShapeDrawing :: struct {
     bounds : Vec4f;
     position : Vec2f;
+    border_size_and_inset : Vec2f;
+    outer_shadow_offset : Vec2f;
+    inner_shadow_offset : Vec2f;
+    background_gradient_vector : Vec2f;
+    border_gradient_vector : Vec2f;
+    background_gradient_offset : float;
+    border_gradient_offset : float;
     first_shape_index : u32;
     num_shapes : u32;
     clip_box_index : s32;
     background_color : u32;
-    border_size_and_inset : Vec2f;
+    background_color2 : u32;
     border_color : u32;
+    border_color2 : u32;
     outer_shadow_color : u32;
-    outer_shadow_offset : Vec2f;
     outer_shadow_blur : float;
     inner_shadow_color : u32;
-    inner_shadow_offset : Vec2f;
     inner_shadow_blur : float;
     padding : [3]u32;
 }
@@ -379,6 +421,9 @@ DrawText :: (
     size : float,
     text : string,
     color : RGBA8,
+    color2 : RGBA8 = 0,
+    gradient_vector : Vec2f = .{},
+    gradient_offset : float = 0,
     outer_shadow_color : RGBA8 = 0,
     outer_shadow_offset := Vec2f.{0,0},
     outer_shadow_blur := 0.0,
@@ -395,6 +440,9 @@ DrawText :: (
         text,
         .{FLOAT32_INFINITY, FLOAT32_INFINITY},
         color,
+        color2,
+        gradient_vector,
+        gradient_offset,
         outer_shadow_color,
         outer_shadow_offset,
         outer_shadow_blur,
@@ -413,6 +461,9 @@ DrawWrappedText :: (
     text : string,
     bounds : Vec2f,
     color : RGBA8,
+    color2 : RGBA8 = 0,
+    gradient_vector : Vec2f = .{},
+    gradient_offset : float = 0,
     outer_shadow_color : RGBA8 = 0,
     outer_shadow_offset := Vec2f.{0,0},
     outer_shadow_blur := 0.0,
@@ -446,6 +497,9 @@ DrawWrappedText :: (
                 uv_bounds=it.uv_rect,
                 sdf_range=.{sdf_range, -sdf_range},
                 color=color,
+                color2=color2,
+                gradient_vector=gradient_vector,
+                gradient_offset=gradient_offset,
                 outer_shadow_color=outer_shadow_color,
                 outer_shadow_offset=outer_shadow_offset,
                 outer_shadow_blur=outer_shadow_blur,
@@ -559,7 +613,13 @@ DrawNodeDefault :: (draw_list : *DrawList, node : *Node) {
         position=(node.rect.xy + node.rect.zw) * 0.5,
         corner_radiuses=node.corner_radiuses,
         background_color=node.background_color,
+        background_color2=node.background_color2,
+        background_gradient_vector=node.background_gradient_vector,
+        background_gradient_offset=node.background_gradient_offset,
         border_color=node.border_color,
+        border_color2=node.border_color2,
+        border_gradient_vector=node.border_gradient_vector,
+        border_gradient_offset=node.border_gradient_offset,
         border_size=node.border_size,
         border_inset=node.border_inset,
         outer_shadow_color=node.outer_shadow_color,
@@ -578,6 +638,9 @@ DrawNodeDefault :: (draw_list : *DrawList, node : *Node) {
             node.text,
             node.size,
             node.text_color,
+            node.text_color2,
+            node.text_gradient_vector,
+            node.text_gradient_offset,
             node.outer_shadow_color,
             node.outer_shadow_offset,
             node.outer_shadow_blur,
@@ -593,6 +656,9 @@ DrawNodeDefault :: (draw_list : *DrawList, node : *Node) {
             node.text_size,
             node.text,
             node.text_color,
+            node.text_color2,
+            node.text_gradient_vector,
+            node.text_gradient_offset,
             node.outer_shadow_color,
             node.outer_shadow_offset,
             node.outer_shadow_blur,
@@ -713,7 +779,13 @@ CopyDrawListShaderData :: (
         box.size_and_position.zw = it.position;
         box.corner_radiuses = it.corner_radiuses;
         box.background_color = it.background_color;
+        box.background_color2 = it.background_color2;
+        box.background_gradient_vector = it.background_gradient_vector;
+        box.background_gradient_offset = it.background_gradient_offset;
         box.border_color = it.border_color;
+        box.border_color2 = it.border_color2;
+        box.border_gradient_vector = it.border_gradient_vector;
+        box.border_gradient_offset = it.border_gradient_offset;
         box.border_size_and_inset.x = it.border_size;
         box.border_size_and_inset.y = it.border_inset;
         box.outer_shadow_color = it.outer_shadow_color;
@@ -729,7 +801,19 @@ CopyDrawListShaderData :: (
 
     for draw_list.glyphs {
         glyph := array_add(glyphs);
-        glyph.* = it;
+        glyph.bounds = it.bounds;
+        glyph.uv_bounds = it.uv_bounds;
+        glyph.sdf_range = it.sdf_range;
+        glyph.outer_shadow_offset = it.outer_shadow_offset;
+        glyph.inner_shadow_offset = it.inner_shadow_offset;
+        glyph.gradient_vector = it.gradient_vector;
+        glyph.gradient_offset = it.gradient_offset;
+        glyph.color = it.color;
+        glyph.color2 = it.color2;
+        glyph.outer_shadow_color = it.outer_shadow_color;
+        glyph.outer_shadow_blur = it.outer_shadow_blur;
+        glyph.inner_shadow_color = it.inner_shadow_color;
+        glyph.inner_shadow_blur = it.inner_shadow_blur;
         glyph.clip_box_index = ifx it.clip_box_index >= 0
             then cast(s32, draw_list.gpu_buffer_clip_boxes_offset) + it.clip_box_index
             else -1;
@@ -752,7 +836,13 @@ CopyDrawListShaderData :: (
         drawing.bounds = GetBounds(it.shape);
         drawing.position = it.position;
         drawing.background_color = it.background_color;
+        drawing.background_color2 = it.background_color2;
+        drawing.background_gradient_vector = it.background_gradient_vector;
+        drawing.background_gradient_offset = it.background_gradient_offset;
         drawing.border_color = it.border_color;
+        drawing.border_color2 = it.border_color2;
+        drawing.border_gradient_vector = it.border_gradient_vector;
+        drawing.border_gradient_offset = it.border_gradient_offset;
         drawing.border_size_and_inset.x = it.border_size;
         drawing.border_size_and_inset.y = it.border_inset;
         drawing.outer_shadow_color = it.outer_shadow_color;

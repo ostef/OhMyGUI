@@ -147,7 +147,13 @@ CheckmarkStyle :: struct {
     angle := PI * 0.17;
 
     background_color : RGBA8;
+    background_color2 : RGBA8;
+    background_gradient_vector : Vec2f;
+    background_gradient_offset : float;
     border_color : RGBA8;
+    border_color2 : RGBA8;
+    border_gradient_vector : Vec2f;
+    border_gradient_offset : float;
     border_size : float;
     border_inset : float;
     outer_shadow_blur : float;
@@ -157,7 +163,13 @@ CheckmarkStyle :: struct {
 
 Apply :: inline (node : *Node, style : CheckmarkStyle) {
     node.background_color = style.background_color;
+    node.background_color2 = style.background_color2;
+    node.background_gradient_vector = style.background_gradient_vector;
+    node.background_gradient_offset = style.background_gradient_offset;
     node.border_color = style.border_color;
+    node.border_color2 = style.border_color2;
+    node.border_gradient_vector = style.border_gradient_vector;
+    node.border_gradient_offset = style.border_gradient_offset;
     node.border_size = style.border_size;
     node.border_inset = style.border_inset;
     node.outer_shadow_blur = style.outer_shadow_blur;
@@ -223,7 +235,13 @@ DrawCheckmark :: (draw_list : *DrawList, node : *Node) {
         shape=shape,
         position=position,
         background_color=node.background_color,
+        background_color2=node.background_color2,
+        background_gradient_vector=node.background_gradient_vector,
+        background_gradient_offset=node.background_gradient_offset,
         border_color=node.border_color,
+        border_color2=node.border_color2,
+        border_gradient_vector=node.border_gradient_vector,
+        border_gradient_offset=node.border_gradient_offset,
         border_size=node.border_size,
         border_inset=node.border_inset,
         outer_shadow_color=node.outer_shadow_color,

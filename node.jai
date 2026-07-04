@@ -156,7 +156,13 @@ Node :: struct {
     using styling : struct {
         corner_radiuses : Vec4f;
         background_color : RGBA8;
+        background_color2 : RGBA8;
+        background_gradient_offset : float;
+        background_gradient_vector : Vec2f;
         border_color : RGBA8;
+        border_color2 : RGBA8;
+        border_gradient_offset : float;
+        border_gradient_vector : Vec2f;
         border_size : float;
         border_inset : float;
         outer_shadow_blur : float;
@@ -166,6 +172,9 @@ Node :: struct {
         inner_shadow_offset : Vec2f;
         inner_shadow_color : RGBA8;
         text_color : RGBA8;
+        text_color2 : RGBA8;
+        text_gradient_offset : float;
+        text_gradient_vector : Vec2f;
         text_effects : TextEffects;
     };
 

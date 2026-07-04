@@ -148,10 +148,13 @@ void main() {
 
     ShapeDrawing drawing = u_shape_drawings[in_shape_drawing_index];
 
+    vec2 bounds_size = drawing.bounds.zw - drawing.bounds.xy;
     float border_size = drawing.border_size_and_inset.x;
     float border_inset = drawing.border_size_and_inset.y;
     vec4 background_color = ColorVec4(drawing.background_color);
+    vec4 background_color2 = ColorVec4(drawing.background_color2);
     vec4 border_color = ColorVec4(drawing.border_color);
+    vec4 border_color2 = ColorVec4(drawing.border_color2);
     vec4 outer_shadow_color = ColorVec4(drawing.outer_shadow_color);
     vec2 outer_shadow_offset = drawing.outer_shadow_offset;
     float outer_shadow_blur = drawing.outer_shadow_blur;
@@ -176,6 +179,8 @@ void main() {
     }
 
     float background = FxSolidColor(d, aa);
+    background_color = FxGradientColorInBox(p, drawing.position, bounds_size, drawing.background_gradient_offset, drawing.background_gradient_vector, background_color, background_color2);
+
     out_color = BlendEffect(out_color, background_color, background);
 
     if (inner_shadow_color.a > 0) {
@@ -191,10 +196,12 @@ void main() {
     }
 
     float border = FxStrokeColor(d, aa, border_size, border_inset);
+    border_color = FxGradientColorInBox(p, drawing.position, bounds_size, drawing.border_gradient_offset, drawing.border_gradient_vector, border_color, border_color2);
+
     out_color = BlendEffect(out_color, border_color, border);
 
-    if (drawing.clip_box_index >= 0) {
-        ClipBox clip = u_clip_boxes[drawing.clip_box_index];
-        out_color *= SampleClipBox(clip, p, aa);
-    }
+    // if (drawing.clip_box_index >= 0) {
+    //     ClipBox clip = u_clip_boxes[drawing.clip_box_index];
+    //     out_color *= SampleClipBox(clip, p, aa);
+    // }
 }
