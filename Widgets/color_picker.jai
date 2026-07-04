@@ -464,6 +464,8 @@ ColoredSlider :: (parent : *Node, value : *float, min : float, max : float, step
                 DrawTriangle(draw_list, .{p0=p0, p1=p1, p2=p2, c0=c0, c1=c1, c2=c1});
             }
         } else {
+            // We do not use gradients because gradients use smoothstep instead of linear interpolation
+
             c0 := start_color;
             c1 := ifx axis == .X then start_color else end_color;
             c2 := end_color;
