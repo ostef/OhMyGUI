@@ -344,7 +344,7 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
         log_error("Too many things to draw % of % bytes: % clip boxes, % boxes, % glyphs, % triangles, % shape drawings, % shapes\n", total_size, g_frame_data_buffer_size, clip_boxes.count, boxes.count, glyphs.count, triangles.count, shape_drawings.count, shapes.count);
         return;
     } else if total_size > xx (g_frame_data_buffer_size * 0.75) {
-        log_error("Exceeding 75\% (%\%) of the frame data buffer capacity, % of % bytes: % clip boxes, % boxes, % glyphs, % triangles, % shape drawings, % shapes\n", cast(int, total_size / cast(float, g_frame_data_buffer_size) * 100), total_size, g_frame_data_buffer_size, clip_boxes.count, boxes.count, glyphs.count, triangles.count, shape_drawings.count, shapes.count);
+        log_error("Exceeding 75\% of the frame data buffer capacity, % of % bytes (%\%): % clip boxes, % boxes, % glyphs, % triangles, % shape drawings, % shapes\n", total_size, g_frame_data_buffer_size, cast(int, total_size / cast(float, g_frame_data_buffer_size) * 100), clip_boxes.count, boxes.count, glyphs.count, triangles.count, shape_drawings.count, shapes.count);
     }
 
     memcpy(buffer_ptr + clip_boxes_offset, clip_boxes.data, clip_boxes_size);
