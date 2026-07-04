@@ -871,8 +871,8 @@ SendDrawCommands :: (draw_list : *DrawList, viewport_w : u32, viewport_h : u32) 
 
         num_vertices : u32;
 
-        msg := tprint("Draw Call, % (% instances)", it.kind, num_instances);
-        glDebugMessageInsert(GL_DEBUG_SOURCE_APPLICATION, GL_DEBUG_TYPE_MARKER, 0, GL_DEBUG_SEVERITY_NOTIFICATION, xx msg.count, xx msg.data);
+        // msg := tprint("Draw Call, % (% instances)", it.kind, num_instances);
+        // glDebugMessageInsert(GL_DEBUG_SOURCE_APPLICATION, GL_DEBUG_TYPE_MARKER, 0, GL_DEBUG_SEVERITY_NOTIFICATION, xx msg.count, xx msg.data);
 
         SetShader :: (shader : Shader) #expand {
             if `current_shader != shader.handle {
