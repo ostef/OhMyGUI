@@ -578,7 +578,12 @@ GetPopupNode :: inline (window : *Window, id : ID) -> *Node, is_new : bool {
 }
 
 BringForward :: (node : *Node) {
-    node.z_index = 0x7fffffff;
+    max : s32;
+    for :Children node.parent {
+        max = Max(max, it.z_index);
+    }
+
+    node.z_index = max + 1;
 }
 
 SetHitTest :: inline (node : *Node, hit_test : type_of(Node.hit_test)) {
