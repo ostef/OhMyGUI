@@ -839,8 +839,12 @@ TextInput :: (parent : *Node, flags : TextInputFlags = 0, style : *TextInputStyl
                     glyph_rect.xy = text_node.layout_last_frame.rect.xy + iter.pen - Vec2f.{0, iter.font.ascent * iter.font_size};
                     glyph_rect.zw = glyph_rect.xy + Vec2f.{it.hori_advance, iter.font.ascent + iter.font.descent} * iter.font_size;
 
-                    if is_selecting && mouse.x >= glyph_rect.x && mouse.x < glyph_rect.z {
-                        SetCursor(input, xx it_index, !input_button.pressed);
+                    if is_selecting {
+                        if mouse.x >= glyph_rect.x && mouse.x < (glyph_rect.x + glyph_rect.z) * 0.5 {
+                            SetCursor(input, xx it_index, !input_button.pressed);
+                        } else if mouse.x >= (glyph_rect.x + glyph_rect.z) * 0.5 && mouse.x < glyph_rect.z {
+                            SetCursor(input, xx (it_index + 1), !input_button.pressed);
+                        }
                     }
 
                     if it_index == input.cursor {
