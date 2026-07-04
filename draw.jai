@@ -784,70 +784,40 @@ SendDrawCommands :: (draw_list : *DrawList, viewport_w : u32, viewport_h : u32) 
         msg := tprint("Draw Call, % (% instances)", it.kind, num_instances);
         glDebugMessageInsert(GL_DEBUG_SOURCE_APPLICATION, GL_DEBUG_TYPE_MARKER, 0, GL_DEBUG_SEVERITY_NOTIFICATION, xx msg.count, xx msg.data);
 
+        SetShader :: (shader : Shader) #expand {
+            if `current_shader != shader.handle {
+                glUseProgram(shader.handle);
+                current_shader = shader.handle;
+
+                if shader.u_base_instance >= 0 {
+                    glUniform1i(shader.u_base_instance, xx `first_instance);
+                }
+                if shader.u_viewport_size >= 0 {
+                    glUniform2f(shader.u_viewport_size, xx `viewport_w, xx `viewport_h);
+                }
+            }
+        }
+
         if it.kind == {
         case .Boxes;
             num_vertices = 6;
             first_instance = it.first + draw_list.gpu_buffer_boxes_offset;
-
-            if current_shader != g_shader_box.handle {
-                glUseProgram(g_shader_box.handle);
-                current_shader = g_shader_box.handle;
-
-                if g_shader_box.u_base_instance >= 0 {
-                    glUniform1i(g_shader_box.u_base_instance, xx first_instance);
-                }
-                if g_shader_box.u_viewport_size >= 0 {
-                    glUniform2f(g_shader_box.u_viewport_size, xx viewport_w, xx viewport_h);
-                }
-            }
+            SetShader(g_shader_box);
 
         case .Glyphs;
             num_vertices = 6;
             first_instance = it.first + draw_list.gpu_buffer_glyphs_offset;
-
-            if current_shader != g_shader_glyph.handle {
-                glUseProgram(g_shader_glyph.handle);
-                current_shader = g_shader_glyph.handle;
-
-                if g_shader_glyph.u_base_instance >= 0 {
-                    glUniform1i(g_shader_glyph.u_base_instance, xx first_instance);
-                }
-                if g_shader_glyph.u_viewport_size >= 0 {
-                    glUniform2f(g_shader_glyph.u_viewport_size, xx viewport_w, xx viewport_h);
-                }
-            }
+            SetShader(g_shader_glyph);
 
         case .Triangles;
             num_vertices = 3;
             first_instance = it.first + draw_list.gpu_buffer_triangles_offset;
-
-            if current_shader != g_shader_triangle.handle {
-                glUseProgram(g_shader_triangle.handle);
-                current_shader = g_shader_triangle.handle;
-
-                if g_shader_triangle.u_base_instance >= 0 {
-                    glUniform1i(g_shader_triangle.u_base_instance, xx first_instance);
-                }
-                if g_shader_triangle.u_viewport_size >= 0 {
-                    glUniform2f(g_shader_triangle.u_viewport_size, xx viewport_w, xx viewport_h);
-                }
-            }
+            SetShader(g_shader_triangle);
 
         case .Shapes;
             num_vertices = 6;
             first_instance = it.first + draw_list.gpu_buffer_shape_drawings_offset;
-
-            if current_shader != g_shader_sdf.handle {
-                glUseProgram(g_shader_sdf.handle);
-                current_shader = g_shader_sdf.handle;
-
-                if g_shader_sdf.u_base_instance >= 0 {
-                    glUniform1i(g_shader_sdf.u_base_instance, xx first_instance);
-                }
-                if g_shader_sdf.u_viewport_size >= 0 {
-                    glUniform2f(g_shader_sdf.u_viewport_size, xx viewport_w, xx viewport_h);
-                }
-            }
+            SetShader(g_shader_sdf);
         }
 
         if current_texture != it.texture {
