@@ -181,8 +181,6 @@ Node :: struct {
     state_flags : NodeStateFlags;
 }
 
-#run print("%\n", size_of(Node));
-
 // for_expansion
 Children :: (node : *Node, body : Code, flags : For_Flags) #expand {
     #if flags & .REVERSE {
