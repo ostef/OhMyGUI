@@ -123,22 +123,32 @@ EditorFrame :: () {
                 OMG.MenuItem(help_menu, "About");
             }
 
-            minimize, minimize_node := OMG.Button(title_bar, OMG.SizePx(25), OMG.SizePx(25));
-            OMG.SetCornerRadius(minimize_node, 25 * 0.5);
+            Btn_Size :: 20.0;
+
+            minimize, minimize_node := OMG.Button(title_bar, OMG.SizePx(Btn_Size), OMG.SizePx(Btn_Size));
+            minimize_node.flags |= .NoPaddedClip;
+            OMG.SetCornerRadius(minimize_node, Btn_Size * 0.5);
             OMG.SetPadding(minimize_node, 5, 5);
             if minimize {
                 SDL_MinimizeWindow(g_window);
             }
 
-            maximize, maximize_node := OMG.Button(title_bar, OMG.SizePx(25), OMG.SizePx(25));
-            OMG.SetCornerRadius(maximize_node, 25 * 0.5);
+            maximize, maximize_node := OMG.Button(title_bar, OMG.SizePx(Btn_Size), OMG.SizePx(Btn_Size));
+            maximize_node.flags |= .NoPaddedClip;
+            OMG.SetCornerRadius(maximize_node, Btn_Size * 0.5);
             OMG.SetPadding(maximize_node, 5, 5);
             if maximize {
-                SDL_MaximizeWindow(g_window);
+                flags := SDL_GetWindowFlags(g_window);
+                if flags & SDL_WINDOW_MAXIMIZED {
+                    SDL_RestoreWindow(g_window);
+                } else {
+                    SDL_MaximizeWindow(g_window);
+                }
             }
 
-            close, close_node := OMG.Button(title_bar, OMG.SizePx(25), OMG.SizePx(25));
-            OMG.SetCornerRadius(close_node, 25 * 0.5);
+            close, close_node := OMG.Button(title_bar, OMG.SizePx(Btn_Size), OMG.SizePx(Btn_Size));
+            close_node.flags |= .NoPaddedClip;
+            OMG.SetCornerRadius(close_node, Btn_Size * 0.5);
             OMG.SetPadding(close_node, 5, 5);
             if close {
                 SDL_Quit();
@@ -149,7 +159,7 @@ EditorFrame :: () {
             OMG.SetBackgroundColor(minimize_icon, OMG.ChooseTextColor(base_background_color));
             OMG.SetDraw(minimize_icon, (draw_list : *OMG.DrawList, node : *OMG.Node) {
                 center := (node.rect.xy + node.rect.zw) * 0.5;
-                length := node.size.x * 0.5;
+                length := node.size.x * 0.7;
 
                 OMG.DrawBox(draw_list, .{
                     position=center,
@@ -162,17 +172,54 @@ EditorFrame :: () {
             maximize_icon := OMG.GetNode(maximize_node);
             OMG.SetSize(maximize_icon, OMG.SizeFill(), OMG.SizeFill());
             OMG.SetBackgroundColor(maximize_icon, OMG.ChooseTextColor(base_background_color));
-            OMG.SetDraw(maximize_icon, (draw_list : *OMG.DrawList, node : *OMG.Node) {
-                center := (node.rect.xy + node.rect.zw) * 0.5;
-                length := sqrt(0.5 * node.size.x * node.size.x) - 2;
 
-                OMG.DrawBox(draw_list, .{
-                    position=center,
-                    size=.{length, length},
-                    border_color=node.background_color,
-                    border_size=1,
+            if SDL_GetWindowFlags(g_window) & SDL_WINDOW_MAXIMIZED {
+                OMG.SetDraw(maximize_icon, (draw_list : *OMG.DrawList, node : *OMG.Node) {
+                    size := OMG.Vec2f.{1,1} * sqrt(0.5 * node.size.x * node.size.x);
+                    center := (node.rect.xy + node.rect.zw) * 0.5;
+                    rect := OMG.Vec4f.{xy=center - size * 0.5, zw=center + size * 0.5};
+
+                    p0 := OMG.Vec2f.{size.x * 0.3, 0};
+                    p1 := OMG.Vec2f.{size.x, 0};
+                    p2 := OMG.Vec2f.{size.x, size.y - size.y * 0.3};
+
+                    tri_center := (p0 + p1 + p2) / 3;
+                    p0 = tri_center + OMG.Rotate(p0 - tri_center, PI);
+                    p1 = tri_center + OMG.Rotate(p1 - tri_center, PI);
+                    p2 = tri_center + OMG.Rotate(p2 - tri_center, PI);
+
+                    OMG.DrawTriangle(draw_list, rect.xy + p0, rect.xy + p1, rect.xy + p2, node.background_color);
+
+                    p0 = OMG.Vec2f.{0, size.y * 0.3};
+                    p1 = OMG.Vec2f.{0, size.y};
+                    p2 = OMG.Vec2f.{size.x - size.x * 0.3, size.y};
+
+                    tri_center = (p0 + p1 + p2) / 3;
+                    p0 = tri_center + OMG.Rotate(p0 - tri_center, PI);
+                    p1 = tri_center + OMG.Rotate(p1 - tri_center, PI);
+                    p2 = tri_center + OMG.Rotate(p2 - tri_center, PI);
+
+                    OMG.DrawTriangle(draw_list, rect.xy + p0, rect.xy + p1, rect.xy + p2, node.background_color);
                 });
-            });
+            } else {
+                OMG.SetDraw(maximize_icon, (draw_list : *OMG.DrawList, node : *OMG.Node) {
+                    size := OMG.Vec2f.{1,1} * sqrt(0.5 * node.size.x * node.size.x);
+                    center := (node.rect.xy + node.rect.zw) * 0.5;
+                    rect := OMG.Vec4f.{xy=center - size * 0.5, zw=center + size * 0.5};
+
+                    p0 := OMG.Vec2f.{size.x * 0.3, 0};
+                    p1 := OMG.Vec2f.{size.x, 0};
+                    p2 := OMG.Vec2f.{size.x, size.y - size.y * 0.3};
+
+                    OMG.DrawTriangle(draw_list, rect.xy + p0, rect.xy + p1, rect.xy + p2, node.background_color);
+
+                    p0 = OMG.Vec2f.{0, size.y * 0.3};
+                    p1 = OMG.Vec2f.{0, size.y};
+                    p2 = OMG.Vec2f.{size.x - size.x * 0.3, size.y};
+
+                    OMG.DrawTriangle(draw_list, rect.xy + p0, rect.xy + p1, rect.xy + p2, node.background_color);
+                });
+            }
 
             close_icon := OMG.GetNode(close_node);
             OMG.SetSize(close_icon, OMG.SizeFill(), OMG.SizeFill());
@@ -305,6 +352,6 @@ END
         }
     }
 
-    // subwindow := OMG.Subwindow(window, "Hello Subwindow", "hello_subwindow", .{550, 400});
-    // OMG.ColorPicker(subwindow, *g_color);
+    subwindow := OMG.Subwindow(window, "Hello Subwindow", "hello_subwindow", .{550, 400});
+    OMG.ColorPicker(subwindow, *g_color);
 }
