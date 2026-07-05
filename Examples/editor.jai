@@ -151,7 +151,7 @@ EditorFrame :: () {
             OMG.SetCornerRadius(close_node, Btn_Size * 0.5);
             OMG.SetPadding(close_node, 5, 5);
             if close {
-                SDL_Quit();
+                g_quit = true;
             }
 
             minimize_icon := OMG.GetNode(minimize_node);

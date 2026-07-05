@@ -10,6 +10,7 @@ using,only(.["*"]) OMG;
 #load "editor.jai";
 #load "colors.jai";
 
+g_quit := false;
 g_window : *SDL_Window;
 g_frame_in_flight : int;
 g_frame_syncs : [2]GLsync;
@@ -43,9 +44,8 @@ main :: () {
     defer OMG.TerminateGL();
 
     program_start := current_time_monotonic();
-    quit := false;
     g_delta_time = 1 / 60.0;
-    while !quit {
+    while !g_quit {
         reset_temporary_storage();
 
         frame_start := current_time_monotonic();
@@ -59,7 +59,7 @@ main :: () {
         event : SDL_Event;
         while SDL_PollEvent(*event) {
             if event.type == SDL_QUIT {
-                quit = true;
+                g_quit = true;
             }
 
             OMG.HandleEvent(event);
