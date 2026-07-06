@@ -21,6 +21,7 @@ Tree based immediate mode GUI library in Jai inspired by Clay and PanGui. For no
 * Keyboard navigation
 * Clip fade-out
 * Custom drawing commands and shaders
+* Disabling
 
 Widgets:
 * Tables
