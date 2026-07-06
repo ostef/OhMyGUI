@@ -276,18 +276,14 @@ EditorFrame :: () {
                     OMG.Checkbox(password_field, *g_show_password);
                 }
 
-                label_and_slider := OMG.GetNode(main_viewport);
+                sliders := OMG.GetNode(main_viewport);
                 {
-                    OMG.SetDraw(label_and_slider, null);
-                    OMG.SetSize(label_and_slider, OMG.SizeFill(0.3), OMG.SizeFit());
-                    OMG.SetLayout(label_and_slider, .LeftToRight);
-                    OMG.SetChildAlign(label_and_slider, 0, 0.5);
-                    OMG.SetChildGap(label_and_slider, 10, 0);
+                    OMG.SetSize(sliders, OMG.SizeFill(0.3), OMG.SizeFit());
+                    OMG.SetLayout(sliders, .TopToBottom);
+                    OMG.SetChildGap(sliders, 0, 10);
 
-                    label := OMG.Text(label_and_slider, "Value: %", g_slider_value);
-                    OMG.SetWidth(label, OMG.SizeFill(0.5));
-
-                    OMG.Slider(label_and_slider, *g_slider_value, 0, 1, 0.1);
+                    OMG.Slider(sliders, *g_slider_value, 0, 1, 0.1);
+                    OMG.KnobSlider(sliders, *g_slider_value, 0, 1, 0.1);
                 }
 
                 OMG.HorizontalSeparator(main_viewport);
@@ -352,6 +348,6 @@ END
         }
     }
 
-    subwindow := OMG.Subwindow(window, "Hello Subwindow", "hello_subwindow", .{550, 400});
-    OMG.ColorPicker(subwindow, *g_color);
+    // subwindow := OMG.Subwindow(window, "Hello Subwindow", "hello_subwindow", .{550, 400});
+    // OMG.ColorPicker(subwindow, *g_color);
 }
