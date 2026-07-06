@@ -15,6 +15,7 @@ GetCrossAxis :: inline (axis : Axis) -> Axis {
 Size1D :: struct {
     Kind :: enum u8 {
         Pixels;
+        ParentPercent;
         FillParent;
         FitChildren;
     }
@@ -25,6 +26,10 @@ Size1D :: struct {
 
 SizePx :: inline (value : float) -> Size1D {
     return .{kind=.Pixels, value=value};
+}
+
+SizePercent :: inline (percent : float) -> Size1D {
+    return .{kind=.ParentPercent, value=percent};
 }
 
 SizeFill :: inline (ratio := 1.0) -> Size1D {
@@ -187,12 +192,12 @@ LayoutNodes :: (root : *Node) {
     SortChildren(root);
 
     LayoutFixedAndFitSizing(root, .X);
-    LayoutFillSizing(root, .X);
+    LayoutFillAndPercentSizing(root, .X);
 
     LayoutWrapText(root);
 
     LayoutFixedAndFitSizing(root, .Y);
-    LayoutFillSizing(root, .Y);
+    LayoutFillAndPercentSizing(root, .Y);
 
     root.relative_position = .{0,0};
     root.rect.xy = .{0,0};
@@ -249,8 +254,22 @@ LayoutFixedAndFitSizing :: (node : *Node, axis : Axis) {
     }
 }
 
-LayoutFillSizing :: (node : *Node, axis : Axis) {
+LayoutFillAndPercentSizing :: (node : *Node, axis : Axis) {
     layout_axis := GetLayoutAxis(node);
+
+    for :Children node {
+        if it.desired_size[axis].kind != .ParentPercent {
+            continue;
+        }
+
+        prev_size := it.size[axis];
+
+        it.size[axis] = max(it.desired_size[axis].value * (node.size[axis] - node.padding.xy[axis] - node.padding.zw[axis]), prev_size);
+        it.size[axis] = clamp(it.size[axis], it.min_size[axis], it.max_size[axis]);
+
+        added_size := it.size[axis] - prev_size;
+        node.children_size[axis] += added_size;
+    }
 
     if node.child_layout_mode == .None {
         // Warning: the weight does not take into account siblings in None layout mode!
@@ -337,7 +356,7 @@ LayoutFillSizing :: (node : *Node, axis : Axis) {
             node.children_size[axis] = max(node.children_size[axis], it.size[axis]);
         }
 
-        LayoutFillSizing(it, axis);
+        LayoutFillAndPercentSizing(it, axis);
     }
 }
 
