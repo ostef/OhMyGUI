@@ -38,7 +38,17 @@ MenuItem :: (parent : *Node, text : string, selected := false, style : *ButtonSt
     }
 }
 
-Menu :: (parent : *Node, text : string, menu_item_style : *ButtonStyle = null, menu_style : *BoxStyle = null, location := #caller_location) -> menu : *Node, menu_item : *Node {
+MenuStyle :: struct {
+    using background : BoxStyle;
+    max_height_px := FLOAT32_INFINITY;
+}
+
+Apply :: inline (node : *Node, style : MenuStyle) {
+    Apply(node, style.background);
+    SetMaxHeight(node, style.max_height_px);
+}
+
+Menu :: (parent : *Node, text : string, menu_item_style : *ButtonStyle = null, menu_style : *MenuStyle = null, location := #caller_location) -> menu : *Node, menu_item : *Node {
     EnsureStyle(*menu_item_style, "menu_item");
     EnsureStyle(*menu_style, "menu");
 
@@ -76,8 +86,8 @@ Menu :: (parent : *Node, text : string, menu_item_style : *ButtonStyle = null, m
         {
             SetLayout(menu, .TopToBottom);
             SetSize(menu, SizeFit(), SizeFit());
-            SetMinSize(menu, 50, 0);
-            SetMaxSize(menu, 150, 200);
+            SetMinWidth(menu, 50);
+            SetMaxWidth(menu, 150);
 
             BringForward(menu);
 
@@ -89,7 +99,7 @@ Menu :: (parent : *Node, text : string, menu_item_style : *ButtonStyle = null, m
     return menu, menu_item;
 }
 
-SubMenu :: (parent : *Node, text : string, menu_item_style : *ButtonStyle = null, menu_style : *BoxStyle = null, location := #caller_location) -> menu : *Node, menu_item : *Node {
+SubMenu :: (parent : *Node, text : string, menu_item_style : *ButtonStyle = null, menu_style : *MenuStyle = null, location := #caller_location) -> menu : *Node, menu_item : *Node {
     EnsureStyle(*menu_item_style, "menu_item");
     EnsureStyle(*menu_style, "menu");
 
@@ -128,8 +138,8 @@ SubMenu :: (parent : *Node, text : string, menu_item_style : *ButtonStyle = null
         {
             SetLayout(menu, .TopToBottom);
             SetSize(menu, SizeFit(), SizeFit());
-            SetMinSize(menu, 50, 0);
-            SetMaxSize(menu, 150, 200);
+            SetMinWidth(menu, 50);
+            SetMaxWidth(menu, 150);
 
             BringForward(menu);
 

@@ -422,7 +422,7 @@ DefaultTheme :: struct {
     checkbox : CheckboxStyle;
     menu_bar : BoxStyle;
     menu_item : ButtonStyle;
-    menu : BoxStyle;
+    menu : MenuStyle;
     separator : BoxStyle;
     subwindow : SubwindowStyle;
     color_picker : ColorPickerStyle;
@@ -697,6 +697,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
     {
         using theme.menu;
 
+        max_height_px = 200;
         corner_radiuses = .{3,3,3,3};
         padding = .{2,2,2,2};
 
