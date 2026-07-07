@@ -7,8 +7,8 @@ SliderStateStyle :: struct {
 
 SliderStyle :: struct {
     using _ : StateStyle(SliderStateStyle);
-    background_inset : s8;
     background_size : float;
+    handle_outside_background : bool;
     handle_size : Vec2f;
     text_align := Vec2f.{0.5,0.5};
 }
@@ -45,6 +45,21 @@ KnobSlider :: (
     return ok, slider, background, handle;
 }
 
+FillSlider :: (
+    parent : *Node,
+    value : *$T,
+    min : T, max : T, step : T,
+    axis := Axis.X,
+    to_string : (T) -> string = null,
+    style : *SliderStyle = null,
+    location := #caller_location
+) -> bool, slider : *Node, background : *Node, handle : *Node {
+    EnsureStyle(*style, "fill_slider");
+    ok, slider, background, handle := Slider(parent, value, min, max, step, axis, to_string, style, location);
+
+    return ok, slider, background, handle;
+}
+
 Slider :: (
     parent : *Node,
     value : *$T,
@@ -71,8 +86,6 @@ Slider :: (
         value.* = xx fvalue;
     }
 
-    base_background_padding := Vec2f.{xx style.normal.background.padding.xy[axis], xx style.normal.background.padding.zw[axis]};
-
     slider, background, fill, handle, text : *Node;
     interacting := false;
 
@@ -84,18 +97,22 @@ Slider :: (
         slider.child_align[cross] = 0.5;
         slider.desired_size[axis] = SizeFill();
         slider.desired_size[cross] = SizeFit();
-        slider.padding.xy[axis] = style.background_inset;
-        slider.padding.zw[axis] = style.background_inset;
+        if style.handle_outside_background {
+            slider.padding.xy[axis] = xx (style.handle_size.x * 0.5);
+            slider.padding.zw[axis] = xx (style.handle_size.x * 0.5);
+        }
         slider.flags |= .NoPaddedClip;
 
         scroll := ScrollBehavior(slider);
         if scroll.y != 0 {
             fvalue = clamp(fvalue - sign(fmax - fmin) * sign(scroll.y) * cast(float, step), real_min, real_max);
             fvalue = Snap(fvalue, fstep);
+
             interacting = true;
         } else if scroll.x != 0 {
             fvalue = clamp(fvalue - sign(fmax - fmin) * sign(scroll.x) * cast(float, step), real_min, real_max);
             fvalue = Snap(fvalue, fstep);
+
             interacting = true;
         }
 
@@ -111,7 +128,13 @@ Slider :: (
 
         using _ := ButtonBehavior(slider);
 
+        base_background_padding := Vec2f.{xx style.normal.background.padding.xy[axis], xx style.normal.background.padding.zw[axis]};
+
         offset_max := background.layout_last_frame.size[axis] - base_background_padding.x - base_background_padding.y;
+        if !style.handle_outside_background {
+            offset_max -= style.handle_size.x;
+        }
+
         if slider.state_flags & .Focused && IsMouseButtonPressed(.Left) {
             SetMouseCapture(slider);
             SetMouseFocus(slider);
@@ -119,16 +142,18 @@ Slider :: (
             held = true;
 
             mouse := GetMousePosition(slider.window)[axis];
-            new_offset := mouse - (background.layout_last_frame.rect.xy[axis] + base_background_padding.x + style.background_inset);
+            new_offset := mouse - (background.layout_last_frame.rect.xy[axis] + base_background_padding.x);
             new_value := lerp(fmin, fmax, clamp(new_offset / offset_max, 0, 1));
 
             fvalue = Snap(new_value, fstep);
+
             interacting = true;
         }
 
         if pressed {
             context.omg.mouse_captured_node_value = .{};
             context.omg.mouse_captured_node_value.xy[axis] = InverseLerp(fmin, fmax, fvalue) * offset_max;
+
             interacting = true;
         }
 
@@ -140,6 +165,7 @@ Slider :: (
             new_value := lerp(fmin, fmax, clamp(new_offset / offset_max, 0, 1));
 
             fvalue = Snap(new_value, fstep);
+
             interacting = true;
         }
 
@@ -148,11 +174,15 @@ Slider :: (
             SetSize(fill, SizePercent(fvalue / (fmax - fmin)), SizeFill());
         }
 
-        handle = GetNode(slider, "handle");
+        handle_parent := ifx style.handle_outside_background then slider else background;
+        handle = GetNode(handle_parent, "handle");
         {
             SetSize(handle, SizePx(style.handle_size[axis]), SizePx(style.handle_size[cross]));
 
-            handle.offset[axis] = InverseLerp(fmin, fmax, fvalue) * offset_max - style.background_inset;
+            handle.offset[axis] = InverseLerp(fmin, fmax, fvalue) * offset_max;
+            if style.handle_outside_background {
+                handle.offset[axis] -= style.handle_size.x * 0.5;
+            }
         }
 
         text_area := GetNode(slider, "text_area");
@@ -183,7 +213,30 @@ Slider :: (
     return interacting, slider, background, handle;
 }
 
-Scrollbar :: (parent : *Node, target : *Node, axis : Axis, style : *SliderStyle = null, location := #caller_location) -> background : *Node, handle : *Node {
+ScrollbarStateStyle :: struct {
+    background : BoxStyle;
+    handle : BoxStyle;
+}
+
+ScrollbarStyle :: struct {
+    using _ : StateStyle(ScrollbarStateStyle);
+    background_size : float;
+    handle_size : Vec2f;
+}
+
+SetColors :: (using style : *ScrollbarStyle, base_background_color : RGBA8, base_handle_color : RGBA8) {
+    normal.background.background_color = base_background_color;
+    focused.background.background_color = base_background_color;
+    hot.background.background_color = base_background_color;
+    active.background.background_color = base_background_color;
+
+    normal.handle.background_color = base_handle_color;
+    focused.handle.background_color = Whiten(base_handle_color, 0.05);
+    hot.handle.background_color = Darken(base_handle_color, 0.05);
+    active.handle.background_color = Whiten(base_handle_color, 0.1);
+}
+
+Scrollbar :: (parent : *Node, target : *Node, axis : Axis, style : *ScrollbarStyle = null, location := #caller_location) -> background : *Node, handle : *Node {
     EnsureStyle(*style, "scrollbar");
 
     background, handle : *Node;

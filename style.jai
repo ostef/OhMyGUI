@@ -415,8 +415,9 @@ DefaultTheme :: struct {
     button_accent : ButtonStyle;
     toggle : ButtonStyle;
     slider : SliderStyle;
+    fill_slider : SliderStyle;
     knob_slider : SliderStyle;
-    scrollbar : SliderStyle;
+    scrollbar : ScrollbarStyle;
     text_input : TextInputStyle;
     checkbox : CheckboxStyle;
     menu_bar : BoxStyle;
@@ -548,16 +549,39 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         disabled = normal;
 
         SetColors(*theme.slider, MakeTone(base_background_color, 0.3), 0, base_accent_color);
-        // SetColors(*theme.slider, MakeTone(base_background_color, 0.3), Whiten(base_accent_color, 0.1), base_accent_color);
     }
     SetStyle(theme, "slider", theme.slider);
+
+    {
+        using theme.fill_slider;
+
+        background_size = 25;
+
+        normal.background.corner_radiuses = .{5,5,5,5};
+        normal.background.padding = .{3,3,3,3};
+        normal.background.border_size = 1;
+        normal.background.border_color = MakeTone(button_base_background_color, 0.3);
+        normal.background.inner_shadow_blur = 5;
+        normal.background.inner_shadow_color = SetAlpha(Darken(button_base_background_color, 0.2), 0.7);
+        normal.fill.corner_radiuses = .{3,3,3,3};
+        normal.handle.corner_radiuses = .{3,3,3,3};
+        normal.text = theme.text;
+
+        focused = normal;
+        hot = normal;
+        active = normal;
+        disabled = normal;
+
+        SetColors(*theme.fill_slider, MakeTone(base_background_color, 0.3), Whiten(base_accent_color, 0.1), 0);
+    }
+    SetStyle(theme, "fill_slider", theme.fill_slider);
 
     {
         using theme.knob_slider;
 
         background_size = 8;
         handle_size = .{15,15};
-        background_inset = xx (handle_size.x * 0.5);
+        handle_outside_background = true;
 
         normal.background.corner_radiuses = Vec4f.{1,1,1,1} * background_size * 0.5;
         normal.fill.corner_radiuses = Vec4f.{1,1,1,1} * background_size * 0.5;
@@ -585,7 +609,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         active = normal;
         disabled = normal;
 
-        SetColors(*theme.scrollbar, MakeTone(base_background_color, 0.05), 0, MakeTone(base_background_color, 0.5));
+        SetColors(*theme.scrollbar, MakeTone(base_background_color, 0.05), MakeTone(base_background_color, 0.5));
 
         active.handle.background_color = Whiten(base_accent_color, 0.1);
     }
@@ -775,6 +799,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         slider_base : SliderStyle;
         slider_base.background_size = 21;
         slider_base.handle_size = .{8,25};
+        slider_base.handle_outside_background = true;
 
         slider_base.normal.background.corner_radiuses = .{4,4,4,4};
         slider_base.normal.background.border_size = 1;

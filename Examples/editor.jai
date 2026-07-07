@@ -283,6 +283,7 @@ EditorFrame :: () {
                     OMG.SetChildGap(sliders, 0, 10);
 
                     OMG.Slider(sliders, *g_slider_value, 0, 1, 0.1);
+                    OMG.FillSlider(sliders, *g_slider_value, 0, 1, 0.1);
                     OMG.KnobSlider(sliders, *g_slider_value, 0, 1, 0.1);
                 }
 
@@ -348,6 +349,6 @@ END
         }
     }
 
-    // subwindow := OMG.Subwindow(window, "Hello Subwindow", "hello_subwindow", .{550, 400});
-    // OMG.ColorPicker(subwindow, *g_color);
+    subwindow := OMG.Subwindow(window, "Hello Subwindow", "hello_subwindow", .{550, 400});
+    OMG.ColorPicker(subwindow, *g_color);
 }
