@@ -35,6 +35,7 @@ Context :: struct {
     windows : *Window;
     fonts : *Font;
     node_pool : Bucket_Array(Node, 300);
+    user_data : *NodeUserData;
 
     theme : *Theme;
     id_offset_stack : [..]int;
@@ -175,6 +176,84 @@ WindowToScreen :: (window : *Window, rect : Vec4f) -> Vec4f {
     };
 }
 
+// for_expansion
+UserData :: (ctx : *Context, body : Code, flags : For_Flags) #expand {
+    `it := ctx.user_data;
+    `it_index := 0;
+
+    while it {
+        next := it.next;
+        defer it = next;
+
+        #insert body;
+    }
+}
+
+AddGlobalUserData :: inline ($T : Type, destroy : type_of(NodeUserData.destroy) = null) -> *T, is_new : bool, *NodeUserData {
+    ptr, is_new, data := GetGlobalUserData(T, true);
+    data.destroy = destroy;
+    return ptr, is_new, data;
+}
+
+AddGlobalUserData :: inline (str_id : string, $T : Type, destroy : type_of(NodeUserData.destroy) = null) -> *T, is_new : bool, *NodeUserData {
+    ptr, is_new, data := GetGlobalUserData(str_id, T, true);
+    data.destroy = destroy;
+    return ptr, is_new, data;
+}
+
+AddGlobalUserData :: inline (id : ID, $T : Type, destroy : type_of(NodeUserData.destroy) = null) -> *T, is_new : bool, *NodeUserData {
+    ptr, is_new, data := GetGlobalUserData(id, T, true);
+    data.destroy = destroy;
+    return ptr, is_new, data;
+}
+
+AddGlobalUserData :: (id : ID, size : int, destroy : type_of(NodeUserData.destroy) = null) -> *void, is_new : bool, *NodeUserData {
+    ptr, is_new, data := GetGlobalUserData(id, size, true);
+    data.destroy = destroy;
+    return ptr, is_new, data;
+}
+
+GetGlobalUserData :: inline ($T : Type, create := false) -> *T, is_new : bool, *NodeUserData {
+    ptr, is_new, data := GetGlobalUserData(cast(ID, type_info(T)), T, create);
+    return ptr, is_new, data;
+}
+
+GetGlobalUserData :: inline (str_id : string, $T : Type, create := false) -> *T, is_new : bool, *NodeUserData {
+    ptr, is_new, data := GetGlobalUserData(GetID(str_id, false), T, create);
+    return ptr, is_new, data;
+}
+
+GetGlobalUserData :: inline (id : ID, $T : Type, create := false) -> *T, is_new : bool, *NodeUserData {
+    ptr, is_new, data := GetGlobalUserData(id, size_of(T), create);
+    if is_new {
+        Initialize(cast(*T, ptr));
+    }
+
+    return xx ptr, is_new, data;
+}
+
+GetGlobalUserData :: (id : ID, size : int, create := false) -> *void, is_new : bool, *NodeUserData {
+    for :UserData context.omg {
+        if it.id == id {
+            return cast(*void, it + 1), false, it;
+        }
+    }
+
+    if !create {
+        return null, false, null;
+    }
+
+    ptr := alloc(size + size_of(NodeUserData) ,, context.omg.general_purpose_allocator);
+
+    list_node := cast(*NodeUserData, ptr);
+    list_node.id = id;
+
+    list_node.next = context.omg.user_data;
+    context.omg.user_data = list_node;
+
+    return cast(*void, list_node + 1), true, list_node;
+}
+
 Init :: () {
     context.omg = New(Context);
     context.omg.general_purpose_allocator = context.allocator;
@@ -207,6 +286,14 @@ Terminate :: () {
 
     while context.omg.fonts {
         DestroyFont(context.omg.fonts);
+    }
+
+    for :UserData context.omg {
+        if it.destroy {
+            it.destroy(null, cast(*void, it + 1));
+        }
+
+        free(it ,, context.omg.general_purpose_allocator);
     }
 
     array_free(context.omg.id_offset_stack);
@@ -328,6 +415,9 @@ NewFrame :: (delta_time : float) {
 }
 
 Render :: () {
+    // @Todo: find a way to not hardcode this
+    ColorPickerSubwindow();
+
     omg := context.omg;
     omg.layout_time_last_frame = 0;
 
