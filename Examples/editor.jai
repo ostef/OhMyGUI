@@ -287,7 +287,7 @@ EditorFrame :: () {
                     OMG.KnobSlider(sliders, *g_slider_value, 0, 1, 0.1);
                 }
 
-                OMG.HorizontalSeparator(main_viewport);
+                OMG.Separator(main_viewport);
 
 Text :: #string END
 The quick brown fox jumps over the lazy dog?
