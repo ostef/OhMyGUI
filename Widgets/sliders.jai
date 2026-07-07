@@ -98,8 +98,8 @@ Slider :: (
         slider.desired_size[axis] = SizeFill();
         slider.desired_size[cross] = SizeFit();
         if style.handle_outside_background {
-            slider.padding.xy[axis] = xx (style.handle_size.x * 0.5);
-            slider.padding.zw[axis] = xx (style.handle_size.x * 0.5);
+            slider.padding.xy[axis] = xx ceil(style.handle_size.x * 0.5);
+            slider.padding.zw[axis] = xx ceil(style.handle_size.x * 0.5);
         }
         slider.flags |= .NoPaddedClip;
 
