@@ -426,6 +426,7 @@ DefaultTheme :: struct {
     separator : BoxStyle;
     subwindow : SubwindowStyle;
     color_picker : ColorPickerStyle;
+    combo : ComboStyle;
     tooltip : TooltipStyle;
 }
 
@@ -874,6 +875,25 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         preview.opacity_checkerboard_black = opacity_checkerboard_black;
     }
     SetStyle(theme, "color_picker", theme.color_picker);
+
+    {
+        using theme.combo;
+
+        button = theme.button;
+        popup = theme.menu;
+        item = theme.menu_item;
+
+        for * button.states {
+            it.background.border_size = 1;
+            it.background.border_color = MakeTone(button_base_background_color, 0.3);
+        }
+
+        popup.corner_radiuses.xy = .{};
+        button.active.background.corner_radiuses.zw = .{};
+
+        arrow_size = .{10, 6};
+    }
+    SetStyle(theme, "combo", theme.combo);
 
     {
         using theme.tooltip;

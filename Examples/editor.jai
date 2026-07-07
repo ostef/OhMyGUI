@@ -2,6 +2,12 @@ g_slider_value := 0.5;
 g_show_password := true;
 g_toggle_value : bool;
 g_color := OMG.Vec4f.{0,0,0,1};
+g_selected_fruit : enum {
+    Apple;
+    Strawberry;
+    Cherry;
+    Banana;
+};
 
 Panel :: (parent : *OMG.Node, str_id : string, title : string) -> *OMG.Node {
     base_background_color := OMG.GetStyle("base", OMG.BoxStyle).background_color;
@@ -285,6 +291,12 @@ EditorFrame :: () {
                     OMG.Slider(sliders, *g_slider_value, 0, 1, 0.1);
                     OMG.FillSlider(sliders, *g_slider_value, 0, 1, 0.1);
                     OMG.KnobSlider(sliders, *g_slider_value, 0, 1, 0.1);
+
+                    OMG.Separator(sliders);
+
+                    if OMG.EnumCombo(sliders, *g_selected_fruit) {
+                        print("Selected: %\n", g_selected_fruit);
+                    }
                 }
 
                 OMG.Separator(main_viewport);

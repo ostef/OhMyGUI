@@ -27,7 +27,6 @@ Widgets:
 * Tables
 * Radio buttons
 * Progress bar
-* Combo boxes
 * Multi line text input
 * Trees
 * Submenus

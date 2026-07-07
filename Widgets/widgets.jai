@@ -4,6 +4,7 @@
 #load "menus.jai";
 #load "subwindow.jai";
 #load "color_picker.jai";
+#load "combo.jai";
 
 LabelAndContentStyle :: struct {
     padding : Vec4b;
