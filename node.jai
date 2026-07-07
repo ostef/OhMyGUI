@@ -281,67 +281,67 @@ UserData :: (node : *Node, body : Code, flags : For_Flags) #expand {
 }
 
 AddUserData :: inline (node : *Node, $T : Type, destroy : type_of(NodeUserData.destroy) = null) -> *T, is_new : bool, *NodeUserData {
-    ptr, is_new, node := GetUserData(node, T, true);
-    node.destroy = destroy;
-    return ptr, is_new, node;
+    ptr, is_new, data := GetUserData(node, T, true);
+    data.destroy = destroy;
+    return ptr, is_new, data;
 }
 
 AddUserData :: inline (node : *Node, str_id : string, $T : Type, destroy : type_of(NodeUserData.destroy) = null) -> *T, is_new : bool, *NodeUserData {
-    ptr, is_new, node := GetUserData(node, str_id, T, true);
-    node.destroy = destroy;
-    return ptr, is_new, node;
+    ptr, is_new, data := GetUserData(node, str_id, T, true);
+    data.destroy = destroy;
+    return ptr, is_new, data;
 }
 
 AddUserData :: inline (node : *Node, id : ID, $T : Type, destroy : type_of(NodeUserData.destroy) = null) -> *T, is_new : bool, *NodeUserData {
-    ptr, is_new, node := GetUserData(node, id, T, true);
-    node.destroy = destroy;
-    return ptr, is_new, node;
+    ptr, is_new, data := GetUserData(node, id, T, true);
+    data.destroy = destroy;
+    return ptr, is_new, data;
 }
 
 AddUserData :: (node : *Node, id : ID, size : int, destroy : type_of(NodeUserData.destroy) = null) -> *void, is_new : bool, *NodeUserData {
-    ptr, is_new, node := GetUserData(node, id, size, true);
-    node.destroy = destroy;
-    return ptr, is_new, node;
+    ptr, is_new, data := GetUserData(node, id, size, true);
+    data.destroy = destroy;
+    return ptr, is_new, data;
 }
 
 SetUserData :: inline (node : *Node, value : $T, destroy : type_of(NodeUserData.destroy) = null) -> *T, is_new : bool, *NodeUserData {
-    ptr, is_new, node := GetUserData(node, T, true);
+    ptr, is_new, data := GetUserData(node, T, true);
     ptr.* = value;
-    node.destroy = destroy;
-    return ptr, is_new, node;
+    data.destroy = destroy;
+    return ptr, is_new, data;
 }
 
 SetUserData :: inline (node : *Node, str_id : string, value : $T, destroy : type_of(NodeUserData.destroy) = null) -> *T, is_new : bool, *NodeUserData {
-    ptr, is_new, node := GetUserData(node, str_id, T, true);
+    ptr, is_new, data := GetUserData(node, str_id, T, true);
     ptr.* = value;
-    node.destroy = destroy;
-    return ptr, is_new, node;
+    data.destroy = destroy;
+    return ptr, is_new, data;
 }
 
 SetUserData :: inline (node : *Node, id : ID, value : $T, destroy : type_of(NodeUserData.destroy) = null) -> *T, is_new : bool, *NodeUserData {
-    ptr, is_new, node := GetUserData(node, id, T, true);
+    ptr, is_new, data := GetUserData(node, id, T, true);
     ptr.* = value;
-    node.destroy = destroy;
-    return ptr, is_new, node;
+    data.destroy = destroy;
+    return ptr, is_new, data;
 }
 
 GetUserData :: inline (node : *Node, $T : Type, create := false) -> *T, is_new : bool, *NodeUserData {
-    ptr, is_new, node := GetUserData(node, cast(ID, type_info(T)), T, create);
-    return ptr, is_new, node;
+    ptr, is_new, data := GetUserData(node, cast(ID, type_info(T)), T, create);
+    return ptr, is_new, data;
 }
 
 GetUserData :: inline (node : *Node, str_id : string, $T : Type, create := false) -> *T, is_new : bool, *NodeUserData {
-    ptr, is_new, node := GetUserData(node, GetID(str_id, false), T, create);
-    return ptr, is_new, node;
+    ptr, is_new, data := GetUserData(node, GetID(str_id, false), T, create);
+    return ptr, is_new, data;
 }
 
 GetUserData :: inline (node : *Node, id : ID, $T : Type, create := false) -> *T, is_new : bool, *NodeUserData {
-    ptr, is_new, node := GetUserData(node, id, size_of(T), create);
+    ptr, is_new, data := GetUserData(node, id, size_of(T), create);
     if is_new {
         Initialize(cast(*T, ptr));
     }
 
-    return xx ptr, is_new, node;
+    return xx ptr, is_new, data;
 }
 
 GetUserData :: (node : *Node, id : ID, size : int, create := false) -> *void, is_new : bool, *NodeUserData {

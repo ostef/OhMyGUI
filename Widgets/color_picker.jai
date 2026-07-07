@@ -705,7 +705,14 @@ RGBToHSVPreserving :: (rgb : Vec3f, current : HSV) -> HSV {
     return hsv;
 }
 
-ColorPicker :: (parent : *Node, color : *Vec4f, previous_color := Vec4f.{0,0,0,0}, flags : ColorPickerFlags = 0, style : *ColorPickerStyle = null, location := #caller_location) -> *Node {
+ColorPicker :: (
+    parent : *Node,
+    color : *Vec4f,
+    previous_color := Vec4f.{0,0,0,0},
+    flags : ColorPickerFlags = 0,
+    style : *ColorPickerStyle = null,
+    location := #caller_location
+) -> ok : bool, cancel : bool, *Node {
     LabelSlider :: (
         parent : *Node,
         label : string,
@@ -957,9 +964,43 @@ ColorPicker :: (parent : *Node, color : *Vec4f, previous_color := Vec4f.{0,0,0,0
         ok, ok_node := Button(ok_cancel, "Ok", style=GetStyle("button_accent", ButtonStyle));
         SetMinWidth(ok_node, 60);
         cancel, cancel_node := Button(ok_cancel, "Cancel");
+
+        return ok, cancel, picker;
+    }
+}
+
+ColorPickerWindow :: struct {
+    opened : bool;
+    opened_in_window : *Window;
+    color : *Vec4f;
+    previous_color : Vec4f;
+}
+
+OpenGlobalColorPicker :: (window : *Window, color : *Vec4f) {
+    data := AddGlobalUserData("color_picker", ColorPickerWindow);
+
+    data.opened_in_window = window;
+    data.color = color;
+    data.previous_color = color.*;
+    data.opened = true;
+}
+
+ColorPickerSubwindow :: () {
+    using data := GetGlobalUserData("color_picker", ColorPickerWindow);
+    if !data || !opened || !color {
+        return;
     }
 
-    return picker;
+    subwindow := Subwindow(opened_in_window, "Color Picker", "color_picker", .{550, 400});
+    ok, cancel := ColorPicker(subwindow, color, previous_color);
+    if cancel {
+        color.* = previous_color;
+        color = null;
+        opened = false;
+    } else if ok {
+        color = null;
+        opened = false;
+    }
 }
 
 ColorInputFlags :: enum_flags {
@@ -1050,7 +1091,15 @@ ColorInput :: (
         }
 
         if !(flags & .NoPreview) {
-            ColorPreview(parent, ColorU32(value.*), *style.preview);
+            preview := ColorPreview(parent, ColorU32(value.*), *style.preview);
+
+            if !(flags & .NoColorPickerWindow) {
+                preview_button := ButtonBehavior(preview);
+
+                if preview_button.released {
+                    OpenGlobalColorPicker(parent.window, value);
+                }
+            }
         }
     }
 

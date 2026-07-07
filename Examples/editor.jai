@@ -362,7 +362,4 @@ END
             }
         }
     }
-
-    subwindow := OMG.Subwindow(window, "Hello Subwindow", "hello_subwindow", .{550, 400});
-    OMG.ColorPicker(subwindow, *g_color);
 }
