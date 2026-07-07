@@ -1,6 +1,4 @@
 #import "freetype";
-#import "Hash_Table";
-#import "String";
 
 // https://freetype.org/freetype2/docs/glyphs/glyphs-3.html
 
@@ -10,7 +8,7 @@ Font :: struct {
 
     filename : string;
     name : string;
-    glyph_map : Table(u32, Glyph);
+    glyph_map : HT.Table(u32, Glyph);
     resolution : u32;
     ascent, descent : float;
     space_advance : float;
@@ -172,7 +170,7 @@ DestroyFont :: (font : *Font) {
 
     glDeleteTextures(1, *font.texture);
 
-    deinit(*font.glyph_map);
+    HT.deinit(*font.glyph_map);
 
     free(font);
 }
@@ -191,7 +189,7 @@ GetFont :: (name : string) -> *Font {
 }
 
 GetGlyph :: (font : *Font, codepoint : u32) -> *Glyph {
-    return table_find_pointer(*font.glyph_map, codepoint);
+    return HT.table_find_pointer(*font.glyph_map, codepoint);
 }
 
 #scope_file
@@ -255,7 +253,7 @@ Fract16ToFloat :: inline (value : s64) -> float {
 }
 
 LoadGlyph :: (font : *Font, codepoint : u32, ft_face : FT_Face, packer : *RectPacker) -> *Glyph {
-    existing_glyph := table_find_pointer(*font.glyph_map, codepoint);
+    existing_glyph := HT.table_find_pointer(*font.glyph_map, codepoint);
     if existing_glyph {
         return existing_glyph;
     }
@@ -303,7 +301,7 @@ LoadGlyph :: (font : *Font, codepoint : u32, ft_face : FT_Face, packer : *RectPa
     };
     glyph.uv_rect.zw += glyph.uv_rect.xy;
 
-    return table_add(*font.glyph_map, codepoint, glyph);
+    return HT.table_add(*font.glyph_map, codepoint, glyph);
 }
 
 #scope_export

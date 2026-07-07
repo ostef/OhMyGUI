@@ -357,6 +357,29 @@ END
 
                         text := OMG.GetNode(add_component_node, "text");
                         text.text_size *= 1.1;
+
+                        table := OMG.Table(entity_inspector);
+                        OMG.TableAddColumn(table, "Name", "name");
+                        OMG.TableAddColumn(table, "Type", "type");
+                        OMG.TableAddColumn(table, "Value", "value");
+                        OMG.TableHeaderRow(table);
+
+                        for i : 0..10 {
+                            OMG.TableNextRow(table);
+
+                            cell := OMG.TableGetCell(table);
+                            OMG.Text(cell, "Row %, Col 0", i);
+
+                            OMG.TableNextColumn(table);
+
+                            cell = OMG.TableGetCell(table);
+                            OMG.Text(cell, "Row %, Col 1", i);
+
+                            OMG.TableNextColumn(table);
+
+                            cell = OMG.TableGetCell(table);
+                            OMG.Text(cell, "Row %, Col 2", i);
+                        }
                     }
                 }
             }

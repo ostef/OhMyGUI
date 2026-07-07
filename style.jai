@@ -1,9 +1,9 @@
 Theme :: struct {
-    styles : Table(string, Any);
+    styles : HT.Table(string, Any);
 }
 
 SetStyle :: (theme : *Theme, name : string, value : Any) {
-    table_set(*theme.styles, name, value);
+    HT.table_set(*theme.styles, name, value);
 }
 
 EnsureStyle :: inline (style : **$T, name : string) {
@@ -22,7 +22,7 @@ GetStyle :: (theme : *Theme, name : string, $T : Type) -> *T {
         return null;
     }
 
-    exists, any := table_find(*theme.styles, name);
+    exists, any := HT.table_find(*theme.styles, name);
     if !exists {
         return null;
     }

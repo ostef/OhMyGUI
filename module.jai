@@ -3,6 +3,8 @@
 #import "SDL";
 #import "Bucket_Array";
 #import "Print_Vars";
+HT :: #import "Hash_Table";
+#import "String";
 
 #load "math.jai";
 #load "color.jai";
