@@ -426,6 +426,7 @@ DefaultTheme :: struct {
     separator : BoxStyle;
     subwindow : SubwindowStyle;
     color_picker : ColorPickerStyle;
+    color_input : ColorInputStyle;
     combo : ComboStyle;
     tooltip : TooltipStyle;
 }
@@ -876,6 +877,19 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         preview.opacity_checkerboard_black = opacity_checkerboard_black;
     }
     SetStyle(theme, "color_picker", theme.color_picker);
+
+    {
+        using theme.color_input;
+
+        number_input_gap = 4;
+        preview_gap = 8;
+
+        label_and_content = theme.label_and_content;
+        label_and_content.text_fill = 0.2;
+        number_input = theme.text_input;
+        preview = theme.color_picker.preview;
+    }
+    SetStyle(theme, "color_input", theme.color_input);
 
     {
         using theme.combo;

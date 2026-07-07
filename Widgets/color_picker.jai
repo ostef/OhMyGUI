@@ -961,3 +961,98 @@ ColorPicker :: (parent : *Node, color : *Vec4f, previous_color := Vec4f.{0,0,0,0
 
     return picker;
 }
+
+ColorInputFlags :: enum_flags {
+    NoAlpha;
+    NoPreview;
+    NoColorPickerWindow;
+}
+
+ColorInputStyle :: struct {
+    label_and_content : LabelAndContentStyle;
+    number_input : TextInputStyle;
+    preview : ColorPreviewStyle;
+    number_input_gap : s8;
+    preview_gap : s8;
+}
+
+ColorInput :: (
+    parent : *Node,
+    value : *RGBA8,
+    flags : ColorInputFlags = 0,
+    style : *ColorInputStyle = null,
+    location := #caller_location
+) -> modified : bool {
+    rgba := ColorVec4f(value.*);
+
+    modified := ColorInput(parent, *rgba, flags, style, location);
+
+    if modified {
+        value.* = ColorU32(rgba);
+    }
+
+    return modified;
+}
+
+ColorInput :: (
+    parent : *Node,
+    value : *Vec3f,
+    flags : ColorInputFlags = 0,
+    style : *ColorInputStyle = null,
+    location := #caller_location
+) -> modified : bool {
+    rgba := Vec4f.{xyz=value.*, w=1};
+
+    modified := ColorInput(parent, *rgba, flags | .NoAlpha, style, location);
+
+    if modified {
+        value.* = rgba.xyz;
+    }
+
+    return modified;
+}
+
+ColorInput :: (
+    parent : *Node,
+    value : *Vec4f,
+    flags : ColorInputFlags = 0,
+    style : *ColorInputStyle = null,
+    location := #caller_location
+) -> modified : bool {
+    EnsureStyle(*style, "color_input");
+
+    modified := false;
+
+    parent = GetNode(parent, location);
+    {
+        SetSize(parent, SizeFill(), SizeFit());
+        SetLayout(parent, .LeftToRight);
+        SetChildGap(parent, style.preview_gap, 0);
+        SetChildAlign(parent, 0, 0.5);
+
+        inputs := GetNode(parent);
+        SetSize(inputs, SizeFill(), SizeFit());
+        SetLayout(inputs, .LeftToRight);
+        SetChildGap(inputs, style.number_input_gap, 0);
+
+        r_field := LabelAndContent(inputs, "R", style=*style.label_and_content);
+        modified |= FloatInput(r_field, *value.x, 0, 1, style=*style.number_input);
+
+        g_field := LabelAndContent(inputs, "G", style=*style.label_and_content);
+        modified |= FloatInput(g_field, *value.y, 0, 1, style=*style.number_input);
+
+        b_field := LabelAndContent(inputs, "B", style=*style.label_and_content);
+        modified |= FloatInput(b_field, *value.z, 0, 1, style=*style.number_input);
+
+        if !(flags & .NoAlpha) {
+            a_field := LabelAndContent(inputs, "A", style=*style.label_and_content);
+            modified |= FloatInput(a_field, *value.w, 0, 1, style=*style.number_input);
+        }
+
+        if !(flags & .NoPreview) {
+            ColorPreview(parent, ColorU32(value.*), *style.preview);
+        }
+    }
+
+    return modified;
+}

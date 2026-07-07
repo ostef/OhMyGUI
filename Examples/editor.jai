@@ -297,6 +297,8 @@ EditorFrame :: () {
                     if OMG.EnumCombo(sliders, *g_selected_fruit) {
                         print("Selected: %\n", g_selected_fruit);
                     }
+
+                    OMG.ColorInput(sliders, *g_color);
                 }
 
                 OMG.Separator(main_viewport);

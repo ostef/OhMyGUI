@@ -683,14 +683,14 @@ FloatInput :: (
         trailing_digits : int;
     } = .{trailing_digits};
 
-    FromString :: (str : string, user_data : *void) -> bool, T {
+    FromString :: (str : string, node : *Node, user_data : *void) -> bool, T {
         using _ := cast(*type_of(user), user_data);
 
         v, ok, remainder := string_to_float64(str);
         return ok && remainder.count == 0, xx v;
     }
 
-    ToString :: (value : T, user_data : *void) -> string {
+    ToString :: (value : T, node : *Node, user_data : *void) -> string {
         using _ := cast(*type_of(user), user_data);
         return trim(tprint("%", FormatFloat.{value=value, trailing_width=trailing_digits}));
     }
@@ -714,14 +714,14 @@ IntInput :: (
         min_digits : int;
     } = .{base, min_digits};
 
-    FromString :: (str : string, user_data : *void) -> bool, T {
+    FromString :: (str : string, node : *Node, user_data : *void) -> bool, T {
         using _ := cast(*type_of(user), user_data);
 
         v, ok, remainder := string_to_int(str, base=base, T=T);
         return ok && remainder.count == 0, v;
     }
 
-    ToString :: (value : T, user_data : *void) -> string {
+    ToString :: (value : T, node : *Node, user_data : *void) -> string {
         using _ := cast(*type_of(user), user_data);
         return tprint("%", FormatInt.{value=value, base=base, minimum_digits=min_digits});
     }
@@ -736,8 +736,8 @@ NumberInput :: (
     value : *$T/.[u8,s8,u16,s16,u32,s32,u64,s64,float32,float64],
     min : T, max : T,
     user_data := null,
-    from_string : (str : string, user_data := null) -> (bool, T) = null,
-    to_string : (value : T, user_data := null) -> string = null,
+    from_string : (str : string, node : *Node, user_data := null) -> (bool, T) = null,
+    to_string : (value : T, node : *Node, user_data := null) -> string = null,
     flags : TextInputFlags = 0,
     style : *TextInputStyle = null,
     location := #caller_location
@@ -748,26 +748,26 @@ NumberInput :: (
         str := GetTextInputResult(node);
 
         #if T == float32 {
-            f := ifx from_string then from_string else (str : string, user_data := null) -> (bool, T) { v, ok, remainder := string_to_float(str); return ok && remainder.count == 0, v; };
-            ok, result := f(str, user_data);
+            f := ifx from_string then from_string else (str : string, node : *Node, user_data := null) -> (bool, T) { v, ok, remainder := string_to_float(str); return ok && remainder.count == 0, v; };
+            ok, result := f(str, node, user_data);
             if ok {
                 value.* = result;
             }
         } else #if T == float64 {
-            f := ifx from_string then from_string else (str : string, user_data := null) -> (bool, T) { v, ok, remainder := string_to_float64(str); return ok && remainder.count == 0, v; };
+            f := ifx from_string then from_string else (str : string, node : *Node, user_data := null) -> (bool, T) { v, ok, remainder := string_to_float64(str); return ok && remainder.count == 0, v; };
             ok, result := f(str, user_data);
             if ok {
                 value.* = result;
             }
         } else {
-            f := ifx from_string then from_string else (str : string, user_data := null) -> (bool, T) { v, ok, remainder := string_to_int(str, T=T); return ok && remainder.count == 0, v; };
+            f := ifx from_string then from_string else (str : string, node : *Node, user_data := null) -> (bool, T) { v, ok, remainder := string_to_int(str, T=T); return ok && remainder.count == 0, v; };
             ok, result := f(str, user_data);
             if ok {
                 value.* = result;
             }
         }
     } else if !(node.state_flags & .Active) {
-        str := ifx to_string then to_string(value.*, user_data) else trim(tprint("%", value.*));
+        str := ifx to_string then to_string(value.*, node, user_data) else trim(tprint("%", value.*));
         SetTextInputResult(node, str);
     }
 
