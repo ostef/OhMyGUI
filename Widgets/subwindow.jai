@@ -1,9 +1,44 @@
+SubwindowPersistentStorage :: struct {
+    Entry :: struct {
+        id : ID;
+        position : Vec2f;
+        size : Vec2f;
+    }
+
+    entries : [..]Entry;
+}
+
+GetSubwindowPersistentStorage :: (id : ID) -> *SubwindowPersistentStorage.Entry, is_new : bool {
+    storage, new := AddGlobalUserData(SubwindowPersistentStorage, DestroySubwindowPersistentStorage);
+    if new {
+        storage.entries.allocator = context.omg.general_purpose_allocator;
+    }
+
+    for * storage.entries {
+        if it.id == id {
+            return it, false;
+        }
+    }
+
+    result := array_add(*storage.entries);
+    result.id = id;
+
+    return result, true;
+}
+
+DestroySubwindowPersistentStorage :: (node : *Node, data : *void) {
+    using _ := cast(*SubwindowPersistentStorage, data);
+    array_free(entries);
+}
+
 SubwindowFlags :: enum_flags {
     NoTitleBar;
     NoClose;
     NoResize;
     NoMove;
     NoMoveFromBackground;
+
+    NoPersistentStorage;
 
     NoVerticalScrollbar;
     NoHorizontalScrollbar;
@@ -240,14 +275,31 @@ Subwindow :: (
 
     content, subwindow : *Node;
     subwindow=, is_new := GetPopupNode(window, str_id);
+
+    storage : *SubwindowPersistentStorage.Entry;
+    is_new_storage : bool;
+    if !(flags & .NoPersistentStorage) {
+        storage, is_new_storage = GetSubwindowPersistentStorage(subwindow.id);
+    }
+
+    defer if storage {
+        storage.position = subwindow.offset;
+        storage.size = .{subwindow.desired_size.x.value, subwindow.desired_size.y.value};
+    }
+
     {
         if is_new {
-            SetSize(subwindow, SizePx(initial_size.x), SizePx(initial_size.y));
+            if !storage || is_new_storage {
+                SetSize(subwindow, SizePx(initial_size.x), SizePx(initial_size.y));
 
-            subwindow.desired_size.x.value += resize_handles_expand.x * 2;
-            subwindow.desired_size.y.value += resize_handles_expand.y * 2;
+                subwindow.desired_size.x.value += resize_handles_expand.x * 2;
+                subwindow.desired_size.y.value += resize_handles_expand.y * 2;
 
-            subwindow.offset -= resize_handles_expand;
+                subwindow.offset -= resize_handles_expand;
+            } else {
+                SetSize(subwindow, SizePx(storage.size.x), SizePx(storage.size.y));
+                subwindow.offset = storage.position;
+            }
         } else {
             SetSize(subwindow, SizePx(subwindow.layout_last_frame.size.x), SizePx(subwindow.layout_last_frame.size.y));
         }
