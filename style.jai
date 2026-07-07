@@ -904,6 +904,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         }
 
         popup.corner_radiuses.xy = .{};
+        popup.corner_radiuses.zw = button.normal.background.corner_radiuses.zw;
         button.active.background.corner_radiuses.zw = .{};
 
         arrow_size = .{10, 6};
