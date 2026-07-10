@@ -30,6 +30,11 @@ SetColors :: (using style : *SliderStyle, base_background_color : RGBA8, base_fi
     active.handle.background_color = Whiten(base_handle_color, 0.1);
 }
 
+SliderFlags :: enum_flags {
+    NoScrollX;
+    NoScrollY;
+}
+
 KnobSlider :: (
     parent : *Node,
     value : *$T,
@@ -37,10 +42,11 @@ KnobSlider :: (
     axis := Axis.X,
     to_string : (T) -> string = null,
     style : *SliderStyle = null,
+    flags : SliderFlags = 0,
     location := #caller_location
 ) -> bool, slider : *Node, background : *Node, handle : *Node {
     EnsureStyle(*style, "knob_slider");
-    ok, slider, background, handle := Slider(parent, value, min, max, step, axis, to_string, style, location);
+    ok, slider, background, handle := Slider(parent, value, min, max, step, axis, to_string, style, flags, location);
 
     return ok, slider, background, handle;
 }
@@ -52,10 +58,11 @@ FillSlider :: (
     axis := Axis.X,
     to_string : (T) -> string = null,
     style : *SliderStyle = null,
+    flags : SliderFlags = 0,
     location := #caller_location
 ) -> bool, slider : *Node, background : *Node, handle : *Node {
     EnsureStyle(*style, "fill_slider");
-    ok, slider, background, handle := Slider(parent, value, min, max, step, axis, to_string, style, location);
+    ok, slider, background, handle := Slider(parent, value, min, max, step, axis, to_string, style, flags, location);
 
     return ok, slider, background, handle;
 }
@@ -67,6 +74,7 @@ Slider :: (
     axis := Axis.X,
     to_string : (T) -> string = null,
     style : *SliderStyle = null,
+    flags : SliderFlags = 0,
     location := #caller_location
 ) -> bool, slider : *Node, background : *Node, handle : *Node {
     EnsureStyle(*style, "slider");
@@ -103,17 +111,20 @@ Slider :: (
         }
         slider.flags |= .NoPaddedClip;
 
-        scroll := ScrollBehavior(slider);
-        if scroll.y != 0 {
-            fvalue = clamp(fvalue - sign(fmax - fmin) * sign(scroll.y) * cast(float, step), real_min, real_max);
-            fvalue = Snap(fvalue, fstep);
+        if !((flags & .NoScrollX) && (flags & .NoScrollY)) {
+            scroll := ScrollBehavior(slider);
+            if !(flags & .NoScrollY) && scroll.y != 0 {
+                fvalue = clamp(fvalue + sign(fmax - fmin) * sign(scroll.y) * cast(float, step), real_min, real_max);
+                fvalue = Snap(fvalue, fstep);
 
-            interacting = true;
-        } else if scroll.x != 0 {
-            fvalue = clamp(fvalue - sign(fmax - fmin) * sign(scroll.x) * cast(float, step), real_min, real_max);
-            fvalue = Snap(fvalue, fstep);
+                interacting = true;
+            }
+            if !(flags & .NoScrollX) && scroll.x != 0 {
+                fvalue = clamp(fvalue + sign(fmax - fmin) * sign(scroll.x) * cast(float, step), real_min, real_max);
+                fvalue = Snap(fvalue, fstep);
 
-            interacting = true;
+                interacting = true;
+            }
         }
 
         background = GetNode(slider, "background");
