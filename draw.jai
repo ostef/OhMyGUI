@@ -294,6 +294,49 @@ GetCurrentClipBoxIndex :: (draw_list : *DrawList) -> s32 {
     return draw_list.clip_box_stack[draw_list.clip_box_stack.count - 1];
 }
 
+ClipBoxAgainstBox :: (a : ClipBox, b : ClipBox) -> ClipBox {
+    a_corners := Vec2f.[
+        .{a.bounds.x, a.bounds.y},
+        .{a.bounds.z, a.bounds.y},
+        .{a.bounds.x, a.bounds.w},
+        .{a.bounds.z, a.bounds.w},
+    ];
+    a_inner_corners := Vec2f.[
+        .{a.bounds.x + a.corner_radiuses.x, a.bounds.y + a.corner_radiuses.x},
+        .{a.bounds.z - a.corner_radiuses.y, a.bounds.y + a.corner_radiuses.y},
+        .{a.bounds.x + a.corner_radiuses.z, a.bounds.w - a.corner_radiuses.z},
+        .{a.bounds.z - a.corner_radiuses.w, a.bounds.w - a.corner_radiuses.w},
+    ];
+    b_corners := Vec2f.[
+        .{b.bounds.x, b.bounds.y},
+        .{b.bounds.z, b.bounds.y},
+        .{b.bounds.x, b.bounds.w},
+        .{b.bounds.z, b.bounds.w},
+    ];
+    b_inner_corners := Vec2f.[
+        .{b.bounds.x + b.corner_radiuses.x, b.bounds.y + b.corner_radiuses.x},
+        .{b.bounds.z - b.corner_radiuses.y, b.bounds.y + b.corner_radiuses.y},
+        .{b.bounds.x + b.corner_radiuses.z, b.bounds.w - b.corner_radiuses.z},
+        .{b.bounds.z - b.corner_radiuses.w, b.bounds.w - b.corner_radiuses.w},
+    ];
+    new_corner_radiuses := a.corner_radiuses;
+
+    clipped_bounds := ClipRect(a.bounds, b.bounds);
+
+    for i : 0..3 {
+        b_corner_rect := Vec4f.{
+            xy=min(b_corners[i], b_inner_corners[i]),
+            zw=max(b_corners[i], b_inner_corners[i])
+        };
+
+        if RectIntersectsRect(b_corner_rect, a.bounds) {
+            new_corner_radiuses[i] = max(new_corner_radiuses[i], b.corner_radiuses[i]);
+        }
+    }
+
+    return .{bounds=clipped_bounds, corner_radiuses=new_corner_radiuses};
+}
+
 PushClipBox :: (draw_list : *DrawList, bounds : Vec4f, corner_radiuses : Vec4f = .{}) {
     box := array_add(*draw_list.clip_boxes);
     box.bounds = bounds;
@@ -302,7 +345,7 @@ PushClipBox :: (draw_list : *DrawList, bounds : Vec4f, corner_radiuses : Vec4f =
     current_index := GetCurrentClipBoxIndex(draw_list);
     if current_index >= 0 {
         current := draw_list.clip_boxes[current_index];
-        box.bounds = ClipRect(box.bounds, current.bounds);
+        box.* = ClipBoxAgainstBox(box, current);
     }
 
     array_add(*draw_list.clip_box_stack, xx (draw_list.clip_boxes.count - 1));

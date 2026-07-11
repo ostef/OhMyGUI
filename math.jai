@@ -236,6 +236,11 @@ IsInsideCircle :: inline (p : Vec2f, center : Vec2f, radius : float) -> bool {
     return sq_dist < radius * radius;
 }
 
+RectIntersectsRect :: inline (a : Vec4f, b : Vec4f) -> bool {
+    return (a.x <= b.x && b.x <= a.z || a.x <= b.z && b.z <= a.z)
+        && (a.y <= b.y && b.y <= a.w || a.y <= b.w && b.w <= a.w);
+}
+
 ClipRect :: inline (rect : Vec4f, clip_by : Vec4f) -> Vec4f {
     return .{
         xy=max(rect.xy, clip_by.xy),
