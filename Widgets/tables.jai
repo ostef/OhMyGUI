@@ -38,6 +38,7 @@ Apply :: inline (node : *Node, style : TableRowStyle, alternate : bool) {
 
 TableStyle :: struct {
     corner_radiuses : Vec4f;
+    padding : Vec4b;
 
     border_color : RGBA8;
     border_size : float;
@@ -53,10 +54,15 @@ TableStyle :: struct {
     header_row_height : float;
 }
 
+TableColumnFlags :: enum_flags {
+    Resizable;
+}
+
 TableData :: struct {
     Column :: struct {
         label : string;
         str_id : string;
+        flags : TableColumnFlags;
         node : *Node;
         rows : [..]*Node;
     }
@@ -78,41 +84,6 @@ DestroyTableData :: (node : *Node, data : *void) {
     array_free(columns);
 }
 
-DrawTableOverlay :: (draw_list : *DrawList, node : *Node) {
-    table := node.parent;
-    data := GetUserData(table, TableData);
-    style := GetUserData(table, TableStyle);
-
-    c0 := data.columns[0];
-    c1 := data.columns[data.columns.count - 1];
-    num_rows := c0.rows.count;
-    for i : 0..num_rows - 2 {
-        start := c0.rows[i];
-        end := c1.rows[i];
-
-        start_position := Vec2f.{start.rect.x, start.rect.w};
-        end_position := Vec2f.{end.rect.z, end.rect.w};
-
-        DrawBox(draw_list, .{
-            position=ceil((start_position + end_position) * 0.5),
-            size=.{end_position.x - start_position.x, style.horizontal_inner_border_size},
-            background_color=style.horizontal_inner_border_color,
-        });
-    }
-
-    for i : 0..data.columns.count - 2 {
-        col := data.columns[i].node;
-        start_position := Vec2f.{col.rect.z, col.rect.y};
-        end_position := Vec2f.{col.rect.z, col.rect.w};
-
-        DrawBox(draw_list, .{
-            position=ceil((start_position + end_position) * 0.5),
-            size=.{style.vertical_inner_border_size, end_position.x - start_position.x},
-            background_color=style.vertical_inner_border_color,
-        });
-    }
-}
-
 Table :: (parent : *Node, style : *TableStyle = null, location := #caller_location) -> *Node {
     EnsureStyle(*style, "table");
 
@@ -129,14 +100,24 @@ Table :: (parent : *Node, style : *TableStyle = null, location := #caller_locati
         SetCornerRadiuses(table, style.corner_radiuses);
         SetBorderColor(table, style.border_color);
         SetBorderSize(table, style.border_size);
+        SetPadding(table, style.padding);
     }
 
     return table;
 }
 
-TableAddColumn :: (table : *Node, label : string, str_id : string) {
+TableAddColumn :: (table : *Node, label : string, str_id : string, flags : TableColumnFlags = 0) {
     data := GetUserData(table, TableData);
     assert(data != null, "Node is not a table");
+
+    style := GetUserData(table, TableStyle);
+
+    first := data.columns.count == 0;
+    if !first && style.vertical_inner_border_size > 0 {
+        border := GetNode(table, tprint("%.border_before", str_id));
+        SetSize(border, SizePx(xx style.vertical_inner_border_size), SizeFill());
+        SetBackgroundColor(border, style.vertical_inner_border_color);
+    }
 
     column, is_new := GetNode(table, str_id);
 
@@ -149,7 +130,7 @@ TableAddColumn :: (table : *Node, label : string, str_id : string) {
     }
 
     if !exists {
-        array_add(*data.columns, .{label=label, str_id=str_id, node=column});
+        array_add(*data.columns, .{label=label, str_id=str_id, flags=flags, node=column});
     }
 
     SetSize(column, SizeFill(), SizeFit());
@@ -165,6 +146,13 @@ TableAddRow :: (table : *Node, height : float) {
     for * data.columns {
         PushIDOffset(it.rows.count);
         defer PopIDOffset();
+
+        first := it.rows.count == 0;
+        if !first && style.horizontal_inner_border_size > 0 {
+            border := GetNode(it.node, "border_before_row");
+            SetSize(border, SizeFill(), SizePx(xx style.horizontal_inner_border_size));
+            SetBackgroundColor(border, style.horizontal_inner_border_color);
+        }
 
         cell := GetNode(it.node);
         SetSize(cell, SizeFill(), SizePx(height));
