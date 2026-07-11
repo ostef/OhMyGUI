@@ -953,6 +953,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         vertical_inner_border_size = 1;
 
         header_text = theme.text;
+        header_text.font = GetDefaultFontMedium();
 
         header_row.cell_padding = .{6,6,6,6};
         header_row.cell_child_align = .{0, 0.5};

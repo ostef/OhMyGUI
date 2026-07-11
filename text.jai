@@ -47,10 +47,27 @@ GetDefaultFont :: inline () -> *Font {
     return GetFont("__default");
 }
 
-LoadDefaultFont :: () -> *Font {
-    Default_Font_Contents :: #run ReadCompileTimeFile("Roboto-Regular.ttf");
+GetDefaultFontMedium :: inline () -> *Font {
+    return GetFont("__default_medium");
+}
 
-    return LoadFontFromMemory("__default", Default_Font_Contents, .{});
+GetDefaultFontBold :: inline () -> *Font {
+    return GetFont("__default_bold");
+}
+
+LoadDefaultFonts :: () {
+    Roboto_Regular :: #run ReadCompileTimeFile("Roboto-Regular.ttf");
+    Roboto_Medium :: #run ReadCompileTimeFile("Roboto-Medium.ttf");
+    Roboto_Bold :: #run ReadCompileTimeFile("Roboto-Bold.ttf");
+
+    regular := LoadFontFromMemory("__default", Roboto_Regular, .{});
+    assert(regular != null, "Could not load default regular font");
+
+    medium := LoadFontFromMemory("__default_medium", Roboto_Medium, .{});
+    assert(medium != null, "Could not load default medium font");
+
+    bold := LoadFontFromMemory("__default_bold", Roboto_Bold, .{});
+    assert(bold != null, "Could not load default bold font");
 }
 
 LoadFontFromFile :: (filename : string, config : FontConfig) -> *Font {

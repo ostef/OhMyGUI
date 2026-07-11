@@ -264,8 +264,7 @@ Init :: () {
     InitInput(*context.omg.input);
     InitSystemCursors();
 
-    default_font := LoadDefaultFont();
-    assert(default_font != null, "Could not load default font");
+    LoadDefaultFonts();
 
     SetupDefaultTheme(
         *g_default_theme_light,
