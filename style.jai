@@ -943,7 +943,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
     {
         using theme.table;
 
-        corner_radiuses = .{10,10,10,10};
+        corner_radiuses = .{4,4,4,4};
         border_color = MakeTone(base_background_color, 0.3);
         border_size = 1;
         horizontal_inner_border_color = MakeTone(base_background_color, 0.5);
