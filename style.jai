@@ -952,10 +952,13 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         vertical_inner_border_color = MakeTone(base_background_color, 0.5);
         vertical_inner_border_size = 1;
 
-        header = theme.button;
-        for * header.states {
-            it.background.corner_radiuses = .{};
-        }
+        header_text = theme.text;
+
+        header_row.cell_padding = .{6,6,6,6};
+        header_row.cell_child_align = .{0, 0.5};
+        header_row.background_color = MakeTone(base_background_color, 0.05);
+        header_row.alternate_background_color = MakeTone(base_background_color, 0.05);
+        header_row_height = 32;
 
         rows.cell_padding = .{4,4,4,4};
         rows.cell_child_align = .{0, 0.5};
@@ -963,7 +966,6 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         rows.alternate_background_color = MakeTone(base_background_color, 0.2);
 
         row_height = 30;
-        header_row_height = 32;
     }
     SetStyle(theme, "table", theme.table);
 }

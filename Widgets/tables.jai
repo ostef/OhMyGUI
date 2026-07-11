@@ -50,7 +50,8 @@ TableStyle :: struct {
     rows : TableRowStyle;
     row_height : float;
 
-    header : ButtonStyle;
+    header_row : TableRowStyle;
+    header_text : TextStyle;
     header_row_height : float;
 }
 
@@ -137,28 +138,28 @@ TableAddColumn :: (table : *Node, label : string, str_id : string, flags : Table
     SetLayout(column, .TopToBottom);
 }
 
-TableAddRow :: (table : *Node, height : float) {
+TableAddRow :: (table : *Node, style : *TableRowStyle, height : float) {
     data := GetUserData(table, TableData);
     assert(data != null, "Node is not a table");
 
-    style := GetUserData(table, TableStyle);
+    table_style := GetUserData(table, TableStyle);
 
     for * data.columns {
         PushIDOffset(it.rows.count);
         defer PopIDOffset();
 
         first := it.rows.count == 0;
-        if !first && style.horizontal_inner_border_size > 0 {
+        if !first && table_style.horizontal_inner_border_size > 0 {
             border := GetNode(it.node, "border_before_row");
-            SetSize(border, SizeFill(), SizePx(xx style.horizontal_inner_border_size));
-            SetBackgroundColor(border, style.horizontal_inner_border_color);
+            SetSize(border, SizeFill(), SizePx(xx table_style.horizontal_inner_border_size));
+            SetBackgroundColor(border, table_style.horizontal_inner_border_color);
         }
 
         cell := GetNode(it.node);
         SetSize(cell, SizeFill(), SizePx(height));
 
         i := it.rows.count;
-        Apply(cell, style.rows, i % 2 == 0);
+        Apply(cell, style, i % 2 == 0);
 
         array_add(*it.rows, cell);
     }
@@ -171,15 +172,13 @@ TableHeaderRow :: (table : *Node) {
     style := GetUserData(table, TableStyle);
 
     data.current_column = 0;
-    TableAddRow(table, style.header_row_height);
+    TableAddRow(table, *style.header_row, style.header_row_height);
 
     for data.columns {
         cell := TableGetCell(table);
         assert(cell != null, "Cell node is null");
 
-        Apply(cell, style.header.normal.background);
-
-        Text(cell, "%", it.label, style=*style.header.normal.text);
+        Text(cell, "%", it.label, style=*style.header_text);
 
         TableNextColumn(table);
     }
@@ -192,7 +191,7 @@ TableNextRow :: (table : *Node) {
     style := GetUserData(table, TableStyle);
 
     data.current_column = 0;
-    TableAddRow(table, style.row_height);
+    TableAddRow(table, *style.rows, style.row_height);
 }
 
 TableNextColumn :: (table : *Node) {
