@@ -55,6 +55,10 @@ TableStyle :: struct {
     header_row_height : float;
 }
 
+TableFlags :: enum_flags {
+    FitContent;
+}
+
 TableColumnFlags :: enum_flags {
     Resizable;
 }
@@ -70,6 +74,7 @@ TableData :: struct {
 
     columns : [..]Column;
     current_column : int;
+    flags : TableFlags;
 }
 
 ClearTableData :: (data : *TableData) {
@@ -85,17 +90,18 @@ DestroyTableData :: (node : *Node, data : *void) {
     array_free(columns);
 }
 
-Table :: (parent : *Node, style : *TableStyle = null, location := #caller_location) -> *Node {
+Table :: (parent : *Node, flags : TableFlags = 0, style : *TableStyle = null, location := #caller_location) -> *Node {
     EnsureStyle(*style, "table");
 
     table := GetNode(parent, location);
     {
         data := AddUserData(table, TableData);
         ClearTableData(data);
+        data.flags = flags;
 
         SetUserData(table, style.*);
 
-        SetSize(table, SizeFill(), SizeFit());
+        SetSize(table, SizeFill(), ifx flags & .FitContent then SizeFit() else SizeFill());
         SetLayout(table, .LeftToRight);
 
         SetCornerRadiuses(table, style.corner_radiuses);
@@ -134,7 +140,7 @@ TableAddColumn :: (table : *Node, label : string, str_id : string, flags : Table
         array_add(*data.columns, .{label=label, str_id=str_id, flags=flags, node=column});
     }
 
-    SetSize(column, SizeFill(), SizeFit());
+    SetSize(column, SizeFill(), ifx data.flags & .FitContent then SizeFit() else SizeFill());
     SetLayout(column, .TopToBottom);
 }
 
@@ -165,7 +171,7 @@ TableAddRow :: (table : *Node, style : *TableRowStyle, height : float) {
     }
 }
 
-TableHeaderRow :: (table : *Node) {
+TableHeadersRow :: (table : *Node) {
     data := GetUserData(table, TableData);
     assert(data != null, "Node is not a table");
 
@@ -199,6 +205,25 @@ TableNextColumn :: (table : *Node) {
     assert(data != null, "Node is not a table");
 
     data.current_column += 1;
+}
+
+TableSetColumn :: (table : *Node, index : int) {
+    data := GetUserData(table, TableData);
+    assert(data != null, "Node is not a table");
+
+    data.current_column = index;
+}
+
+TableSetColumn :: (table : *Node, str_id : string) {
+    data := GetUserData(table, TableData);
+    assert(data != null, "Node is not a table");
+
+    for data.columns {
+        if it.str_id == str_id {
+            data.current_column = it_index;
+            break;
+        }
+    }
 }
 
 TableGetCell :: (table : *Node) -> *Node {

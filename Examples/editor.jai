@@ -358,11 +358,11 @@ END
                         text := OMG.GetNode(add_component_node, "text");
                         text.text_size *= 1.1;
 
-                        table := OMG.Table(entity_inspector);
+                        table := OMG.Table(entity_inspector, .FitContent);
                         OMG.TableAddColumn(table, "Name", "name");
                         OMG.TableAddColumn(table, "Type", "type");
                         OMG.TableAddColumn(table, "Value", "value");
-                        OMG.TableHeaderRow(table);
+                        OMG.TableHeadersRow(table);
 
                         for i : 0..10 {
                             OMG.TableNextRow(table);
