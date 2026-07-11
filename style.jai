@@ -34,6 +34,14 @@ GetStyle :: (theme : *Theme, name : string, $T : Type) -> *T {
     return xx any.value_pointer;
 }
 
+// @Todo: use this
+Gradient :: struct {
+    color1 : RGBA8;
+    color2 : RGBA8;
+    offset : float;
+    vector : Vec2f;
+}
+
 BoxStyle :: struct {
     padding : Vec4b;
     child_gap : Vec2b;
@@ -407,6 +415,7 @@ AnimateStyle :: (a : $T, b : T, t : float, func : AnimFunc) -> T {
 DefaultTheme :: struct {
     #as theme : Theme;
 
+    // Theme stores pointers so the styles need to be stored somewhere persistent
     base : BoxStyle;
     text : TextStyle;
     label_and_content : LabelAndContentStyle;
@@ -429,6 +438,7 @@ DefaultTheme :: struct {
     color_input : ColorInputStyle;
     combo : ComboStyle;
     tooltip : TooltipStyle;
+    table : TableStyle;
 }
 
 g_default_theme_light : DefaultTheme;
@@ -929,4 +939,30 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         text.text_size = floor(text.text_size * 0.9);
     }
     SetStyle(theme, "tooltip", theme.tooltip);
+
+    {
+        using theme.table;
+
+        corner_radiuses = .{10,10,10,10};
+        border_color = MakeTone(base_background_color, 0.3);
+        border_size = 1;
+        horizontal_inner_border_color = MakeTone(base_background_color, 0.5);
+        horizontal_inner_border_size = 1;
+        vertical_inner_border_color = MakeTone(base_background_color, 0.5);
+        vertical_inner_border_size = 1;
+
+        header = theme.button;
+        for * header.states {
+            it.background.corner_radiuses = .{};
+        }
+
+        rows.cell_padding = .{4,4,4,4};
+        rows.cell_child_align = .{0, 0.5};
+        rows.background_color = MakeTone(base_background_color, 0.1);
+        rows.alternate_background_color = MakeTone(base_background_color, 0.2);
+
+        row_height = 30;
+        header_row_height = 32;
+    }
+    SetStyle(theme, "table", theme.table);
 }

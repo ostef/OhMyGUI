@@ -378,7 +378,7 @@ END
                             OMG.TableNextColumn(table);
 
                             cell = OMG.TableGetCell(table);
-                            OMG.Text(cell, "Row %, Col 2", i);
+                            OMG.Button(cell, tprint("Row %, Col 2", i));
                         }
                     }
                 }
