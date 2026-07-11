@@ -648,6 +648,8 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         active = hot;
         disabled = active;
 
+        active.background.border_size = 2;
+
         SetColors(*theme.text_input, button_base_background_color, base_accent_color);
 
         SetAlpha(*disabled.text.text_color, 0.5);
