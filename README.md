@@ -23,6 +23,12 @@ Tree based immediate mode GUI library in Jai inspired by Clay and PanGui. For no
 * Custom drawing commands and shaders
 * Disabling
 * Convert rendered SDF shapes to fast SDF textures/glyph
+* Tables:
+    - column sorting
+    - column reordering
+    - column resize
+    - scrolling
+    - static rows and columns
 
 Widgets:
 * Radio buttons
@@ -33,6 +39,7 @@ Widgets:
 * Popups
 * Panels
 * Tabs
+* Images
 
 ## How it works
 Each frame, the user calls `GetNode` with an ID to declare a UI element or get a node that has been declared prior, or any of the widget functions. This builds a tree which is traversed at the end of the frame to lay UI elements out according to properties specified by the user, then draw UI elements that are visible.
