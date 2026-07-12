@@ -5,13 +5,13 @@ ButtonResult :: struct {
     released : bool;
 }
 
-ButtonBehavior :: (node : *Node) -> ButtonResult {
+ButtonBehavior :: (node : *Node, mouse_button := MouseButton.Left) -> ButtonResult {
     node.flags |= .Focusable;
 
-    if (IsMouseButtonReleased(.Left) || IsMouseButtonDown(.Left)) && context.omg.mouse_capturing_node == node {
+    if (IsMouseButtonReleased(mouse_button) || IsMouseButtonDown(mouse_button)) && context.omg.mouse_capturing_node == node {
         SetMouseCapture(node);
         SetMouseFocus(node);
-    } else if node.state_flags & .Focused && IsMouseButtonPressed(.Left) {
+    } else if node.state_flags & .Focused && IsMouseButtonPressed(mouse_button) {
         SetMouseCapture(node);
     }
 
@@ -22,9 +22,9 @@ ButtonBehavior :: (node : *Node) -> ButtonResult {
     result : ButtonResult;
     if node.state_flags & .Hot {
         result.held = true;
-        result.pressed = IsHovered(node) && IsMouseButtonPressed(.Left);
-        result.double_clicked = IsHovered(node) && IsMouseButtonDoubleClicked(.Left);
-        result.released = IsHovered(node) && IsMouseButtonReleased(.Left);
+        result.pressed = IsHovered(node) && IsMouseButtonPressed(mouse_button);
+        result.double_clicked = IsHovered(node) && IsMouseButtonDoubleClicked(mouse_button);
+        result.released = IsHovered(node) && IsMouseButtonReleased(mouse_button);
     }
 
     return result;

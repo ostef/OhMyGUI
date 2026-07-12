@@ -93,8 +93,16 @@ GetMouseWheel :: inline () -> Vec2f {
     return context.omg.input.mouse_wheel;
 }
 
+IsAnyMouseButtonDown :: inline () -> bool {
+    return IsMouseButtonDown(.Left) || IsMouseButtonDown(.Middle) || IsMouseButtonDown(.Right);
+}
+
 IsMouseButtonDown :: inline (button : MouseButton) -> bool {
     return context.omg.input.mouse_button_states[button] & .Down != 0;
+}
+
+IsAnyMouseButtonPressed :: inline (repeated := true) -> bool {
+    return IsMouseButtonPressed(.Left, repeated) || IsMouseButtonPressed(.Middle, repeated) || IsMouseButtonPressed(.Right, repeated);
 }
 
 IsMouseButtonPressed :: inline (button : MouseButton, repeated := true) -> bool {
@@ -103,6 +111,10 @@ IsMouseButtonPressed :: inline (button : MouseButton, repeated := true) -> bool 
 
 IsMouseButtonDoubleClicked :: inline (button : MouseButton) -> bool {
     return context.omg.input.mouse_button_states[button] & .Repeated != 0;
+}
+
+IsAnyMouseButtonReleased :: inline () -> bool {
+    return IsMouseButtonReleased(.Left) || IsMouseButtonReleased(.Middle) || IsMouseButtonReleased(.Right);
 }
 
 IsMouseButtonReleased :: inline (button : MouseButton) -> bool {

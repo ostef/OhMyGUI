@@ -63,7 +63,7 @@ Menu :: (parent : *Node, text : string, menu_item_style : *ButtonStyle = null, m
         SetText(text_node, text);
 
         should_deactivate := IsKeyPressed(.Escape);
-        if menu_item.state_flags & .ActiveLastFrame && !(menu_item.state_flags & .Focused) && IsMouseButtonPressed(.Left) {
+        if menu_item.state_flags & .ActiveLastFrame && !(menu_item.state_flags & .Focused) && IsAnyMouseButtonPressed() {
             if !IsInTree(context.omg.mouse_hovered_node, menu_id) {
                 should_deactivate = true;
             }
@@ -115,7 +115,7 @@ SubMenu :: (parent : *Node, text : string, menu_item_style : *ButtonStyle = null
         SetText(text_node, text);
 
         should_deactivate := IsKeyPressed(.Escape);
-        if menu_item.state_flags & .ActiveLastFrame && !(menu_item.state_flags & .Focused) && IsMouseButtonPressed(.Left) {
+        if menu_item.state_flags & .ActiveLastFrame && !(menu_item.state_flags & .Focused) && IsAnyMouseButtonPressed() {
             if !IsInTree(context.omg.mouse_hovered_node, menu_id) {
                 should_deactivate = true;
             }
@@ -149,4 +149,44 @@ SubMenu :: (parent : *Node, text : string, menu_item_style : *ButtonStyle = null
     }
 
     return menu, menu_item;
+}
+
+ContextMenu :: (parent : *Node, style : *MenuStyle = null, location := #caller_location) -> *Node {
+    EnsureStyle(*style, "menu");
+
+    popup_root := GetPopupRoot(parent.window);
+    menu_id := GetID(GetID(location), popup_root.id);
+
+    should_deactivate := IsKeyPressed(.Escape);
+    if parent.state_flags & .ActiveLastFrame && !(parent.state_flags & .Focused) && IsAnyMouseButtonPressed() {
+        if !IsInTree(context.omg.mouse_hovered_node, menu_id) {
+            should_deactivate = true;
+        }
+    }
+
+    button := ButtonBehavior(parent, .Right);
+    if !should_deactivate && (button.released || parent.state_flags & .ActiveLastFrame) {
+        parent.state_flags |= .Active;
+    }
+
+    menu : *Node;
+    if parent.state_flags & .Active {
+        menu = GetPopupNode(parent.window, location);
+        {
+            SetLayout(menu, .TopToBottom);
+            SetSize(menu, SizeFit(), SizeFit());
+            SetMinWidth(menu, 50);
+            SetMaxWidth(menu, 150);
+
+            BringForward(menu);
+
+            if button.released {
+                menu.offset = GetMousePosition(menu.window) - menu.parent.layout_last_frame.rect.xy;
+            }
+
+            Apply(menu, style);
+        }
+    }
+
+    return menu;
 }
