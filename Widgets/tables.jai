@@ -87,6 +87,8 @@ ClearTableData :: (data : *TableData) {
     }
 
     array_reset_keeping_memory(*data.columns);
+
+    data.current_column = 0;
 }
 
 DestroyTableData :: (node : *Node, data : *void) {
