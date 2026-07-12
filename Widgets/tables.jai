@@ -1,4 +1,9 @@
 TableRowStyle :: struct {
+    height : float;
+
+    border_color : RGBA8;
+    border_size : float;
+
     cell_padding : Vec4b;
     cell_child_align : Vec2f;
 
@@ -43,17 +48,12 @@ TableStyle :: struct {
     border_color : RGBA8;
     border_size : float;
 
-    horizontal_inner_border_color : RGBA8;
-    horizontal_inner_border_size : float;
     vertical_inner_border_color : RGBA8;
     vertical_inner_border_size : float;
 
     rows : TableRowStyle;
-    row_height : float;
-
     header_row : TableRowStyle;
     header_text : TextStyle;
-    header_row_height : float;
 }
 
 TableFlags :: enum_flags {
@@ -71,6 +71,9 @@ TableData :: struct {
         flags : TableColumnFlags;
         node : *Node;
         rows : [..]*Node;
+
+        previous_row_border_color : RGBA8;
+        previous_row_border_size : float;
     }
 
     columns : [..]Column;
@@ -145,7 +148,7 @@ TableAddColumn :: (table : *Node, label : string, str_id : string, flags : Table
     SetLayout(column, .TopToBottom);
 }
 
-TableAddRow :: (table : *Node, style : *TableRowStyle, height : float) {
+TableAddRow :: (table : *Node, style : *TableRowStyle) {
     data := GetUserData(table, TableData);
     assert(data != null, "Node is not a table");
 
@@ -156,19 +159,22 @@ TableAddRow :: (table : *Node, style : *TableRowStyle, height : float) {
         defer PopIDOffset();
 
         first := it.rows.count == 0;
-        if !first && table_style.horizontal_inner_border_size > 0 {
+        if !first && it.previous_row_border_size > 0 {
             border := GetNode(it.node, "border_before_row");
-            SetSize(border, SizeFill(), SizePx(xx table_style.horizontal_inner_border_size));
-            SetBackgroundColor(border, table_style.horizontal_inner_border_color);
+            SetSize(border, SizeFill(), SizePx(it.previous_row_border_size));
+            SetBackgroundColor(border, it.previous_row_border_color);
         }
 
         cell := GetNode(it.node);
-        SetSize(cell, SizeFill(), SizePx(height));
+        SetSize(cell, SizeFill(), SizePx(style.height));
 
         i := it.rows.count;
         Apply(cell, style, i % 2 == 0);
 
         array_add(*it.rows, cell);
+
+        it.previous_row_border_size = style.border_size;
+        it.previous_row_border_color = style.border_color;
     }
 }
 
@@ -179,7 +185,7 @@ TableHeadersRow :: (table : *Node) {
     style := GetUserData(table, TableStyle);
 
     data.current_column = 0;
-    TableAddRow(table, *style.header_row, style.header_row_height);
+    TableAddRow(table, *style.header_row);
 
     for data.columns {
         cell := TableGetCell(table);
@@ -198,7 +204,7 @@ TableNextRow :: (table : *Node) {
     style := GetUserData(table, TableStyle);
 
     data.current_column = 0;
-    TableAddRow(table, *style.rows, style.row_height);
+    TableAddRow(table, *style.rows);
 }
 
 TableNextColumn :: (table : *Node) {
