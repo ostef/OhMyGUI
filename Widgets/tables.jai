@@ -184,8 +184,7 @@ TableHeadersRow :: (table : *Node) {
 
     style := GetUserData(table, TableStyle);
 
-    data.current_column = 0;
-    TableAddRow(table, *style.header_row);
+    TableNextRow(table, *style.header_row);
 
     for data.columns {
         cell := TableGetCell(table);
@@ -197,14 +196,17 @@ TableHeadersRow :: (table : *Node) {
     }
 }
 
-TableNextRow :: (table : *Node) {
+TableNextRow :: (table : *Node, style : *TableRowStyle = null) {
     data := GetUserData(table, TableData);
     assert(data != null, "Node is not a table");
 
-    style := GetUserData(table, TableStyle);
+    if !style {
+        table_style := GetUserData(table, TableStyle);
+        style = *table_style.rows;
+    }
 
     data.current_column = 0;
-    TableAddRow(table, *style.rows);
+    TableAddRow(table, style);
 }
 
 TableNextColumn :: (table : *Node) {
