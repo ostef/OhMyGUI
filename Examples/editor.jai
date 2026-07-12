@@ -299,6 +299,10 @@ EditorFrame :: () {
                     }
 
                     OMG.ColorInput(sliders, *g_color);
+
+                    OMG.Separator(sliders);
+
+                    OMG.ProgressBar(sliders, (cos(g_time) + 1) * 0.5);
                 }
 
                 OMG.Separator(main_viewport);

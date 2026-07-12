@@ -439,6 +439,7 @@ DefaultTheme :: struct {
     combo : ComboStyle;
     tooltip : TooltipStyle;
     table : TableStyle;
+    progress_bar : ProgressBarStyle;
 }
 
 g_default_theme_light : DefaultTheme;
@@ -947,10 +948,10 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
 
         padding = .{1,1,1,1};
         corner_radiuses = .{4,4,4,4};
-        border_color = MakeTone(base_background_color, 0.3);
+        border_color = MakeTone(base_background_color, 0.5);
         border_size = 1;
         horizontal_inner_border_color = MakeTone(base_background_color, 0.5);
-        horizontal_inner_border_size = 1;
+        horizontal_inner_border_size = 0;
         vertical_inner_border_color = MakeTone(base_background_color, 0.5);
         vertical_inner_border_size = 1;
 
@@ -971,4 +972,19 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         row_height = 30;
     }
     SetStyle(theme, "table", theme.table);
+
+    {
+        using theme.progress_bar;
+
+        height = 6;
+
+        background.background_color = MakeTone(base_background_color, 0.1);
+        background.border_color = MakeTone(base_background_color, 0.4);
+        background.border_size = 1;
+        background.corner_radiuses = Vec4f.{1,1,1,1} * height * 0.5;
+
+        fill.background_color = base_accent_color;
+        fill.corner_radiuses = Vec4f.{1,1,1,1} * height * 0.5;
+    }
+    SetStyle(theme, "progress_bar", theme.progress_bar);
 }

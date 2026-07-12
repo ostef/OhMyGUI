@@ -32,7 +32,6 @@ Tree based immediate mode GUI library in Jai inspired by Clay and PanGui. For no
 
 Widgets:
 * Radio buttons
-* Progress bar
 * Multi line text input
 * Trees
 * Submenus

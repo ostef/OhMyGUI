@@ -42,6 +42,7 @@ TableStyle :: struct {
 
     border_color : RGBA8;
     border_size : float;
+
     horizontal_inner_border_color : RGBA8;
     horizontal_inner_border_size : float;
     vertical_inner_border_color : RGBA8;

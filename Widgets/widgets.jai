@@ -197,3 +197,28 @@ SetContentScrollY :: inline (node : *Node, value : float) {
     avail_scroll := node.layout_last_frame.size.y - node.padding.y - node.padding.w - node.layout_last_frame.children_size.y;
     node.scroll.y = clamp(value, avail_scroll, 0);
 }
+
+ProgressBarStyle :: struct {
+    height : float;
+    background : BoxStyle;
+    fill : BoxStyle;
+}
+
+ProgressBar :: (parent : *Node, value : float, style : *ProgressBarStyle = null, location := #caller_location) -> *Node {
+    EnsureStyle(*style, "progress_bar");
+
+    node := GetNode(parent, location);
+    {
+        SetLayout(node, .None);
+        SetSize(node, SizeFill(), SizePx(style.height));
+
+        Apply(node, style.background);
+
+        fill := GetNode(node);
+        SetSize(fill, SizeFill(value), SizeFill());
+
+        Apply(fill, style.fill);
+    }
+
+    return node;
+}
