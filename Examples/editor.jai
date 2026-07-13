@@ -260,18 +260,17 @@ EditorFrame :: () {
                 OMG.Text(main_viewport, "Mouse capture: % %", context.omg.mouse_capturing_node, ifx context.omg.mouse_capturing_node then context.omg.mouse_capturing_node.id);
                 OMG.Text(main_viewport, "Scroll focus: %", context.omg.scroll_focused_node);
 
-                OMG.Text(main_viewport, "Layout: % us", cast(int, context.omg.layout_time_last_frame * 1000 * 1000));
+                OMG.Text(main_viewport, "Layout: % ms", context.omg.layout_time_last_frame * 1000);
                 OMG.Text(main_viewport, "Render: % ms", OMG.GetLastFrameGPUTime() * 1000);
 
                 password_field := OMG.GetNode(main_viewport, "password_field");
                 {
-                    OMG.SetSize(password_field, OMG.SizeFit(), OMG.SizeFit());
+                    OMG.SetSize(password_field, OMG.SizeFill(0.3), OMG.SizeFit());
                     OMG.SetLayout(password_field, .LeftToRight);
                     OMG.SetChildAlign(password_field, 0, 0.5);
                     OMG.SetChildGap(password_field, 6, 6);
 
                     text_input_submitted, text_input := OMG.TextInput(password_field, ifx !g_show_password then .Password);
-                    OMG.SetWidth(text_input, OMG.SizePx(300));
 
                     if text_input_submitted {
                         text := OMG.GetTextInputResult(text_input ,, temp);
@@ -282,27 +281,27 @@ EditorFrame :: () {
                     OMG.Checkbox(password_field, *g_show_password);
                 }
 
-                sliders := OMG.GetNode(main_viewport);
+                fields := OMG.GetNode(main_viewport);
                 {
-                    OMG.SetSize(sliders, OMG.SizeFill(0.3), OMG.SizeFit());
-                    OMG.SetLayout(sliders, .TopToBottom);
-                    OMG.SetChildGap(sliders, 0, 10);
+                    OMG.SetSize(fields, OMG.SizeFill(0.3), OMG.SizeFit());
+                    OMG.SetLayout(fields, .TopToBottom);
+                    OMG.SetChildGap(fields, 0, 10);
 
-                    OMG.Slider(sliders, *g_slider_value, 0, 1, 0.1);
-                    OMG.FillSlider(sliders, *g_slider_value, 0, 1, 0.1);
-                    OMG.KnobSlider(sliders, *g_slider_value, 0, 1, 0.1);
+                    OMG.Slider(fields, *g_slider_value, 0, 1, 0.1);
+                    OMG.FillSlider(fields, *g_slider_value, 0, 1, 0.1);
+                    OMG.KnobSlider(fields, *g_slider_value, 0, 1, 0.1);
 
-                    OMG.Separator(sliders);
+                    OMG.Separator(fields);
 
-                    if OMG.EnumCombo(sliders, *g_selected_fruit) {
+                    if OMG.EnumCombo(fields, *g_selected_fruit) {
                         print("Selected: %\n", g_selected_fruit);
                     }
 
-                    OMG.ColorInput(sliders, *g_color);
+                    OMG.ColorInput(fields, *g_color);
 
-                    OMG.Separator(sliders);
+                    OMG.Separator(fields);
 
-                    OMG.ProgressBar(sliders, (cos(g_time) + 1) * 0.5);
+                    OMG.ProgressBar(fields, (cos(g_time) + 1) * 0.5);
                 }
 
                 OMG.Separator(main_viewport);
@@ -341,34 +340,13 @@ END
 
                     entity_outliner := Panel(right_side, "entity_outliner", "Entity Outliner");
                     {
-                        for i : 0..25 {
-                            OMG.PushIDOffset(i);
-                            defer OMG.PopIDOffset();
-
-                            entry := OMG.GetNode(entity_outliner);
-                            OMG.SetPadding(entry, 2, 2);
-                            OMG.SetSize(entry, OMG.SizeFill(), OMG.SizeFit());
-                            OMG.ButtonBehavior(entry);
-
-                            OMG.Text(entry, "Entry %", i);
-                        }
-                    }
-
-                    entity_inspector := Panel(right_side, "entity_inspector", "Entity Inspector");
-                    {
-                        add_component, add_component_node := OMG.Button(entity_inspector, "Add Component", style=OMG.GetStyle("button_accent", OMG.ButtonStyle));
-                        OMG.SetWidth(add_component_node, OMG.SizeFill());
-
-                        text := OMG.GetNode(add_component_node, "text");
-                        text.text_size *= 1.1;
-
-                        table := OMG.Table(entity_inspector, .FitContent);
+                        table := OMG.Table(entity_outliner);
                         OMG.TableAddColumn(table, "Name", "name");
                         OMG.TableAddColumn(table, "Type", "type");
                         OMG.TableAddColumn(table, "Value", "value");
                         OMG.TableHeadersRow(table);
 
-                        for i : 0..10 {
+                        for i : 0..100 {
                             OMG.TableNextRow(table);
 
                             cell := OMG.TableGetCell(table);
@@ -384,6 +362,10 @@ END
                             cell = OMG.TableGetCell(table);
                             OMG.Button(cell, tprint("Row %, Col 2", i));
                         }
+                    }
+
+                    entity_inspector := Panel(right_side, "entity_inspector", "Entity Inspector");
+                    {
                     }
                 }
             }
