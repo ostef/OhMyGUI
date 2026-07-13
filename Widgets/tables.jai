@@ -1,3 +1,18 @@
+TableStyle :: struct {
+    corner_radiuses : Vec4f;
+    padding : Vec4b;
+
+    border_color : RGBA8;
+    border_size : float;
+
+    vertical_inner_border_color : RGBA8;
+    vertical_inner_border_size : float;
+
+    rows : TableRowStyle;
+    header_row : TableRowStyle;
+    header_text : TextStyle;
+}
+
 TableRowStyle :: struct {
     height : float;
 
@@ -39,21 +54,6 @@ Apply :: inline (node : *Node, style : TableRowStyle, alternate : bool) {
     node.inner_shadow_blur = style.inner_shadow_blur;
     node.inner_shadow_offset = style.inner_shadow_offset;
     node.inner_shadow_color = style.inner_shadow_color;
-}
-
-TableStyle :: struct {
-    corner_radiuses : Vec4f;
-    padding : Vec4b;
-
-    border_color : RGBA8;
-    border_size : float;
-
-    vertical_inner_border_color : RGBA8;
-    vertical_inner_border_size : float;
-
-    rows : TableRowStyle;
-    header_row : TableRowStyle;
-    header_text : TextStyle;
 }
 
 TableFlags :: enum_flags {
