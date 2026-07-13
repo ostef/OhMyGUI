@@ -558,7 +558,7 @@ ColorPreview :: (parent : *Node, color : RGBA8, style : *ColorPreviewStyle, loca
     Apply(node, style.box);
     SetBackgroundColor(node, color);
 
-    if IsHovered(node) {
+    if node == context.omg.mouse_hovered_node {
         r, g, b, a := GetRGBAU8(color);
         rgba := ColorVec4f(color);
         hsv := RGBToHSV(rgba.xyz);
