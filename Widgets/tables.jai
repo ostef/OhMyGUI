@@ -76,6 +76,7 @@ TableData :: struct {
         previous_row_border_size : float;
     }
 
+    content : *Node;
     columns : [..]Column;
     current_column : int;
     flags : TableFlags;
@@ -89,6 +90,8 @@ ClearTableData :: (data : *TableData) {
     array_reset_keeping_memory(*data.columns);
 
     data.current_column = 0;
+
+    data.content = null;
 }
 
 DestroyTableData :: (node : *Node, data : *void) {
@@ -114,9 +117,21 @@ Table :: (parent : *Node, flags : TableFlags = 0, style : *TableStyle = null, lo
         SetBorderColor(table, style.border_color);
         SetBorderSize(table, style.border_size);
         SetPadding(table, style.padding);
-    }
 
-    return table;
+        data.content = GetNode(table, "content");
+        {
+            SetSize(data.content, SizeFill(), SizeFill());
+            SetLayout(data.content, .LeftToRight);
+
+            ScrollViewBehavior(data.content, .Y);
+        }
+
+        if data.content.layout_last_frame.children_size.y > data.content.layout_last_frame.size.y - data.content.padding.y - data.content.padding.w {
+            Scrollbar(table, data.content, .Y);
+        }
+
+        return table;
+    }
 }
 
 TableAddColumn :: (table : *Node, label : string, str_id : string, flags : TableColumnFlags = 0) {
@@ -127,12 +142,12 @@ TableAddColumn :: (table : *Node, label : string, str_id : string, flags : Table
 
     first := data.columns.count == 0;
     if !first && style.vertical_inner_border_size > 0 {
-        border := GetNode(table, tprint("%.border_before", str_id));
+        border := GetNode(data.content, tprint("%.border_before", str_id));
         SetSize(border, SizePx(xx style.vertical_inner_border_size), SizeFill());
         SetBackgroundColor(border, style.vertical_inner_border_color);
     }
 
-    column, is_new := GetNode(table, str_id);
+    column, is_new := GetNode(data.content, str_id);
 
     exists := false;
     for data.columns {
@@ -146,7 +161,7 @@ TableAddColumn :: (table : *Node, label : string, str_id : string, flags : Table
         array_add(*data.columns, .{label=label, str_id=str_id, flags=flags, node=column});
     }
 
-    SetSize(column, SizeFill(), ifx data.flags & .FitContent then SizeFit() else SizeFill());
+    SetSize(column, SizeFill(), SizeFit());
     SetLayout(column, .TopToBottom);
 }
 
