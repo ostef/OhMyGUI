@@ -20,7 +20,7 @@ Font :: struct {
 
 FontConfig :: struct {
     resolution : u32 = 64;
-    glyph_ranges := GlyphRange.[.{0x20, 0x7f}];
+    glyph_ranges : []GlyphRange = GlyphRange.[.{0x20, 0x7f}];
     atlas_width : u32 = 1024;
     atlas_height : u32 = 1024;
 }
@@ -60,13 +60,21 @@ LoadDefaultFonts :: () {
     Roboto_Medium :: #run ReadCompileTimeFile("Roboto-Medium.ttf");
     Roboto_Bold :: #run ReadCompileTimeFile("Roboto-Bold.ttf");
 
-    regular := LoadFontFromMemory("__default", Roboto_Regular, .{});
+    config : FontConfig;
+    config.glyph_ranges = .[
+        .{0x20, 0x7f},
+        .{0xa0, 0x24f},
+    ];
+    config.atlas_width = 4096;
+    config.atlas_height = 4096;
+
+    regular := LoadFontFromMemory("__default", Roboto_Regular, config);
     assert(regular != null, "Could not load default regular font");
 
-    medium := LoadFontFromMemory("__default_medium", Roboto_Medium, .{});
+    medium := LoadFontFromMemory("__default_medium", Roboto_Medium, config);
     assert(medium != null, "Could not load default medium font");
 
-    bold := LoadFontFromMemory("__default_bold", Roboto_Bold, .{});
+    bold := LoadFontFromMemory("__default_bold", Roboto_Bold, config);
     assert(bold != null, "Could not load default bold font");
 }
 

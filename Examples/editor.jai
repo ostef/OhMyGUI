@@ -336,11 +336,13 @@ EditorFrame :: () {
 
                     OMG.Separator(content_browser);
 
-    Text :: #string END
-    The quick brown fox jumps over the lazy dog?
-    THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG!
-    0123456789
-    END
+Text :: #string END
+The quick brown fox jumps over the lazy dog?
+THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG!
+0123456789
+
+Voix ambiguë d'un cœur qui, au zéphyr, préfère les jattes de kiwis.
+END
 
                     _, _, the_quick := OMG.ClickableText(content_browser, Text);
                     OMG.SetWidth(the_quick, OMG.SizeFill());
