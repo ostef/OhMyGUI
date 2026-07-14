@@ -36,6 +36,15 @@ LabelAndContent :: (parent : *Node, label : string, style : *LabelAndContentStyl
     return content;
 }
 
+Image :: (parent : *Node, image : TextureHandle, width : u32, height : u32, uv_bounds : Vec4f = .{0,0,1,1}, location := #caller_location) -> *Node {
+    node := GetNode(parent, location);
+    SetImage(node, image, uv_bounds);
+    SetSize(node, SizePx(xx width), SizePx(xx height));
+    SetBackgroundColor(node, 0xffffffff);
+
+    return node;
+}
+
 Text :: (parent : *Node, fmt_str : string, args : ..Any, style : *TextStyle = null, location := #caller_location) -> *Node {
     EnsureStyle(*style, "text");
 

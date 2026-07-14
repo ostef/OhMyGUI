@@ -508,6 +508,27 @@ Render :: () {
     ResetInput(*omg.input);
 }
 
+LoadImage :: (filename : string) -> TextureHandle, width : u32, height : u32 {
+    contents, ok := read_entire_file(filename);
+    if !ok {
+        return 0, 0, 0;
+    }
+
+    w, h : s32;
+    stbi_set_flip_vertically_on_load(0);
+    data := stbi_load_from_memory(contents.data, xx contents.count, *w, *h, null, 4);
+    if !data {
+        log_error("Could not create cursor image");
+        return 0, 0, 0;
+    }
+
+    defer stbi_image_free(data);
+
+    handle := CreateRGBA8Texture(tprint("Texture '%'", filename), data, xx w, xx h);
+
+    return handle, xx w, xx h;
+}
+
 #scope_module
 
 ReadCompileTimeFile :: (filename : string, location := #caller_location) -> string {

@@ -22,7 +22,6 @@ Tree based immediate mode GUI library in Jai inspired by Clay and PanGui. For no
 * Clip fade-out
 * Custom drawing commands and shaders
 * Disabling
-* Images
 * Convert rendered SDF shapes to fast SDF textures/glyph
 * Tables:
     - column sorting

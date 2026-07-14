@@ -9,6 +9,11 @@ g_selected_fruit : enum {
     Banana;
 };
 
+g_dummy_viewport_image : struct {
+    texture : OMG.TextureHandle;
+    width, height : u32;
+}
+
 Panel :: (parent : *OMG.Node, str_id : string, title : string) -> *OMG.Node {
     base_background_color := OMG.GetStyle("base", OMG.BoxStyle).background_color;
 
@@ -58,6 +63,13 @@ Panel :: (parent : *OMG.Node, str_id : string, title : string) -> *OMG.Node {
 }
 
 EditorFrame :: () {
+    if !g_dummy_viewport_image.texture {
+        using g_dummy_viewport_image;
+
+        texture, width, height = OMG.LoadImage("dummy_viewport.png");
+        assert(texture != 0);
+    }
+
     base_background_color := OMG.GetStyle("base", OMG.BoxStyle).background_color;
 
     window := OMG.GetWindow(g_window);
@@ -251,103 +263,79 @@ EditorFrame :: () {
                 OMG.SetLayout(left_side, .TopToBottom);
 
                 main_viewport := Panel(left_side, "main_viewport", "Main Viewport");
-                OMG.SetPadding(main_viewport, 12, 12);
-                OMG.SetChildGap(main_viewport, 4, 4);
-
-                OMG.Text(main_viewport, "% nodes", context.omg.node_pool.count);
-                OMG.Text(main_viewport, "Mouse hover: % %", context.omg.mouse_hovered_node, ifx context.omg.mouse_hovered_node then context.omg.mouse_hovered_node.id);
-                OMG.Text(main_viewport, "Mouse focus: % %", context.omg.mouse_focused_node, ifx context.omg.mouse_focused_node then context.omg.mouse_focused_node.id);
-                OMG.Text(main_viewport, "Mouse capture: % %", context.omg.mouse_capturing_node, ifx context.omg.mouse_capturing_node then context.omg.mouse_capturing_node.id);
-                OMG.Text(main_viewport, "Scroll focus: %", context.omg.scroll_focused_node);
-
-                OMG.Text(main_viewport, "Layout: % ms", context.omg.layout_time_last_frame * 1000);
-                OMG.Text(main_viewport, "Render: % ms", OMG.GetLastFrameGPUTime() * 1000);
-
-                password_field := OMG.GetNode(main_viewport, "password_field");
                 {
-                    OMG.SetSize(password_field, OMG.SizeFill(0.3), OMG.SizeFit());
-                    OMG.SetLayout(password_field, .LeftToRight);
-                    OMG.SetChildAlign(password_field, 0, 0.5);
-                    OMG.SetChildGap(password_field, 6, 6);
-
-                    text_input_submitted, text_input := OMG.TextInput(password_field, ifx !g_show_password then .Password);
-
-                    if text_input_submitted {
-                        text := OMG.GetTextInputResult(text_input ,, temp);
-                        print("%\n", text);
-                    }
-
-                    OMG.Text(password_field, "Show Password:");
-                    OMG.Checkbox(password_field, *g_show_password);
+                    OMG.Image(main_viewport, g_dummy_viewport_image.texture, g_dummy_viewport_image.width, g_dummy_viewport_image.height);
                 }
-
-                fields := OMG.GetNode(main_viewport);
-                {
-                    OMG.SetSize(fields, OMG.SizeFill(0.3), OMG.SizeFit());
-                    OMG.SetLayout(fields, .TopToBottom);
-                    OMG.SetChildGap(fields, 0, 10);
-
-                    OMG.Slider(fields, *g_slider_value, 0, 1, 0.1);
-                    OMG.FillSlider(fields, *g_slider_value, 0, 1, 0.1);
-                    OMG.KnobSlider(fields, *g_slider_value, 0, 1, 0.1);
-
-                    OMG.Separator(fields);
-
-                    if OMG.EnumCombo(fields, *g_selected_fruit) {
-                        print("Selected: %\n", g_selected_fruit);
-                    }
-
-                    OMG.ColorInput(fields, *g_color);
-
-                    OMG.Separator(fields);
-
-                    OMG.ProgressBar(fields, (cos(g_time) + 1) * 0.5);
-                }
-
-                OMG.Separator(main_viewport);
-
-Text :: #string END
-The quick brown fox jumps over the lazy dog?
-THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG!
-0123456789
-END
-
-                _, _, the_quick := OMG.ClickableText(main_viewport, Text);
-                OMG.SetWidth(the_quick, OMG.SizeFill());
-                the_quick.flags |= .WrapText;
-                the_quick.text_size = 10 + (cos(g_time) + 2) * 0.5 * 30;
 
                 content_browser := Panel(left_side, "content_browser", "Content Browser");
                 {
                     OMG.SetHeight(content_browser, OMG.SizeFill(0.9));
 
-                    clicked, double_clicked := OMG.ClickableText(content_browser, "Click Me! Twice!");
-                    if double_clicked {
-                        print("Double clicked!\n");
-                    } else if clicked {
-                        print("Clicked!\n");
-                    }
+                    OMG.SetPadding(content_browser, 12, 12);
+                    OMG.SetChildGap(content_browser, 4, 4);
 
-                    OMG.Toggle(content_browser, "Toggle Me", *g_toggle_value);
+                    OMG.Text(content_browser, "% nodes", context.omg.node_pool.count);
+                    OMG.Text(content_browser, "Mouse hover: % %", context.omg.mouse_hovered_node, ifx context.omg.mouse_hovered_node then context.omg.mouse_hovered_node.id);
+                    OMG.Text(content_browser, "Mouse focus: % %", context.omg.mouse_focused_node, ifx context.omg.mouse_focused_node then context.omg.mouse_focused_node.id);
+                    OMG.Text(content_browser, "Mouse capture: % %", context.omg.mouse_capturing_node, ifx context.omg.mouse_capturing_node then context.omg.mouse_capturing_node.id);
+                    OMG.Text(content_browser, "Scroll focus: %", context.omg.scroll_focused_node);
 
-                    node := OMG.GetNode(content_browser);
+                    OMG.Text(content_browser, "Layout: % ms", context.omg.layout_time_last_frame * 1000);
+                    OMG.Text(content_browser, "Render: % ms", OMG.GetLastFrameGPUTime() * 1000);
+
+                    password_field := OMG.GetNode(content_browser, "password_field");
                     {
-                        OMG.SetSize(node, OMG.SizeFill(), OMG.SizeFill());
-                        OMG.SetDraw(node, (draw_list, node) => {
-                            Resolution :: 50;
+                        OMG.SetSize(password_field, OMG.SizeFill(0.3), OMG.SizeFit());
+                        OMG.SetLayout(password_field, .LeftToRight);
+                        OMG.SetChildAlign(password_field, 0, 0.5);
+                        OMG.SetChildGap(password_field, 6, 6);
 
-                            h := node.size.y * 0.5;
-                            start := OMG.Vec2f.{node.rect.x, (node.rect.y + node.rect.w) * 0.5};
+                        text_input_submitted, text_input := OMG.TextInput(password_field, ifx !g_show_password then .Password);
 
-                            for i : 0..Resolution - 1 {
-                                t0 := i / cast(float, Resolution);
-                                t1 := (i + 1) / cast(float, Resolution);
-                                p0 := OMG.Vec2f.{lerp(0, node.size.x, t0), cos(t0 * PI * 2) * h};
-                                p1 := OMG.Vec2f.{lerp(0, node.size.x, t1), cos(t1 * PI * 2) * h};
-                                OMG.DrawLine(draw_list, start + p0, start + p1, 5, OMG.ColorU32(1,1,1,1));
-                            }
-                        });
+                        if text_input_submitted {
+                            text := OMG.GetTextInputResult(text_input ,, temp);
+                            print("%\n", text);
+                        }
+
+                        OMG.Text(password_field, "Show Password:");
+                        OMG.Checkbox(password_field, *g_show_password);
                     }
+
+                    fields := OMG.GetNode(content_browser);
+                    {
+                        OMG.SetSize(fields, OMG.SizeFill(0.3), OMG.SizeFit());
+                        OMG.SetLayout(fields, .TopToBottom);
+                        OMG.SetChildGap(fields, 0, 10);
+
+                        OMG.Slider(fields, *g_slider_value, 0, 1, 0.1);
+                        OMG.FillSlider(fields, *g_slider_value, 0, 1, 0.1);
+                        OMG.KnobSlider(fields, *g_slider_value, 0, 1, 0.1);
+
+                        OMG.Separator(fields);
+
+                        if OMG.EnumCombo(fields, *g_selected_fruit) {
+                            print("Selected: %\n", g_selected_fruit);
+                        }
+
+                        OMG.ColorInput(fields, *g_color);
+
+                        OMG.Separator(fields);
+
+                        OMG.ProgressBar(fields, (cos(g_time) + 1) * 0.5);
+                    }
+
+                    OMG.Separator(content_browser);
+
+    Text :: #string END
+    The quick brown fox jumps over the lazy dog?
+    THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG!
+    0123456789
+    END
+
+                    _, _, the_quick := OMG.ClickableText(content_browser, Text);
+                    OMG.SetWidth(the_quick, OMG.SizeFill());
+                    the_quick.flags |= .WrapText;
+                    the_quick.text_size = 10 + (cos(g_time) + 2) * 0.5 * 30;
                 }
             }
 

@@ -56,6 +56,12 @@ LoadShader :: (name : string, vertex_source : string, fragment_source : string) 
     fragment_shader := glCreateShader(GL_FRAGMENT_SHADER);
     defer glDeleteShader(fragment_shader);
 
+    vertex_name := tprint("Vertex Shader '%'", name);
+    glObjectLabel(GL_SHADER, vertex_shader, xx vertex_name.count, vertex_name.data);
+
+    fragment_name := tprint("Fragment Shader '%'", name);
+    glObjectLabel(GL_SHADER, fragment_shader, xx fragment_name.count, fragment_name.data);
+
     vertex_length := cast(s32, vertex_source.count);
     glShaderSource(vertex_shader, 1, *vertex_source.data, *vertex_length);
     glCompileShader(vertex_shader);
@@ -91,6 +97,9 @@ LoadShader :: (name : string, vertex_source : string, fragment_source : string) 
     }
 
     program := glCreateProgram();
+
+    program_name := tprint("Shader Program '%'", name);
+    glObjectLabel(GL_PROGRAM, program, xx program_name.count, program_name.data);
 
     glAttachShader(program, vertex_shader);
     defer glDetachShader(program, vertex_shader);
@@ -230,11 +239,8 @@ InitGL :: (num_frames_in_flight := 2, frame_data_buffer_size := 1 * 1024 * 1024)
         }
     }
 
-    glCreateTextures(GL_TEXTURE_2D, 1, *g_white_texture);
-    glTextureStorage2D(g_white_texture, 1, GL_RGBA8, 1, 1);
-
     white : u32 = 0xffffffff;
-    glTextureSubImage2D(g_white_texture, 0, 0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, *white);
+    g_white_texture = xx CreateRGBA8Texture("White Texture", *white, 1, 1);
 
     log("Initialized GL backend");
     log("Num frames in flight: %", g_num_frames_in_flight);
@@ -393,4 +399,15 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
     glQueryCounter(g_timestamp_queries[g_frame_in_flight][1], GL_TIMESTAMP);
+}
+
+CreateRGBA8Texture :: (name : string, data : *void, width : u32, height : u32) -> TextureHandle {
+    result : GLuint;
+    glCreateTextures(GL_TEXTURE_2D, 1, *result);
+    glTextureStorage2D(result, 1, GL_RGBA8, width, height);
+    glTextureSubImage2D(result, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
+
+    glObjectLabel(GL_TEXTURE, result, xx name.count, name.data);
+
+    return result;
 }
