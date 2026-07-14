@@ -200,8 +200,8 @@ void main() {
 
     out_color = BlendEffect(out_color, border_color, border);
 
-    // if (drawing.clip_box_index >= 0) {
-    //     ClipBox clip = u_clip_boxes[drawing.clip_box_index];
-    //     out_color *= SampleClipBox(clip, p, aa);
-    // }
+    if (drawing.clip_box_index >= 0) {
+        ClipBox clip = u_clip_boxes[drawing.clip_box_index];
+        out_color *= SampleClipBox(clip, p, aa);
+    }
 }
