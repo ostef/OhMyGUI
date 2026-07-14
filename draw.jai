@@ -577,9 +577,6 @@ DrawWrappedText :: (
 
     if effects {
         ResetPen(*iter);
-        iter.include_newlines = true;
-
-        line_start : Vec2f;
 
         underline_thickness := max(font.desired_underline_thickness * size, 1);
         underline_position := font.desired_underline_position * size;
@@ -587,49 +584,21 @@ DrawWrappedText :: (
             underline_position = ceil(underline_position);
         }
 
-        for :WordWrap iter {
-            if iter.new_line {
-                line_start = position + iter.pen;
-            }
-
-            if it.codepoint == #char "\n" {
-                line_end := position + iter.pen;
-
-                if effects & .Underline {
-                    box_position := (line_start + line_end) * 0.5;
-                    box_position.y += (underline_position + underline_thickness * 0.5);
-                    box_size := Vec2f.{line_end.x - line_start.x, underline_thickness};
-
-                    DrawBox(draw_list, box_position, box_size, color);
-                }
-
-                if effects & .Strikethrough {
-                    box_position := (line_start + line_end) * 0.5;
-                    box_position.y -= font.ascent * 0.35 * size;
-                    box_size := Vec2f.{line_end.x - line_start.x, underline_thickness};
-
-                    DrawBox(draw_list, box_position, box_size, color);
-                }
-            }
-        }
-
-        if !iter.new_line {
-            line_end := position + iter.pen;
-
+        for :WordWrappedLines iter {
             if effects & .Underline {
-                box_position := (line_start + line_end) * 0.5;
+                box_position := (it.line_pen_start + it.line_pen_end) * 0.5;
                 box_position.y += (underline_position + underline_thickness * 0.5);
-                box_size := Vec2f.{line_end.x - line_start.x, underline_thickness};
+                box_size := Vec2f.{it.line_pen_end.x - it.line_pen_start.x, underline_thickness};
 
-                DrawBox(draw_list, box_position, box_size, color);
+                DrawBox(draw_list, box_position + position, box_size, color);
             }
 
             if effects & .Strikethrough {
-                box_position := (line_start + line_end) * 0.5;
+                box_position := (it.line_pen_start + it.line_pen_end) * 0.5;
                 box_position.y -= font.ascent * 0.35 * size;
-                box_size := Vec2f.{line_end.x - line_start.x, underline_thickness};
+                box_size := Vec2f.{it.line_pen_end.x - it.line_pen_start.x, underline_thickness};
 
-                DrawBox(draw_list, box_position, box_size, color);
+                DrawBox(draw_list, box_position + position, box_size, color);
             }
         }
     }

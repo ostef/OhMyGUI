@@ -20,7 +20,7 @@ Font :: struct {
 
 FontConfig :: struct {
     resolution : u32 = 64;
-    glyph_ranges : []GlyphRange = GlyphRange.[.{0x20, 0x7f}];
+    glyph_ranges : []GlyphRange = .[.{0x20, 0x7f}];
     atlas_width : u32 = 1024;
     atlas_height : u32 = 1024;
 }
@@ -469,6 +469,47 @@ WordWrap :: (iter : *TextGlyphIterator, body : Code, flags : For_Flags) #expand 
     }
 
     iter.computed_size.y = max(iter.computed_size.y, iter.pen.y + iter.font.descent * iter.font_size);
+}
+
+WordWrappedLines :: (iter : *TextGlyphIterator, body : Code, flags : For_Flags) #expand {
+    `it : struct {
+        line_pen_start : Vec2f;
+        line_pen_end : Vec2f;
+    };
+    `it_index := 0;
+
+    prev_include_newlines := iter.include_newlines;
+    defer iter.include_newlines = prev_include_newlines;
+
+    iter.include_newlines = true;
+
+    // @Todo @Hack
+    if iter.pen == .{} {
+        iter.pen.y = iter.font.ascent * iter.font_size;
+    }
+
+    it.line_pen_start = iter.pen;
+    it.line_pen_end = iter.pen;
+
+    prev_pen := iter.pen;
+    for :WordWrap glyph, glyph_index : iter {
+        if it.line_pen_end != iter.pen && iter.pen.x == 0 {
+            #insert body;
+
+            it.line_pen_start = iter.pen;
+        }
+
+        it.line_pen_end = iter.pen;
+        prev_pen = iter.pen;
+    }
+
+    if it.line_pen_end != iter.pen && iter.pen.x == 0 {
+        #insert body;
+    } else if it.line_pen_start != it.line_pen_end {
+        it.line_pen_end = iter.pen;
+
+        #insert body;
+    }
 }
 
 CalculateTextSize :: (font : *Font, size : float, text : string) -> Vec2f {
