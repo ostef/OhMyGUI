@@ -429,6 +429,7 @@ DefaultTheme :: struct {
     scrollbar : ScrollbarStyle;
     text_input : TextInputStyle;
     checkbox : CheckboxStyle;
+    radio_button : RadioButtonStyle;
     menu_bar : BoxStyle;
     menu_item : ButtonStyle;
     menu : MenuStyle;
@@ -678,6 +679,27 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         SetAlpha(*disabled.checkmark.background_color, 0.5);
     }
     SetStyle(theme, "checkbox", theme.checkbox);
+
+    {
+        using theme.radio_button;
+
+        normal.background.corner_radiuses = .{1,1,1,1};
+        normal.active_mark.corner_radiuses = .{1,1,1,1};
+        normal.background.padding = .{2,2,2,2};
+        normal.background.border_color = MakeTone(button_base_background_color, 0.3);
+        normal.background.border_size = 1;
+
+        focused = normal;
+        hot = normal;
+        active = normal;
+        disabled = normal;
+
+        SetColors(*theme.radio_button, button_base_background_color, base_accent_color);
+
+        SetAlpha(*disabled.background.background_color, 0.5);
+        SetAlpha(*disabled.active_mark.background_color, 0.5);
+    }
+    SetStyle(theme, "radio_button", theme.radio_button);
 
     {
         using theme.menu_bar;

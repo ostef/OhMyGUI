@@ -321,6 +321,16 @@ EditorFrame :: () {
 
                         OMG.Separator(fields);
 
+                        for type_info(type_of(g_selected_fruit)).values {
+                            OMG.PushIDOffset(xx it);
+                            defer OMG.PopIDOffset();
+
+                            content := OMG.LabelAndContent(fields, type_info(type_of(g_selected_fruit)).names[it_index]);
+                            OMG.RadioButton(content, *g_selected_fruit, xx it);
+                        }
+
+                        OMG.Separator(fields);
+
                         OMG.ProgressBar(fields, (cos(g_time) + 1) * 0.5);
                     }
 

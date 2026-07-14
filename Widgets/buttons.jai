@@ -278,3 +278,65 @@ Checkbox :: (parent : *Node, value : *bool, size := 20.0, style : *CheckboxStyle
         return button.released, node;
     }
 }
+
+RadioButtonStateStyle :: struct {
+    background : BoxStyle;
+    active_mark : BoxStyle;
+}
+
+RadioButtonStyle :: StateStyle(RadioButtonStateStyle);
+
+SetColors :: (using style : *RadioButtonStyle, base_background_color : RGBA8, active_mark_color : RGBA8) {
+    normal.background.background_color = base_background_color;
+    focused.background.background_color = Whiten(base_background_color, 0.05);
+    hot.background.background_color = Darken(base_background_color, 0.05);
+    active.background.background_color = Whiten(base_background_color, 0.1);
+
+    normal.active_mark.background_color = active_mark_color;
+    focused.active_mark.background_color = active_mark_color;
+    hot.active_mark.background_color = active_mark_color;
+    active.active_mark.background_color = active_mark_color;
+}
+
+RadioButton :: (parent : *Node, value : *$T, for_value : T, size := 20.0, style : *RadioButtonStyle = null, location := #caller_location) -> clicked : bool, *Node {
+    clicked, node := RadioButton(parent, value.* == for_value, size, style, location);
+    if clicked {
+        value.* = for_value;
+    }
+
+    return clicked, node;
+}
+
+RadioButton :: (parent : *Node, active : bool, size := 16.0, style : *RadioButtonStyle = null, location := #caller_location) -> clicked : bool, *Node {
+    EnsureStyle(*style, "radio_button");
+
+    node := GetNode(parent, location);
+    {
+        SetSize(node, SizePx(size), SizePx(size));
+
+        SetUserData(node, style.*);
+
+        button := ButtonBehavior(node);
+
+        state := GetState(node);
+        style_state := style.states[state];
+        Apply(node, style_state.background);
+        SetCornerRadiuses(node, style_state.background.corner_radiuses * size * 0.5);
+
+        if active {
+            active_mark := GetNode(node, "text");
+            SetSize(active_mark, SizeFill(), SizeFill());
+
+            Apply(active_mark, style_state.active_mark);
+
+            radiuses := style_state.active_mark.corner_radiuses;
+            radiuses.x *= (size - max(style_state.background.padding.x, style_state.background.padding.y)) * 0.5;
+            radiuses.y *= (size - max(style_state.background.padding.z, style_state.background.padding.y)) * 0.5;
+            radiuses.z *= (size - max(style_state.background.padding.x, style_state.background.padding.w)) * 0.5;
+            radiuses.w *= (size - max(style_state.background.padding.z, style_state.background.padding.w)) * 0.5;
+            SetCornerRadiuses(active_mark, radiuses);
+        }
+
+        return button.released, node;
+    }
+}
