@@ -959,7 +959,7 @@ SendDrawCommands :: (draw_list : *DrawList, viewport_w : u32, viewport_h : u32) 
             SetShader(g_shader_sdf);
         }
 
-        if current_texture != it.texture {
+        if it_index == 0 || current_texture != it.texture {
             if !it.texture {
                 glBindTextureUnit(0, g_white_texture);
             } else {
