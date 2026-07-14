@@ -329,6 +329,25 @@ END
                     }
 
                     OMG.Toggle(content_browser, "Toggle Me", *g_toggle_value);
+
+                    node := OMG.GetNode(content_browser);
+                    {
+                        OMG.SetSize(node, OMG.SizeFill(), OMG.SizeFill());
+                        OMG.SetDraw(node, (draw_list, node) => {
+                            Resolution :: 50;
+
+                            h := node.size.y * 0.5;
+                            start := OMG.Vec2f.{node.rect.x, (node.rect.y + node.rect.w) * 0.5};
+
+                            for i : 0..Resolution - 1 {
+                                t0 := i / cast(float, Resolution);
+                                t1 := (i + 1) / cast(float, Resolution);
+                                p0 := OMG.Vec2f.{lerp(0, node.size.x, t0), cos(t0 * PI * 2) * h};
+                                p1 := OMG.Vec2f.{lerp(0, node.size.x, t1), cos(t1 * PI * 2) * h};
+                                OMG.DrawLine(draw_list, start + p0, start + p1, 5, OMG.ColorU32(1,1,1,1));
+                            }
+                        });
+                    }
                 }
             }
 

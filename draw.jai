@@ -14,6 +14,7 @@ BoxDrawing :: struct {
     size : Vec2f;
     position : Vec2f;
     uv_bounds : Vec4f;
+    rotation : float;
     corner_radiuses : Vec4f;
     background_color : RGBA8;
     background_color2 : RGBA8;
@@ -75,8 +76,9 @@ ShaderBoxDrawing :: struct {
     outer_shadow_blur : float;
     inner_shadow_color : u32;
     inner_shadow_blur : float;
+    rotation : float;
     clip_box_index : s32;
-    padding : [3]u32;
+    padding : [2]u32;
 }
 
 TriangleDrawing :: struct {
@@ -377,6 +379,19 @@ DrawBox :: inline (draw_list : *DrawList, position : Vec2f, size : Vec2f, color 
             background_color=color,
             corner_radiuses=corner_radiuses,
         });
+}
+
+DrawLine :: (draw_list : *DrawList, start : Vec2f, end : Vec2f, thickness : float, color : RGBA8) -> int {
+    dir := end - start;
+    length := normalize(*dir);
+    angle := atan2(dir.x, -dir.y);
+
+    return DrawBox(draw_list, .{
+        position=(start + end) * 0.5,
+        size=.{thickness, length},
+        rotation=angle,
+        background_color=color,
+    });
 }
 
 DrawBox :: (draw_list : *DrawList, box : BoxDrawing, texture : TextureHandle = 0) -> int {
@@ -826,6 +841,8 @@ CopyDrawListShaderData :: (
         box := array_add(boxes);
         box.size_and_position.xy = it.size;
         box.size_and_position.zw = it.position;
+        box.uv_bounds = it.uv_bounds;
+        box.rotation = it.rotation;
         box.corner_radiuses = it.corner_radiuses;
         box.background_color = it.background_color;
         box.background_color2 = it.background_color2;

@@ -38,9 +38,17 @@ void main() {
     vec2 inner_shadow_offset = box.inner_shadow_offset;
     float inner_shadow_blur = box.inner_shadow_blur;
 
+    float rotation_cos = cos(-box.rotation);
+    float rotation_sin = sin(-box.rotation);
+    vec2 box_p = p - box_position;
+    box_p = vec2(
+        box_p.x * rotation_cos - box_p.y * rotation_sin,
+        box_p.x * rotation_sin + box_p.y * rotation_cos
+    );
+
     vec2 uv = vec2(
-        InverseLerp(-box_size.x * 0.5, box_size.x * 0.5, p.x - box_position.x),
-        InverseLerp(-box_size.y * 0.5, box_size.y * 0.5, p.y - box_position.y)
+        InverseLerp(-box_size.x * 0.5, box_size.x * 0.5, box_p.x),
+        InverseLerp(-box_size.y * 0.5, box_size.y * 0.5, box_p.y)
     );
     uv = clamp(uv, 0, 1);
     uv = vec2(
@@ -49,12 +57,12 @@ void main() {
     );
     vec4 image_color = texture(u_texture, uv);
 
-    float d = PrimBox(p - box_position, box_size, box_corner_radiuses);
+    float d = PrimBox(box_p, box_size, box_corner_radiuses);
 
     out_color = vec4(0);
 
     if (outer_shadow_color.a > 0) {
-        float shadow_d = outer_shadow_offset == vec2(0) ? d : PrimBox(p - box_position - outer_shadow_offset, box_size, box_corner_radiuses);
+        float shadow_d = outer_shadow_offset == vec2(0) ? d : PrimBox(box_p - outer_shadow_offset, box_size, box_corner_radiuses);
         float outer_shadow = FxOuterShadow(shadow_d, aa + outer_shadow_blur, background_color.a, border_color.a, border_size, border_inset);
         out_color = BlendEffect(out_color, outer_shadow_color, outer_shadow);
     }
@@ -65,7 +73,7 @@ void main() {
     out_color = BlendEffect(out_color, image_color * background_color, background);
 
     if (inner_shadow_color.a > 0) {
-        float inner_shadow_d = inner_shadow_offset == vec2(0) ? d : PrimBox(p - box_position - inner_shadow_offset, box_size, box_corner_radiuses);
+        float inner_shadow_d = inner_shadow_offset == vec2(0) ? d : PrimBox(box_p - inner_shadow_offset, box_size, box_corner_radiuses);
         float inner_shadow = FxInnerShadow(inner_shadow_d, aa + inner_shadow_blur, background);
         out_color = BlendEffect(out_color, inner_shadow_color, inner_shadow);
     }

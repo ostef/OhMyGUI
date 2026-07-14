@@ -28,6 +28,7 @@ struct Box {
     float outer_shadow_blur;
     uint inner_shadow_color;
     float inner_shadow_blur;
+    float rotation;
     int clip_box_index;
 };
 
