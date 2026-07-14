@@ -29,6 +29,7 @@ Tree based immediate mode GUI library in Jai inspired by Clay and PanGui. For no
     - column resize
     - scrolling
     - static rows and columns
+* Justified text wrapping
 
 Widgets:
 * Multi line text input
