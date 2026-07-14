@@ -40,16 +40,10 @@ TreeNode :: (parent : *Node, text : string, flags : TreeNodeFlags = 0, style : *
 
         contents : *Node;
         if IsTreeNodeOpened(node) {
-            expanded_node := GetNode(node);
-            SetSize(expanded_node, SizeFill(), SizeFit());
-            SetLayout(expanded_node, .LeftToRight);
-
-            indentation := GetNode(expanded_node);
-            SetSize(indentation, SizePx(style.indent), SizeFill());
-
-            contents = GetNode(expanded_node);
+            contents = GetNode(node);
             SetSize(contents, SizeFill(), SizeFit());
             SetLayout(contents, .TopToBottom);
+            contents.padding.x = xx style.indent;
         }
 
         return contents, tree_item;
