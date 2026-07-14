@@ -213,8 +213,13 @@ GetFont :: (name : string) -> *Font {
     return null;
 }
 
-GetGlyph :: (font : *Font, codepoint : u32) -> *Glyph {
-    return HT.table_find_pointer(*font.glyph_map, codepoint);
+GetGlyph :: (font : *Font, codepoint : u32, replace_if_missing := true) -> *Glyph {
+    glyph := HT.table_find_pointer(*font.glyph_map, codepoint);
+    if !glyph && replace_if_missing {
+        return HT.table_find_pointer(*font.glyph_map, Unicode_Replacement);
+    }
+
+    return glyph;
 }
 
 #scope_file
@@ -281,6 +286,11 @@ LoadGlyph :: (font : *Font, codepoint : u32, ft_face : FT_Face, packer : *RectPa
     existing_glyph := HT.table_find_pointer(*font.glyph_map, codepoint);
     if existing_glyph {
         return existing_glyph;
+    }
+
+    char_index := FT_Get_Char_Index(ft_face, codepoint);
+    if char_index == 0 {
+        return null;
     }
 
     ft_err := FT_Load_Char(ft_face, codepoint, FT_LOAD_DEFAULT);
@@ -398,10 +408,7 @@ for_expansion :: (iter : *TextGlyphIterator, body : Code, flags : For_Flags) #ex
         case;
             glyph := GetGlyph(iter.font, codepoint);
             if !glyph {
-                glyph = GetGlyph(iter.font, Unicode_Replacement);
-                if !glyph {
-                    continue;
-                }
+                continue;
             }
 
             it = glyph;
@@ -441,10 +448,7 @@ WordWrap :: (iter : *TextGlyphIterator, body : Code, flags : For_Flags) #expand 
             for word.str {
                 glyph := GetGlyph(iter.font, it);
                 if !glyph {
-                    glyph = GetGlyph(iter.font, Unicode_Replacement);
-                    if !glyph {
-                        continue;
-                    }
+                    continue;
                 }
 
                 word_text_length += glyph.hori_advance * iter.font_size;
