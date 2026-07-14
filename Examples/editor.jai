@@ -275,10 +275,6 @@ EditorFrame :: () {
                     OMG.SetChildGap(content_browser, 4, 4);
 
                     OMG.Text(content_browser, "% nodes", context.omg.node_pool.count);
-                    OMG.Text(content_browser, "Mouse hover: % %", context.omg.mouse_hovered_node, ifx context.omg.mouse_hovered_node then context.omg.mouse_hovered_node.id);
-                    OMG.Text(content_browser, "Mouse focus: % %", context.omg.mouse_focused_node, ifx context.omg.mouse_focused_node then context.omg.mouse_focused_node.id);
-                    OMG.Text(content_browser, "Mouse capture: % %", context.omg.mouse_capturing_node, ifx context.omg.mouse_capturing_node then context.omg.mouse_capturing_node.id);
-                    OMG.Text(content_browser, "Scroll focus: %", context.omg.scroll_focused_node);
 
                     OMG.Text(content_browser, "Layout: % ms", context.omg.layout_time_last_frame * 1000);
                     OMG.Text(content_browser, "Render: % ms", OMG.GetLastFrameGPUTime() * 1000);
@@ -385,6 +381,34 @@ END
 
                     entity_inspector := Panel(right_side, "entity_inspector", "Entity Inspector");
                     {
+                        tree1 := OMG.TreeNode(entity_inspector, "1");
+                        if tree1 {
+                            tree1_1 := OMG.TreeNode(tree1, "1.1");
+                            if tree1_1 {
+                                OMG.TreeNode(tree1_1, "1.1.1");
+                            }
+
+                            OMG.TreeNode(tree1, "1.2");
+                        }
+
+                        tree2 := OMG.TreeNode(entity_inspector, "2");
+                        if tree2 {
+                            tree2_1 := OMG.TreeNode(tree2, "2.1");
+                            if tree2_1 {
+                                OMG.TreeNode(tree2_1, "2.1.1");
+                            }
+
+                            OMG.TreeNode(tree2, "2.2");
+                        }
+
+                        InfiniteTreeNode :: (parent : *OMG.Node, location := #caller_location) {
+                            tree := OMG.TreeNode(parent, "Infinity Tree");
+                            if tree {
+                                InfiniteTreeNode(tree);
+                            }
+                        }
+
+                        InfiniteTreeNode(entity_inspector);
                     }
                 }
             }

@@ -6,6 +6,7 @@
 #load "color_picker.jai";
 #load "combo.jai";
 #load "tables.jai";
+#load "tree.jai";
 
 LabelAndContentStyle :: struct {
     padding : Vec4b;

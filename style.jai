@@ -441,6 +441,7 @@ DefaultTheme :: struct {
     tooltip : TooltipStyle;
     table : TableStyle;
     progress_bar : ProgressBarStyle;
+    tree_node : TreeNodeStyle;
 }
 
 g_default_theme_light : DefaultTheme;
@@ -1009,4 +1010,19 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         fill.corner_radiuses = Vec4f.{1,1,1,1} * height * 0.5;
     }
     SetStyle(theme, "progress_bar", theme.progress_bar);
+
+    {
+        using theme.tree_node;
+
+        for * tree_item.states {
+            it.text = theme.text;
+            it.background.padding = .{6,2,6,2};
+        }
+
+        tree_item.focused.background.background_color = base_accent_color;
+        tree_item.hot.background.background_color = base_accent_color;
+
+        indent = 25;
+    }
+    SetStyle(theme, "tree_node", theme.tree_node);
 }
