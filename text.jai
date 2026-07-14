@@ -371,7 +371,7 @@ for_expansion :: (iter : *TextGlyphIterator, body : Code, flags : For_Flags) #ex
         iter.pen.y = iter.font.ascent * iter.font_size;
     }
 
-    for codepoint, `it_index : iter.text {
+    for codepoint, `it_index : MakeUtf8String(iter.text) {
         if codepoint == {
         case #char "\n";
             if iter.include_newlines {
