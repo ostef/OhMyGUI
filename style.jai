@@ -978,7 +978,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         header_text = theme.text;
         header_text.font = GetDefaultFontMedium();
 
-        header_row.cell_padding = .{6,6,6,6};
+        header_row.cell_padding = .{8,8,8,8};
         header_row.cell_child_align = .{0, 0.5};
         header_row.background_color = MakeTone(base_background_color, 0.05);
         header_row.alternate_background_color = MakeTone(base_background_color, 0.05);
@@ -986,7 +986,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         header_row.border_color = MakeTone(base_background_color, 0.5);
         header_row.border_size = 1;
 
-        rows.cell_padding = .{4,4,4,4};
+        rows.cell_padding = .{8,8,8,8};
         rows.cell_child_align = .{0, 0.5};
         rows.background_color = MakeTone(base_background_color, 0.1);
         rows.alternate_background_color = MakeTone(base_background_color, 0.2);
