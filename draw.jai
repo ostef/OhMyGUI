@@ -362,6 +362,7 @@ PopClipBox :: (draw_list : *DrawList) {
     pop(*draw_list.clip_box_stack);
 }
 
+// @Todo: handle rotation
 IsClipped :: (draw_list : *DrawList, bounds : Vec4f) -> bool {
     index := GetCurrentClipBoxIndex(draw_list);
     if index < 0 {
@@ -926,6 +927,7 @@ CopyDrawListShaderData :: (
 SendDrawCommands :: (draw_list : *DrawList, viewport_w : u32, viewport_h : u32) {
     current_shader : GLuint = 0;
     current_texture : GLuint = 0;
+    u_base_instance : GLint = -1;
 
     for draw_list.draw_calls {
         first_instance : u32;
@@ -937,7 +939,7 @@ SendDrawCommands :: (draw_list : *DrawList, viewport_w : u32, viewport_h : u32) 
 
         num_vertices : u32;
 
-        // msg := tprint("Draw Call, % (% instances)", it.kind, num_instances);
+        // msg := tprint("Draw Call, % (% instances, % first, % last)", it.kind, num_instances, it.first, it.last);
         // glDebugMessageInsert(GL_DEBUG_SOURCE_APPLICATION, GL_DEBUG_TYPE_MARKER, 0, GL_DEBUG_SEVERITY_NOTIFICATION, xx msg.count, xx msg.data);
 
         SetShader :: (shader : Shader) #expand {
@@ -945,12 +947,11 @@ SendDrawCommands :: (draw_list : *DrawList, viewport_w : u32, viewport_h : u32) 
                 glUseProgram(shader.handle);
                 current_shader = shader.handle;
 
-                if shader.u_base_instance >= 0 {
-                    glUniform1i(shader.u_base_instance, xx `first_instance);
-                }
                 if shader.u_viewport_size >= 0 {
                     glUniform2f(shader.u_viewport_size, xx `viewport_w, xx `viewport_h);
                 }
+
+                `u_base_instance = shader.u_base_instance;
             }
         }
 
@@ -984,6 +985,10 @@ SendDrawCommands :: (draw_list : *DrawList, viewport_w : u32, viewport_h : u32) 
             }
 
             current_texture = xx it.texture;
+        }
+
+        if u_base_instance >= 0 {
+            glUniform1i(u_base_instance, xx first_instance);
         }
 
         glDrawArraysInstancedBaseInstance(GL_TRIANGLES, 0, num_vertices, xx num_instances, xx first_instance);
