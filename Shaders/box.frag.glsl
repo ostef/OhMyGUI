@@ -8,6 +8,7 @@ layout(std430) readonly buffer BoxData {
 };
 
 uniform vec2 u_viewport_size;
+uniform sampler2D u_texture;
 
 layout(location=0) in flat uint in_box_index;
 
@@ -37,6 +38,17 @@ void main() {
     vec2 inner_shadow_offset = box.inner_shadow_offset;
     float inner_shadow_blur = box.inner_shadow_blur;
 
+    vec2 uv = vec2(
+        InverseLerp(-box_size.x * 0.5, box_size.x * 0.5, p.x - box_position.x),
+        InverseLerp(-box_size.y * 0.5, box_size.y * 0.5, p.y - box_position.y)
+    );
+    uv = clamp(uv, 0, 1);
+    uv = vec2(
+        mix(box.uv_bounds.x, box.uv_bounds.z, uv.x),
+        mix(box.uv_bounds.y, box.uv_bounds.w, uv.y)
+    );
+    vec4 image_color = texture(u_texture, uv);
+
     float d = PrimBox(p - box_position, box_size, box_corner_radiuses);
 
     out_color = vec4(0);
@@ -56,7 +68,7 @@ void main() {
     float background = FxSolidColor(d, aa);
     background_color = FxGradientColorInBox(p, box_position, box_size, box.background_gradient_offset, box.background_gradient_vector, background_color, background_color2);
 
-    out_color = BlendEffect(out_color, background_color, background);
+    out_color = BlendEffect(out_color, image_color * background_color, background);
 
     if (inner_shadow_color.a > 0) {
         float shadow_d;

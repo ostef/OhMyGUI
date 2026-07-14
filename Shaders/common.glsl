@@ -12,6 +12,7 @@ struct ClipBox {
 struct Box {
     vec4 size_and_position;
     vec4 corner_radiuses;
+    vec4 uv_bounds;
     vec2 border_size_and_inset;
     vec2 outer_shadow_offset;
     vec2 inner_shadow_offset;

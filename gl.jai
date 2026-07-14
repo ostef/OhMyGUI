@@ -6,6 +6,8 @@ GetLastFrameGPUTime :: inline () -> float {
 
 #scope_module
 
+g_white_texture : GLuint;
+
 g_color_texture : GLuint;
 g_color_framebuffer : GLuint;
 g_color_texture_width : u32;
@@ -227,6 +229,12 @@ InitGL :: (num_frames_in_flight := 2, frame_data_buffer_size := 1 * 1024 * 1024)
             glObjectLabel(GL_QUERY, it, xx name.count, name.data);
         }
     }
+
+    glCreateTextures(GL_TEXTURE_2D, 1, *g_white_texture);
+    glTextureStorage2D(g_white_texture, 1, GL_RGBA8, 1, 1);
+
+    white : u32 = 0xffffffff;
+    glTextureSubImage2D(g_white_texture, 0, 0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, *white);
 
     log("Initialized GL backend");
     log("Num frames in flight: %", g_num_frames_in_flight);

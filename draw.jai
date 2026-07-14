@@ -13,6 +13,7 @@ ShaderClipBox :: struct {
 BoxDrawing :: struct {
     size : Vec2f;
     position : Vec2f;
+    uv_bounds : Vec4f;
     corner_radiuses : Vec4f;
     background_color : RGBA8;
     background_color2 : RGBA8;
@@ -58,6 +59,7 @@ GetRealBounds :: (box : BoxDrawing) -> Vec4f {
 ShaderBoxDrawing :: struct {
     size_and_position : Vec4f;
     corner_radiuses : Vec4f;
+    uv_bounds : Vec4f;
     border_size_and_inset : Vec2f;
     outer_shadow_offset : Vec2f;
     inner_shadow_offset : Vec2f;
@@ -954,7 +956,12 @@ SendDrawCommands :: (draw_list : *DrawList, viewport_w : u32, viewport_h : u32) 
         }
 
         if current_texture != it.texture {
-            glBindTextureUnit(0, xx it.texture);
+            if !it.texture {
+                glBindTextureUnit(0, g_white_texture);
+            } else {
+                glBindTextureUnit(0, xx it.texture);
+            }
+
             current_texture = xx it.texture;
         }
 

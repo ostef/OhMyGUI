@@ -154,6 +154,8 @@ Node :: struct {
 
     // Styling properties, NOT reset each frame
     using styling : struct {
+        image : TextureHandle;
+        image_uv_bounds : Vec4f;
         corner_radiuses : Vec4f;
         background_color : RGBA8;
         background_color2 : RGBA8;
@@ -738,6 +740,11 @@ SetText :: inline (node : *Node, font : *Font, size : float, text : string) {
     node.font = font;
     node.text = text;
     node.text_size = size;
+}
+
+SetImage :: inline (node : *Node, image : TextureHandle, uv_bounds := Vec4f.{0,0,1,1}) {
+    node.image = image;
+    node.image_uv_bounds = uv_bounds;
 }
 
 SetCornerRadius :: inline (node : *Node, radius : float) {
