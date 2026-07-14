@@ -6,9 +6,11 @@ layout(std430) readonly buffer TriangleData {
 };
 
 uniform vec2 u_viewport_size;
+uniform sampler2D u_texture;
 
 layout(location=0) in flat uint in_triangle_index;
-layout(location=1) in vec4 in_color;
+layout(location=1) in vec2 in_uv;
+layout(location=2) in vec4 in_color;
 
 layout(location=0) out vec4 out_color;
 
@@ -31,8 +33,10 @@ void main() {
 
     out_color = vec4(0);
 
-    float background = 1; //float(d < 0); //FxSolidColorWithAA(d, aa);
-    out_color = BlendEffect(out_color, in_color, background);
+    vec4 image_color = texture(u_texture, in_uv);
+
+    float background = 1; //FxSolidColorWithAA(d, aa);
+    out_color = BlendEffect(out_color, image_color * in_color, background);
 
     if (triangle.clip_box_index >= 0) {
         ClipBox clip = u_clip_boxes[triangle.clip_box_index];

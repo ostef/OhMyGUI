@@ -83,6 +83,9 @@ TriangleDrawing :: struct {
     p0 : Vec2f;
     p1 : Vec2f;
     p2 : Vec2f;
+    uv0 : Vec2f;
+    uv1 : Vec2f;
+    uv2 : Vec2f;
     c0 : RGBA8;
     c1 : RGBA8;
     c2 : RGBA8;
@@ -437,17 +440,17 @@ DrawTriangle :: inline (draw_list : *DrawList, p0 : Vec2f, p1 : Vec2f, p2 : Vec2
         });
 }
 
-DrawTriangle :: (draw_list : *DrawList, triangle : TriangleDrawing) -> int {
+DrawTriangle :: (draw_list : *DrawList, triangle : TriangleDrawing, texture : TextureHandle = 0) -> int {
     if (triangle.c0 & 0xff) == 0 && (triangle.c1 & 0xff) == 0 && (triangle.c2 & 0xff) == 0 {
         return -1;
     }
 
     draw_call := GetCurrentDrawCall(draw_list);
-    if !draw_call || draw_call.kind != .Triangles {
+    if !draw_call || draw_call.kind != .Triangles || draw_call.texture != texture {
         draw_call = array_add(*draw_list.draw_calls);
         draw_call.kind = .Triangles;
         draw_call.first = xx draw_list.triangles.count;
-        draw_call.texture = 0;
+        draw_call.texture = texture;
     }
 
     draw_call.last = xx draw_list.triangles.count;
@@ -656,6 +659,7 @@ DrawNodeDefault :: (draw_list : *DrawList, node : *Node) {
     DrawBox(draw_list, .{
         size=node.rect.zw - node.rect.xy,
         position=(node.rect.xy + node.rect.zw) * 0.5,
+        uv_bounds=node.image_uv_bounds,
         corner_radiuses=node.corner_radiuses,
         background_color=node.background_color,
         background_color2=node.background_color2,
@@ -673,7 +677,7 @@ DrawNodeDefault :: (draw_list : *DrawList, node : *Node) {
         inner_shadow_color=node.inner_shadow_color,
         inner_shadow_offset=node.inner_shadow_offset,
         inner_shadow_blur=node.inner_shadow_blur,
-    });
+    }, texture=node.image);
 
     if node.flags & .WrapText {
         DrawWrappedText(draw_list,

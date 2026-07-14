@@ -52,6 +52,9 @@ struct Triangle {
     vec2 p0;
     vec2 p1;
     vec2 p2;
+    vec2 uv0;
+    vec2 uv1;
+    vec2 uv2;
     uint c0;
     uint c1;
     uint c2;
