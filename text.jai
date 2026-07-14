@@ -62,8 +62,9 @@ LoadDefaultFonts :: () {
 
     config : FontConfig;
     config.glyph_ranges = .[
-        .{0x20, 0x7f},
-        .{0xa0, 0x24f},
+        .{0x20, 0x7f}, // ASCII
+        .{0xa0, 0x24f}, // Latin
+        .{0x20A0, 0x20CF}, // Currency symbols
     ];
     config.atlas_width = 4096;
     config.atlas_height = 4096;
