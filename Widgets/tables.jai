@@ -218,29 +218,70 @@ TableAddColumn :: (table : *Node, label : string, str_id : string, flags : Table
 
     style := GetUserData(table, TableStyle);
 
+    border : *Node;
+
     first := data.columns.count == 0;
     if !first && style.vertical_inner_border_size > 0 {
-        border := GetNode(data.content, tprint("%.border_before", str_id));
+        border = GetNode(data.content, tprint("%.border_before", str_id));
         SetSize(border, SizePx(xx style.vertical_inner_border_size), SizeFill());
         SetBackgroundColor(border, style.vertical_inner_border_color);
     }
 
     column, is_new := GetNode(data.content, str_id);
 
-    exists := false;
+    index := -1;
     for data.columns {
         if it.str_id == str_id {
-            exists = true;
+            index = it_index;
             break;
         }
     }
 
-    if !exists {
+    if index < 0 {
+        index = data.columns.count;
         array_add(*data.columns, .{label=label, str_id=str_id, flags=flags, node=column});
     }
 
-    SetSize(column, SizeFill(), SizeFit());
+    prev_column := ifx index > 0 then data.columns[index - 1].node;
+
+    if is_new {
+        SetWidth(column, SizeFill());
+    } else {
+        SetWidth(column, SizePx(column.layout_last_frame.size.x));
+    }
+
+    SetHeight(column, SizeFit());
     SetLayout(column, .TopToBottom);
+
+    if border {
+        using _ := ButtonBehavior(border);
+
+        if border.state_flags & .Focused && IsMouseButtonPressed(.Left) {
+            SetMouseCapture(border);
+            SetMouseFocus(border);
+            pressed = true;
+            held = true;
+        }
+
+        if pressed {
+            context.omg.mouse_captured_node_value = .{};
+            context.omg.mouse_captured_node_value.xy = border.layout_last_frame.rect.xy;
+        }
+
+        if held && prev_column {
+            new_border_position := GetMousePosition().x - context.omg.mouse_captured_at.x;
+            new_border_position += context.omg.mouse_captured_node_value.x;
+
+            new_size := max(new_border_position - prev_column.layout_last_frame.rect.x, 32);
+            SetWidth(prev_column, SizePx(new_size));
+        }
+
+        if HasCursorControl(border) {
+            if GetState(border) == .Focused || GetState(border) == .Hot || GetState(border) == .Active {
+                SetCursor(GetSystemCursor(.ResizeHorizontal));
+            }
+        }
+    }
 }
 
 TableAddRow :: (table : *Node, style : *TableRowStyle) {
