@@ -848,14 +848,14 @@ TextInput :: (parent : *Node, flags : TextInputFlags = 0, style : *TextInputStyl
                 is_selecting := context.omg.mouse_capturing_node == input_field;
                 mouse := GetMousePosition(input_field.window);
 
-                if is_selecting && mouse.x < text_node.layout_last_frame.rect.x {
+                if is_selecting && mouse.x < text_node.rect.x {
                     SetCursor(input, 0, !input_button.pressed);
                 }
 
                 iter := IterText(text_node);
                 for iter {
                     glyph_rect : Vec4f;
-                    glyph_rect.xy = text_node.layout_last_frame.rect.xy + iter.pen - Vec2f.{0, iter.font.ascent * iter.font_size};
+                    glyph_rect.xy = text_node.rect.xy + iter.pen - Vec2f.{0, iter.font.ascent * iter.font_size};
                     glyph_rect.zw = glyph_rect.xy + Vec2f.{it.hori_advance, iter.font.ascent + iter.font.descent} * iter.font_size;
 
                     if is_selecting {
@@ -871,7 +871,7 @@ TextInput :: (parent : *Node, flags : TextInputFlags = 0, style : *TextInputStyl
                     }
                 }
 
-                if is_selecting && mouse.x >= text_node.layout_last_frame.rect.x + iter.pen.x {
+                if is_selecting && mouse.x >= text_node.rect.x + iter.pen.x {
                     SetCursor(input, xx input.buffer.count, !input_button.pressed);
                 }
 
@@ -879,15 +879,15 @@ TextInput :: (parent : *Node, flags : TextInputFlags = 0, style : *TextInputStyl
                     cursor_position = .{iter.pen.x, iter.pen.y - iter.font.ascent * iter.font_size};
                 }
 
-                if text_node.layout_last_frame.rect.x + cursor_position.x < input_field.layout_last_frame.rect.x + input_field.padding.x {
+                if text_node.rect.x + cursor_position.x < input_field.rect.x + input_field.padding.x {
                     input_field.scroll.x = ceil(-cursor_position.x);
                 }
 
-                if text_node.layout_last_frame.rect.x + cursor_position.x >= input_field.layout_last_frame.rect.z - input_field.padding.z {
-                    input_field.scroll.x = floor(-cursor_position.x + input_field.layout_last_frame.size.x - input_field.padding.x - input_field.padding.z - 1);
+                if text_node.rect.x + cursor_position.x >= input_field.rect.z - input_field.padding.z {
+                    input_field.scroll.x = floor(-cursor_position.x + input_field.size.x - input_field.padding.x - input_field.padding.z - 1);
                 }
 
-                input_field.scroll.x = clamp(input_field.scroll.x, -text_node.layout_last_frame.size.x, 0);
+                input_field.scroll.x = clamp(input_field.scroll.x, -text_node.size.x, 0);
             } else if input_field.state_flags & .ActiveLastFrame {
                 input_field.scroll.x = 0;
             }

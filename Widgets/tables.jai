@@ -204,7 +204,7 @@ Table :: (parent : *Node, flags : TableFlags = 0, style : *TableStyle = null, lo
 
             ScrollViewBehavior(content_container, .Y);
 
-            if content_container.layout_last_frame.children_size.y > content_container.layout_last_frame.size.y - content_container.padding.y - content_container.padding.w {
+            if content_container.children_size.y > content_container.size.y - content_container.padding.y - content_container.padding.w {
                 Scrollbar(content_and_vscrollbar, content_container, .Y);
             }
         }
@@ -255,7 +255,7 @@ TableAddColumn :: (table : *Node, label : string, str_id : string, initial_size 
     }
 
     if prev_column && !prev_column.node_is_new {
-        SetWidth(prev_column_node, SizePx(prev_column_node.layout_last_frame.size.x));
+        SetWidth(prev_column_node, SizePx(prev_column_node.size.x));
     }
 
     SetHeight(column, SizeFit());
@@ -273,16 +273,16 @@ TableAddColumn :: (table : *Node, label : string, str_id : string, initial_size 
 
         if pressed {
             context.omg.mouse_captured_node_value = .{};
-            context.omg.mouse_captured_node_value.xy = border.layout_last_frame.rect.xy;
+            context.omg.mouse_captured_node_value.xy = border.rect.xy;
         }
 
         if held && prev_column_node {
-            area := prev_column_node.parent.layout_last_frame.rect;
+            area := prev_column_node.parent.rect;
             new_border_position := GetMousePosition().x - context.omg.mouse_captured_at.x;
             new_border_position += context.omg.mouse_captured_node_value.x;
             new_border_position = clamp(new_border_position, area.x + 32, area.z - 32);
 
-            new_size := max(new_border_position - prev_column_node.layout_last_frame.rect.x, 32);
+            new_size := max(new_border_position - prev_column_node.rect.x, 32);
             SetWidth(prev_column_node, SizePx(new_size));
         }
 

@@ -139,7 +139,7 @@ Panel :: (parent : *OMG.Node, str_id : string, title : string) -> *OMG.Node {
                 OMG.ScrollViewBehavior(content, .Y);
             }
 
-            if content.layout_last_frame.children_size.y > content.layout_last_frame.size.y - content.padding.y - content.padding.w {
+            if content.children_size.y > content.size.y - content.padding.y - content.padding.w {
                 OMG.Scrollbar(content_and_scrollbar, content, .Y);
             }
 
@@ -442,7 +442,7 @@ END
                 }
             }
 
-            if content.layout_last_frame.size.x > 500 {
+            if content.size.x > 500 {
                 right_side := OMG.GetNode(content, "right_side");
                 {
                     OMG.SetSize(right_side, OMG.SizePx(400), OMG.SizeFill());

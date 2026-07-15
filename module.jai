@@ -447,6 +447,10 @@ Render :: () {
         SDL_SetCursor(GetSystemCursor(.Arrow));
     }
 
+    for * omg.node_pool {
+        it.layout = .{};
+    }
+
     for :Windows omg {
         w, h : s32;
         SDL_GetWindowSize(it.sdl_window, *w, *h);
@@ -484,11 +488,11 @@ Render :: () {
         omg.draw_time_last_frame += xx to_float64_seconds(draw_end - draw_start);
     }
 
-    for * context.omg.node_pool {
-        if it.last_used_on_frame != context.omg.frame_index {
+    for * omg.node_pool {
+        if it.last_used_on_frame != omg.frame_index {
             FreeNode(it, free_children=false);
         } else {
-            it.layout_last_frame = it.layout;
+            it.tree_last_frame = it.tree;
         }
     }
 

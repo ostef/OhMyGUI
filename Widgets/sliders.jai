@@ -141,7 +141,7 @@ Slider :: (
 
         base_background_padding := Vec2f.{xx style.normal.background.padding.xy[axis], xx style.normal.background.padding.zw[axis]};
 
-        offset_max := background.layout_last_frame.size[axis] - base_background_padding.x - base_background_padding.y;
+        offset_max := background.size[axis] - base_background_padding.x - base_background_padding.y;
         if !style.handle_outside_background {
             offset_max -= style.handle_size.x;
         }
@@ -153,7 +153,7 @@ Slider :: (
             held = true;
 
             mouse := GetMousePosition(slider.window)[axis];
-            new_offset := mouse - (background.layout_last_frame.rect.xy[axis] + base_background_padding.x);
+            new_offset := mouse - (background.rect.xy[axis] + base_background_padding.x);
             new_value := lerp(fmin, fmax, clamp(new_offset / offset_max, 0, 1));
 
             fvalue = Snap(new_value, fstep);
@@ -252,8 +252,8 @@ Scrollbar :: (parent : *Node, target : *Node, axis : Axis, style : *ScrollbarSty
 
     background, handle : *Node;
 
-    size := target.layout_last_frame.size[axis];
-    children_size := target.layout_last_frame.children_size[axis] + target.padding.xy[axis] + target.padding.zw[axis];
+    size := target.size[axis];
+    children_size := target.children_size[axis] + target.padding.xy[axis] + target.padding.zw[axis];
 
     background = GetNode(parent, location);
     {
@@ -277,7 +277,7 @@ Scrollbar :: (parent : *Node, target : *Node, axis : Axis, style : *ScrollbarSty
             // => scroll = (offset / offset_max) * scrollable
 
             scrollable := size - children_size;
-            offset_max := background.layout_last_frame.size[axis] - handle.layout_last_frame.size[axis];
+            offset_max := background.size[axis] - handle.size[axis];
 
             // Allow the user to click on the background to interact with the scrollbar
             background.flags |= .Focusable;
@@ -291,7 +291,7 @@ Scrollbar :: (parent : *Node, target : *Node, axis : Axis, style : *ScrollbarSty
                 handle_result.held = true;
 
                 mouse := GetMousePosition(background.window)[axis];
-                new_offset := mouse - background.layout_last_frame.rect.xy[axis] - handle.layout_last_frame.size[axis] * 0.5;
+                new_offset := mouse - background.rect.xy[axis] - handle.size[axis] * 0.5;
                 new_scroll := (new_offset / offset_max) * scrollable;
 
                 SetContentScroll(target, axis, new_scroll);

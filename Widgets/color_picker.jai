@@ -139,7 +139,7 @@ HSVTriangleWheel :: (parent : *Node, using data : *ColorPickerData, style : *HSV
 
 SaturationValueTriangle :: (parent : *Node, using data : *ColorPickerData, style : *HSVTriangleWheelStyle, location := #caller_location) -> bool {
     HitTest :: (node : *Node, point : Vec2f) -> bool {
-        if !IsInsideRect(point, node.layout_last_frame.clipped_rect) {
+        if !IsInsideRect(point, node.clipped_rect) {
             return false;
         }
 
@@ -214,7 +214,7 @@ SaturationValueTriangle :: (parent : *Node, using data : *ColorPickerData, style
     SetDraw(node, Draw);
     SetHitTest(node, HitTest);
 
-    using _ := GetHSVWheelGeometricData(style, node.layout_last_frame.rect, hsv);
+    using _ := GetHSVWheelGeometricData(style, node.rect, hsv);
 
     button := ButtonBehavior(node);
     if button.held {
@@ -235,7 +235,7 @@ SaturationValueTriangle :: (parent : *Node, using data : *ColorPickerData, style
 
 HueWheel :: (parent : *Node, using data : *ColorPickerData, style : *HSVTriangleWheelStyle, location := #caller_location) -> bool {
     HitTest :: (node : *Node, point : Vec2f) -> bool {
-        if !IsInsideRect(point, node.layout_last_frame.clipped_rect) {
+        if !IsInsideRect(point, node.clipped_rect) {
             return false;
         }
 
@@ -339,7 +339,7 @@ HueWheel :: (parent : *Node, using data : *ColorPickerData, style : *HSVTriangle
     SetDraw(node, Draw);
     SetHitTest(node, HitTest);
 
-    using _ := GetHSVWheelGeometricData(style, node.layout_last_frame.rect, hsv);
+    using _ := GetHSVWheelGeometricData(style, node.rect, hsv);
 
     hue := hsv.hue;
 

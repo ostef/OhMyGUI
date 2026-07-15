@@ -118,13 +118,13 @@ Combo :: (
         popup := GetPopupNode(parent.window, location);
         {
             SetLayout(popup, .TopToBottom);
-            SetSize(popup, SizePx(combo.layout_last_frame.size.x), SizeFit());
+            SetSize(popup, SizePx(combo.size.x), SizeFit());
 
             popup.flags |= .Focusable;
 
             BringForward(popup);
 
-            popup.offset = .{combo.layout_last_frame.rect.x, combo.layout_last_frame.rect.w};
+            popup.offset = .{combo.rect.x, combo.rect.w};
             Apply(popup, style.popup);
 
             ScrollViewBehavior(popup, .Y);

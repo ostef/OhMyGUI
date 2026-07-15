@@ -148,7 +148,7 @@ SubwindowResizeBehavior :: (subwindow : *Node, handle : *Node, min_size : Vec2f,
     }
 
     if button.pressed {
-        context.omg.mouse_captured_node_value = WindowToScreen(subwindow.window, subwindow.layout_last_frame.rect);
+        context.omg.mouse_captured_node_value = WindowToScreen(subwindow.window, subwindow.rect);
     }
 
     if button.held {
@@ -181,7 +181,7 @@ SubwindowResizeBehavior :: (subwindow : *Node, handle : *Node, min_size : Vec2f,
             new_rect.w = clamp(new_rect.w + mouse_delta.y, new_rect.y + min_size.y, avail_area.w);
         }
 
-        new_offset := new_rect.xy - subwindow.parent.layout_last_frame.rect.xy;
+        new_offset := new_rect.xy - subwindow.parent.rect.xy;
         new_size := new_rect.zw - new_rect.xy;
 
         subwindow.offset = new_offset;
@@ -237,7 +237,7 @@ SubwindowResizeHandles :: (subwindow : *Node, min_size : Vec2f, style : *Subwind
     SetSize(resize_br, SizePx(style.corner_resize_handle_size), SizePx(style.corner_resize_handle_size));
 
     resize_handles_expand := Vec2f.{1,1} * max(-style.resize_handle_inset, 0);
-    avail_area := subwindow.parent.layout_last_frame.rect;
+    avail_area := subwindow.parent.rect;
     avail_area = InflateBounds(avail_area, Vec4f.{xy=resize_handles_expand,zw=resize_handles_expand});
 
     SubwindowResizeBehavior(subwindow, resize_t, min_size + resize_handles_expand * 2, avail_area, .Top);
@@ -301,7 +301,7 @@ Subwindow :: (
                 subwindow.offset = storage.position;
             }
         } else {
-            SetSize(subwindow, SizePx(subwindow.layout_last_frame.size.x), SizePx(subwindow.layout_last_frame.size.y));
+            SetSize(subwindow, SizePx(subwindow.size.x), SizePx(subwindow.size.y));
         }
 
         SetLayout(subwindow, .TopToBottom);
@@ -317,7 +317,7 @@ Subwindow :: (
             then subwindow
             else SubwindowResizeHandles(subwindow, min_size, style);
 
-        avail_area := subwindow.parent.layout_last_frame.rect;
+        avail_area := subwindow.parent.rect;
         if !(flags & .NoResize) {
             avail_area = InflateBounds(avail_area, Vec4f.{xy=resize_handles_expand,zw=resize_handles_expand});
         }
@@ -325,7 +325,7 @@ Subwindow :: (
         title_bar := ifx !(flags & .NoTitleBar)
             then SubwindowTitleBar(subwindow, title_and_content, title, *style.title_bar);
 
-        title_bar_size := ifx title_bar then title_bar.layout_last_frame.size;
+        title_bar_size := ifx title_bar then title_bar.size;
         if !(flags & .NoResize) {
             title_bar_size += resize_handles_expand * 2;
         }
@@ -377,10 +377,10 @@ Subwindow :: (
 
             ScrollViewBehavior(content, axes);
 
-            if hscrollbar && content.layout_last_frame.children_size.x > content.layout_last_frame.size.x - content.padding.x - content.padding.z {
+            if hscrollbar && content.children_size.x > content.size.x - content.padding.x - content.padding.z {
                 Scrollbar(content_and_hscrollbar, content, .X, style=*style.horizontal_scrollbar);
             }
-            if vscrollbar && content.layout_last_frame.children_size.y > content.layout_last_frame.size.y - content.padding.y - content.padding.w {
+            if vscrollbar && content.children_size.y > content.size.y - content.padding.y - content.padding.w {
                 Scrollbar(content_and_vscrollbar, content, .Y, style=*style.vertical_scrollbar);
             }
         }

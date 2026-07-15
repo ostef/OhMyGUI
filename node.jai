@@ -112,13 +112,17 @@ Node :: struct {
     window : *Window;
     parent : *Node;
 
-    using layout : struct {
+    using tree : struct {
         first_child : *Node;
         last_child : *Node;
         next_sibling : *Node;
         prev_sibling : *Node;
         num_children : s32;
+    };
 
+    tree_last_frame : type_of(tree);
+
+    using layout : struct {
         // Computed during the layout phase at the end of the frame
         size : Vec2f;
         children_size : Vec2f;
@@ -126,8 +130,6 @@ Node :: struct {
         rect : Vec4f;
         clipped_rect : Vec4f;
     };
-
-    layout_last_frame : type_of(layout);
 
     // User controlled properties mostly related to layout, reset each frame except for scroll and offset
     using properties : struct {
@@ -209,18 +211,18 @@ Children :: (node : *Node, body : Code, flags : For_Flags) #expand {
 // for_expansion
 PrevFrameChildren :: (node : *Node, body : Code, flags : For_Flags) #expand {
     #if flags & .REVERSE {
-        `it := node.layout_last_frame.last_child;
-        `it_index := node.layout_last_frame.num_children - 1;
+        `it := node.tree_last_frame.last_child;
+        `it_index := node.tree_last_frame.num_children - 1;
     } else {
-        `it := node.layout_last_frame.first_child;
+        `it := node.tree_last_frame.first_child;
         `it_index := 0;
     }
 
     while it {
         #if flags & .REVERSE {
-            next := it.layout_last_frame.prev_sibling;
+            next := it.tree_last_frame.prev_sibling;
         } else {
-            next := it.layout_last_frame.next_sibling;
+            next := it.tree_last_frame.next_sibling;
         }
 
         defer it = next;
@@ -230,7 +232,7 @@ PrevFrameChildren :: (node : *Node, body : Code, flags : For_Flags) #expand {
 }
 
 DefaultHitTest :: (node : *Node, point : Vec2f) -> bool {
-    return IsInsideRect(point, node.layout_last_frame.clipped_rect);
+    return IsInsideRect(point, node.clipped_rect);
 }
 
 IsHovered :: (node : *Node) -> bool {
@@ -480,7 +482,7 @@ TouchNode :: (node : *Node) {
     node.scroll = scroll;
     node.offset = offset;
 
-    node.layout = .{};
+    node.tree = .{};
 
     if node.parent {
         PushChild(node.parent, node);

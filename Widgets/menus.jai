@@ -91,7 +91,7 @@ Menu :: (parent : *Node, text : string, menu_item_style : *ButtonStyle = null, m
 
             BringForward(menu);
 
-            menu.offset = .{menu_item.layout_last_frame.rect.x, menu_item.layout_last_frame.rect.w};
+            menu.offset = .{menu_item.rect.x, menu_item.rect.w};
             Apply(menu, menu_style);
         }
     }
@@ -143,7 +143,7 @@ SubMenu :: (parent : *Node, text : string, menu_item_style : *ButtonStyle = null
 
             BringForward(menu);
 
-            menu.offset = .{menu_item.layout_last_frame.rect.z, menu_item.layout_last_frame.rect.y};
+            menu.offset = .{menu_item.rect.z, menu_item.rect.y};
             Apply(menu, menu_style);
         }
     }
@@ -181,7 +181,7 @@ ContextMenu :: (parent : *Node, style : *MenuStyle = null, location := #caller_l
             BringForward(menu);
 
             if button.released {
-                menu.offset = GetMousePosition(menu.window) - menu.parent.layout_last_frame.rect.xy;
+                menu.offset = GetMousePosition(menu.window) - menu.parent.rect.xy;
             }
 
             Apply(menu, style);
