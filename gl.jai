@@ -8,10 +8,6 @@ GetLastFrameGPUTime :: inline () -> float {
 
 g_white_texture : GLuint;
 
-g_color_texture : GLuint;
-g_color_texture_width : u32;
-g_color_texture_height : u32;
-
 Shader :: struct {
     handle : GLuint;
     u_base_instance : GLint;
