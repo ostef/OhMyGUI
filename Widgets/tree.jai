@@ -37,28 +37,15 @@ TreeNode :: (parent : *Node, text : string, flags : TreeNodeFlags = 0, style : *
             icon := GetNode(tree_item, "icon");
             SetSize(icon, SizePx(style.triangle_size), SizePx(style.triangle_size));
 
+            SetBackgroundColor(icon, style.tree_item.states[state].text.text_color);
+
             if flags & .Leaf {
                 SetDraw(icon, null);
             } else {
                 SetDraw(icon, (draw_list, node) => {
-                    position := (node.rect.xy + node.rect.zw) * 0.5;
-                    size := node.size.x;
-                    h := sqrt(size * size - (size * 0.5) * (size * 0.5));
-
-                    p0 := Vec2f.{0, size * 0.5};
-                    p1 := Vec2f.{-size * 0.5, size * 0.5 - h};
-                    p2 := Vec2f.{ size * 0.5, size * 0.5 - h};
-
-                    if !(node.parent.parent.state_flags & .Active) {
-                        p0 = Rotate(p0, -PI * 0.5);
-                        p1 = Rotate(p1, -PI * 0.5);
-                        p2 = Rotate(p2, -PI * 0.5);
-                    }
-
-                    DrawTriangle(draw_list, position + p0, position + p1, position + p2, node.background_color);
+                    rotation := ifx !(node.parent.parent.state_flags & .Active) then -PI * 0.5 else 0.0;
+                    DrawEquilateralTriangle(draw_list, (node.rect.xy + node.rect.zw) * 0.5, node.size.x, rotation, node.background_color);
                 });
-
-                icon.background_color = style.tree_item.states[state].text.text_color;
             }
 
             Apply(tree_item, style.tree_item.states[state].background);

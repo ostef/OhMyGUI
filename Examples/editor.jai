@@ -14,6 +14,86 @@ g_dummy_viewport_image : struct {
     width, height : u32;
 }
 
+Entity :: struct {
+    id : int;
+    name : string;
+    type : string;
+}
+
+g_entities : [..]Entity;
+
+SortEntities :: (params : *OMG.TableSortParams) {
+    #import "Sort";
+    #import "String";
+
+    for params.column_params {
+        if it.str_id == {
+        case "name";
+            if it.direction == .Ascending {
+                quick_sort(g_entities, (a, b) => compare(a.name, b.name));
+            } else {
+                quick_sort(g_entities, (a, b) => -compare(a.name, b.name));
+            }
+        case "type";
+            if it.direction == .Ascending {
+                quick_sort(g_entities, (a, b) => compare(a.type, b.type));
+            } else {
+                quick_sort(g_entities, (a, b) => -compare(a.type, b.type));
+            }
+        }
+    }
+
+    if params.column_params.count == 0 {
+        quick_sort(g_entities, (a, b) => a.id - b.id);
+    }
+
+    params.modified = false;
+}
+
+FillEntities :: () {
+    Random :: #import "Random";
+
+    RandomName :: () -> string {
+        Names :: string.[
+            "",
+            "Enemy",
+            "Wall",
+            "Floor",
+            "Tree",
+            "Rock",
+            "Foliage",
+            "Light",
+        ];
+
+        index := Random.random_get() % Names.count;
+        suffix := Random.random_get() % 100;
+
+        return ifx suffix > 0 && index > 0 then sprint("%.%", Names[index], suffix) else Names[index];
+    }
+
+    RandomType :: () -> string {
+        Types :: string.[
+            "Static Mesh",
+            "Skinned Mesh",
+            "Point Light",
+            "Directional Light",
+            "Spot Light",
+            "Particle Emitter",
+        ];
+
+        index := Random.random_get() % Types.count;
+
+        return Types[index];
+    }
+
+    for i : 0..100 {
+        e := array_add(*g_entities);
+        e.id = i + 1;
+        e.name = RandomName();
+        e.type = RandomType();
+    }
+}
+
 Panel :: (parent : *OMG.Node, str_id : string, title : string) -> *OMG.Node {
     base_background_color := OMG.GetStyle("base", OMG.BoxStyle).background_color;
 
@@ -68,6 +148,10 @@ EditorFrame :: () {
 
         texture, width, height = OMG.LoadImage("dummy_viewport.png");
         assert(texture != 0);
+    }
+
+    if g_entities.count == 0 {
+        FillEntities();
     }
 
     base_background_color := OMG.GetStyle("base", OMG.BoxStyle).background_color;
@@ -358,26 +442,27 @@ END
                     entity_outliner := Panel(right_side, "entity_outliner", "Entity Outliner");
                     {
                         table := OMG.Table(entity_outliner);
-                        OMG.TableAddColumn(table, "Name", "name");
-                        OMG.TableAddColumn(table, "Type", "type");
-                        OMG.TableAddColumn(table, "Value", "value");
+                        OMG.TableAddColumn(table, "Name", "name", flags=.Sortable);
+                        OMG.TableAddColumn(table, "Type", "type", flags=.Sortable);
                         OMG.TableHeadersRow(table);
 
-                        for i : 0..100 {
-                            OMG.TableNextRow(table);
+                        sort_params := OMG.GetTableSortParams(table);
+                        if sort_params && sort_params.modified {
+                            SortEntities(sort_params);
+                        }
 
-                            cell := OMG.TableGetCell(table);
-                            OMG.Text(cell, "Row %, Col 0", i);
+                        for g_entities {
+                            cell := OMG.TableNextRow(table);
 
-                            OMG.TableNextColumn(table);
+                            if it.name {
+                                OMG.Text(cell, "%", it.name);
+                            } else {
+                                OMG.Text(cell, "Unnamed");
+                            }
 
-                            cell = OMG.TableGetCell(table);
-                            OMG.Text(cell, "Row %, Col 1", i);
+                            cell = OMG.TableNextColumn(table);
 
-                            OMG.TableNextColumn(table);
-
-                            cell = OMG.TableGetCell(table);
-                            OMG.Button(cell, tprint("Row %, Col 2", i));
+                            OMG.Text(cell, "%", it.type);
                         }
                     }
 

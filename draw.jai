@@ -1024,3 +1024,19 @@ DrawCheckerboard :: (draw_list : *DrawList, rect : Vec4f, checker_size : float, 
         px += checker_size;
     }
 }
+
+DrawEquilateralTriangle :: (draw_list : *DrawList, position : Vec2f, size : float, rotation : float, color : RGBA8) {
+    h := sqrt(size * size - (size * 0.5) * (size * 0.5));
+
+    p0 := Vec2f.{0, size * 0.5};
+    p1 := Vec2f.{-size * 0.5, size * 0.5 - h};
+    p2 := Vec2f.{ size * 0.5, size * 0.5 - h};
+
+    if rotation != 0 {
+        p0 = Rotate(p0, rotation);
+        p1 = Rotate(p1, rotation);
+        p2 = Rotate(p2, rotation);
+    }
+
+    DrawTriangle(draw_list, position + p0, position + p1, position + p2, color);
+}

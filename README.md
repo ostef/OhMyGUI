@@ -24,17 +24,14 @@ Tree based immediate mode GUI library in Jai inspired by Clay and PanGui. For no
 * Disabling
 * Convert rendered SDF shapes to fast SDF textures/glyph
 * Tables:
-    - column sorting
     - column reordering
     - column resize
-    - scrolling
     - static rows and columns
 * Justified text wrapping
 * Auto open menus when hovered if a related menu is opened
 
 Widgets:
 * Multi line text input
-* Submenus
 * Popups
 * Panels
 * Tabs

@@ -1,3 +1,5 @@
+// Table API heavily inspired by Dear ImGui
+
 TableStyle :: struct {
     corner_radiuses : Vec4f;
     padding : Vec4b;
@@ -11,6 +13,7 @@ TableStyle :: struct {
     rows : TableRowStyle;
     header_row : TableRowStyle;
     header_text : TextStyle;
+    header_sort_icon_size : float;
 }
 
 TableRowStyle :: struct {
@@ -62,6 +65,8 @@ TableFlags :: enum_flags {
 
 TableColumnFlags :: enum_flags {
     Resizable;
+    Hideable;
+    Sortable;
 }
 
 TableData :: struct {
@@ -77,9 +82,71 @@ TableData :: struct {
     }
 
     content : *Node;
+    sort_params : TableSortParams;
     columns : [..]Column;
     current_column : int;
     flags : TableFlags;
+}
+
+TableSortParams :: struct {
+    column_params : [..]TableColumnSortParams;
+    modified := true;
+}
+
+TableSortDirection :: enum u8 {
+    None;
+    Ascending;
+    Descending;
+}
+
+TableColumnSortParams :: struct {
+    str_id : string;
+    direction : TableSortDirection;
+}
+
+GetTableSortParams :: (table : *Node) -> *TableSortParams {
+    data := GetUserData(table, TableData);
+    if !data {
+        return null;
+    }
+
+    return *data.sort_params;
+}
+
+GetColumnSortDirection :: (params : *TableSortParams, str_id : string) -> TableSortDirection, order : int {
+    for params.column_params {
+        if it.str_id == str_id {
+            // Order is reversed, because when we sort it's the last index that has
+            // the most effect, so it's more intuitive that the last sorting to be
+            // applied algorithmically is the column with the lowest number
+            return it.direction, params.column_params.count - it_index;
+        }
+    }
+
+    return .None, 0;
+}
+
+SetColumnSortDirection :: (params : *TableSortParams, str_id : string, dir : TableSortDirection) {
+    index := -1;
+    for * params.column_params {
+        if it.str_id == str_id {
+            index = it_index;
+            break;
+        }
+    }
+
+    if dir != .None {
+        if index >= 0 {
+            params.column_params[index].direction = dir;
+        } else {
+            array_insert_at(*params.column_params, .{str_id=str_id, direction=dir}, 0);
+        }
+
+        params.modified = true;
+    } else if index >= 0 {
+        array_ordered_remove_by_index(*params.column_params, index);
+        params.modified = true;
+    }
 }
 
 ClearTableData :: (data : *TableData) {
@@ -218,13 +285,64 @@ TableHeadersRow :: (table : *Node) {
         cell := TableGetCell(table);
         assert(cell != null, "Cell node is null");
 
-        Text(cell, "%", it.label, style=*style.header_text);
+        text := Text(cell, "%", it.label, style=*style.header_text);
+        SetWidth(text, SizeFill());
+
+        if it.flags & .Sortable {
+            using _ := ButtonBehavior(cell);
+            if released {
+                current_dir := GetColumnSortDirection(*data.sort_params, it.str_id);
+                new_dir := cast(TableSortDirection, (cast(int, current_dir) + 1) % 3);
+                SetColumnSortDirection(*data.sort_params, it.str_id, new_dir);
+            }
+
+            sort_dir, sort_order := GetColumnSortDirection(*data.sort_params, it.str_id);
+
+            if sort_dir != .None {
+                sort_indicator := GetNode(cell, "sort_indicator");
+                {
+                    SetSize(sort_indicator, SizeFit(), SizeFit());
+                    SetLayout(sort_indicator, .LeftToRight);
+                    SetChildAlign(sort_indicator, 0, 0.5);
+
+                    if sort_order > 1 {
+                        Text(sort_indicator, "%", sort_order);
+                    }
+
+                    sort_icon := GetNode(sort_indicator, "icon");
+                    {
+                        SetSize(sort_icon, SizePx(style.header_sort_icon_size), SizePx(style.header_sort_icon_size));
+                        SetBackgroundColor(sort_icon, style.header_text.text_color);
+
+                        if sort_dir == {
+                        case .Ascending;
+                            SetDraw(sort_icon, (draw_list, node) => {
+                                position := (node.rect.xy + node.rect.zw) * 0.5;
+                                DrawEquilateralTriangle(draw_list, position, node.size.x, PI, node.background_color);
+                            });
+                        case .Descending;
+                            SetDraw(sort_icon, (draw_list, node) => {
+                                position := (node.rect.xy + node.rect.zw) * 0.5;
+                                DrawEquilateralTriangle(draw_list, position, node.size.x, 0, node.background_color);
+                            });
+                        }
+                    }
+                }
+            }
+        }
+
+        menu := ContextMenu(cell);
+        if menu {
+            MenuItem(menu, "Sort Asc");
+            MenuItem(menu, "Sort Desc");
+            MenuItem(menu, "Hide");
+        }
 
         TableNextColumn(table);
     }
 }
 
-TableNextRow :: (table : *Node, style : *TableRowStyle = null) {
+TableNextRow :: (table : *Node, style : *TableRowStyle = null) -> cell : *Node {
     data := GetUserData(table, TableData);
     assert(data != null, "Node is not a table");
 
@@ -235,23 +353,29 @@ TableNextRow :: (table : *Node, style : *TableRowStyle = null) {
 
     data.current_column = 0;
     TableAddRow(table, style);
+
+    return TableGetCell(table);
 }
 
-TableNextColumn :: (table : *Node) {
+TableNextColumn :: (table : *Node) -> cell : *Node {
     data := GetUserData(table, TableData);
     assert(data != null, "Node is not a table");
 
     data.current_column += 1;
+
+    return TableGetCell(table);
 }
 
-TableSetColumn :: (table : *Node, index : int) {
+TableSetColumn :: (table : *Node, index : int) -> cell : *Node {
     data := GetUserData(table, TableData);
     assert(data != null, "Node is not a table");
 
     data.current_column = index;
+
+    return TableGetCell(table);
 }
 
-TableSetColumn :: (table : *Node, str_id : string) {
+TableSetColumn :: (table : *Node, str_id : string) -> cell : *Node {
     data := GetUserData(table, TableData);
     assert(data != null, "Node is not a table");
 
@@ -261,6 +385,8 @@ TableSetColumn :: (table : *Node, str_id : string) {
             break;
         }
     }
+
+    return TableGetCell(table);
 }
 
 TableGetCell :: (table : *Node) -> *Node {

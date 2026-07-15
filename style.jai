@@ -976,14 +976,17 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         vertical_inner_border_color = MakeTone(base_background_color, 0.5);
         vertical_inner_border_size = 1;
 
+        header_sort_icon_size = 10;
+
         header_text = theme.text;
         header_text.font = GetDefaultFontMedium();
+        header_line_height := (header_text.font.ascent + header_text.font.descent) * header_text.text_size;
 
         header_row.cell_padding = .{8,8,8,8};
         header_row.cell_child_align = .{0, 0.5};
         header_row.background_color = MakeTone(base_background_color, 0.05);
         header_row.alternate_background_color = MakeTone(base_background_color, 0.05);
-        header_row.height = 32;
+        header_row.height = header_line_height + header_row.cell_padding.y + header_row.cell_padding.w;
         header_row.border_color = MakeTone(base_background_color, 0.5);
         header_row.border_size = 1;
 
@@ -992,7 +995,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         rows.background_color = MakeTone(base_background_color, 0.1);
         rows.alternate_background_color = MakeTone(base_background_color, 0.2);
 
-        rows.height = 30;
+        rows.height = header_row.height;
     }
     SetStyle(theme, "table", theme.table);
 
