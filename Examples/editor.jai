@@ -472,7 +472,7 @@ END
 
                     entity_inspector := Panel(right_side, "entity_inspector", "Entity Inspector");
                     {
-                        tree1 := OMG.TreeNode(entity_inspector, "1");
+                        tree1 := OMG.TreeNode(entity_inspector, "1", flags=.OpenByDefault);
                         if tree1 {
                             tree1_1 := OMG.TreeNode(tree1, "1.1");
                             if tree1_1 {

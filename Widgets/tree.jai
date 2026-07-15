@@ -6,18 +6,19 @@ TreeNodeStyle :: struct {
 
 TreeNodeFlags :: enum_flags {
     Leaf;
-    Opened;
+    OpenByDefault;
+    NoIndent;
 }
 
 TreeNode :: (parent : *Node, text : string, flags : TreeNodeFlags = 0, style : *TreeNodeStyle = null, location := #caller_location) -> contents : *Node, tree_item : *Node {
     EnsureStyle(*style, "tree_node");
 
-    node := GetNode(parent, location);
+    node, is_new := GetNode(parent, location);
     {
         SetSize(node, SizeFill(), SizeFit());
         SetLayout(node, .TopToBottom);
 
-        if !(flags & .Leaf) && flags & .Opened || node.state_flags & .ActiveLastFrame {
+        if !(flags & .Leaf) && (is_new && flags & .OpenByDefault) || node.state_flags & .ActiveLastFrame {
             SetTreeNodeOpened(node, true);
         }
 
@@ -58,7 +59,10 @@ TreeNode :: (parent : *Node, text : string, flags : TreeNodeFlags = 0, style : *
             contents = GetNode(node);
             SetSize(contents, SizeFill(), SizeFit());
             SetLayout(contents, .TopToBottom);
-            SetPadding(contents, style.indent, 0, 0, 0);
+
+            if !(flags & .NoIndent) {
+                SetPadding(contents, style.indent, 0, 0, 0);
+            }
         }
 
         return contents, tree_item;
