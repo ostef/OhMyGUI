@@ -368,10 +368,11 @@ EditorFrame :: () {
 
                     OMG.Text(content_browser, "% nodes", context.omg.node_pool.count);
 
-                    OMG.Text(content_browser, "Layout: % ms", context.omg.layout_time_last_frame * 1000);
-                    OMG.Text(content_browser, "Draw: % ms", context.omg.draw_time_last_frame * 1000);
-                    OMG.Text(content_browser, "Render total: % ms", context.omg.total_time_last_frame * 1000);
-                    OMG.Text(content_browser, "User: % ms", g_user_time * 1000);
+                    OMG.Text(content_browser, "CPU: % ms", (g_user_time + context.omg.total_time_last_frame) * 1000);
+                    OMG.Text(content_browser, "\tRender: % ms", context.omg.total_time_last_frame * 1000);
+                    OMG.Text(content_browser, "\t\tLayout: % ms", context.omg.layout_time_last_frame * 1000);
+                    OMG.Text(content_browser, "\t\tDraw: % ms", context.omg.draw_time_last_frame * 1000);
+                    OMG.Text(content_browser, "\tUser: % ms", g_user_time * 1000);
                     OMG.Text(content_browser, "GPU: % ms", OMG.GetLastFrameGPUTime() * 1000);
 
                     password_field := OMG.GetNode(content_browser, "password_field");

@@ -47,7 +47,6 @@ main :: () {
     program_start := current_time_monotonic();
     g_delta_time = 1 / 60.0;
     while !g_quit {
-
         reset_temporary_storage();
 
         frame_start := current_time_monotonic();
@@ -59,6 +58,8 @@ main :: () {
             g_delta_time = xx to_float64_seconds(frame_end - frame_start);
         }
 
+        user_start := current_time_monotonic();
+
         event : SDL_Event;
         while SDL_PollEvent(*event) {
             if event.type == SDL_QUIT {
@@ -67,8 +68,6 @@ main :: () {
 
             OMG.HandleEvent(event);
         }
-
-        user_start := current_time_monotonic();
 
         OMG.NewFrame(g_delta_time);
 
