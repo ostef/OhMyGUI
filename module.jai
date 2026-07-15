@@ -24,6 +24,8 @@ Context :: struct {
     frame_index : u64;
     delta_time : float;
     layout_time_last_frame : float;
+    draw_time_last_frame : float;
+    total_time_last_frame : float;
 
     debug_mode := false;
 
@@ -421,6 +423,10 @@ Render :: () {
 
     omg := context.omg;
     omg.layout_time_last_frame = 0;
+    omg.draw_time_last_frame = 0;
+    omg.total_time_last_frame = 0;
+
+    total_start := current_time_monotonic();
 
     if omg.id_offset_stack.count > 0 {
         log_error("Mismatching number of push/pop for ID offset stack");
@@ -463,7 +469,9 @@ Render :: () {
         }
 
         layout_end := current_time_monotonic();
-        omg.layout_time_last_frame = xx to_float64_seconds(layout_end - layout_start);
+        omg.layout_time_last_frame += xx to_float64_seconds(layout_end - layout_start);
+
+        draw_start := current_time_monotonic();
 
         if it.root_node {
             DrawNodes(*it.draw_list, it.root_node);
@@ -471,6 +479,9 @@ Render :: () {
         if it.popup_root_node {
             DrawNodes(*it.draw_list, it.popup_root_node);
         }
+
+        draw_end := current_time_monotonic();
+        omg.draw_time_last_frame += xx to_float64_seconds(draw_end - draw_start);
     }
 
     for * context.omg.node_pool {
@@ -506,6 +517,9 @@ Render :: () {
     }
 
     ResetInput(*omg.input);
+
+    total_end := current_time_monotonic();
+    omg.total_time_last_frame += xx to_float64_seconds(total_end - total_start);
 }
 
 LoadImage :: (filename : string) -> TextureHandle, width : u32, height : u32 {

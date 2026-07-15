@@ -16,6 +16,7 @@ g_frame_in_flight : int;
 g_frame_syncs : [2]GLsync;
 g_time : float;
 g_delta_time : float;
+g_user_time : float;
 
 main :: () {
     #if Memory_Debugger {
@@ -46,9 +47,11 @@ main :: () {
     program_start := current_time_monotonic();
     g_delta_time = 1 / 60.0;
     while !g_quit {
+
         reset_temporary_storage();
 
         frame_start := current_time_monotonic();
+
         g_time = xx to_float64_seconds(frame_start - program_start);
 
         defer {
@@ -65,10 +68,15 @@ main :: () {
             OMG.HandleEvent(event);
         }
 
+        user_start := current_time_monotonic();
+
         OMG.NewFrame(g_delta_time);
 
         EditorFrame();
         // ColorsFrame();
+
+        user_end := current_time_monotonic();
+        g_user_time = xx to_float64_seconds(user_end - user_start);
 
         OMG.Render();
 
@@ -89,9 +97,11 @@ main :: () {
         glClear(GL_COLOR_BUFFER_BIT);
 
         OMG.RenderGL(xx w, xx h);
+
         g_frame_syncs[g_frame_in_flight] = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 
         g_frame_in_flight = (g_frame_in_flight + 1) % 2;
+
 
         SDL_GL_SwapWindow(g_window);
     }
