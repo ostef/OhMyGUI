@@ -457,7 +457,8 @@ END
                             if it.name {
                                 OMG.Text(cell, "%", it.name);
                             } else {
-                                OMG.Text(cell, "Unnamed");
+                                text := OMG.Text(cell, "Unnamed");
+                                OMG.SetAlpha(*text.text_color, 0.5);
                             }
 
                             cell = OMG.TableNextColumn(table);

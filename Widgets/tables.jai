@@ -137,12 +137,12 @@ SetColumnSortDirection :: (params : *TableSortParams, str_id : string, dir : Tab
 
     if dir != .None {
         if index >= 0 {
+            params.modified = params.column_params[index].direction != dir;
             params.column_params[index].direction = dir;
         } else {
             array_insert_at(*params.column_params, .{str_id=str_id, direction=dir}, 0);
+            params.modified = true;
         }
-
-        params.modified = true;
     } else if index >= 0 {
         array_ordered_remove_by_index(*params.column_params, index);
         params.modified = true;
@@ -289,6 +289,22 @@ TableHeadersRow :: (table : *Node) {
         SetWidth(text, SizeFill());
 
         if it.flags & .Sortable {
+            menu := ContextMenu(cell);
+            if menu {
+                if MenuItem(menu, "Sort None") {
+                    SetColumnSortDirection(*data.sort_params, it.str_id, .None);
+                    cell.state_flags &= ~.Active;
+                }
+                if MenuItem(menu, "Sort Ascending") {
+                    SetColumnSortDirection(*data.sort_params, it.str_id, .Ascending);
+                    cell.state_flags &= ~.Active;
+                }
+                if MenuItem(menu, "Sort Descending") {
+                    SetColumnSortDirection(*data.sort_params, it.str_id, .Descending);
+                    cell.state_flags &= ~.Active;
+                }
+            }
+
             using _ := ButtonBehavior(cell);
             if released {
                 current_dir := GetColumnSortDirection(*data.sort_params, it.str_id);
@@ -329,13 +345,6 @@ TableHeadersRow :: (table : *Node) {
                     }
                 }
             }
-        }
-
-        menu := ContextMenu(cell);
-        if menu {
-            MenuItem(menu, "Sort Asc");
-            MenuItem(menu, "Sort Desc");
-            MenuItem(menu, "Hide");
         }
 
         TableNextColumn(table);
