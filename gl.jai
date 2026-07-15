@@ -9,7 +9,6 @@ GetLastFrameGPUTime :: inline () -> float {
 g_white_texture : GLuint;
 
 g_color_texture : GLuint;
-g_color_framebuffer : GLuint;
 g_color_texture_width : u32;
 g_color_texture_height : u32;
 
@@ -291,24 +290,6 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
 
     glQueryCounter(g_timestamp_queries[g_frame_in_flight][0], GL_TIMESTAMP);
 
-    if g_color_texture_width != viewport_w || g_color_texture_height != viewport_h {
-        glDeleteTextures(1, *g_color_texture);
-        glDeleteFramebuffers(1, *g_color_framebuffer);
-
-        glCreateTextures(GL_TEXTURE_2D, 1, *g_color_texture);
-        glTextureStorage2D(g_color_texture, 1, GL_RGBA16F, viewport_w, viewport_h);
-        g_color_texture_width = viewport_w;
-        g_color_texture_height = viewport_h;
-
-        glCreateFramebuffers(1, *g_color_framebuffer);
-        glNamedFramebufferTexture(g_color_framebuffer, GL_COLOR_ATTACHMENT0, g_color_texture, 0);
-        draw_buffer : GLenum = GL_COLOR_ATTACHMENT0;
-        glNamedFramebufferDrawBuffers(g_color_framebuffer, 1, *draw_buffer);
-
-        status := glCheckNamedFramebufferStatus(g_color_framebuffer, GL_DRAW_FRAMEBUFFER);
-        assert(status == GL_FRAMEBUFFER_COMPLETE, "Failed to create framebuffer (%)", status);
-    }
-
     defer g_frame_in_flight = (g_frame_in_flight + 1) % g_num_frames_in_flight;
 
     push_allocator(temp);
@@ -368,10 +349,6 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
     memcpy(buffer_ptr + shape_drawings_offset, shape_drawings.data, shape_drawings_size);
     memcpy(buffer_ptr + shapes_offset, shapes.data, shapes_size);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, g_color_framebuffer);
-
-    glClear(GL_COLOR_BUFFER_BIT);
-
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
     glEnable(GL_BLEND);
@@ -393,10 +370,6 @@ RenderGL :: (viewport_w : u32, viewport_h : u32) {
 
         SendDrawCommands(*it.draw_list, viewport_w, viewport_h);
     }
-
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-    glBlitFramebuffer(0, 0, xx viewport_w, xx viewport_h, 0, 0, xx viewport_w, xx viewport_h, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
     glQueryCounter(g_timestamp_queries[g_frame_in_flight][1], GL_TIMESTAMP);
 }
