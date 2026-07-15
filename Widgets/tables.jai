@@ -74,6 +74,7 @@ TableData :: struct {
         label : string;
         str_id : string;
         flags : TableColumnFlags;
+        node_is_new : bool;
         node : *Node;
         rows : [..]*Node;
 
@@ -212,7 +213,7 @@ Table :: (parent : *Node, flags : TableFlags = 0, style : *TableStyle = null, lo
     }
 }
 
-TableAddColumn :: (table : *Node, label : string, str_id : string, flags : TableColumnFlags = 0) {
+TableAddColumn :: (table : *Node, label : string, str_id : string, initial_size : Size1D = .{kind=.FillParent, value=1}, flags : TableColumnFlags = 0) {
     data := GetUserData(table, TableData);
     assert(data != null, "Node is not a table");
 
@@ -242,12 +243,19 @@ TableAddColumn :: (table : *Node, label : string, str_id : string, flags : Table
         array_add(*data.columns, .{label=label, str_id=str_id, flags=flags, node=column});
     }
 
-    prev_column := ifx index > 0 then data.columns[index - 1].node;
+    data.columns[index].node_is_new = is_new;
+
+    prev_column := ifx index > 0 then *data.columns[index - 1];
+    prev_column_node := ifx index > 0 then data.columns[index - 1].node;
 
     if is_new {
-        SetWidth(column, SizeFill());
+        SetWidth(column, initial_size);
     } else {
-        SetWidth(column, SizePx(column.layout_last_frame.size.x));
+        SetWidth(column, SizeFill());
+    }
+
+    if prev_column && !prev_column.node_is_new {
+        SetWidth(prev_column_node, SizePx(prev_column_node.layout_last_frame.size.x));
     }
 
     SetHeight(column, SizeFit());
@@ -268,12 +276,14 @@ TableAddColumn :: (table : *Node, label : string, str_id : string, flags : Table
             context.omg.mouse_captured_node_value.xy = border.layout_last_frame.rect.xy;
         }
 
-        if held && prev_column {
+        if held && prev_column_node {
+            area := prev_column_node.parent.layout_last_frame.rect;
             new_border_position := GetMousePosition().x - context.omg.mouse_captured_at.x;
             new_border_position += context.omg.mouse_captured_node_value.x;
+            new_border_position = clamp(new_border_position, area.x + 32, area.z - 32);
 
-            new_size := max(new_border_position - prev_column.layout_last_frame.rect.x, 32);
-            SetWidth(prev_column, SizePx(new_size));
+            new_size := max(new_border_position - prev_column_node.layout_last_frame.rect.x, 32);
+            SetWidth(prev_column_node, SizePx(new_size));
         }
 
         if HasCursorControl(border) {

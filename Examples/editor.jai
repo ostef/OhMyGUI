@@ -28,6 +28,12 @@ SortEntities :: (params : *OMG.TableSortParams) {
 
     for params.column_params {
         if it.str_id == {
+        case "id";
+            if it.direction == .Ascending {
+                quick_sort(g_entities, (a, b) => a.id - b.id);
+            } else {
+                quick_sort(g_entities, (a, b) => b.id - a.id);
+            }
         case "name";
             if it.direction == .Ascending {
                 quick_sort(g_entities, (a, b) => compare(a.name, b.name));
@@ -445,8 +451,9 @@ END
                     entity_outliner := Panel(right_side, "entity_outliner", "Entity Outliner");
                     {
                         table := OMG.Table(entity_outliner);
-                        OMG.TableAddColumn(table, "Name", "name", flags=.Sortable);
-                        OMG.TableAddColumn(table, "Type", "type", flags=.Sortable);
+                        OMG.TableAddColumn(table, "ID", "id", OMG.SizeFill(0.2), flags=.Sortable);
+                        OMG.TableAddColumn(table, "Name", "name", OMG.SizeFill(0.4), flags=.Sortable);
+                        OMG.TableAddColumn(table, "Type", "type", OMG.SizeFill(0.4), flags=.Sortable);
                         OMG.TableHeadersRow(table);
 
                         sort_params := OMG.GetTableSortParams(table);
@@ -456,6 +463,10 @@ END
 
                         for g_entities {
                             cell := OMG.TableNextRow(table);
+
+                            OMG.Text(cell, "%", it.id);
+
+                            cell = OMG.TableNextColumn(table);
 
                             if it.name {
                                 OMG.Text(cell, "%", it.name);

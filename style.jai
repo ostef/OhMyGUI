@@ -974,7 +974,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         border_color = MakeTone(base_background_color, 0.5);
         border_size = 1;
         vertical_inner_border_color = MakeTone(base_background_color, 0.5);
-        vertical_inner_border_size = 1;
+        vertical_inner_border_size = 3;
 
         header_sort_icon_size = 10;
 
