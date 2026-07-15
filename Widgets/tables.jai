@@ -118,16 +118,27 @@ Table :: (parent : *Node, flags : TableFlags = 0, style : *TableStyle = null, lo
         SetBorderSize(table, style.border_size);
         SetPadding(table, style.padding);
 
-        data.content = GetNode(table, "content");
+        content_and_vscrollbar := GetNode(table, "content_and_vscrollbar");
         {
-            SetSize(data.content, SizeFill(), SizeFill());
-            SetLayout(data.content, .LeftToRight);
+            SetSize(content_and_vscrollbar, SizeFill(), SizeFill());
+            SetLayout(content_and_vscrollbar, .LeftToRight);
 
-            ScrollViewBehavior(data.content, .Y);
-        }
+            content_container := GetNode(content_and_vscrollbar, "content_container");
+            {
+                SetSize(content_container, SizeFill(), SizeFill());
 
-        if data.content.layout_last_frame.children_size.y > data.content.layout_last_frame.size.y - data.content.padding.y - data.content.padding.w {
-            Scrollbar(table, data.content, .Y);
+                data.content = GetNode(content_container, "content");
+                {
+                    SetSize(data.content, SizeFill(), SizeFit());
+                    SetLayout(data.content, .LeftToRight);
+                }
+            }
+
+            ScrollViewBehavior(content_container, .Y);
+
+            if content_container.layout_last_frame.children_size.y > content_container.layout_last_frame.size.y - content_container.padding.y - content_container.padding.w {
+                Scrollbar(content_and_vscrollbar, content_container, .Y);
+            }
         }
 
         return table;
