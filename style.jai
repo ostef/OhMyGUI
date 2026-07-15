@@ -1017,10 +1017,14 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         for * tree_item.states {
             it.text = theme.text;
             it.background.padding = .{6,2,6,2};
+            it.background.child_gap = .{8,0};
         }
 
         tree_item.focused.background.background_color = base_accent_color;
-        tree_item.hot.background.background_color = base_accent_color;
+        tree_item.hot.background.background_color = Darken(base_accent_color, 0.1);
+        tree_item.active.background.background_color = Darken(base_accent_color, 0.1);
+
+        triangle_size = 8;
 
         indent = 25;
     }

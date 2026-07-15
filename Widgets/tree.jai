@@ -1,6 +1,7 @@
 TreeNodeStyle :: struct {
     tree_item : ButtonStyle;
-    indent : float;
+    triangle_size : float;
+    indent : s8;
 }
 
 TreeNodeFlags :: enum_flags {
@@ -16,7 +17,7 @@ TreeNode :: (parent : *Node, text : string, flags : TreeNodeFlags = 0, style : *
         SetSize(node, SizeFill(), SizeFit());
         SetLayout(node, .TopToBottom);
 
-        if flags & .Opened || node.state_flags & .ActiveLastFrame {
+        if !(flags & .Leaf) && flags & .Opened || node.state_flags & .ActiveLastFrame {
             SetTreeNodeOpened(node, true);
         }
 
@@ -24,15 +25,42 @@ TreeNode :: (parent : *Node, text : string, flags : TreeNodeFlags = 0, style : *
         {
             SetSize(tree_item, SizeFill(), SizeFit());
             SetLayout(tree_item, .LeftToRight);
+            SetChildAlign(tree_item, 0, 0.5);
 
-            if !(flags & .Leaf) {
-                using _ := ButtonBehavior(tree_item);
-                if released {
-                    SetTreeNodeOpened(node, !IsTreeNodeOpened(node));
-                }
+            using _ := ButtonBehavior(tree_item);
+            if !(flags & .Leaf) && released {
+                SetTreeNodeOpened(node, !IsTreeNodeOpened(node));
             }
 
             state := GetState(tree_item);
+
+            icon := GetNode(tree_item, "icon");
+            SetSize(icon, SizePx(style.triangle_size), SizePx(style.triangle_size));
+
+            if flags & .Leaf {
+                SetDraw(icon, null);
+            } else {
+                SetDraw(icon, (draw_list, node) => {
+                    position := (node.rect.xy + node.rect.zw) * 0.5;
+                    size := node.size.x;
+                    h := sqrt(size * size - (size * 0.5) * (size * 0.5));
+
+                    p0 := Vec2f.{0, size * 0.5};
+                    p1 := Vec2f.{-size * 0.5, size * 0.5 - h};
+                    p2 := Vec2f.{ size * 0.5, size * 0.5 - h};
+
+                    if !(node.parent.parent.state_flags & .Active) {
+                        p0 = Rotate(p0, -PI * 0.5);
+                        p1 = Rotate(p1, -PI * 0.5);
+                        p2 = Rotate(p2, -PI * 0.5);
+                    }
+
+                    DrawTriangle(draw_list, position + p0, position + p1, position + p2, node.background_color);
+                });
+
+                icon.background_color = style.tree_item.states[state].text.text_color;
+            }
+
             Apply(tree_item, style.tree_item.states[state].background);
 
             Text(tree_item, "%", text, style=*style.tree_item.states[state].text);
@@ -43,7 +71,7 @@ TreeNode :: (parent : *Node, text : string, flags : TreeNodeFlags = 0, style : *
             contents = GetNode(node);
             SetSize(contents, SizeFill(), SizeFit());
             SetLayout(contents, .TopToBottom);
-            contents.padding.x = xx style.indent;
+            SetPadding(contents, style.indent, 0, 0, 0);
         }
 
         return contents, tree_item;

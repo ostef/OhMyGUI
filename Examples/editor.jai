@@ -264,6 +264,8 @@ EditorFrame :: () {
 
                 main_viewport := Panel(left_side, "main_viewport", "Main Viewport");
                 {
+                    OMG.SetChildAlign(main_viewport, 0.5, 0.5);
+
                     OMG.Image(main_viewport, g_dummy_viewport_image.texture, g_dummy_viewport_image.width, g_dummy_viewport_image.height);
                 }
 
@@ -385,20 +387,20 @@ END
                         if tree1 {
                             tree1_1 := OMG.TreeNode(tree1, "1.1");
                             if tree1_1 {
-                                OMG.TreeNode(tree1_1, "1.1.1");
+                                OMG.TreeNode(tree1_1, "1.1.1", .Leaf);
                             }
 
-                            OMG.TreeNode(tree1, "1.2");
+                            OMG.TreeNode(tree1, "1.2", .Leaf);
                         }
 
                         tree2 := OMG.TreeNode(entity_inspector, "2");
                         if tree2 {
                             tree2_1 := OMG.TreeNode(tree2, "2.1");
                             if tree2_1 {
-                                OMG.TreeNode(tree2_1, "2.1.1");
+                                OMG.TreeNode(tree2_1, "2.1.1", .Leaf);
                             }
 
-                            OMG.TreeNode(tree2, "2.2");
+                            OMG.TreeNode(tree2, "2.2", .Leaf);
                         }
 
                         InfiniteTreeNode :: (parent : *OMG.Node, location := #caller_location) {
