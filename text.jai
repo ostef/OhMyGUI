@@ -15,7 +15,7 @@ Font :: struct {
     desired_underline_position : float;
     desired_underline_thickness : float;
     sdf_range : float;
-    texture : GLuint;
+    texture : TextureHandle;
 }
 
 FontConfig :: struct {
@@ -159,19 +159,7 @@ LoadFontFromMemory :: (name : string, data : string, config : FontConfig) -> *Fo
         }
     }
 
-    glCreateTextures(GL_TEXTURE_2D, 1, *font.texture);
-
-    label := tprint("Font SDF Texture '%'", font.name);
-    glObjectLabel(GL_TEXTURE, font.texture, xx label.count, label.data);
-
-    glTextureStorage2D(font.texture, 1, GL_R8, packer.width, packer.height);
-
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glTextureSubImage2D(font.texture, 0, 0, 0, packer.width, packer.height, GL_RED, GL_UNSIGNED_BYTE, packer.data);
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
-
-    glTextureParameteri(font.texture, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTextureParameteri(font.texture, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    font.texture = RendererCreateR8Texture(tprint("Font SDF Texture '%'", font.name), packer.data, packer.width, packer.height);
 
     font.next = context.omg.fonts;
     if font.next {
@@ -194,7 +182,7 @@ DestroyFont :: (font : *Font) {
         context.omg.fonts = font.next;
     }
 
-    glDeleteTextures(1, *font.texture);
+    RendererDestroyTexture(font.texture);
 
     HT.deinit(*font.glyph_map);
 

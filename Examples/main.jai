@@ -7,6 +7,7 @@ OMG :: #import "OhMyGUI";
 using,only(.["*"]) OMG;
 
 OMG_SDL :: #import "OhMyGUI/SDL";
+OMG_GL :: #import "OhMyGUI/GL";
 
 #import "SDL";
 #import "GL";
@@ -40,13 +41,13 @@ main :: () {
 
     gl_load(*gl);
 
-    OMG.Init(OMG_SDL.GetPlatformFuncs());
+    OMG.Init(OMG_SDL.GetPlatformFuncs(), OMG_GL.GetRendererFuncs());
     defer OMG.Terminate();
 
-    if !OMG.InitGL() {
+    if !OMG_GL.Init() {
         exit(1);
     }
-    defer OMG.TerminateGL();
+    defer OMG_GL.Terminate();
 
     program_start := current_time_monotonic();
     g_delta_time = 1 / 60.0;
@@ -99,7 +100,7 @@ main :: () {
         glClearColor(0,0,0,1);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        OMG.RenderGL(xx w, xx h);
+        OMG_GL.Render(xx w, xx h);
 
         g_frame_syncs[g_frame_in_flight] = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 

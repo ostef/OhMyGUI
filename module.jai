@@ -12,7 +12,6 @@ HT :: #import "Hash_Table";
 #load "sdf.jai";
 #load "draw.jai";
 #load "text.jai";
-#load "gl.jai";
 #load "node.jai";
 #load "style.jai";
 #load "layout.jai";
@@ -27,6 +26,7 @@ Context :: struct {
     total_time_last_frame : float;
 
     platform_funcs : PlatformFunctions;
+    renderer_funcs : RendererFunctions;
 
     debug_mode := false;
 
@@ -180,6 +180,32 @@ PlatformHasClipboardText :: inline () -> bool {
         return context.omg.platform_funcs.HasClipboardText();
     }
     return false;
+}
+
+RendererFunctions :: struct {
+    CreateR8Texture : (name : string, data : *void, width : u32, height : u32) -> TextureHandle;
+    CreateRGBA8Texture : (name : string, data : *void, width : u32, height : u32) -> TextureHandle;
+    DestroyTexture : (texture : TextureHandle);
+}
+
+RendererCreateR8Texture :: inline (name : string, data : *void, width : u32, height : u32) -> TextureHandle {
+    if context.omg.renderer_funcs.CreateR8Texture {
+        return context.omg.renderer_funcs.CreateR8Texture(name, data, width, height);
+    }
+    return 0;
+}
+
+RendererCreateRGBA8Texture :: inline (name : string, data : *void, width : u32, height : u32) -> TextureHandle {
+    if context.omg.renderer_funcs.CreateRGBA8Texture {
+        return context.omg.renderer_funcs.CreateRGBA8Texture(name, data, width, height);
+    }
+    return 0;
+}
+
+RendererDestroyTexture :: inline (texture : TextureHandle) {
+    if context.omg.renderer_funcs.DestroyTexture {
+        context.omg.renderer_funcs.DestroyTexture(texture);
+    }
 }
 
 GetTheme :: inline () -> *Theme {
@@ -381,11 +407,12 @@ GetGlobalUserData :: (id : ID, size : int, create := false) -> *void, is_new : b
     return cast(*void, list_node + 1), true, list_node;
 }
 
-Init :: (platform_funcs : PlatformFunctions) {
+Init :: (platform_funcs : PlatformFunctions, renderer_funcs : RendererFunctions) {
     context.omg = New(Context);
     context.omg.general_purpose_allocator = context.allocator;
     context.omg.node_pool.allocator = context.allocator;
     context.omg.platform_funcs = platform_funcs;
+    context.omg.renderer_funcs = renderer_funcs;
 
     InitInput(*context.omg.input);
 
@@ -652,12 +679,10 @@ LoadImage :: (filename : string) -> TextureHandle, width : u32, height : u32 {
 
     defer stbi_image_free(data);
 
-    handle := CreateRGBA8Texture(tprint("Texture '%'", filename), data, xx w, xx h);
+    handle := RendererCreateRGBA8Texture(tprint("Texture '%'", filename), data, xx w, xx h);
 
     return handle, xx w, xx h;
 }
-
-#scope_module
 
 ReadCompileTimeFile :: (filename : string, location := #caller_location) -> string {
     #import "File";
