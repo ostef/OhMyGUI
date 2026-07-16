@@ -1,6 +1,5 @@
 #import "Basic";
 #import "Math";
-#import "SDL";
 #import "Bucket_Array";
 #import "Print_Vars";
 HT :: #import "Hash_Table";
@@ -27,6 +26,8 @@ Context :: struct {
     draw_time_last_frame : float;
     total_time_last_frame : float;
 
+    platform_funcs : PlatformFunctions;
+
     debug_mode := false;
 
     general_purpose_allocator : Allocator;
@@ -34,7 +35,7 @@ Context :: struct {
     mouse_wheel_multiplier := 10.0;
 
     input : InputContext;
-    cursor_this_frame : *Cursor;
+    cursor_this_frame : PlatformCursorHandle;
 
     windows : *Window;
     fonts : *Font;
@@ -55,6 +56,132 @@ Context :: struct {
 
 #add_context omg : *Context;
 
+PlatformWindowHandle :: *void;
+PlatformCursorHandle :: *void;
+
+PlatformWindowFlags :: enum_flags {
+    HasInputFocus;
+    HasMouseFocus;
+    Minimized;
+    Maximized;
+}
+
+PlatformFunctions :: struct {
+    GetWindowPosition : (handle : PlatformWindowHandle) -> int, int;
+    SetWindowPosition : (handle : PlatformWindowHandle, x : int, y : int);
+    GetWindowSize : (handle : PlatformWindowHandle) -> int, int;
+    SetWindowSize : (handle : PlatformWindowHandle, width : int, height : int);
+    GetWindowFlags : (handle : PlatformWindowHandle) -> PlatformWindowFlags;
+    GetMousePosition : () -> int, int;
+    CaptureMouse : (capture : bool);
+    SetCursor : (handle : PlatformCursorHandle);
+    CreateRGBA8Cursor : (pixels : *void, width : u32, height : u32, hot_x_01 : float, hot_y_01 : float) -> PlatformCursorHandle;
+    CreateSystemCursor : (system_cursor : SystemCursor) -> PlatformCursorHandle;
+    DestroyCursor : (cursor : PlatformCursorHandle);
+    GetClipboardText : () -> string;
+    SetClipboardText : (text : string);
+    HasClipboardText : () -> bool;
+}
+
+PlatformGetWindowPosition :: inline (handle : PlatformWindowHandle) -> int, int {
+    if context.omg.platform_funcs.GetWindowPosition {
+        x, y := context.omg.platform_funcs.GetWindowPosition(handle);
+        return x, y;
+    }
+
+    return 0, 0;
+}
+
+PlatformSetWindowPosition :: inline (handle : PlatformWindowHandle, x : int, y : int) {
+    if context.omg.platform_funcs.SetWindowPosition {
+        context.omg.platform_funcs.SetWindowPosition(handle, x, y);
+    }
+}
+
+PlatformGetWindowSize :: inline (handle : PlatformWindowHandle) -> int, int {
+    if context.omg.platform_funcs.GetWindowSize {
+        w, h := context.omg.platform_funcs.GetWindowSize(handle);
+        return w, h;
+    }
+
+    return 0, 0;
+}
+
+PlatformSetWindowSize :: inline (handle : PlatformWindowHandle, width : int, height : int) {
+    if context.omg.platform_funcs.SetWindowSize {
+        context.omg.platform_funcs.SetWindowSize(handle, width, height);
+    }
+}
+
+PlatformGetWindowFlags :: inline (handle : PlatformWindowHandle) -> PlatformWindowFlags {
+    if context.omg.platform_funcs.GetWindowFlags {
+        return context.omg.platform_funcs.GetWindowFlags(handle);
+    }
+
+    return 0;
+}
+
+PlatformGetMousePosition :: inline () -> int, int {
+    if context.omg.platform_funcs.GetMousePosition {
+        x, y := context.omg.platform_funcs.GetMousePosition();
+        return x, y;
+    }
+
+    return 0, 0;
+}
+
+PlatformCaptureMouse :: inline (capture : bool) {
+    if context.omg.platform_funcs.CaptureMouse {
+        context.omg.platform_funcs.CaptureMouse(capture);
+    }
+}
+
+PlatformSetCursor :: inline (handle : PlatformCursorHandle) {
+    if context.omg.platform_funcs.SetCursor {
+        context.omg.platform_funcs.SetCursor(handle);
+    }
+}
+
+PlatformCreateSystemCursor :: inline (system_cursor : SystemCursor) -> PlatformCursorHandle {
+    if context.omg.platform_funcs.CreateSystemCursor {
+        return context.omg.platform_funcs.CreateSystemCursor(system_cursor);
+    }
+    return null;
+}
+
+PlatformCreateRGBA8Cursor :: inline (pixels : *void, width : u32, height : u32, hot_x_01 : float, hot_y_01 : float) -> PlatformCursorHandle {
+    if context.omg.platform_funcs.CreateRGBA8Cursor {
+        return context.omg.platform_funcs.CreateRGBA8Cursor(pixels, width, height, hot_x_01, hot_y_01);
+    }
+    return null;
+}
+
+PlatformDestroyCursor :: inline (cursor : PlatformCursorHandle) {
+    if context.omg.platform_funcs.DestroyCursor {
+        context.omg.platform_funcs.DestroyCursor(cursor);
+    }
+}
+
+PlatformGetClipboardText :: inline () -> string {
+    if context.omg.platform_funcs.GetClipboardText {
+        return context.omg.platform_funcs.GetClipboardText();
+    }
+    return "";
+}
+
+PlatformSetClipboardText :: inline (text : string) {
+    if context.omg.platform_funcs.SetClipboardText {
+        context.omg.platform_funcs.SetClipboardText(text);
+    }
+}
+
+PlatformHasClipboardText :: inline () -> bool {
+    if context.omg.platform_funcs.HasClipboardText {
+        return context.omg.platform_funcs.HasClipboardText();
+    }
+    return false;
+}
+
 GetTheme :: inline () -> *Theme {
     return context.omg.theme;
 }
@@ -64,7 +191,7 @@ SetTheme :: inline (theme : *Theme) {
 }
 
 Window :: struct {
-    sdl_window : *SDL_Window;
+    platform_handle : PlatformWindowHandle;
     prev : *Window;
     next : *Window;
 
@@ -90,7 +217,7 @@ Windows :: (ctx : *Context, body : Code, flags : For_Flags) #expand {
 
 GetMouseHoveredWindow :: () -> *Window {
     for :Windows context.omg {
-        if SDL_GetWindowFlags(it.sdl_window) & SDL_WINDOW_MOUSE_FOCUS {
+        if PlatformGetWindowFlags(it.platform_handle) & .HasMouseFocus {
             return it;
         }
     }
@@ -98,9 +225,9 @@ GetMouseHoveredWindow :: () -> *Window {
     return null;
 }
 
-GetWindow :: (window : *SDL_Window, create := true) -> *Window {
+GetWindow :: (handle : PlatformWindowHandle, create := true) -> *Window {
     for :Windows context.omg {
-        if it.sdl_window == window {
+        if it.platform_handle == handle {
             return it;
         }
     }
@@ -111,7 +238,7 @@ GetWindow :: (window : *SDL_Window, create := true) -> *Window {
 
     w := New(Window);
     InitDrawList(*w.draw_list);
-    w.sdl_window = window;
+    w.platform_handle = handle;
     w.next = context.omg.windows;
     if w.next {
         w.next.prev = w;
@@ -147,15 +274,13 @@ DestroyWindow :: (window : *Window) {
 }
 
 ScreenToWindow :: (window : *Window, point : Vec2f) -> Vec2f {
-    wx, wy : s32;
-    SDL_GetWindowPosition(window.sdl_window, *wx, *wy);
+    wx, wy := PlatformGetWindowPosition(window.platform_handle);
 
     return point - Vec2f.{xx wx, xx wy};
 }
 
 ScreenToWindow :: (window : *Window, rect : Vec4f) -> Vec4f {
-    wx, wy : s32;
-    SDL_GetWindowPosition(window.sdl_window, *wx, *wy);
+    wx, wy := PlatformGetWindowPosition(window.platform_handle);
 
     return .{
         xy=rect.xy - Vec2f.{xx wx, xx wy},
@@ -164,15 +289,13 @@ ScreenToWindow :: (window : *Window, rect : Vec4f) -> Vec4f {
 }
 
 WindowToScreen :: (window : *Window, point : Vec2f) -> Vec2f {
-    wx, wy : s32;
-    SDL_GetWindowPosition(window.sdl_window, *wx, *wy);
+    wx, wy := PlatformGetWindowPosition(window.platform_handle);
 
     return point + Vec2f.{xx wx, xx wy};
 }
 
 WindowToScreen :: (window : *Window, rect : Vec4f) -> Vec4f {
-    wx, wy : s32;
-    SDL_GetWindowPosition(window.sdl_window, *wx, *wy);
+    wx, wy := PlatformGetWindowPosition(window.platform_handle);
 
     return .{
         xy=rect.xy + Vec2f.{xx wx, xx wy},
@@ -264,7 +387,6 @@ Init :: () {
     context.omg.node_pool.allocator = context.allocator;
 
     InitInput(*context.omg.input);
-    InitSystemCursors();
 
     LoadDefaultFonts();
 
@@ -308,20 +430,6 @@ Terminate :: () {
 
     free(context.omg);
     context.omg = null;
-}
-
-HandleEvent :: (event : SDL_Event) {
-    if event.type == SDL_WINDOWEVENT {
-        if event.window.event == SDL_WINDOWEVENT_CLOSE {
-            sdl_window := SDL_GetWindowFromID(event.window.windowID);
-            window := GetWindow(sdl_window, create=false);
-            if window {
-                DestroyWindow(window);
-            }
-        }
-    }
-
-    HandleInputEvent(event);
 }
 
 SetMouseFocus :: inline (node : *Node) {
@@ -435,16 +543,16 @@ Render :: () {
 
     if !omg.mouse_captured_this_frame {
         omg.mouse_capturing_node = null;
-        SDL_CaptureMouse(0);
+        PlatformCaptureMouse(false);
     } else {
-        SDL_CaptureMouse(1);
+        PlatformCaptureMouse(true);
     }
     omg.mouse_captured_this_frame = false;
 
     if omg.cursor_this_frame {
-        SDL_SetCursor(omg.cursor_this_frame);
+        PlatformSetCursor(omg.cursor_this_frame);
     } else {
-        SDL_SetCursor(GetSystemCursor(.Arrow));
+        PlatformSetCursor(GetSystemCursor(.Arrow));
     }
 
     for * omg.node_pool {
@@ -452,8 +560,7 @@ Render :: () {
     }
 
     for :Windows omg {
-        w, h : s32;
-        SDL_GetWindowSize(it.sdl_window, *w, *h);
+        w, h := PlatformGetWindowSize(it.platform_handle);
 
         layout_start := current_time_monotonic();
 

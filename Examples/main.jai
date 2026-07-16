@@ -2,8 +2,12 @@ Memory_Debugger :: false;
 
 #import "Basic"()(MEMORY_DEBUGGER=Memory_Debugger);
 #import "Math";
-OMG :: #import,file "../module.jai";
+
+OMG :: #import "OhMyGUI";
 using,only(.["*"]) OMG;
+
+OMG_SDL :: #import "OhMyGUI/SDL";
+
 #import "SDL";
 #import "GL";
 
@@ -39,6 +43,8 @@ main :: () {
     OMG.Init();
     defer OMG.Terminate();
 
+    OMG_SDL.Init();
+
     if !OMG.InitGL() {
         exit(1);
     }
@@ -66,7 +72,7 @@ main :: () {
                 g_quit = true;
             }
 
-            OMG.HandleEvent(event);
+            OMG_SDL.HandleEvent(event);
         }
 
         OMG.NewFrame(g_delta_time);

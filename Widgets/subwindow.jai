@@ -54,7 +54,7 @@ SubwindowTitleBarStateStyle :: struct {
     background : BoxStyle;
     text : TextStyle;
     text_align := Vec2f.{0, 0.5};
-    cursor : *Cursor;
+    cursor : PlatformCursorHandle;
 }
 
 SubwindowTitleBarStyle :: StateStyle(SubwindowTitleBarStateStyle);

@@ -502,20 +502,15 @@ TextInputBehavior :: (node : *Node) -> *TextInputData, submitted : bool, ButtonR
             utf32.count = end - start;
 
             text := EncodeStringAsUtf8(utf32 ,, temp);
-            ctext := to_c_string(text ,, temp);
-            SDL_SetClipboardText(ctext);
+            PlatformSetClipboardText(text);
 
             if cut {
                 Delete(input);
             }
         }
 
-        if IsKeyPressed(.V) && GetModState() == .Ctrl && SDL_HasClipboardText() {
-            SDL_free :: (ptr : *void) #foreign SDL2;
-
-            ctext := SDL_GetClipboardText();
-            defer SDL_free(ctext);
-            text := to_string(ctext);
+        if IsKeyPressed(.V) && GetModState() == .Ctrl && PlatformHasClipboardText() {
+            text := PlatformGetClipboardText(,, temp);
 
             Insert(input, MakeUtf8String(text));
         }
@@ -527,7 +522,7 @@ TextInputBehavior :: (node : *Node) -> *TextInputData, submitted : bool, ButtonR
 TextInputStateStyle :: struct {
     background : BoxStyle;
     text : TextStyle;
-    cursor : *Cursor;
+    cursor : PlatformCursorHandle;
 }
 
 TextInputStyle :: struct {

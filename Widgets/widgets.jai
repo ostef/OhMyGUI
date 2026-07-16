@@ -60,7 +60,7 @@ Text :: (parent : *Node, fmt_str : string, args : ..Any, style : *TextStyle = nu
 
 ClickableTextStateStyle :: struct {
     text : TextStyle;
-    cursor : *Cursor;
+    cursor : PlatformCursorHandle;
 }
 
 ClickableTextStyle :: StateStyle(ClickableTextStateStyle);

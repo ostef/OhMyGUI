@@ -33,7 +33,7 @@ ButtonBehavior :: (node : *Node, mouse_button := MouseButton.Left) -> ButtonResu
 ButtonStateStyle :: struct {
     background : BoxStyle;
     text : TextStyle;
-    cursor : *Cursor;
+    cursor : PlatformCursorHandle;
 }
 
 ButtonStyle :: StateStyle(ButtonStateStyle);

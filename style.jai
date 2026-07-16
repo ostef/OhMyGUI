@@ -130,8 +130,6 @@ StateStyle :: struct(T : Type) {
     states : [Num_Node_States]T;
 }
 
-Cursor :: SDL_Cursor;
-
 SystemCursor :: enum u8 {
     Arrow;
     IBeam;
@@ -150,29 +148,29 @@ SystemCursor :: enum u8 {
     Count;
 }
 
-SetCursor :: inline (cursor : *Cursor) {
+SetCursor :: inline (cursor : PlatformCursorHandle) {
     context.omg.cursor_this_frame = cursor;
 }
 
 #scope_file
 
-g_system_cursors : [SystemCursor.Count]*Cursor;
+g_system_cursors : [SystemCursor.Count]PlatformCursorHandle;
 
 #scope_export
 
 InitSystemCursors :: () {
-    g_system_cursors[SystemCursor.Arrow] = SDL_CreateSystemCursor(ARROW);
-    g_system_cursors[SystemCursor.IBeam] = SDL_CreateSystemCursor(IBEAM);
-    g_system_cursors[SystemCursor.Busy] = SDL_CreateSystemCursor(WAIT);
-    g_system_cursors[SystemCursor.Crosshair] = SDL_CreateSystemCursor(CROSSHAIR);
-    g_system_cursors[SystemCursor.ArrowBusy] = SDL_CreateSystemCursor(WAITARROW);
-    g_system_cursors[SystemCursor.ResizeNWSE] = SDL_CreateSystemCursor(SIZENWSE);
-    g_system_cursors[SystemCursor.ResizeNESW] = SDL_CreateSystemCursor(SIZENESW);
-    g_system_cursors[SystemCursor.ResizeHorizontal] = SDL_CreateSystemCursor(SIZEWE);
-    g_system_cursors[SystemCursor.ResizeVertical] = SDL_CreateSystemCursor(SIZENS);
-    g_system_cursors[SystemCursor.ResizeAll] = SDL_CreateSystemCursor(SIZEALL);
-    g_system_cursors[SystemCursor.Forbidden] = SDL_CreateSystemCursor(NO);
-    g_system_cursors[SystemCursor.Hand] = SDL_CreateSystemCursor(HAND);
+    g_system_cursors[SystemCursor.Arrow] = PlatformCreateSystemCursor(.Arrow);
+    g_system_cursors[SystemCursor.IBeam] = PlatformCreateSystemCursor(.IBeam);
+    g_system_cursors[SystemCursor.Busy] = PlatformCreateSystemCursor(.Busy);
+    g_system_cursors[SystemCursor.Crosshair] = PlatformCreateSystemCursor(.Crosshair);
+    g_system_cursors[SystemCursor.ArrowBusy] = PlatformCreateSystemCursor(.ArrowBusy);
+    g_system_cursors[SystemCursor.ResizeNWSE] = PlatformCreateSystemCursor(.ResizeNWSE);
+    g_system_cursors[SystemCursor.ResizeNESW] = PlatformCreateSystemCursor(.ResizeNESW);
+    g_system_cursors[SystemCursor.ResizeHorizontal] = PlatformCreateSystemCursor(.ResizeHorizontal);
+    g_system_cursors[SystemCursor.ResizeVertical] = PlatformCreateSystemCursor(.ResizeVertical);
+    g_system_cursors[SystemCursor.ResizeAll] = PlatformCreateSystemCursor(.ResizeAll);
+    g_system_cursors[SystemCursor.Forbidden] = PlatformCreateSystemCursor(.Forbidden);
+    g_system_cursors[SystemCursor.Hand] = PlatformCreateSystemCursor(.Hand);
 
     Eyedropper_Contents :: #run ReadCompileTimeFile("eyedropper-cursor.png");
     g_system_cursors[SystemCursor.EyeDropper] = CreateCursorFromFileContents(Eyedropper_Contents, 0, 1);
@@ -182,12 +180,12 @@ InitSystemCursors :: () {
 
 DestroySystemCursors :: () {
     for * g_system_cursors {
-        SDL_FreeCursor(it.*);
+        PlatformDestroyCursor(it.*);
         it.* = null;
     }
 }
 
-GetSystemCursor :: inline (cursor : SystemCursor) -> *Cursor {
+GetSystemCursor :: inline (cursor : SystemCursor) -> PlatformCursorHandle {
     return g_system_cursors[cursor];
 }
 
@@ -202,7 +200,7 @@ HasCursorControl :: (node : *Node) -> bool {
     return node.state_flags != 0;
 }
 
-CreateCursorFromFileContents :: (contents : string, hot_x_01 : float, hot_y_01 : float) -> *Cursor {
+CreateCursorFromFileContents :: (contents : string, hot_x_01 : float, hot_y_01 : float) -> PlatformCursorHandle {
     #import "stb_image";
 
     w, h : s32;
@@ -215,10 +213,10 @@ CreateCursorFromFileContents :: (contents : string, hot_x_01 : float, hot_y_01 :
 
     defer stbi_image_free(data);
 
-    return CreateCursorFromRGBA8Pixels(data, xx w, xx h, hot_x_01, hot_y_01);
+    return PlatformCreateRGBA8Cursor(data, xx w, xx h, hot_x_01, hot_y_01);
 }
 
-CreateCursorFromFile :: (filename : string, hot_x_01 : float, hot_y_01 : float) -> *Cursor {
+CreateCursorFromFile :: (filename : string, hot_x_01 : float, hot_y_01 : float) -> PlatformCursorHandle {
     #import "stb_image";
 
     w, h : s32;
@@ -231,31 +229,7 @@ CreateCursorFromFile :: (filename : string, hot_x_01 : float, hot_y_01 : float) 
 
     defer stbi_image_free(data);
 
-    return CreateCursorFromRGBA8Pixels(data, xx w, xx h, hot_x_01, hot_y_01);
-}
-
-CreateCursorFromRGBA8Pixels :: (pixels : *void, width : u32, height : u32, hot_x_01 : float, hot_y_01 : float) -> *Cursor {
-    SDL_PIXELFORMAT_RGBA8888 :: 0x16462004;
-    SDL_PIXELFORMAT_ABGR8888 :: 0x16762004;
-
-    surface := SDL_CreateRGBSurfaceWithFormatFrom(pixels, width, height, 4, width * 4, SDL_PIXELFORMAT_ABGR8888);
-    defer SDL_FreeSurface(surface);
-
-    if !surface {
-        log_error("Could not create SDL surface for cursor image");
-        return null;
-    }
-
-    hot_x := cast(s32, (cast(s32, width) - 1) * hot_x_01);
-    hot_y := cast(s32, (cast(s32, height) - 1) * hot_y_01);
-
-    result := SDL_CreateColorCursor(surface, hot_x, hot_y);
-    if !result {
-        log_error("Could not create SDL cursor: %", to_string(SDL_GetError()));
-        return null;
-    }
-
-    return result;
+    return PlatformCreateRGBA8Cursor(data, xx w, xx h, hot_x_01, hot_y_01);
 }
 
 AnimFunc :: enum u8 {
