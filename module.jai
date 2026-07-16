@@ -381,12 +381,15 @@ GetGlobalUserData :: (id : ID, size : int, create := false) -> *void, is_new : b
     return cast(*void, list_node + 1), true, list_node;
 }
 
-Init :: () {
+Init :: (platform_funcs : PlatformFunctions) {
     context.omg = New(Context);
     context.omg.general_purpose_allocator = context.allocator;
     context.omg.node_pool.allocator = context.allocator;
+    context.omg.platform_funcs = platform_funcs;
 
     InitInput(*context.omg.input);
+
+    InitSystemCursors();
 
     LoadDefaultFonts();
 

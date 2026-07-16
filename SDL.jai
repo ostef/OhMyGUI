@@ -2,8 +2,8 @@
 #import "SDL";
 #import "Basic";
 
-Init :: () {
-    using _ := *context.omg.platform_funcs;
+GetPlatformFuncs :: () -> PlatformFunctions {
+    using funcs : PlatformFunctions;
 
     GetWindowPosition = (handle : PlatformWindowHandle) -> int, int {
         x, y : s32;
@@ -123,7 +123,7 @@ Init :: () {
         return xx SDL_HasClipboardText();
     }
 
-    InitSystemCursors();
+    return funcs;
 }
 
 HandleEvent :: (event : SDL_Event) {

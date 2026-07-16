@@ -40,10 +40,8 @@ main :: () {
 
     gl_load(*gl);
 
-    OMG.Init();
+    OMG.Init(OMG_SDL.GetPlatformFuncs());
     defer OMG.Terminate();
-
-    OMG_SDL.Init();
 
     if !OMG.InitGL() {
         exit(1);
