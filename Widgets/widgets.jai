@@ -7,6 +7,7 @@
 #load "combo.jai";
 #load "tables.jai";
 #load "tree.jai";
+#load "dock_space.jai";
 
 LabelAndContentStyle :: struct {
     padding : Vec4b;

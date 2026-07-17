@@ -354,9 +354,10 @@ EditorFrame :: () {
 
                 main_viewport := Panel(left_side, "main_viewport", "Main Viewport");
                 {
-                    OMG.SetChildAlign(main_viewport, 0.5, 0.5);
+                    OMG.DockSpace(main_viewport, "dockspace");
+                    // OMG.SetChildAlign(main_viewport, 0.5, 0.5);
 
-                    OMG.Image(main_viewport, g_dummy_viewport_image.texture, g_dummy_viewport_image.width, g_dummy_viewport_image.height);
+                    // OMG.Image(main_viewport, g_dummy_viewport_image.texture, g_dummy_viewport_image.width, g_dummy_viewport_image.height);
                 }
 
                 content_browser := Panel(left_side, "content_browser", "Content Browser");
