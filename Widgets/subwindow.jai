@@ -1,15 +1,16 @@
-SubwindowPersistentStorage :: struct {
-    Entry :: struct {
-        id : ID;
-        position : Vec2f;
-        size : Vec2f;
-    }
-
-    entries : [..]Entry;
+SubwindowPersistentData :: struct {
+    id : ID;
+    position : Vec2f;
+    size : Vec2f;
+    was_docked : bool;
 }
 
-GetSubwindowPersistentStorage :: (id : ID) -> *SubwindowPersistentStorage.Entry, is_new : bool {
-    storage, new := AddGlobalUserData(SubwindowPersistentStorage, DestroySubwindowPersistentStorage);
+GlobalSubwindowsData :: struct {
+    entries : [..]SubwindowPersistentData;
+}
+
+GetSubwindowPersistentData :: (id : ID) -> *SubwindowPersistentData, is_new : bool {
+    storage, new := AddGlobalUserData(GlobalSubwindowsData, DestroyGlobalSubwindowsData);
     if new {
         storage.entries.allocator = context.omg.general_purpose_allocator;
     }
@@ -26,8 +27,8 @@ GetSubwindowPersistentStorage :: (id : ID) -> *SubwindowPersistentStorage.Entry,
     return result, true;
 }
 
-DestroySubwindowPersistentStorage :: (node : *Node, data : *void) {
-    using _ := cast(*SubwindowPersistentStorage, data);
+DestroyGlobalSubwindowsData :: (node : *Node, data : *void) {
+    using _ := cast(*GlobalSubwindowsData, data);
     array_free(entries);
 }
 
@@ -272,24 +273,37 @@ Subwindow :: (
     EnsureStyle(*style, "subwindow");
 
     resize_handles_expand := ifx !(flags & .NoResize) then Vec2f.{1,1} * max(-style.resize_handle_inset, 0);
+    avail_area : Vec4f;
+    title_bar_size : Vec2f;
+
+    subwindow_id := GetID(str_id);
+
+    persistent_data : *SubwindowPersistentData;
+    is_new_persistent_data : bool;
+    if !(flags & .NoPersistentStorage) {
+        persistent_data, is_new_persistent_data = GetSubwindowPersistentData(subwindow_id);
+    }
 
     content, subwindow : *Node;
-    subwindow=, is_new := GetPopupNode(window, str_id);
+    dock_node := GetSubwindowDockNode(subwindow_id);
+    defer persistent_data.was_docked = dock_node != null;
 
-    storage : *SubwindowPersistentStorage.Entry;
-    is_new_storage : bool;
-    if !(flags & .NoPersistentStorage) {
-        storage, is_new_storage = GetSubwindowPersistentStorage(subwindow.id);
-    }
+    hscroll := (flags & .NoHorizontalScroll) == 0;
+    vscroll := (flags & .NoVerticalScroll) == 0;
+    hscrollbar := (flags & .NoHorizontalScrollbar) == 0 && (flags & .NoHorizontalScroll) == 0;
+    vscrollbar := (flags & .NoVerticalScrollbar) == 0 && (flags & .NoVerticalScroll) == 0;
+    content_parent : *Node;
 
-    defer if storage {
-        storage.position = subwindow.offset;
-        storage.size = .{subwindow.desired_size.x.value, subwindow.desired_size.y.value};
-    }
+    if !dock_node {
+        defer if persistent_data {
+            persistent_data.position = subwindow.offset;
+            persistent_data.size = .{subwindow.desired_size.x.value, subwindow.desired_size.y.value};
+        }
 
-    {
+        subwindow=, is_new := GetPopupNode(window, subwindow_id, is_global_id=true);
+
         if is_new {
-            if !storage || is_new_storage {
+            if !persistent_data || is_new_persistent_data || persistent_data.was_docked {
                 SetSize(subwindow, SizePx(initial_size.x), SizePx(initial_size.y));
 
                 subwindow.desired_size.x.value += resize_handles_expand.x * 2;
@@ -297,8 +311,8 @@ Subwindow :: (
 
                 subwindow.offset -= resize_handles_expand;
             } else {
-                SetSize(subwindow, SizePx(storage.size.x), SizePx(storage.size.y));
-                subwindow.offset = storage.position;
+                SetSize(subwindow, SizePx(persistent_data.size.x), SizePx(persistent_data.size.y));
+                subwindow.offset = persistent_data.position;
             }
         } else {
             SetSize(subwindow, SizePx(subwindow.size.x), SizePx(subwindow.size.y));
@@ -317,7 +331,7 @@ Subwindow :: (
             then subwindow
             else SubwindowResizeHandles(subwindow, min_size, style);
 
-        avail_area := subwindow.parent.rect;
+        avail_area = subwindow.parent.rect;
         if !(flags & .NoResize) {
             avail_area = InflateBounds(avail_area, Vec4f.{xy=resize_handles_expand,zw=resize_handles_expand});
         }
@@ -325,8 +339,8 @@ Subwindow :: (
         title_bar := ifx !(flags & .NoTitleBar)
             then SubwindowTitleBar(subwindow, title_and_content, title, *style.title_bar);
 
-        title_bar_size := ifx title_bar then title_bar.size;
-        if !(flags & .NoResize) {
+        title_bar_size = ifx title_bar then title_bar.size;
+        if title_bar && !(flags & .NoResize) {
             title_bar_size += resize_handles_expand * 2;
         }
 
@@ -334,62 +348,62 @@ Subwindow :: (
             SubwindowMoveBehavior(subwindow, title_bar, avail_area, title_bar_size);
         }
 
-        hscroll := (flags & .NoHorizontalScroll) == 0;
-        vscroll := (flags & .NoVerticalScroll) == 0;
-        hscrollbar := (flags & .NoHorizontalScrollbar) == 0 && (flags & .NoHorizontalScroll) == 0;
-        vscrollbar := (flags & .NoVerticalScrollbar) == 0 && (flags & .NoVerticalScroll) == 0;
-
-        content_parent := title_and_content;
-        content_and_hscrollbar, content_and_vscrollbar : *Node;
-        if hscrollbar {
-            content_and_hscrollbar = GetNode(content_parent, "content_and_hscrollbar");
-            SetLayout(content_and_hscrollbar, .TopToBottom);
-            SetSize(content_and_hscrollbar, SizeFill(), SizeFill());
-            content_parent = content_and_hscrollbar;
-        }
-
-        if vscrollbar {
-            content_and_vscrollbar = GetNode(content_parent, "content_and_vscrollbar");
-            SetLayout(content_and_vscrollbar, .LeftToRight);
-            SetSize(content_and_vscrollbar, SizeFill(), SizeFill());
-            content_parent = content_and_vscrollbar;
-        }
-
-        content = GetNode(content_parent, "content");
-        {
-            SetSize(content, SizeFill(), SizeFill());
-            SetLayout(content, .TopToBottom);
-
-            content.padding = style.background.padding;
-            content.child_gap = style.background.child_gap;
-
-            if !(flags & .NoMove) && !(flags & .NoMoveFromBackground) {
-                SubwindowMoveBehavior(subwindow, content, avail_area, title_bar_size);
-            }
-
-            axes : AxisFlags;
-            if hscroll {
-                axes |= .X;
-            }
-            if vscroll {
-                axes |= .Y;
-            }
-
-            ScrollViewBehavior(content, axes);
-
-            if hscrollbar && content.children_size.x > content.size.x - content.padding.x - content.padding.z {
-                Scrollbar(content_and_hscrollbar, content, .X, style=*style.horizontal_scrollbar);
-            }
-            if vscrollbar && content.children_size.y > content.size.y - content.padding.y - content.padding.w {
-                Scrollbar(content_and_vscrollbar, content, .Y, style=*style.vertical_scrollbar);
-            }
-        }
+        content_parent = title_and_content;
 
         Apply(title_and_content, style.background);
 
         subwindow.flags |= .NoClip;
         title_and_content.padding = .{};
         title_and_content.child_gap = .{};
+    } else {
+        content_parent = dock_node;
+
+        Apply(content_parent, style.background);
+    }
+
+    content_and_hscrollbar, content_and_vscrollbar : *Node;
+    if hscrollbar {
+        content_and_hscrollbar = GetNode(content_parent, "content_and_hscrollbar");
+        SetLayout(content_and_hscrollbar, .TopToBottom);
+        SetSize(content_and_hscrollbar, SizeFill(), SizeFill());
+        content_parent = content_and_hscrollbar;
+    }
+
+    if vscrollbar {
+        content_and_vscrollbar = GetNode(content_parent, "content_and_vscrollbar");
+        SetLayout(content_and_vscrollbar, .LeftToRight);
+        SetSize(content_and_vscrollbar, SizeFill(), SizeFill());
+        content_parent = content_and_vscrollbar;
+    }
+
+    content = GetNode(content_parent, "content");
+    {
+        SetSize(content, SizeFill(), SizeFill());
+        SetLayout(content, .TopToBottom);
+
+        content.padding = style.background.padding;
+        content.child_gap = style.background.child_gap;
+
+        if subwindow && !(flags & .NoMove) && !(flags & .NoMoveFromBackground) {
+            SubwindowMoveBehavior(subwindow, content, avail_area, title_bar_size);
+        }
+
+        axes : AxisFlags;
+        if hscroll {
+            axes |= .X;
+        }
+        if vscroll {
+            axes |= .Y;
+        }
+
+        ScrollViewBehavior(content, axes);
+
+        if hscrollbar && content.children_size.x > content.size.x - content.padding.x - content.padding.z {
+            Scrollbar(content_and_hscrollbar, content, .X, style=*style.horizontal_scrollbar);
+        }
+        if vscrollbar && content.children_size.y > content.size.y - content.padding.y - content.padding.w {
+            Scrollbar(content_and_vscrollbar, content, .Y, style=*style.vertical_scrollbar);
+        }
     }
 
     return content, subwindow;

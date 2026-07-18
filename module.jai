@@ -40,6 +40,7 @@ Context :: struct {
     windows : *Window;
     fonts : *Font;
     node_pool : Bucket_Array(Node, 300);
+    nodes_by_id : HT.Table(ID, *Node);
     user_data : *NodeUserData;
 
     theme : *Theme;

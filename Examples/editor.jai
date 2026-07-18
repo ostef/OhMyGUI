@@ -352,13 +352,8 @@ EditorFrame :: () {
                 OMG.SetSize(left_side, OMG.SizeFill());
                 OMG.SetLayout(left_side, .TopToBottom);
 
-                main_viewport := Panel(left_side, "main_viewport", "Main Viewport");
-                {
-                    OMG.DockSpace(main_viewport, "dockspace");
-                    // OMG.SetChildAlign(main_viewport, 0.5, 0.5);
-
-                    // OMG.Image(main_viewport, g_dummy_viewport_image.texture, g_dummy_viewport_image.width, g_dummy_viewport_image.height);
-                }
+                dock := OMG.DockSpace(left_side, "dockspace");
+                docked := OMG.DockSubwindow(dock, "color_picker");
 
                 content_browser := Panel(left_side, "content_browser", "Content Browser");
                 {

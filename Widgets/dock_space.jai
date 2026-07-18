@@ -1,97 +1,238 @@
+GlobalDockSpaceData :: struct {
+    subwindow_dock_nodes : HT.Table(ID, ID);
+}
+
+DestroyGlobalDockSpaceData :: (_ : *Node, data : *void) {
+    using _ := cast(*GlobalDockSpaceData, data);
+    HT.deinit(*subwindow_dock_nodes);
+}
+
+DockSpaceNodeFlags :: enum_flags u8 {
+    CentralNode;
+}
+
 DockSpaceData :: struct {
     split : enum u8 {
         None;
         Horizontal;
         Vertical;
     };
+
+    flags : DockSpaceNodeFlags;
+    docked_subwindows : [..]ID;
+    content : *Node;
+    top_dock : *Node;
+    bottom_dock : *Node;
+    left_dock : *Node;
+    right_dock : *Node;
 }
 
-DockSpace :: (parent : *Node, str_id : string) -> space : *Node, content : *Node {
-    content : *Node;
+DestroyDockSpaceData :: (node : *Node, data : *void) {
+    using _ := cast(*DockSpaceData, data);
+    array_free(docked_subwindows);
+}
+
+GetSubwindowDockNode :: inline (subwindow_str_id : string) -> content : *Node, dock_node : *Node {
+    content, dock_node := GetSubwindowDockNode(GetID(subwindow_str_id));
+    return content, dock_node;
+}
+
+GetSubwindowDockNode :: (subwindow_id : ID) -> content : *Node, dock_node : *Node {
+    using global := GetGlobalUserData(GlobalDockSpaceData);
+    if !global {
+        return null, null;
+    }
+
+    exists, dock_id := HT.table_find(*subwindow_dock_nodes, subwindow_id);
+    if !exists {
+        return null, null;
+    }
+
+    exists=, dock_node := HT.table_find(*context.omg.nodes_by_id, dock_id);
+    if !exists {
+        return null, null;
+    }
+
+    data := GetUserData(dock_node, DockSpaceData);
+    assert(data != null, "Node is not a dock space");
+
+    return data.content, dock_node;
+}
+
+DockSubwindow :: inline (dock_node : *Node, subwindow_str_id : string) -> bool {
+    return DockSubwindow(dock_node, GetID(subwindow_str_id));
+}
+
+DockSubwindow :: (dock_node : *Node, subwindow_id : ID) -> bool {
+    global := AddGlobalUserData(GlobalDockSpaceData, DestroyGlobalDockSpaceData);
+
+    data := GetUserData(dock_node, DockSpaceData);
+    assert(data != null, "Node is not a dock space");
+
+    if data.split != .None {
+        return false;
+    }
+
+    array_add_if_unique(*data.docked_subwindows, subwindow_id);
+
+    dock_id := HT.find_or_add(*global.subwindow_dock_nodes, subwindow_id);
+    dock_id.* = dock_node.id;
+
+    return true;
+}
+
+UndockSubwindow :: (subwindow_id : ID) {
+    global := GetGlobalUserData(GlobalDockSpaceData);
+    if !global {
+        return;
+    }
+
+    _, dock_node := GetSubwindowDockNode(subwindow_id);
+    if !dock_node {
+        return;
+    }
+
+    data := GetUserData(dock_node, DockSpaceData);
+    array_ordered_remove_by_value(*data.docked_subwindows, subwindow_id);
+    HT.table_remove(*global.subwindow_dock_nodes, subwindow_id);
+
+    RemoveDockSpace(dock_node);
+}
+
+RemoveDockSpace :: (dock_node : *Node) {
+
+}
+
+DockSpace :: (parent : *Node, str_id : string, flags : DockSpaceNodeFlags = .CentralNode) -> *Node {
     node := GetNode(parent, str_id);
     {
-        using data := AddUserData(node, DockSpaceData);
+        data := AddUserData(node, DockSpaceData, DestroyDockSpaceData);
+        data.flags = flags;
+        data.content = null;
+        data.top_dock = null;
+        data.bottom_dock = null;
+        data.left_dock = null;
+        data.right_dock = null;
 
         SetSize(node, SizeFill(), SizeFill());
         SetBorderColor(node, 0xffffffff);
         SetBorderSize(node, 1);
 
-        if split == {
+        if #complete data.split == {
         case .None;
             SetLayout(node, .None);
 
-            content = GetNode(node, "content");
-            SetSize(content, SizeFill(), SizeFill());
+            data.content = GetNode(node, "content");
+            SetSize(data.content, SizeFill(), SizeFill());
 
             overlay := GetNode(node, "overlay");
             SetSize(overlay, SizeFill(), SizeFill());
+            SetLayout(overlay, .TopToBottom);
+            SetChildAlign(overlay, 0.5, 0.5);
+            SetChildGap(overlay, 10, 10);
 
-            SetDraw(overlay, (draw_list, node) => {
-                if !IsHovered(node) {
-                    return;
+            top := GetNode(overlay);
+            {
+                SetSize(top, SizePx(50), SizePx(40));
+                SetBackgroundColor(top, ColorU32(0,0,1,0.5));
+
+                using _ := ButtonBehavior(top);
+                if released {
+                    data.split = .Horizontal;
                 }
+            }
 
-                mouse := GetMousePosition(node.window);
-                mouse -= node.rect.xy;
 
-                top := mouse.y < node.size.y * 0.333333;
-                bottom := mouse.y > node.size.y * 0.666666;
-                left := mouse.x < node.size.x * 0.333333;
-                right := mouse.x > node.size.x * 0.666666;
+            middle := GetNode(overlay);
+            SetSize(middle, SizeFill(), SizeFit());
+            SetLayout(middle, .LeftToRight);
+            SetChildAlign(middle, 0.5, 0.5);
+            SetChildGap(middle, 10, 10);
 
-                if left && !top && !bottom {
-                    size := Vec2f.{node.size.x * 0.5, node.size.y};
-                    position := node.rect.xy;
-                    DrawBox(draw_list, position + size * 0.5, size, ColorU32(0,0,1,0.5));
+            bottom := GetNode(overlay);
+            {
+                SetSize(bottom, SizePx(50), SizePx(40));
+                SetBackgroundColor(bottom, ColorU32(0,0,1,0.5));
+
+                using _ := ButtonBehavior(bottom);
+                if released {
+                    data.split = .Horizontal;
                 }
-                if right && !top && !bottom {
-                    size := Vec2f.{node.size.x * 0.5, node.size.y};
-                    position := Vec2f.{node.rect.z - size.x, node.rect.y};
-                    DrawBox(draw_list, position + size * 0.5, size, ColorU32(0,0,1,0.5));
-                }
-                if top && !left && !right {
-                    size := Vec2f.{node.size.x, node.size.y * 0.5};
-                    position := node.rect.xy;
-                    DrawBox(draw_list, position + size * 0.5, size, ColorU32(0,0,1,0.5));
-                }
-                if bottom && !left && !right {
-                    size := Vec2f.{node.size.x, node.size.y * 0.5};
-                    position := Vec2f.{node.rect.x, node.rect.w - size.y};
-                    DrawBox(draw_list, position + size * 0.5, size, ColorU32(0,0,1,0.5));
-                }
-            });
+            }
 
-            using _ := ButtonBehavior(overlay);
-            if released {
-                mouse := GetMousePosition(node.window);
-                mouse -= overlay.rect.xy;
+            left := GetNode(middle);
+            {
+                SetSize(left, SizePx(40), SizePx(50));
+                SetBackgroundColor(left, ColorU32(0,0,1,0.5));
 
-                top := mouse.y < overlay.size.y * 0.333333;
-                bottom := mouse.y > overlay.size.y * 0.666666;
-                left := mouse.x < overlay.size.x * 0.333333;
-                right := mouse.x > overlay.size.x * 0.666666;
-
-                if (left || right) && !top && !bottom {
-                    split = .Vertical;
+                using _ := ButtonBehavior(left);
+                if released {
+                    data.split = .Vertical;
                 }
-                if (top || bottom) && !left && !right {
-                    split = .Horizontal;
+            }
+
+            center := GetNode(middle);
+            SetSize(center, SizePx(50), SizePx(50));
+            SetBackgroundColor(center, ColorU32(0,0,1,0.5));
+
+            right := GetNode(middle);
+            {
+                SetSize(right, SizePx(40), SizePx(50));
+                SetBackgroundColor(right, ColorU32(0,0,1,0.5));
+
+                using _ := ButtonBehavior(right);
+                if released {
+                    data.split = .Vertical;
                 }
             }
 
         case .Horizontal;
             SetLayout(node, .TopToBottom);
 
-            DockSpace(node, "top");
-            DockSpace(node, "bottom`");
+            data.top_dock = DockSpace(node, "top", 0);
+
+            resize_handle := GetNode(node, "resize");
+            SetSize(resize_handle, SizeFill(), SizePx(2));
+            SetBackgroundColor(resize_handle, ColorU32(0,1,0,1));
+
+            data.bottom_dock = DockSpace(node, "bottom`", 0);
 
         case .Vertical;
             SetLayout(node, .LeftToRight);
 
-            DockSpace(node, "left");
-            DockSpace(node, "right`");
+            data.left_dock = DockSpace(node, "left", 0);
+
+            resize_handle := GetNode(node, "resize");
+            SetSize(resize_handle, SizePx(2), SizeFill());
+            SetBackgroundColor(resize_handle, ColorU32(0,1,0,1));
+
+            data.right_dock = DockSpace(node, "right`", 0);
         }
     }
 
-    return node, content;
+    return node;
+}
+
+DockLeft :: (dockspace : *Node) -> *Node {
+    using data := GetUserData(dockspace, DockSpaceData);
+    assert(data != null, "Node is not a dock space");
+
+    if #complete split == {
+    case .None;
+        split = .Vertical;
+        return null;
+
+    case .Horizontal;
+        return null;
+
+    case .Vertical;
+        if !left_dock {
+            return null;
+        }
+
+        left_data := GetUserData(left_dock, DockSpaceData);
+        assert(left_data != null, "Node is not a dock space");
+
+        return left_data.content;
+    }
 }

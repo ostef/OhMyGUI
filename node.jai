@@ -394,6 +394,7 @@ FreeNode :: (node : *Node, free_children := true) {
         free(it ,, context.omg.general_purpose_allocator);
     }
 
+    HT.table_remove(*context.omg.nodes_by_id, node.id);
     bucket_array_remove(*context.omg.node_pool, node.index);
 
     if window.root_node == node {
@@ -498,6 +499,9 @@ GetPopupRoot :: (window : *Window) -> *Node, is_new : bool {
         window.popup_root_node.local_id = GetID("PopupRoot");
         window.popup_root_node.id = GetID(window.popup_root_node.local_id, cast(u64, window));
 
+        table_entry := HT.find_or_add(*context.omg.nodes_by_id, window.popup_root_node.id);
+        table_entry.* = window.popup_root_node;
+
         is_new = true;
     }
 
@@ -515,6 +519,9 @@ GetNode :: (window : *Window) -> *Node, is_new : bool {
         window.root_node.local_id = GetID("Root");
         window.root_node.id = GetID(window.root_node.local_id, cast(u64, window));
 
+        table_entry := HT.find_or_add(*context.omg.nodes_by_id, window.root_node.id);
+        table_entry.* = window.root_node;
+
         is_new = true;
     }
 
@@ -523,17 +530,17 @@ GetNode :: (window : *Window) -> *Node, is_new : bool {
     return window.root_node, is_new;
 }
 
-GetNode :: inline (parent : *Node, location := #caller_location) -> *Node, is_new : bool {
-    node, is_new := GetNode(parent, GetID(location));
+GetNode :: inline (parent : *Node, location := #caller_location, is_global_id := false) -> *Node, is_new : bool {
+    node, is_new := GetNode(parent, GetID(location), is_global_id);
     return node, is_new;
 }
 
-GetNode :: inline (parent : *Node, str_id : string) -> *Node, is_new : bool {
-    node, is_new := GetNode(parent, GetID(str_id));
+GetNode :: inline (parent : *Node, str_id : string, is_global_id := false) -> *Node, is_new : bool {
+    node, is_new := GetNode(parent, GetID(str_id), is_global_id);
     return node, is_new;
 }
 
-GetNode :: (parent : *Node, id : ID) -> *Node, is_new : bool {
+GetNode :: (parent : *Node, id : ID, is_global_id := false) -> *Node, is_new : bool {
     assert(id != 0);
     assert(parent == null || parent.last_used_on_frame == context.omg.frame_index);
 
@@ -563,7 +570,10 @@ GetNode :: (parent : *Node, id : ID) -> *Node, is_new : bool {
         node.window = parent.window;
         node.parent = parent;
         node.local_id = id;
-        node.id = GetID(id, base=parent.id);
+        node.id = ifx is_global_id then GetID(id, base=parent.id) else id;
+
+        table_entry := HT.find_or_add(*context.omg.nodes_by_id, node.id);
+        table_entry.* = node;
 
         is_new = true;
     }
@@ -573,18 +583,18 @@ GetNode :: (parent : *Node, id : ID) -> *Node, is_new : bool {
     return node, is_new;
 }
 
-GetPopupNode :: inline (window : *Window, location := #caller_location) -> *Node, is_new : bool {
-    node, is_new := GetNode(GetPopupRoot(window), location);
+GetPopupNode :: inline (window : *Window, location := #caller_location, is_global_id := true) -> *Node, is_new : bool {
+    node, is_new := GetNode(GetPopupRoot(window), location, is_global_id);
     return node, is_new;
 }
 
-GetPopupNode :: inline (window : *Window, str_id : string) -> *Node, is_new : bool {
-    node, is_new := GetNode(GetPopupRoot(window), str_id);
+GetPopupNode :: inline (window : *Window, str_id : string, is_global_id := true) -> *Node, is_new : bool {
+    node, is_new := GetNode(GetPopupRoot(window), str_id, is_global_id);
     return node, is_new;
 }
 
-GetPopupNode :: inline (window : *Window, id : ID) -> *Node, is_new : bool {
-    node, is_new := GetNode(GetPopupRoot(window), id);
+GetPopupNode :: inline (window : *Window, id : ID, is_global_id := true) -> *Node, is_new : bool {
+    node, is_new := GetNode(GetPopupRoot(window), id, is_global_id);
     return node, is_new;
 }
 

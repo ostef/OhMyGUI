@@ -29,8 +29,10 @@ Tree based immediate mode GUI library in Jai inspired by Clay and PanGui. For no
     - static rows and columns
 * Justified text wrapping
 * Auto open menus when hovered if a related menu is opened
+* Improve rendering performance
 
 Widgets:
+* Dock spaces
 * Multi line text input
 * Popups
 * Panels
