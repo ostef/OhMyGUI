@@ -377,6 +377,7 @@ AllocNode :: () -> *Node {
     return node;
 }
 
+// @Todo: remove child from tree
 FreeNode :: (node : *Node, free_children := true) {
     window := node.window;
 
@@ -468,6 +469,11 @@ GetID :: inline (loc : Source_Code_Location, apply_offset := true) -> ID {
     }
 
     return id;
+}
+
+GetNodeByGlobalID :: inline (id : ID) -> *Node {
+    _, node := HT.table_find(*context.omg.nodes_by_id, id);
+    return node;
 }
 
 TouchNode :: (node : *Node) {
