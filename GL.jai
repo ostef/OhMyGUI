@@ -3,6 +3,10 @@
 #import "Basic";
 #import "String";
 
+GetLastFrameMemoryUsage :: inline () -> int {
+    return g_last_frame_memory_usage;
+}
+
 GetLastFrameGPUTime :: inline () -> float {
     return g_last_frame_gpu_time;
 }
@@ -43,6 +47,7 @@ g_uniform_buffer_offset_alignment : s32;
 g_storage_buffer_offset_alignment : s32;
 
 g_last_frame_gpu_time : float;
+g_last_frame_memory_usage : int;
 
 GLBufferBinding :: enum {
     ClipBoxes;
@@ -339,6 +344,7 @@ Render :: (viewport_w : u32, viewport_h : u32) {
     shapes_size := shapes.count * size_of(ShaderShape);
 
     total_size := shapes_offset + shapes_size;
+    g_last_frame_memory_usage = total_size;
 
     buffer_handle := g_frame_data_buffer_handles[g_frame_in_flight];
     buffer_ptr := g_frame_data_buffer_ptrs[g_frame_in_flight];

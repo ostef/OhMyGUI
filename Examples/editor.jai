@@ -370,6 +370,7 @@ EditorFrame :: () {
                     OMG.Text(content_browser, "\t\tDraw: % ms", context.omg.draw_time_last_frame * 1000);
                     OMG.Text(content_browser, "\tUser: % ms", g_user_time * 1000);
                     OMG.Text(content_browser, "GPU: % ms", OMG_GL.GetLastFrameGPUTime() * 1000);
+                    OMG.Text(content_browser, "GPU buffers: % MB", OMG_GL.GetLastFrameMemoryUsage() / (1024.0 * 1024.0));
 
                     password_field := OMG.GetNode(content_browser, "password_field");
                     {
