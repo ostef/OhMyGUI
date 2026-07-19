@@ -87,11 +87,13 @@ Utf8Length :: (str : string) -> s64, UnicodeResult {
     while i < str.count {
         size := GetUtf8DecodingSize(str[i]);
 
-        if size == 0
+        if size == 0 {
             return 0, .SourceIllegal;
+        }
 
-        if i + size > str.count
+        if i + size > str.count {
             return len, .SourceExhausted;
+        }
 
         i += size;
         len += 1;
@@ -101,22 +103,24 @@ Utf8Length :: (str : string) -> s64, UnicodeResult {
 }
 
 GetUtf8DecodingSize :: inline (first : u8) -> s64 {
-    if first < 0x80
+    if first < 0x80 {
         return 1;
-    else if (first & 0xe0) == 0xc0
+    } else if (first & 0xe0) == 0xc0 {
         return 2;
-    else if (first & 0xf0) == 0xe0
+    } else if (first & 0xf0) == 0xe0 {
         return 3;
-    else if (first & 0xf8) == 0xf0
+    } else if (first & 0xf8) == 0xf0 {
         return 4;
-    else
+    } else {
         return 0;
+    }
 }
 
 DecodeUtf8String :: (str : string) -> []u32, UnicodeResult {
     length, result := Utf8Length(str);
-    if result != .Ok
+    if result != .Ok {
         return .[], result;
+    }
 
     buffer := NewArray(length, u32, initialized=false);
 
@@ -130,12 +134,14 @@ DecodeUtf8String :: (str : string, buffer : []u32) -> written : s64, UnicodeResu
     i := 0;
     byte_offset := 0;
     while byte_offset < str.count {
-        codepoint, size, result := DecodeUtf8Character(cast([]u8) str, byte_offset);
-        if result != .Ok
+        codepoint, size, result := DecodeUtf8Character(cast([]u8, str), byte_offset);
+        if result != .Ok {
             return i, result;
+        }
 
-        if i == buffer.count
+        if i == buffer.count {
             return i, .BufferTooSmall;
+        }
 
         buffer[i] = codepoint;
         i += 1;
@@ -152,17 +158,20 @@ DecodeUtf8Character :: (buffer : []u8, byte_offset : s64) -> codepoint : u32, si
     buff.data += byte_offset;
     buff.count -= byte_offset;
 
-    if buff.count <= 0
+    if buff.count <= 0 {
         return Unicode_Replacement, 0, .SourceExhausted;
+    }
 
     first := buff[0];
     size := GetUtf8DecodingSize(first);
 
-    if size == 0
+    if size == 0 {
         return Unicode_Replacement, 0, .SourceIllegal;
+    }
 
-    if buff.count < size
+    if buff.count < size {
         return Unicode_Replacement, size, .SourceExhausted;
+    }
 
     First_Byte_Mask :: u8.[ 0x7f, 0x1f, 0x0f, 0x07 ];
 
@@ -172,29 +181,32 @@ DecodeUtf8Character :: (buffer : []u8, byte_offset : s64) -> codepoint : u32, si
         codepoint |= buff[i] & 0x3f;
     }
 
-    if codepoint > Unicode_Max
+    if codepoint > Unicode_Max {
         return Unicode_Replacement, size, .SourceIllegal;
+    }
 
     return codepoint, size, .Ok;
 }
 
 GetUtf8EncodingSize :: inline (codepoint : u32) -> s64 {
-    if codepoint <= 0x7f
+    if codepoint <= 0x7f {
         return 1;
-    else if codepoint <= 0x7ff
+    } else if codepoint <= 0x7ff {
         return 2;
-    else if codepoint <= 0xffff
+    } else if codepoint <= 0xffff {
         return 3;
-    else if codepoint <= 0x10ffff
+    } else if codepoint <= 0x10ffff {
         return 4;
+    }
 
     return 3; // Encoding size for Unicode_Replacement
 }
 
 GetUtf8EncodingSize :: inline (str : []u32) -> s64 {
     size := 0;
-    for str
+    for str {
         size += GetUtf8EncodingSize(it);
+    }
 
     return size;
 }
@@ -206,7 +218,7 @@ EncodeStringAsUtf8 :: (str : []u32) -> string, UnicodeResult {
     written, result := EncodeStringAsUtf8(str, buffer);
     assert(written == buffer.count);
 
-    return cast(string) buffer, result;
+    return cast(string, buffer), result;
 }
 
 EncodeStringAsUtf8 :: (str : []u32, buffer : []u8) -> written : s64, UnicodeResult {
@@ -214,8 +226,9 @@ EncodeStringAsUtf8 :: (str : []u32, buffer : []u8) -> written : s64, UnicodeResu
     for i : 0..str.count - 1 {
         size, result := EncodeCharacterAsUtf8(str[i], buffer, byte_offset);
 
-        if result != .Ok
+        if result != .Ok {
             return byte_offset, result;
+        }
 
         byte_offset += size;
     }
@@ -225,12 +238,14 @@ EncodeStringAsUtf8 :: (str : []u32, buffer : []u8) -> written : s64, UnicodeResu
 
 EncodeCharacterAsUtf8 :: (codepoint : u32, buffer : []u8, byte_offset : s64) -> s64, UnicodeResult {
     // Should we return .SourceIllegal for this?
-    if codepoint > Unicode_Max
+    if codepoint > Unicode_Max {
         codepoint = Unicode_Replacement;
+    }
 
     size := GetUtf8EncodingSize(codepoint);
-    if buffer.count < size
+    if buffer.count < size {
         return size, .BufferTooSmall;
+    }
 
     for < i : 1..size - 1 {
         buffer[byte_offset + i] = xx (codepoint | 0x80) & 0xbf;
