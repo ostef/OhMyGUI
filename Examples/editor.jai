@@ -181,7 +181,7 @@ EditorFrame :: () {
 
             OMG.Text(title_bar, "OMG Engine (% FPS)", cast(int, 1 / g_delta_time));
 
-            OMG.VerticalSeparator(title_bar);
+            OMG.Separator(title_bar);
 
             title_menu_bar := OMG.MenuBar(title_bar, "title_menu_bar");
 
