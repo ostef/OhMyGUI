@@ -321,8 +321,8 @@ EditorFrame :: () {
                 OMG.SetSize(left_side, OMG.SizeFill());
                 OMG.SetLayout(left_side, .TopToBottom);
 
-                dock := OMG.DockSpace(left_side, "dockspace");
-                docked := OMG.DockSubwindow(dock, "color_picker");
+                dock, dock_node := OMG.DockSpace(left_side, "dockspace");
+                docked := OMG.DockSubwindow(dock_node, "color_picker");
 
                 content_browser := Panel(left_side, "content_browser", "Content Browser");
                 {

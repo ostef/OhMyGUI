@@ -1,129 +1,176 @@
-GlobalDockSpaceData :: struct {
-    subwindow_dock_nodes : HT.Table(ID, ID);
+DockNodeSplitDirection :: enum u8 {
+    None;
+    Horizontal;
+    Vertical;
 }
 
-DestroyGlobalDockSpaceData :: (_ : *Node, data : *void) {
-    using _ := cast(*GlobalDockSpaceData, data);
-    HT.deinit(*subwindow_dock_nodes);
+DockNodeSplit :: enum u8 {
+    Top;
+    Bottom;
+    Left;
+    Right;
 }
 
-DockSpaceNodeFlags :: enum_flags u8 {
-    CentralNode;
-}
-
-DockSpaceData :: struct {
-    split : enum u8 {
-        None;
-        Horizontal;
-        Vertical;
-    };
-
-    flags : DockSpaceNodeFlags;
+DockNode :: struct {
+    parent : *DockNode;
+    children : [2]*DockNode;
     docked_subwindows : [..]ID;
-    content : *Node;
-    top_dock : *Node;
-    bottom_dock : *Node;
-    left_dock : *Node;
-    right_dock : *Node;
+    split_dir : DockNodeSplitDirection;
+    node : *Node;
 }
 
-DestroyDockSpaceData :: (node : *Node, data : *void) {
-    using _ := cast(*DockSpaceData, data);
-    array_free(docked_subwindows);
+CreateDockNode :: (parent : *DockNode) -> *DockNode {
+    node := New(DockNode ,, context.omg.general_purpose_allocator);
+    node.parent = parent;
+    node.docked_subwindows.allocator = context.omg.general_purpose_allocator;
+
+    return node;
 }
 
-GetSubwindowDockNode :: inline (subwindow_str_id : string) -> content : *Node, dock_node : *Node {
-    content, dock_node := GetSubwindowDockNode(GetID(subwindow_str_id));
-    return content, dock_node;
+DockSubwindow :: inline (node : *DockNode, subwindow_str_id : string) -> bool {
+    return DockSubwindow(node, GetID(subwindow_str_id));
 }
 
-GetSubwindowDockNode :: (subwindow_id : ID) -> content : *Node, dock_node : *Node {
-    using global := GetGlobalUserData(GlobalDockSpaceData);
-    if !global {
-        return null, null;
-    }
-
-    exists, dock_id := HT.table_find(*subwindow_dock_nodes, subwindow_id);
-    if !exists {
-        return null, null;
-    }
-
-    exists=, dock_node := HT.table_find(*context.omg.nodes_by_id, dock_id);
-    if !exists {
-        return null, null;
-    }
-
-    data := GetUserData(dock_node, DockSpaceData);
-    assert(data != null, "Node is not a dock space");
-
-    return data.content, dock_node;
-}
-
-DockSubwindow :: inline (dock_node : *Node, subwindow_str_id : string) -> bool {
-    return DockSubwindow(dock_node, GetID(subwindow_str_id));
-}
-
-DockSubwindow :: (dock_node : *Node, subwindow_id : ID) -> bool {
-    global := AddGlobalUserData(GlobalDockSpaceData, DestroyGlobalDockSpaceData);
-
-    data := GetUserData(dock_node, DockSpaceData);
-    assert(data != null, "Node is not a dock space");
-
-    if data.split != .None {
+DockSubwindow :: (node : *DockNode, subwindow_id : ID) -> bool {
+    if node.split_dir != .None {
         return false;
     }
 
-    array_add_if_unique(*data.docked_subwindows, subwindow_id);
-
-    dock_id := HT.find_or_add(*global.subwindow_dock_nodes, subwindow_id);
-    dock_id.* = dock_node.id;
+    array_add_if_unique(*node.docked_subwindows, subwindow_id);
 
     return true;
 }
 
-UndockSubwindow :: (subwindow_id : ID) {
+SplitDockNode :: (node : *DockNode, split : DockNodeSplit) -> *DockNode {
+    split_dir := ifx split == .Top || split == .Bottom then DockNodeSplitDirection.Horizontal else .Vertical;
+
+    if node.split_dir == split_dir {
+        return ifx split == .Top || split == .Left then node.children[0] else node.children[1];
+    }
+
+    if node.split_dir != .None {
+        return null;
+    }
+
+    node.split_dir = ifx split == .Top || split == .Bottom then .Horizontal else .Vertical;
+    node.children[0] = CreateDockNode(node);
+    node.children[1] = CreateDockNode(node);
+
+    split_node := ifx split == .Top || split == .Left then node.children[0] else node.children[1];
+    opposite := ifx split == .Top || split == .Left then node.children[1] else node.children[0];
+
+    // Move windows into the opposite side
+    swap(*opposite.docked_subwindows, *node.docked_subwindows);
+
+    return split_node;
+}
+
+RemoveDockNode :: (node : *DockNode) -> bool {
+    if !node.parent {
+        return false;
+    }
+
+    sibling_index := ifx node.parent.children[0] == node then 0 else 1;
+    MergeDockNode(node.parent, sibling_index);
+
+    return true;
+}
+
+MergeDockNode :: (parent : *DockNode, child_index : int) -> bool {
+    if parent.split_dir == .None {
+        return false;
+    }
+
+    child := parent.children[child_index];
+    parent.split_dir = child.split_dir;
+    parent.children[0] = child.children[0];
+    parent.children[1] = child.children[1];
+
+    swap(*parent.docked_subwindows, *child.docked_subwindows);
+    array_reset(*child.docked_subwindows);
+
+    return true;
+}
+
+GlobalDockSpaceData :: struct {
+    root_dock_nodes : HT.Table(ID, *DockNode);
+}
+
+DestroyGlobalDockSpaceData :: (_ : *Node, data : *void) {
+    using _ := cast(*GlobalDockSpaceData, data);
+    HT.table_reset(*root_dock_nodes);
+}
+
+GetSubwindowDockNode :: inline (subwindow_str_id : string) -> content : *Node, dock_node : *DockNode {
+    content, dock_node := GetSubwindowDockNode(GetID(subwindow_str_id));
+    return content, dock_node;
+}
+
+// @Todo: make this a simple hash map lookup
+GetSubwindowDockNode :: (subwindow_id : ID) -> content : *Node, dock_node : *DockNode {
+    FindSubwindowDockNode :: (dock_node : *DockNode, subwindow_id : ID) -> *DockNode {
+        if dock_node.split_dir == .None {
+            for dock_node.docked_subwindows {
+                if it == subwindow_id {
+                    return dock_node;
+                }
+            }
+        } else {
+            for dock_node.children {
+                found := FindSubwindowDockNode(it, subwindow_id);
+                if found {
+                    return found;
+                }
+            }
+        }
+
+        return null;
+    }
+
     global := GetGlobalUserData(GlobalDockSpaceData);
     if !global {
-        return;
+        return null, null;
     }
 
-    _, dock_node := GetSubwindowDockNode(subwindow_id);
+    for global.root_dock_nodes {
+        found := FindSubwindowDockNode(it, subwindow_id);
+        if found {
+            return ifx found.node then GetNode(found.node, "content"), found;
+        }
+    }
+
+    return null, null;
+}
+
+DockSpace :: (parent : *Node, str_id : string) -> *Node, *DockNode {
+    global := AddGlobalUserData(GlobalDockSpaceData, DestroyGlobalDockSpaceData);
+    id := GetID(str_id);
+    dock_node_ptr := HT.find_or_add(*global.root_dock_nodes, id);
+
+    dock_node := dock_node_ptr.*;
     if !dock_node {
-        return;
+        dock_node = CreateDockNode(null);
+        dock_node_ptr.* = dock_node;
     }
 
-    data := GetUserData(dock_node, DockSpaceData);
-    array_ordered_remove_by_value(*data.docked_subwindows, subwindow_id);
-    HT.table_remove(*global.subwindow_dock_nodes, subwindow_id);
-
-    RemoveDockSpace(dock_node);
+    return DockSpace(parent, id, dock_node), dock_node;
 }
 
-RemoveDockSpace :: (dock_node : *Node) {
-
-}
-
-DockSpace :: (parent : *Node, str_id : string, flags : DockSpaceNodeFlags = .CentralNode) -> *Node {
-    node := GetNode(parent, str_id);
+DockSpace :: (parent : *Node, id : ID, dock_node : *DockNode) -> *Node {
+    node := GetNode(parent, id);
     {
-        data := AddUserData(node, DockSpaceData, DestroyDockSpaceData);
-        data.flags = flags;
-        data.content = null;
-        data.top_dock = null;
-        data.bottom_dock = null;
-        data.left_dock = null;
-        data.right_dock = null;
-
         SetSize(node, SizeFill(), SizeFill());
         SetBorderColor(node, 0xffffffff);
         SetBorderSize(node, 1);
 
-        if #complete data.split == {
+        dock_node.node = node;
+
+        if #complete dock_node.split_dir == {
         case .None;
             SetLayout(node, .None);
 
-            data.content = GetNode(node, "content");
-            SetSize(data.content, SizeFill(), SizeFill());
+            content := GetNode(node, "content");
+            SetSize(content, SizeFill(), SizeFill());
 
             overlay := GetNode(node, "overlay");
             SetSize(overlay, SizeFill(), SizeFill());
@@ -138,10 +185,9 @@ DockSpace :: (parent : *Node, str_id : string, flags : DockSpaceNodeFlags = .Cen
 
                 using _ := ButtonBehavior(top);
                 if released {
-                    data.split = .Horizontal;
+                    SplitDockNode(dock_node, .Top);
                 }
             }
-
 
             middle := GetNode(overlay);
             SetSize(middle, SizeFill(), SizeFit());
@@ -156,7 +202,7 @@ DockSpace :: (parent : *Node, str_id : string, flags : DockSpaceNodeFlags = .Cen
 
                 using _ := ButtonBehavior(bottom);
                 if released {
-                    data.split = .Horizontal;
+                    SplitDockNode(dock_node, .Bottom);
                 }
             }
 
@@ -167,7 +213,7 @@ DockSpace :: (parent : *Node, str_id : string, flags : DockSpaceNodeFlags = .Cen
 
                 using _ := ButtonBehavior(left);
                 if released {
-                    data.split = .Vertical;
+                    SplitDockNode(dock_node, .Left);
                 }
             }
 
@@ -182,57 +228,33 @@ DockSpace :: (parent : *Node, str_id : string, flags : DockSpaceNodeFlags = .Cen
 
                 using _ := ButtonBehavior(right);
                 if released {
-                    data.split = .Vertical;
+                    SplitDockNode(dock_node, .Right);
                 }
             }
 
         case .Horizontal;
             SetLayout(node, .TopToBottom);
 
-            data.top_dock = DockSpace(node, "top", 0);
+            DockSpace(node, GetID(GetID("top"), id), dock_node.children[0]);
 
             resize_handle := GetNode(node, "resize");
             SetSize(resize_handle, SizeFill(), SizePx(2));
             SetBackgroundColor(resize_handle, ColorU32(0,1,0,1));
 
-            data.bottom_dock = DockSpace(node, "bottom`", 0);
+            DockSpace(node, GetID(GetID("bottom"), id), dock_node.children[1]);
 
         case .Vertical;
             SetLayout(node, .LeftToRight);
 
-            data.left_dock = DockSpace(node, "left", 0);
+            DockSpace(node, GetID(GetID("left"), id), dock_node.children[0]);
 
             resize_handle := GetNode(node, "resize");
             SetSize(resize_handle, SizePx(2), SizeFill());
             SetBackgroundColor(resize_handle, ColorU32(0,1,0,1));
 
-            data.right_dock = DockSpace(node, "right`", 0);
+            DockSpace(node, GetID(GetID("right"), id), dock_node.children[1]);
         }
     }
 
     return node;
-}
-
-DockLeft :: (dockspace : *Node) -> *Node {
-    using data := GetUserData(dockspace, DockSpaceData);
-    assert(data != null, "Node is not a dock space");
-
-    if #complete split == {
-    case .None;
-        split = .Vertical;
-        return null;
-
-    case .Horizontal;
-        return null;
-
-    case .Vertical;
-        if !left_dock {
-            return null;
-        }
-
-        left_data := GetUserData(left_dock, DockSpaceData);
-        assert(left_data != null, "Node is not a dock space");
-
-        return left_data.content;
-    }
 }
