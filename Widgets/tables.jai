@@ -152,7 +152,7 @@ SetColumnSortDirection :: (params : *TableSortParams, str_id : string, dir : Tab
 
 ClearTableData :: (data : *TableData) {
     for data.columns {
-        array_free(it.rows);
+        array_reset(*it.rows);
     }
 
     array_reset_keeping_memory(*data.columns);
@@ -164,7 +164,7 @@ ClearTableData :: (data : *TableData) {
 
 DestroyTableData :: (node : *Node, data : *void) {
     using _ := cast(*TableData, data);
-    array_free(columns);
+    array_reset(*columns);
 }
 
 Table :: (parent : *Node, flags : TableFlags = 0, style : *TableStyle = null, location := #caller_location) -> *Node {

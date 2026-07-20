@@ -34,7 +34,7 @@ InitInput :: (using input : *InputContext) {
 }
 
 DestroyInput :: (using input : *InputContext) {
-    array_free(text);
+    array_reset(*text);
     free(*key_states.data);
     input.* = .{};
 }

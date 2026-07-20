@@ -25,9 +25,9 @@ TextInputData :: struct {
 
 DestroyTextInputData :: (node : *Node, data : *void) {
     using _ := cast(*TextInputData, data);
-    array_free(buffer);
-    array_free(edit_buffer);
-    array_free(edit_history);
+    array_reset(*buffer);
+    array_reset(*edit_buffer);
+    array_reset(*edit_history);
 }
 
 ClearTextInputData :: (data : *TextInputData) {

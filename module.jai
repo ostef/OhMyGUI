@@ -3,6 +3,7 @@
 #import "Bucket_Array";
 #import "Print_Vars";
 HT :: #import "Hash_Table";
+using,only(.["for_expansion"]) HT;
 #import "String";
 
 #load "math.jai";
@@ -452,7 +453,7 @@ Terminate :: () {
         free(it ,, context.omg.general_purpose_allocator);
     }
 
-    array_free(context.omg.id_offset_stack);
+    array_reset(*context.omg.id_offset_stack);
 
     DestroyInput(*context.omg.input);
     DestroySystemCursors();

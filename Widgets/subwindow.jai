@@ -29,7 +29,7 @@ GetSubwindowPersistentData :: (id : ID) -> *SubwindowPersistentData, is_new : bo
 
 DestroyGlobalSubwindowsData :: (node : *Node, data : *void) {
     using _ := cast(*GlobalSubwindowsData, data);
-    array_free(entries);
+    array_reset(*entries);
 }
 
 SubwindowFlags :: enum_flags {

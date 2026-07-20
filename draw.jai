@@ -259,13 +259,13 @@ InitDrawList :: (draw_list : *DrawList) {
 }
 
 DestroyDrawList :: (draw_list : *DrawList) {
-    array_free(draw_list.draw_calls);
-    array_free(draw_list.boxes);
-    array_free(draw_list.clip_boxes);
-    array_free(draw_list.clip_box_stack);
-    array_free(draw_list.glyphs);
-    array_free(draw_list.triangles);
-    array_free(draw_list.shapes);
+    array_reset(*draw_list.draw_calls);
+    array_reset(*draw_list.boxes);
+    array_reset(*draw_list.clip_boxes);
+    array_reset(*draw_list.clip_box_stack);
+    array_reset(*draw_list.glyphs);
+    array_reset(*draw_list.triangles);
+    array_reset(*draw_list.shapes);
     draw_list.* = .{};
 }
 
