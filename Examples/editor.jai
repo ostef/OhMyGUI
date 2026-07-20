@@ -280,54 +280,23 @@ EditorFrame :: () {
             maximize_icon := OMG.GetNode(maximize_node);
             OMG.SetSize(maximize_icon, OMG.SizeFill(), OMG.SizeFill());
             OMG.SetBackgroundColor(maximize_icon, OMG.ChooseTextColor(base_background_color));
+            OMG.SetDraw(maximize_icon, (draw_list : *OMG.DrawList, node : *OMG.Node) {
+                size := OMG.Vec2f.{1,1} * sqrt(0.5 * node.size.x * node.size.x);
+                center := (node.rect.xy + node.rect.zw) * 0.5;
+                rect := OMG.Vec4f.{xy=center - size * 0.5, zw=center + size * 0.5};
 
-            if SDL_GetWindowFlags(g_window) & SDL_WINDOW_MAXIMIZED {
-                OMG.SetDraw(maximize_icon, (draw_list : *OMG.DrawList, node : *OMG.Node) {
-                    size := OMG.Vec2f.{1,1} * sqrt(0.5 * node.size.x * node.size.x);
-                    center := (node.rect.xy + node.rect.zw) * 0.5;
-                    rect := OMG.Vec4f.{xy=center - size * 0.5, zw=center + size * 0.5};
+                p0 := OMG.Vec2f.{size.x * 0.3, 0};
+                p1 := OMG.Vec2f.{size.x, 0};
+                p2 := OMG.Vec2f.{size.x, size.y - size.y * 0.3};
 
-                    p0 := OMG.Vec2f.{size.x * 0.3, 0};
-                    p1 := OMG.Vec2f.{size.x, 0};
-                    p2 := OMG.Vec2f.{size.x, size.y - size.y * 0.3};
+                OMG.DrawTriangle(draw_list, rect.xy + p0, rect.xy + p1, rect.xy + p2, node.background_color);
 
-                    tri_center := (p0 + p1 + p2) / 3;
-                    p0 = tri_center + OMG.Rotate(p0 - tri_center, PI);
-                    p1 = tri_center + OMG.Rotate(p1 - tri_center, PI);
-                    p2 = tri_center + OMG.Rotate(p2 - tri_center, PI);
+                p0 = OMG.Vec2f.{0, size.y * 0.3};
+                p1 = OMG.Vec2f.{0, size.y};
+                p2 = OMG.Vec2f.{size.x - size.x * 0.3, size.y};
 
-                    OMG.DrawTriangle(draw_list, rect.xy + p0, rect.xy + p1, rect.xy + p2, node.background_color);
-
-                    p0 = OMG.Vec2f.{0, size.y * 0.3};
-                    p1 = OMG.Vec2f.{0, size.y};
-                    p2 = OMG.Vec2f.{size.x - size.x * 0.3, size.y};
-
-                    tri_center = (p0 + p1 + p2) / 3;
-                    p0 = tri_center + OMG.Rotate(p0 - tri_center, PI);
-                    p1 = tri_center + OMG.Rotate(p1 - tri_center, PI);
-                    p2 = tri_center + OMG.Rotate(p2 - tri_center, PI);
-
-                    OMG.DrawTriangle(draw_list, rect.xy + p0, rect.xy + p1, rect.xy + p2, node.background_color);
-                });
-            } else {
-                OMG.SetDraw(maximize_icon, (draw_list : *OMG.DrawList, node : *OMG.Node) {
-                    size := OMG.Vec2f.{1,1} * sqrt(0.5 * node.size.x * node.size.x);
-                    center := (node.rect.xy + node.rect.zw) * 0.5;
-                    rect := OMG.Vec4f.{xy=center - size * 0.5, zw=center + size * 0.5};
-
-                    p0 := OMG.Vec2f.{size.x * 0.3, 0};
-                    p1 := OMG.Vec2f.{size.x, 0};
-                    p2 := OMG.Vec2f.{size.x, size.y - size.y * 0.3};
-
-                    OMG.DrawTriangle(draw_list, rect.xy + p0, rect.xy + p1, rect.xy + p2, node.background_color);
-
-                    p0 = OMG.Vec2f.{0, size.y * 0.3};
-                    p1 = OMG.Vec2f.{0, size.y};
-                    p2 = OMG.Vec2f.{size.x - size.x * 0.3, size.y};
-
-                    OMG.DrawTriangle(draw_list, rect.xy + p0, rect.xy + p1, rect.xy + p2, node.background_color);
-                });
-            }
+                OMG.DrawTriangle(draw_list, rect.xy + p0, rect.xy + p1, rect.xy + p2, node.background_color);
+            });
 
             close_icon := OMG.GetNode(close_node);
             OMG.SetSize(close_icon, OMG.SizeFill(), OMG.SizeFill());
