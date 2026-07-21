@@ -17,8 +17,12 @@ MenuItem :: (parent : *Node, text : string, selected := false, style : *ButtonSt
 
     node := GetNode(parent, location);
     {
-        SetSize(node, SizeFill(), SizeFit());
-        SetMinWidthFit(node);
+        if parent.child_layout_mode == .TopToBottom || parent.child_layout_mode == .BottomToTop {
+            SetSize(node, SizeFill(), SizeFit());
+            SetMinWidthFit(node);
+        } else {
+            SetSize(node, SizeFit(), SizeFit());
+        }
 
         text_node := GetNode(node, "text");
         SetText(text_node, text);
