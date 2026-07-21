@@ -226,7 +226,7 @@ LayoutFixedAndFitSizing :: (node : *Node, axis : Axis) {
     }
 
     if node.min_size_fit & xx (1 << axis) {
-        node.min_size[axis] = node.children_size[axis] + node.padding.xy[axis] + node.padding.zw[axis];
+        node.min_size[axis] = ceil(node.children_size[axis] + node.padding.xy[axis] + node.padding.zw[axis]);
     }
 
     // We should set the size to fit also if min size is set to fit and we want to fill the parent
@@ -271,6 +271,9 @@ LayoutFillAndPercentSizing :: (node : *Node, axis : Axis) {
         node.children_size[axis] += added_size;
     }
 
+    // @Todo: should we remove this? I think None layout mode should work the same as the other modes
+    // This branch was useful because we often wanted to fill a percentage of the parent without taking
+    // siblings into account but we now have ParentPercent sizing
     if node.child_layout_mode == .None {
         // Warning: the weight does not take into account siblings in None layout mode!
         remaining_size := node.size[axis] - node.padding.xy[axis] - node.padding.zw[axis]
@@ -291,8 +294,14 @@ LayoutFillAndPercentSizing :: (node : *Node, axis : Axis) {
             node.children_size[axis] += added_size;
         }
     } else if layout_axis == axis {
+        remaining_size := node.size[axis] - node.padding.xy[axis] - node.padding.zw[axis]
+            - node.children_size[axis]
+            - (node.num_children - 1) * node.child_gap[axis];
+        remaining_size = floor(remaining_size);
+
         total_weights := 0.0;
         num_fill_children := 0;
+
         for :Children node {
             if it.desired_size[axis].kind != .FillParent {
                 continue;
@@ -300,17 +309,14 @@ LayoutFillAndPercentSizing :: (node : *Node, axis : Axis) {
 
             total_weights += clamp(it.desired_size[axis].value, 0, 1);
 
-            if abs(it.size[axis] - it.min_size[axis]) < 0.00001 || abs(it.size[axis] - it.max_size[axis]) < 0.00001 {
+            if (remaining_size < 0 && abs(it.size[axis] - it.min_size[axis]) < 0.00001)
+            || (remaining_size > 0 && abs(it.size[axis] - it.max_size[axis]) < 0.00001) {
                 continue;
             }
 
             num_fill_children += 1;
         }
 
-        remaining_size := node.size[axis] - node.padding.xy[axis] - node.padding.zw[axis]
-            - node.children_size[axis]
-            - (node.num_children - 1) * node.child_gap[axis];
-        remaining_size = floor(remaining_size);
         iter := 0;
         while iter < 10 && num_fill_children > 0 && abs(remaining_size) > 0.00001 {
             defer iter += 1;
@@ -320,7 +326,8 @@ LayoutFillAndPercentSizing :: (node : *Node, axis : Axis) {
                     continue;
                 }
 
-                if abs(it.size[axis] - it.min_size[axis]) < 0.00001 || abs(it.size[axis] - it.max_size[axis]) < 0.00001 {
+                if (remaining_size < 0 && abs(it.size[axis] - it.min_size[axis]) < 0.00001)
+                || (remaining_size > 0 && abs(it.size[axis] - it.max_size[axis]) < 0.00001) {
                     continue;
                 }
 
@@ -330,7 +337,8 @@ LayoutFillAndPercentSizing :: (node : *Node, axis : Axis) {
                 }
                 it.size[axis] = clamp(it.size[axis], it.min_size[axis], it.max_size[axis]);
 
-                if abs(it.size[axis] - it.min_size[axis]) < 0.00001 || abs(it.size[axis] - it.max_size[axis]) < 0.00001 {
+                if (remaining_size < 0 && abs(it.size[axis] - it.min_size[axis]) < 0.00001)
+                || (remaining_size > 0 && abs(it.size[axis] - it.max_size[axis]) < 0.00001) {
                     num_fill_children -= 1;
                 }
 
