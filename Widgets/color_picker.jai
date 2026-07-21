@@ -992,6 +992,10 @@ ColorPickerSubwindow :: () {
     }
 
     subwindow := Subwindow(opened_in_window, "Color Picker", "color_picker", .{550, 400});
+    if !subwindow {
+        return;
+    }
+
     ok, cancel := ColorPicker(subwindow, color, previous_color);
     if cancel {
         color.* = previous_color;
