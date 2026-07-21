@@ -1014,6 +1014,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
 
         child_gap = .{2,0};
         padding = .{6,6,6,0};
+        background_color = base_background_color;
     }
     SetStyle(theme, "tab_bar", theme.tab_bar);
 
