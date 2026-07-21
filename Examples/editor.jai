@@ -163,6 +163,7 @@ EditorFrame :: () {
     base_background_color := OMG.GetStyle("base", OMG.BoxStyle).background_color;
 
     window := OMG.GetWindow(g_window);
+
     root := OMG.GetNode(window);
     {
         OMG.SetLayout(root, .TopToBottom);
@@ -322,7 +323,25 @@ EditorFrame :: () {
                 OMG.SetLayout(left_side, .TopToBottom);
 
                 dock, dock_node := OMG.DockSpace(left_side, "dockspace");
-                docked := OMG.DockSubwindow(dock_node, "color_picker");
+                OMG.DockSubwindow(dock_node, "color_picker");
+                OMG.DockSubwindow(dock_node, "tabs");
+
+                tabs_subwindow := OMG.Subwindow(window, "Tabs", "tabs", .{250, 250});
+                if tabs_subwindow {
+                    tab_bar := OMG.TabBar(tabs_subwindow);
+                    if OMG.Tab(tab_bar, "One", "one") {
+                        OMG.Text(tabs_subwindow, "One");
+                    }
+                    if OMG.Tab(tab_bar, "Two", "two") {
+                        OMG.Text(tabs_subwindow, "Two");
+                    }
+                    if OMG.Tab(tab_bar, "Three", "three") {
+                        OMG.Text(tabs_subwindow, "Three");
+                    }
+                    if OMG.Tab(tab_bar, "Four", "four") {
+                        OMG.Text(tabs_subwindow, "Four");
+                    }
+                }
 
                 content_browser := Panel(left_side, "content_browser", "Content Browser");
                 {
