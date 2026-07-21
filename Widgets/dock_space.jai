@@ -27,6 +27,11 @@ CreateDockNode :: (parent : *DockNode) -> *DockNode {
     return node;
 }
 
+FreeDockNode :: (node : *DockNode) {
+    array_reset(*node.docked_subwindows);
+    free(node ,, context.omg.general_purpose_allocator);
+}
+
 DockSubwindow :: inline (node : *DockNode, subwindow_str_id : string) -> bool {
     return DockSubwindow(node, GetID(subwindow_str_id));
 }
@@ -72,6 +77,7 @@ RemoveDockNode :: (node : *DockNode) -> bool {
 
     sibling_index := ifx node.parent.children[0] == node then 0 else 1;
     MergeDockNode(node.parent, sibling_index);
+    FreeDockNode(node);
 
     return true;
 }
@@ -87,7 +93,7 @@ MergeDockNode :: (parent : *DockNode, child_index : int) -> bool {
     parent.children[1] = child.children[1];
 
     swap(*parent.docked_subwindows, *child.docked_subwindows);
-    array_reset(*child.docked_subwindows);
+    FreeDockNode(child);
 
     return true;
 }
@@ -171,6 +177,9 @@ DockSpace :: (parent : *Node, id : ID, dock_node : *DockNode) -> *Node {
 
             content := GetNode(node, "content");
             SetSize(content, SizeFill(), SizeFill());
+            SetLayout(content, .TopToBottom);
+
+            TabBar(content);
 
             overlay := GetNode(node, "overlay");
             SetSize(overlay, SizeFill(), SizeFill());

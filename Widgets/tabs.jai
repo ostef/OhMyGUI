@@ -6,10 +6,18 @@ TabBarData :: struct {
     next_active_tab : ID;
 }
 
-TabBar :: (parent : *Node, style : *BoxStyle = null, location := #caller_location) -> *Node {
+TabBar :: inline (parent : *Node, str_id : string, style : *BoxStyle = null) -> *Node {
+    return TabBar(parent, GetID(str_id), style);
+}
+
+TabBar :: inline (parent : *Node, style : *BoxStyle = null, location := #caller_location) -> *Node {
+    return TabBar(parent, GetID(location), style);
+}
+
+TabBar :: (parent : *Node, local_id : ID, style : *BoxStyle = null) -> *Node {
     EnsureStyle(*style, "tab_bar");
 
-    node := GetNode(parent, location);
+    node := GetNode(parent, local_id);
     {
         SetSize(node, SizeFill(), SizeFit());
 
@@ -33,8 +41,7 @@ Tab :: (parent : *Node, label : string, str_id : string, style : *ButtonStyle = 
 
     node := GetNode(parent, str_id);
     {
-        SetSize(node, SizeFill(), SizeFit());
-        SetMinWidthFit(node);
+        SetSize(node, SizeFit(), SizeFit());
 
         data := GetUserData(parent, TabBarData);
 

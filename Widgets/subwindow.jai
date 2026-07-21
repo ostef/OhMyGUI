@@ -356,7 +356,13 @@ Subwindow :: (
         title_and_content.padding = .{};
         title_and_content.child_gap = .{};
     } else {
-        content_parent = dock_node;
+        tab_bar := TabBar(dock_node, "docked_subwindows_tab_bar");
+        if !Tab(tab_bar, title, tprint("tab.%", str_id)) {
+            return null, null;
+        }
+
+        content_parent = GetNode(dock_node, GetID(GetID("subwindow_content"), subwindow_id));
+        SetSize(content_parent, SizeFill(), SizeFill());
 
         Apply(content_parent, style.background);
     }
