@@ -383,8 +383,13 @@ EditorFrame :: () {
                             OMG.PushIDOffset(xx it);
                             defer OMG.PopIDOffset();
 
-                            content := OMG.LabelAndContent(fields, type_info(type_of(g_selected_fruit)).names[it_index]);
-                            OMG.RadioButton(content, *g_selected_fruit, xx it);
+                            field := OMG.GetNode(fields);
+                            OMG.SetSize(field, OMG.SizeFill(), OMG.SizeFit());
+                            OMG.SetChildAlign(field, 0, 0.5);
+                            OMG.SetChildGap(field, 8, 0);
+
+                            OMG.RadioButton(field, *g_selected_fruit, xx it);
+                            OMG.Text(field, "%", type_info(type_of(g_selected_fruit)).names[it_index]);
                         }
 
                         OMG.Separator(fields);
