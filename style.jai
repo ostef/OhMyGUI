@@ -416,6 +416,8 @@ DefaultTheme :: struct {
     table : TableStyle;
     progress_bar : ProgressBarStyle;
     tree_node : TreeNodeStyle;
+    tab_bar : BoxStyle;
+    tab : ButtonStyle;
 }
 
 g_default_theme_light : DefaultTheme;
@@ -1006,4 +1008,23 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         indent = 25;
     }
     SetStyle(theme, "tree_node", theme.tree_node);
+
+    {
+        using theme.tab_bar;
+
+        child_gap = .{2,0};
+        padding = .{6,6,6,0};
+    }
+    SetStyle(theme, "tab_bar", theme.tab_bar);
+
+    {
+        using theme.tab;
+
+        theme.tab = theme.button_accent;
+
+        for * states {
+            it.background.corner_radiuses = .{6,6,0,0};
+        }
+    }
+    SetStyle(theme, "tab", theme.tab);
 }

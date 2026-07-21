@@ -36,7 +36,6 @@ Widgets:
 * Multi line text input
 * Popups
 * Panels
-* Tabs
 
 ## How it works
 Each frame, the user calls `GetNode` with an ID to declare a UI element or get a node that has been declared prior, or any of the widget functions. This builds a tree which is traversed at the end of the frame to lay UI elements out according to properties specified by the user, then draw UI elements that are visible.
