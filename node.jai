@@ -548,23 +548,21 @@ GetNode :: inline (parent : *Node, str_id : string, is_global_id := false) -> *N
 
 GetNode :: (parent : *Node, id : ID, is_global_id := false) -> *Node, is_new : bool {
     assert(id != 0);
-    assert(parent == null || parent.last_used_on_frame == context.omg.frame_index);
+    assert(parent != null && parent.last_used_on_frame == context.omg.frame_index);
 
     node : *Node;
-    if parent {
-        for :PrevFrameChildren parent {
+    for :PrevFrameChildren parent {
+        if it.local_id == id {
+            node = it;
+            break;
+        }
+    }
+
+    if !node {
+        for :Children parent {
             if it.local_id == id {
                 node = it;
                 break;
-            }
-        }
-
-        if !node {
-            for :Children parent {
-                if it.local_id == id {
-                    node = it;
-                    break;
-                }
             }
         }
     }
