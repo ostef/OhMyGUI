@@ -51,6 +51,9 @@ SetTextInputResult :: (node : *Node, str : string) {
     for MakeUtf8String(str) {
         array_add(*data.buffer, it);
     }
+
+    // @Todo: take into account Password flag
+    SetText(GetNode(node, "text"), str);
 }
 
 GetTextInputResultUtf32 :: (node : *Node) -> []u32 {
