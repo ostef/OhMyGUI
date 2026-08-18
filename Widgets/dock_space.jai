@@ -5,6 +5,7 @@ DockNodeSplitDirection :: enum u8 {
 }
 
 DockNodeSplit :: enum u8 {
+    None;
     Top;
     Bottom;
     Left;
@@ -17,6 +18,14 @@ DockNode :: struct {
     docked_subwindows : [..]ID;
     split_dir : DockNodeSplitDirection;
     node : *Node;
+
+    split_hints : struct {
+        left : *Node;
+        right : *Node;
+        top : *Node;
+        bottom : *Node;
+        center : *Node;
+    };
 }
 
 CreateDockNode :: (parent : *DockNode) -> *DockNode {
@@ -46,7 +55,15 @@ DockSubwindow :: (node : *DockNode, subwindow_id : ID) -> bool {
     return true;
 }
 
+UndockSubwindow :: (node : *DockNode, subwindow_id : ID) -> bool {
+    return array_ordered_remove_by_value(*node.docked_subwindows, subwindow_id);
+}
+
 SplitDockNode :: (node : *DockNode, split : DockNodeSplit) -> *DockNode {
+    if split == .None {
+        return node;
+    }
+
     split_dir := ifx split == .Top || split == .Bottom then DockNodeSplitDirection.Horizontal else .Vertical;
 
     if node.split_dir == split_dir {
@@ -170,6 +187,7 @@ DockSpace :: (parent : *Node, id : ID, dock_node : *DockNode) -> *Node {
         SetBorderSize(node, 1);
 
         dock_node.node = node;
+        dock_node.split_hints = .{};
 
         if #complete dock_node.split_dir == {
         case .None;
@@ -187,58 +205,58 @@ DockSpace :: (parent : *Node, id : ID, dock_node : *DockNode) -> *Node {
             SetChildAlign(overlay, 0.5, 0.5);
             SetChildGap(overlay, 10, 10);
 
-            top := GetNode(overlay);
+            dock_node.split_hints.top = GetNode(overlay, "top");
             {
-                SetSize(top, SizePx(50), SizePx(40));
-                SetBackgroundColor(top, ColorU32(0,0,1,0.5));
+                SetSize(dock_node.split_hints.top, SizePx(50), SizePx(40));
+                SetBackgroundColor(dock_node.split_hints.top, ColorU32(0,0,1,0.5));
 
-                using _ := ButtonBehavior(top);
-                if released {
-                    SplitDockNode(dock_node, .Top);
-                }
+                // using _ := ButtonBehavior(dock_node.split_hints.top);
+                // if released {
+                //     SplitDockNode(dock_node, .Top);
+                // }
             }
 
-            middle := GetNode(overlay);
+            middle := GetNode(overlay, "middle");
             SetSize(middle, SizeFill(), SizeFit());
             SetLayout(middle, .LeftToRight);
             SetChildAlign(middle, 0.5, 0.5);
             SetChildGap(middle, 10, 10);
 
-            bottom := GetNode(overlay);
+            dock_node.split_hints.bottom = GetNode(overlay);
             {
-                SetSize(bottom, SizePx(50), SizePx(40));
-                SetBackgroundColor(bottom, ColorU32(0,0,1,0.5));
+                SetSize(dock_node.split_hints.bottom, SizePx(50), SizePx(40));
+                SetBackgroundColor(dock_node.split_hints.bottom, ColorU32(0,0,1,0.5));
 
-                using _ := ButtonBehavior(bottom);
-                if released {
-                    SplitDockNode(dock_node, .Bottom);
-                }
+                // using _ := ButtonBehavior(dock_node.split_hints.bottom);
+                // if released {
+                //     SplitDockNode(dock_node, .Bottom);
+                // }
             }
 
-            left := GetNode(middle);
+            dock_node.split_hints.left = GetNode(middle, "left");
             {
-                SetSize(left, SizePx(40), SizePx(50));
-                SetBackgroundColor(left, ColorU32(0,0,1,0.5));
+                SetSize(dock_node.split_hints.left, SizePx(40), SizePx(50));
+                SetBackgroundColor(dock_node.split_hints.left, ColorU32(0,0,1,0.5));
 
-                using _ := ButtonBehavior(left);
-                if released {
-                    SplitDockNode(dock_node, .Left);
-                }
+                // using _ := ButtonBehavior(dock_node.split_hints.left);
+                // if released {
+                //     SplitDockNode(dock_node, .Left);
+                // }
             }
 
-            center := GetNode(middle);
-            SetSize(center, SizePx(50), SizePx(50));
-            SetBackgroundColor(center, ColorU32(0,0,1,0.5));
+            dock_node.split_hints.center = GetNode(middle, "center");
+            SetSize(dock_node.split_hints.center, SizePx(50), SizePx(50));
+            SetBackgroundColor(dock_node.split_hints.center, ColorU32(0,0,1,0.5));
 
-            right := GetNode(middle);
+            dock_node.split_hints.right = GetNode(middle, "right");
             {
-                SetSize(right, SizePx(40), SizePx(50));
-                SetBackgroundColor(right, ColorU32(0,0,1,0.5));
+                SetSize(dock_node.split_hints.right, SizePx(40), SizePx(50));
+                SetBackgroundColor(dock_node.split_hints.right, ColorU32(0,0,1,0.5));
 
-                using _ := ButtonBehavior(right);
-                if released {
-                    SplitDockNode(dock_node, .Right);
-                }
+                // using _ := ButtonBehavior(dock_node.split_hints.right);
+                // if released {
+                //     SplitDockNode(dock_node, .Right);
+                // }
             }
 
         case .Horizontal;
@@ -266,4 +284,51 @@ DockSpace :: (parent : *Node, id : ID, dock_node : *DockNode) -> *Node {
     }
 
     return node;
+}
+
+GetHoveredDockSpaceAndSplit :: () -> *DockNode, DockNodeSplit {
+    FindHoveredDockSpaceAndSplit :: (dock_node : *DockNode, mouse_position : Vec2f) -> *DockNode, DockNodeSplit {
+        if dock_node.split_dir == .None {
+            if IsHovered(dock_node.split_hints.left) {
+                return dock_node, .Left;
+            }
+            if IsHovered(dock_node.split_hints.right) {
+                return dock_node, .Right;
+            }
+            if IsHovered(dock_node.split_hints.top) {
+                return dock_node, .Top;
+            }
+            if IsHovered(dock_node.split_hints.bottom) {
+                return dock_node, .Bottom;
+            }
+            if IsHovered(dock_node.split_hints.center) {
+                return dock_node, .None;
+            }
+        } else {
+            for dock_node.children {
+                found, found_split := FindHoveredDockSpaceAndSplit(it, mouse_position);
+                if found {
+                    return found, found_split;
+                }
+            }
+        }
+
+        return null, .None;
+    }
+
+    global := GetGlobalUserData(GlobalDockSpaceData);
+    if !global {
+        return null, .None;
+    }
+
+    mouse_position := GetMousePosition();
+
+    for global.root_dock_nodes {
+        found, found_split := FindHoveredDockSpaceAndSplit(it, mouse_position);
+        if found {
+            return found, found_split;
+        }
+    }
+
+    return null, .None;
 }
