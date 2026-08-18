@@ -70,7 +70,7 @@ SubwindowStyle :: struct {
     corner_resize_handle_size := 20.0;
 }
 
-SubwindowMoveBehavior :: (subwindow : *Node, node : *Node, avail_area : Vec4f, title_bar_size : Vec2f) {
+SubwindowMoveBehavior :: (subwindow : *Node, node : *Node, avail_area : Vec4f, title_bar_size : Vec2f) -> ButtonResult {
     interaction := ButtonBehavior(node);
 
     if node.state_flags & .Focused && IsMouseButtonPressed(.Left) {
@@ -92,6 +92,8 @@ SubwindowMoveBehavior :: (subwindow : *Node, node : *Node, avail_area : Vec4f, t
 
         subwindow.offset = clamp(subwindow.offset, avail_area.xy, avail_area.zw - title_bar_size);
     }
+
+    return interaction;
 }
 
 SubwindowTitleBar :: (subwindow : *Node, parent : *Node, title : string, style : *SubwindowTitleBarStyle) -> *Node {
@@ -285,7 +287,7 @@ Subwindow :: (
     }
 
     content, subwindow : *Node;
-    dock_node := GetSubwindowDockNode(subwindow_id);
+    dock_node, dock_node_data := GetSubwindowDockNode(subwindow_id);
     defer persistent_data.was_docked = dock_node != null;
 
     hscroll := (flags & .NoHorizontalScroll) == 0;
@@ -345,7 +347,18 @@ Subwindow :: (
         }
 
         if title_bar && !(flags & .NoMove) {
-            SubwindowMoveBehavior(subwindow, title_bar, avail_area, title_bar_size);
+            interaction := SubwindowMoveBehavior(subwindow, title_bar, avail_area, title_bar_size);
+
+            if interaction.released {
+                hovered_dock_node, hovered_split := GetHoveredDockSpaceAndSplit();
+                if hovered_dock_node {
+                    if hovered_split != .None {
+                        hovered_dock_node = SplitDockNode(hovered_dock_node, hovered_split);
+                    }
+
+                    DockSubwindow(hovered_dock_node, subwindow_id);
+                }
+            }
         }
 
         content_parent = title_and_content;
@@ -357,7 +370,19 @@ Subwindow :: (
         title_and_content.child_gap = .{};
     } else {
         tab_bar := TabBar(dock_node, "docked_subwindows_tab_bar");
-        if !Tab(tab_bar, title, tprint("tab.%", str_id)) {
+
+        tab_active, tab := Tab(tab_bar, title, tprint("tab.%", str_id));
+
+        if context.omg.mouse_capturing_node == tab {
+            start := context.omg.mouse_captured_at;
+            current := GetMousePosition();
+
+            if length(current - start) > 30 {
+                UndockSubwindow(dock_node_data, subwindow_id);
+            }
+        }
+
+        if !tab_active {
             return null, null;
         }
 
