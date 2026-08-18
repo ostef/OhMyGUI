@@ -1,3 +1,4 @@
+g_frame_index : int;
 g_slider_value := 0.5;
 g_show_password := true;
 g_toggle_value : bool;
@@ -149,6 +150,8 @@ Panel :: (parent : *OMG.Node, str_id : string, title : string) -> *OMG.Node {
 }
 
 EditorFrame :: () {
+    defer g_frame_index += 1;
+
     if !g_dummy_viewport_image.texture {
         using g_dummy_viewport_image;
 
@@ -161,6 +164,16 @@ EditorFrame :: () {
     }
 
     base_background_color := OMG.GetStyle("base", OMG.BoxStyle).background_color;
+
+    wants_switch_theme : bool;
+    defer if wants_switch_theme {
+        light, dark := OMG.GetDefaultThemes();
+        if OMG.GetTheme() == light {
+            OMG.SetTheme(dark);
+        } else {
+            OMG.SetTheme(light);
+        }
+    }
 
     window := OMG.GetWindow(g_window);
 
@@ -216,15 +229,12 @@ EditorFrame :: () {
             }
 
             if OMG.MenuItem(title_menu_bar, "Switch Theme") {
-                light, dark := OMG.GetDefaultThemes();
-                if OMG.GetTheme() == light {
-                    OMG.SetTheme(dark);
-                } else {
-                    OMG.SetTheme(light);
-                }
+                wants_switch_theme = true;
             }
 
             OMG.Toggle(title_menu_bar, "Debug Mode", *context.omg.debug_mode, style=OMG.GetStyle("menu_item", OMG.ButtonStyle));
+
+            OMG.Toggle(title_menu_bar, "Slow Mode", *g_slow_down, style=OMG.GetStyle("menu_item", OMG.ButtonStyle));
 
             help_menu := OMG.Menu(title_menu_bar, "Help");
             if help_menu {
@@ -323,8 +333,10 @@ EditorFrame :: () {
                 OMG.SetLayout(left_side, .TopToBottom);
 
                 dock, dock_node := OMG.DockSpace(left_side, "dockspace");
-                OMG.DockSubwindow(dock_node, "color_picker");
-                OMG.DockSubwindow(dock_node, "tabs");
+                if g_frame_index == 0 {
+                    OMG.DockSubwindow(dock_node, "color_picker");
+                    OMG.DockSubwindow(dock_node, "tabs");
+                }
 
                 tabs_subwindow := OMG.Subwindow(window, "Tabs", "tabs", .{250, 250});
                 if tabs_subwindow {

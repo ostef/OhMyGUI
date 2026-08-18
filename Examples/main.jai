@@ -22,6 +22,7 @@ g_frame_syncs : [2]GLsync;
 g_time : float;
 g_delta_time : float;
 g_user_time : float;
+g_slow_down : bool;
 
 main :: () {
     #if Memory_Debugger {
@@ -106,7 +107,10 @@ main :: () {
 
         g_frame_in_flight = (g_frame_in_flight + 1) % 2;
 
-
         SDL_GL_SwapWindow(g_window);
+
+        if g_slow_down {
+            sleep_milliseconds(100);
+        }
     }
 }
