@@ -3,6 +3,7 @@ SubwindowPersistentData :: struct {
     position : Vec2f;
     size : Vec2f;
     was_docked : bool;
+    was_undocked_using_mouse : bool;
 }
 
 GlobalSubwindowsData :: struct {
@@ -303,6 +304,7 @@ Subwindow :: (
         }
 
         subwindow=, is_new := GetPopupNode(window, subwindow_id, is_global_id=true);
+        defer persistent_data.was_undocked_using_mouse = false;
 
         if is_new {
             if !persistent_data || is_new_persistent_data || persistent_data.was_docked {
@@ -347,6 +349,17 @@ Subwindow :: (
         }
 
         if title_bar && !(flags & .NoMove) {
+            if persistent_data.was_undocked_using_mouse {
+                offset := context.omg.mouse_captured_node_value.xy;
+
+                SetMouseCapture(title_bar);
+                SetMouseFocus(title_bar);
+
+                subwindow.offset = GetMousePosition(window) + offset;
+                subwindow.offset -= resize_handles_expand;
+                context.omg.mouse_captured_node_value = .{xy=subwindow.offset};
+            }
+
             interaction := SubwindowMoveBehavior(subwindow, title_bar, avail_area, title_bar_size);
 
             if interaction.released {
@@ -373,12 +386,13 @@ Subwindow :: (
 
         tab_active, tab := Tab(tab_bar, title, tprint("tab.%", str_id));
 
-        if context.omg.mouse_capturing_node == tab {
+        if tab && context.omg.mouse_capturing_node == tab {
             start := context.omg.mouse_captured_at;
             current := GetMousePosition();
 
-            if length(current - start) > 30 {
-                UndockSubwindow(dock_node_data, subwindow_id);
+            if length(current - start) > 20 {
+                persistent_data.was_undocked_using_mouse = UndockSubwindow(dock_node_data, subwindow_id);
+                context.omg.mouse_captured_node_value = .{xy=WindowToScreen(window, tab.rect.xy) - context.omg.mouse_captured_at};
             }
         }
 
