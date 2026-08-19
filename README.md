@@ -105,10 +105,13 @@ Note that children cannot decide themselves that they want to be positionned dif
 
 Sizing can be parameterized in three ways, on both the X and Y axis:
 * Pixels (`SizePx(value)` function)
+* ParentPercent (`SizePercent(value)` function)
 * FitChildren (`SizeFit()` function)
 * FillParent (`SizeFill(weight)` function)
 
 Pixels will set the pixel size of the node to the specified value.
+
+Parent percent will set the pixel size of the node to value multiplied by the parent's size.
 
 Fit children will set the size of the node to the sum of its children, plus the padding and the child gap.
 
