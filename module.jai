@@ -523,6 +523,8 @@ NewFrame :: (delta_time : float) {
 
     InputNewFrame(*context.omg.input);
 
+    RemoveEmptyDockNodes();
+
     SetCursor(null);
 
     omg.mouse_hovered_node = null;

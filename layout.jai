@@ -28,8 +28,8 @@ SizePx :: inline (value : float) -> Size1D {
     return .{kind=.Pixels, value=value};
 }
 
-SizePercent :: inline (percent : float) -> Size1D {
-    return .{kind=.ParentPercent, value=percent};
+SizePercent :: inline (value : float) -> Size1D {
+    return .{kind=.ParentPercent, value=value};
 }
 
 SizeFill :: inline (ratio := 1.0) -> Size1D {

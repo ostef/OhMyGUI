@@ -41,6 +41,44 @@ FreeDockNode :: (node : *DockNode) {
     free(node ,, context.omg.general_purpose_allocator);
 }
 
+RemoveEmptyDockNodes :: () {
+    RemoveEmptyDockNodes :: (dock_node : *DockNode) -> bool {
+        assert(dock_node != null);
+
+        while dock_node.split_dir != .None {
+            has_removed := false;
+            for dock_node.children {
+                if RemoveEmptyDockNodes(it) {
+                    has_removed = true;
+                    break;
+                }
+            }
+
+            if !has_removed {
+                break;
+            }
+        }
+
+        // Not an if-else because split_dir might've been modified by removing a child
+        if dock_node.split_dir == .None && dock_node.docked_subwindows.count == 0 {
+            return RemoveDockNode(dock_node);
+        }
+
+        return false;
+    }
+
+    global := GetGlobalUserData(GlobalDockSpaceData);
+    if !global {
+        return;
+    }
+
+    for global.root_dock_nodes {
+        RemoveEmptyDockNodes(it);
+    }
+
+    return;
+}
+
 DockSubwindow :: inline (node : *DockNode, subwindow_str_id : string) -> bool {
     return DockSubwindow(node, GetID(subwindow_str_id));
 }
@@ -92,7 +130,11 @@ RemoveDockNode :: (node : *DockNode) -> bool {
         return false;
     }
 
-    sibling_index := ifx node.parent.children[0] == node then 0 else 1;
+    if node.split_dir != .None {
+        return false;
+    }
+
+    sibling_index := ifx node.parent.children[0] == node then 1 else 0;
     MergeDockNode(node.parent, sibling_index);
     FreeDockNode(node);
 
@@ -108,6 +150,12 @@ MergeDockNode :: (parent : *DockNode, child_index : int) -> bool {
     parent.split_dir = child.split_dir;
     parent.children[0] = child.children[0];
     parent.children[1] = child.children[1];
+
+    for parent.children {
+        if it {
+            it.parent = parent;
+        }
+    }
 
     swap(*parent.docked_subwindows, *child.docked_subwindows);
     FreeDockNode(child);
@@ -188,6 +236,12 @@ DockSpace :: (parent : *Node, id : ID, dock_node : *DockNode) -> *Node {
 
         dock_node.node = node;
         dock_node.split_hints = .{};
+
+        // if dock_node.split_dir == .None && dock_node.docked_subwindows.count == 0 {
+        //     if RemoveDockNode(dock_node) {
+        //         return null;
+        //     }
+        // }
 
         if #complete dock_node.split_dir == {
         case .None;

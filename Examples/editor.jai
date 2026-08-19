@@ -149,6 +149,8 @@ Panel :: (parent : *OMG.Node, str_id : string, title : string) -> *OMG.Node {
     }
 }
 
+g_wants_switch_theme : bool;
+
 EditorFrame :: () {
     defer g_frame_index += 1;
 
@@ -163,17 +165,18 @@ EditorFrame :: () {
         FillEntities();
     }
 
-    base_background_color := OMG.GetStyle("base", OMG.BoxStyle).background_color;
-
-    wants_switch_theme : bool;
-    defer if wants_switch_theme {
+    if g_wants_switch_theme {
         light, dark := OMG.GetDefaultThemes();
         if OMG.GetTheme() == light {
             OMG.SetTheme(dark);
         } else {
             OMG.SetTheme(light);
         }
+
+        g_wants_switch_theme = false;
     }
+
+    base_background_color := OMG.GetStyle("base", OMG.BoxStyle).background_color;
 
     window := OMG.GetWindow(g_window);
 
@@ -229,7 +232,7 @@ EditorFrame :: () {
             }
 
             if OMG.MenuItem(title_menu_bar, "Switch Theme") {
-                wants_switch_theme = true;
+                g_wants_switch_theme = true;
             }
 
             OMG.Toggle(title_menu_bar, "Debug Mode", *context.omg.debug_mode, style=OMG.GetStyle("menu_item", OMG.ButtonStyle));
