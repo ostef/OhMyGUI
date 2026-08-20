@@ -296,27 +296,62 @@ DockSpace :: (parent : *Node, id : ID, dock_node : *DockNode) -> *Node {
 
             TabBar(content, "docked_subwindows_tab_bar");
 
-            overlay := GetNode(node, "overlay");
-            SetSize(overlay, SizeFill(), SizeFill());
-            SetLayout(overlay, .TopToBottom);
-            SetChildAlign(overlay, 0.5, 0.5);
-            SetChildGap(overlay, 10, 10);
+            if dock_node.show_target_split {
+                color := ColorU32(0,0,1,0.2);
+
+                if dock_node.target_split == .None {
+                    target_split := GetNode(node);
+                    SetSize(target_split, SizeFill(), SizeFill());
+                    SetBackgroundColor(target_split, color);
+                } else {
+                    horizontal := dock_node.target_split == .Left || dock_node.target_split == .Right;
+
+                    helper := GetNode(node);
+                    SetSize(helper, SizeFill(), SizeFill());
+                    if horizontal {
+                        SetLayout(helper, .LeftToRight);
+                    } else {
+                        SetLayout(helper, .TopToBottom);
+                    }
+
+                    if dock_node.target_split == .Right {
+                        SetChildAlign(helper, 1, 0);
+                    } else if dock_node.target_split == .Bottom {
+                        SetChildAlign(helper, 0, 1);
+                    }
+
+                    target_split := GetNode(helper);
+                    if horizontal {
+                        SetSize(target_split, SizePercent(0.5), SizeFill());
+                    } else {
+                        SetSize(target_split, SizeFill(), SizePercent(0.5));
+                    }
+
+                    SetBackgroundColor(target_split, color);
+                }
+            }
+
+            split_hints := GetNode(node, "split_hints");
+            SetSize(split_hints, SizeFill(), SizeFill());
+            SetLayout(split_hints, .TopToBottom);
+            SetChildAlign(split_hints, 0.5, 0.5);
+            SetChildGap(split_hints, 10, 10);
 
             split_color := ifx dock_node.show_split_hints then ColorU32(0,0,1,0.5);
 
-            dock_node.split_hints.top = GetNode(overlay, "top");
+            dock_node.split_hints.top = GetNode(split_hints, "top");
             {
                 SetSize(dock_node.split_hints.top, SizePx(50), SizePx(40));
                 SetBackgroundColor(dock_node.split_hints.top, split_color);
             }
 
-            middle := GetNode(overlay, "middle");
+            middle := GetNode(split_hints, "middle");
             SetSize(middle, SizeFill(), SizeFit());
             SetLayout(middle, .LeftToRight);
             SetChildAlign(middle, 0.5, 0.5);
             SetChildGap(middle, 10, 10);
 
-            dock_node.split_hints.bottom = GetNode(overlay);
+            dock_node.split_hints.bottom = GetNode(split_hints);
             {
                 SetSize(dock_node.split_hints.bottom, SizePx(50), SizePx(40));
                 SetBackgroundColor(dock_node.split_hints.bottom, split_color);
