@@ -361,11 +361,16 @@ Subwindow :: (
             }
 
             interaction := SubwindowMoveBehavior(subwindow, title_bar, avail_area, title_bar_size);
-
-            if !IsKeyDown(.Shift) && interaction.released {
-                hovered_dock_node, hovered_split := GetHoveredDockSpaceAndSplit();
+            if !IsKeyDown(.Shift) && (interaction.held || interaction.released) {
+                hovered_dock_node, is_hovering_split, hovered_split := GetHoveredDockSpaceAndSplit();
                 if hovered_dock_node {
-                    DockSubwindow(hovered_dock_node, subwindow_id, hovered_split);
+                    hovered_dock_node.show_split_hints = true;
+                    hovered_dock_node.show_target_split = is_hovering_split;
+                    hovered_dock_node.target_split = hovered_split;
+
+                    if interaction.released && is_hovering_split {
+                        DockSubwindow(hovered_dock_node, subwindow_id, hovered_split);
+                    }
                 }
             }
         }
