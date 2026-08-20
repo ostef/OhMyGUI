@@ -365,11 +365,7 @@ Subwindow :: (
             if interaction.released {
                 hovered_dock_node, hovered_split := GetHoveredDockSpaceAndSplit();
                 if hovered_dock_node {
-                    if hovered_split != .None {
-                        hovered_dock_node = SplitDockNode(hovered_dock_node, hovered_split);
-                    }
-
-                    DockSubwindow(hovered_dock_node, subwindow_id);
+                    DockSubwindow(hovered_dock_node, subwindow_id, hovered_split);
                 }
             }
         }

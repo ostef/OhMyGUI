@@ -19,6 +19,9 @@ DockNode :: struct {
     split_dir : DockNodeSplitDirection;
     node : *Node;
 
+    split_request : DockNodeSplit;
+    split_dock_requests : [..]ID;
+
     split_hints : struct {
         left : *Node;
         right : *Node;
@@ -32,13 +35,44 @@ CreateDockNode :: (parent : *DockNode) -> *DockNode {
     node := New(DockNode ,, context.omg.general_purpose_allocator);
     node.parent = parent;
     node.docked_subwindows.allocator = context.omg.general_purpose_allocator;
+    node.split_dock_requests.allocator = context.omg.general_purpose_allocator;
 
     return node;
 }
 
 FreeDockNode :: (node : *DockNode) {
     array_reset(*node.docked_subwindows);
+    array_reset(*node.split_dock_requests);
     free(node ,, context.omg.general_purpose_allocator);
+}
+
+ProcessDockNodeSplitRequests :: () {
+    ProcessRequest :: (dock_node : *DockNode) {
+        if dock_node.split_request != .None {
+            split := SplitDockNode(dock_node, dock_node.split_request);
+            if split {
+                array_add(*split.docked_subwindows, ..dock_node.split_dock_requests);
+            }
+        }
+
+        dock_node.split_request = .None;
+        array_reset_keeping_memory(*dock_node.split_dock_requests);
+
+        if dock_node.split_dir != .None {
+            for dock_node.children {
+                ProcessRequest(it);
+            }
+        }
+    }
+
+    global := GetGlobalUserData(GlobalDockSpaceData);
+    if !global {
+        return;
+    }
+
+    for global.root_dock_nodes {
+        ProcessRequest(it);
+    }
 }
 
 RemoveEmptyDockNodes :: () {
@@ -75,17 +109,22 @@ RemoveEmptyDockNodes :: () {
     for global.root_dock_nodes {
         RemoveEmptyDockNodes(it);
     }
-
-    return;
 }
 
-DockSubwindow :: inline (node : *DockNode, subwindow_str_id : string) -> bool {
-    return DockSubwindow(node, GetID(subwindow_str_id));
+DockSubwindow :: inline (node : *DockNode, subwindow_str_id : string, split : DockNodeSplit = .None) -> bool {
+    return DockSubwindow(node, GetID(subwindow_str_id), split);
 }
 
-DockSubwindow :: (node : *DockNode, subwindow_id : ID) -> bool {
+DockSubwindow :: (node : *DockNode, subwindow_id : ID, split : DockNodeSplit = .None) -> bool {
     if node.split_dir != .None {
         return false;
+    }
+
+    if split != .None {
+        node.split_request = split;
+        array_add_if_unique(*node.split_dock_requests, subwindow_id);
+
+        return true;
     }
 
     array_add_if_unique(*node.docked_subwindows, subwindow_id);
@@ -236,12 +275,6 @@ DockSpace :: (parent : *Node, id : ID, dock_node : *DockNode) -> *Node {
 
         dock_node.node = node;
         dock_node.split_hints = .{};
-
-        // if dock_node.split_dir == .None && dock_node.docked_subwindows.count == 0 {
-        //     if RemoveDockNode(dock_node) {
-        //         return null;
-        //     }
-        // }
 
         if #complete dock_node.split_dir == {
         case .None;

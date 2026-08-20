@@ -524,6 +524,7 @@ NewFrame :: (delta_time : float) {
     InputNewFrame(*context.omg.input);
 
     RemoveEmptyDockNodes();
+    ProcessDockNodeSplitRequests();
 
     SetCursor(null);
 
