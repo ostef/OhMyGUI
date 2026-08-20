@@ -378,7 +378,10 @@ Subwindow :: (
         title_and_content.padding = .{};
         title_and_content.child_gap = .{};
     } else {
-        tab_bar := TabBar(dock_node, "docked_subwindows_tab_bar");
+        tab_bar := FindNode(dock_node, "docked_subwindows_tab_bar");
+        if !tab_bar {
+            return null, null;
+        }
 
         tab_active, tab := Tab(tab_bar, title, tprint("tab.%", str_id));
 

@@ -516,6 +516,20 @@ GetPopupRoot :: (window : *Window) -> *Node, is_new : bool {
     return window.popup_root_node, is_new;
 }
 
+FindNode :: inline (parent : *Node, str_id : string) -> *Node {
+    return FindNode(parent, GetID(str_id));
+}
+
+FindNode :: (parent : *Node, id : ID) -> *Node {
+    for :Children parent {
+        if it.local_id == id {
+            return it;
+        }
+    }
+
+    return null;
+}
+
 GetNode :: (window : *Window) -> *Node, is_new : bool {
     is_new : bool;
 

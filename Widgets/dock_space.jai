@@ -284,7 +284,7 @@ DockSpace :: (parent : *Node, id : ID, dock_node : *DockNode) -> *Node {
             SetSize(content, SizeFill(), SizeFill());
             SetLayout(content, .TopToBottom);
 
-            TabBar(content);
+            TabBar(content, "docked_subwindows_tab_bar");
 
             overlay := GetNode(node, "overlay");
             SetSize(overlay, SizeFill(), SizeFill());
@@ -296,11 +296,6 @@ DockSpace :: (parent : *Node, id : ID, dock_node : *DockNode) -> *Node {
             {
                 SetSize(dock_node.split_hints.top, SizePx(50), SizePx(40));
                 SetBackgroundColor(dock_node.split_hints.top, ColorU32(0,0,1,0.5));
-
-                // using _ := ButtonBehavior(dock_node.split_hints.top);
-                // if released {
-                //     SplitDockNode(dock_node, .Top);
-                // }
             }
 
             middle := GetNode(overlay, "middle");
@@ -313,22 +308,12 @@ DockSpace :: (parent : *Node, id : ID, dock_node : *DockNode) -> *Node {
             {
                 SetSize(dock_node.split_hints.bottom, SizePx(50), SizePx(40));
                 SetBackgroundColor(dock_node.split_hints.bottom, ColorU32(0,0,1,0.5));
-
-                // using _ := ButtonBehavior(dock_node.split_hints.bottom);
-                // if released {
-                //     SplitDockNode(dock_node, .Bottom);
-                // }
             }
 
             dock_node.split_hints.left = GetNode(middle, "left");
             {
                 SetSize(dock_node.split_hints.left, SizePx(40), SizePx(50));
                 SetBackgroundColor(dock_node.split_hints.left, ColorU32(0,0,1,0.5));
-
-                // using _ := ButtonBehavior(dock_node.split_hints.left);
-                // if released {
-                //     SplitDockNode(dock_node, .Left);
-                // }
             }
 
             dock_node.split_hints.center = GetNode(middle, "center");
@@ -339,11 +324,6 @@ DockSpace :: (parent : *Node, id : ID, dock_node : *DockNode) -> *Node {
             {
                 SetSize(dock_node.split_hints.right, SizePx(40), SizePx(50));
                 SetBackgroundColor(dock_node.split_hints.right, ColorU32(0,0,1,0.5));
-
-                // using _ := ButtonBehavior(dock_node.split_hints.right);
-                // if released {
-                //     SplitDockNode(dock_node, .Right);
-                // }
             }
 
         case .Horizontal;
