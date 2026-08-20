@@ -313,6 +313,7 @@ RadioButton :: (parent : *Node, active : bool, size := 16.0, style : *RadioButto
     node := GetNode(parent, location);
     {
         SetSize(node, SizePx(size), SizePx(size));
+        node.flags |= .NoClip;
 
         SetUserData(node, style.*);
 
