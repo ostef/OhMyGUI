@@ -427,7 +427,7 @@ GetDefaultThemes :: inline () -> light : *Theme, dark : *Theme {
     return *g_default_theme_light, *g_default_theme_dark;
 }
 
-SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base_accent_color : RGBA8) {
+SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_background_color : RGBA8, base_accent_color : RGBA8) {
     button_base_background_color := MakeTone(base_background_color, 0.25);
 
     {
@@ -441,7 +441,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         using theme.text;
 
         font = GetDefaultFont();
-        text_size = 16;
+        text_size = base_text_size;
         text_color = ChooseTextColor(base_background_color);
     }
     SetStyle(theme, "text", theme.text);
@@ -449,8 +449,8 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
     {
         using theme.clickable_text;
 
-        normal.text.font = GetDefaultFont();
-        normal.text.text_size = 16;
+        normal.text.font = theme.text.font;
+        normal.text.text_size = theme.text.text_size;
 
         focused = normal;
         focused.text.text_effects |= .Underline;
@@ -482,8 +482,8 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         normal.background.padding = .{10,6,10,6};
         normal.background.child_gap = .{4,4};
 
-        normal.text.font = GetDefaultFont();
-        normal.text.text_size = 16;
+        normal.text.font = theme.text.font;
+        normal.text.text_size = theme.text.text_size;
 
         focused = normal;
         hot = normal;
@@ -618,8 +618,8 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         normal.background.border_color = MakeTone(button_base_background_color, 0.3);
         normal.background.inner_shadow_blur = 5;
         normal.background.inner_shadow_color = SetAlpha(Darken(button_base_background_color, 0.2), 0.7);
-        normal.text.font = GetDefaultFont();
-        normal.text.text_size = 16;
+        normal.text.font = theme.text.font;
+        normal.text.text_size = theme.text.text_size;
 
         focused = normal;
         focused.cursor = GetSystemCursor(.IBeam);
@@ -692,8 +692,8 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         normal.background.corner_radiuses = .{3,3,3,3};
         normal.background.padding = .{4,4,4,4};
         normal.background.child_gap = .{4,4};
-        normal.text.font = GetDefaultFont();
-        normal.text.text_size = 14;
+        normal.text.font = theme.text.font;
+        normal.text.text_size = Round(theme.text.text_size * 0.9);
 
         focused = normal;
         hot = normal;
@@ -753,8 +753,8 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
             normal.background.padding = .{6,6,6,6};
             normal.background.corner_radiuses = .{6,6,0,0};
 
-            normal.text.font = GetDefaultFont();
-            normal.text.text_size = 16;
+            normal.text.font = theme.text.font;
+            normal.text.text_size = theme.text.text_size;
 
             normal.background.background_color = MakeTone(base_background_color, 0.1);
             normal.text.text_color = ChooseTextColor(normal.background.background_color);
@@ -938,7 +938,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         background.outer_shadow_blur = 5;
 
         text = theme.text;
-        text.text_size = floor(text.text_size * 0.9);
+        text.text_size = Round(text.text_size * 0.9);
     }
     SetStyle(theme, "tooltip", theme.tooltip);
 
@@ -1028,4 +1028,48 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_background_color : RGBA8, base
         }
     }
     SetStyle(theme, "tab", theme.tab);
+}
+
+SetGlobalTextSize :: (theme : *Theme, new_size : float) {
+    Recurse :: (value : Any, ratio : float) {
+        if value.type == type_info(TextStyle) {
+            text_style := cast(*TextStyle, value.value_pointer);
+            text_style.text_size = ifx ratio < 1 then floor(text_style.text_size * ratio) else ceil(text_style.text_size * ratio);
+        } else if value.type.type == .STRUCT {
+            struct_info := cast(*Type_Info_Struct, value.type);
+
+            highest_offset := -1;
+            for struct_info.members {
+                if it.offset_in_bytes <= highest_offset {
+                    continue;
+                }
+
+                highest_offset = it.offset_in_bytes;
+
+                member : Any;
+                member.value_pointer = value.value_pointer + it.offset_in_bytes;
+                member.type = it.type;
+
+                Recurse(member, ratio);
+            }
+        } else if value.type.type == .ARRAY {
+            array_info := cast(*Type_Info_Array, value.type);
+
+            for i : 0..array_info.array_count - 1 {
+                member : Any;
+                member.value_pointer = value.value_pointer + i * array_info.element_type.runtime_size;
+                member.type = array_info.element_type;
+
+                Recurse(member, ratio);
+            }
+        }
+    }
+
+    text := GetStyle(theme, "text", TextStyle);
+
+    ratio := new_size / text.text_size;
+
+    for theme.styles {
+        Recurse(it, ratio);
+    }
 }

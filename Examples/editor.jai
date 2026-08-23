@@ -176,6 +176,17 @@ EditorFrame :: () {
         g_wants_switch_theme = false;
     }
 
+    if OMG.IsKeyPressed(.Minus) && OMG.GetModState() == .Ctrl {
+        theme := OMG.GetTheme();
+        text := OMG.GetStyle(theme, "text", OMG.TextStyle);
+        OMG.SetGlobalTextSize(theme, max(text.text_size - 2, 5));
+    }
+    if OMG.IsKeyPressed(.Equals) && OMG.GetModState() == .Ctrl {
+        theme := OMG.GetTheme();
+        text := OMG.GetStyle(theme, "text", OMG.TextStyle);
+        OMG.SetGlobalTextSize(theme, max(text.text_size + 2, 5));
+    }
+
     base_background_color := OMG.GetStyle("base", OMG.BoxStyle).background_color;
 
     window := OMG.GetWindow(g_window);
@@ -206,29 +217,55 @@ EditorFrame :: () {
             if file_menu {
                 new_menu := OMG.SubMenu(file_menu, "New");
                 if new_menu {
-                    OMG.MenuItem(new_menu, "World");
-                    OMG.MenuItem(new_menu, "Entity");
-                    OMG.MenuItem(new_menu, "Component");
+                    if OMG.MenuItem(new_menu, "World") {
+                        print("World\n");
+                    }
+                    if OMG.MenuItem(new_menu, "Entity") {
+                        print("Entity\n");
+                    }
+                    if OMG.MenuItem(new_menu, "Component") {
+                        print("Component\n");
+                    }
                 }
 
-                OMG.MenuItem(file_menu, "Open");
-                OMG.MenuItem(file_menu, "Save");
-                OMG.MenuItem(file_menu, "Save As");
+                if OMG.MenuItem(file_menu, "Open") {
+                    print("Open\n");
+                }
+                if OMG.MenuItem(file_menu, "Save") {
+                    print("Save\n");
+                }
+                if OMG.MenuItem(file_menu, "Save As") {
+                    print("Save As\n");
+                }
             }
 
             edit_menu := OMG.Menu(title_menu_bar, "Edit");
             if edit_menu {
-                OMG.MenuItem(edit_menu, "Select All");
-                OMG.MenuItem(edit_menu, "Invert Selection");
+                if OMG.MenuItem(edit_menu, "Select All") {
+                    print("Select All\n");
+                }
+                if OMG.MenuItem(edit_menu, "Invert Selection") {
+                    print("Invert Selection\n");
+                }
             }
 
             window_menu := OMG.Menu(title_menu_bar, "Window");
             if window_menu {
-                OMG.MenuItem(window_menu, "New Viewport");
-                OMG.MenuItem(window_menu, "Profiler");
-                OMG.MenuItem(window_menu, "Entity Outliner");
-                OMG.MenuItem(window_menu, "Entity Inspector");
-                OMG.MenuItem(window_menu, "Browser");
+                if OMG.MenuItem(window_menu, "New Viewport") {
+                    print("New Viewport\n");
+                }
+                if OMG.MenuItem(window_menu, "Profiler") {
+                    print("Profiler\n");
+                }
+                if OMG.MenuItem(window_menu, "Entity Outliner") {
+                    print("Entity Outliner\n");
+                }
+                if OMG.MenuItem(window_menu, "Entity Inspector") {
+                    print("Entity Inspector\n");
+                }
+                if OMG.MenuItem(window_menu, "Browser") {
+                    print("Browser\n");
+                }
             }
 
             if OMG.MenuItem(title_menu_bar, "Switch Theme") {
@@ -241,8 +278,12 @@ EditorFrame :: () {
 
             help_menu := OMG.Menu(title_menu_bar, "Help");
             if help_menu {
-                OMG.MenuItem(help_menu, "Documentation");
-                OMG.MenuItem(help_menu, "About");
+                if OMG.MenuItem(help_menu, "Documentation") {
+                    print("Documentation\n");
+                }
+                if OMG.MenuItem(help_menu, "About") {
+                    print("About\n");
+                }
             }
 
             Btn_Size :: 20.0;
