@@ -663,11 +663,6 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
             it.background.corner_radiuses.xy = .{0,0};
             it.background.corner_radiuses.z = 0;
         }
-
-        for * text_input.states {
-            it.background.corner_radiuses.y = 0;
-            it.background.corner_radiuses.w = 0;
-        }
     }
     SetStyle(theme, "number_input", theme.number_input);
 

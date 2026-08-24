@@ -691,6 +691,7 @@ NumberInputStyle :: struct {
     increase_decrease_buttons_width := 16.0;
     increase_button : ButtonStyle;
     decrease_button : ButtonStyle;
+    group_buttons_with_text_input := true;
 }
 
 NumberInputFlags :: enum_flags {
@@ -780,8 +781,16 @@ NumberInput :: (
         container = parent;
     }
 
+    text_input_style := style.text_input;
+    if !(flags & .NoIncreaseDecreaseButtons) && style.group_buttons_with_text_input {
+        for * text_input_style.states {
+            it.background.corner_radiuses.y = 0;
+            it.background.corner_radiuses.w = 0;
+        }
+    }
+
     text_input_flags : TextInputFlags;
-    submitted, node := TextInput(container, text_input_flags, *style.text_input, location);
+    submitted, node := TextInput(container, text_input_flags, *text_input_style, location);
     modified := submitted;
 
     if !(flags & .NoIncreaseDecreaseButtons) {
