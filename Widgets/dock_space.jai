@@ -17,6 +17,7 @@ DockNode :: struct {
     children : [2]*DockNode;
     docked_subwindows : [..]ID;
     split_dir : DockNodeSplitDirection;
+    fill_ratio := 0.5;
 
     // Was this node created by a window being docked?
     // If that's the case we want to remove the node when it becomes empty, otherwise it should stay empty
@@ -307,13 +308,45 @@ DockSpace :: (parent : *Node, id : ID, dock_node : *DockNode, style : *DockSpace
 
     node := GetNode(parent, id);
     {
-        SetSize(node, SizeFill(), SizeFill());
+        if dock_node.parent && dock_node.parent.split_dir != .None {
+            fill_value := ifx dock_node == dock_node.parent.children[0]
+                then dock_node.parent.fill_ratio
+                else 1 - dock_node.parent.fill_ratio;
+
+            if dock_node.parent.split_dir == .Horizontal {
+                SetSize(node, SizeFill(), SizeFill(fill_value));
+            } else {
+                SetSize(node, SizeFill(fill_value), SizeFill());
+            }
+        } else {
+            SetSize(node, SizeFill(), SizeFill());
+        }
 
         Apply(node, style.background);
 
         dock_node.node = node;
         dock_node.tab_bar = null;
         dock_node.split_hints = .{};
+
+        ResizeHandle :: (node : *Node, dock_node : *DockNode, axis : Axis) -> *Node {
+            cross := GetCrossAxis(axis);
+
+            resize_handle := GetNode(node, "resize_handle");
+            resize_handle.desired_size[axis] = SizePx(5);
+            resize_handle.desired_size[cross] = SizeFill();
+            SetBackgroundColor(resize_handle, ColorU32(0,1,0,1));
+
+            resize := ButtonBehavior(resize_handle);
+            if resize.held {
+                resize_handle.state_flags |= .Active;
+
+                offset := GetMousePosition(node.window)[axis] - node.rect.xy[axis];
+                offset = clamp(offset, 32, node.size[axis] - 32);
+                dock_node.fill_ratio = offset / node.size[axis];
+            }
+
+            return resize_handle;
+        }
 
         if #complete dock_node.split_dir == {
         case .None;
@@ -411,9 +444,7 @@ DockSpace :: (parent : *Node, id : ID, dock_node : *DockNode, style : *DockSpace
 
             DockSpace(node, GetID(GetID("top"), id), dock_node.children[0], style);
 
-            resize_handle := GetNode(node, "resize");
-            SetSize(resize_handle, SizeFill(), SizePx(2));
-            SetBackgroundColor(resize_handle, ColorU32(0,1,0,1));
+            ResizeHandle(node, dock_node, .Y);
 
             DockSpace(node, GetID(GetID("bottom"), id), dock_node.children[1], style);
 
@@ -422,9 +453,7 @@ DockSpace :: (parent : *Node, id : ID, dock_node : *DockNode, style : *DockSpace
 
             DockSpace(node, GetID(GetID("left"), id), dock_node.children[0], style);
 
-            resize_handle := GetNode(node, "resize");
-            SetSize(resize_handle, SizePx(2), SizeFill());
-            SetBackgroundColor(resize_handle, ColorU32(0,1,0,1));
+            ResizeHandle(node, dock_node, .X);
 
             DockSpace(node, GetID(GetID("right"), id), dock_node.children[1], style);
         }
