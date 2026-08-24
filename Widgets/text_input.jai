@@ -688,7 +688,7 @@ ParseIntInput :: (str : string, $T : Type) -> bool, T {
 
 NumberInputStyle :: struct {
     text_input : TextInputStyle;
-    increase_decrease_buttons_width := 16.0;
+    increase_decrease_buttons_width := 14.0;
     increase_button : ButtonStyle;
     decrease_button : ButtonStyle;
     group_buttons_with_text_input := true;

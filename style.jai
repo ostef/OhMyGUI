@@ -650,7 +650,6 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
             it.background.padding = .{4,4,4,4};
 
             it.background.corner_radiuses.x = 0;
-            it.background.corner_radiuses.x = 0;
             it.background.corner_radiuses.zw = .{0,0};
         }
 
