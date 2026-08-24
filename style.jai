@@ -909,6 +909,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
 
         button = theme.button;
         popup = theme.menu;
+        popup.max_width_px = FLOAT32_INFINITY;
         item = theme.menu_item;
 
         for * button.states {
