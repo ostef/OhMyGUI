@@ -970,6 +970,7 @@ ColorPicker :: (
 }
 
 ColorPickerWindow :: struct {
+    bring_forward : bool;
     opened : bool;
     opened_in_window : *Window;
     color : *Vec4f;
@@ -983,6 +984,7 @@ OpenGlobalColorPicker :: (window : *Window, color : *Vec4f) {
     data.color = color;
     data.previous_color = color.*;
     data.opened = true;
+    data.bring_forward = true;
 }
 
 ColorPickerSubwindow :: () {
@@ -991,9 +993,14 @@ ColorPickerSubwindow :: () {
         return;
     }
 
-    subwindow := Subwindow(opened_in_window, "Color Picker", "color_picker", .{550, 400});
+    subwindow, subwindow_node := Subwindow(opened_in_window, "Color Picker", "color_picker", .{550, 400});
     if !subwindow {
         return;
+    }
+
+    if subwindow_node && data.bring_forward {
+        BringForward(subwindow_node);
+        data.bring_forward = false;
     }
 
     ok, cancel := ColorPicker(subwindow, color, previous_color);
