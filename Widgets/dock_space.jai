@@ -19,6 +19,9 @@ DockNode :: struct {
     split_dir : DockNodeSplitDirection;
     node : *Node;
 
+    // Was this node created by a window being docked?
+    // If that's the case we want to remove the node when it becomes empty, otherwise it should stay empty
+    created_by_docking : bool;
     split_request : DockNodeSplit;
     split_dock_requests : [..]ID;
 
@@ -56,6 +59,7 @@ ProcessDockNodeSplitRequests :: () {
             split := SplitDockNode(dock_node, dock_node.split_request);
             if split {
                 array_add(*split.docked_subwindows, ..dock_node.split_dock_requests);
+                split.created_by_docking = true;
             }
         }
 
@@ -97,8 +101,21 @@ RemoveEmptyDockNodes :: () {
             }
         }
 
+        if dock_node.split_dir != .None {
+            child0_empty := dock_node.children[0].split_dir == .None && dock_node.children[0].docked_subwindows.count == 0;
+            child1_empty := dock_node.children[1].split_dir == .None && dock_node.children[1].docked_subwindows.count == 0;
+            if child0_empty && child1_empty {
+                FreeDockNode(dock_node.children[0]);
+                FreeDockNode(dock_node.children[1]);
+
+                dock_node.children[0] = null;
+                dock_node.children[1] = null;
+                dock_node.split_dir = .None;
+            }
+        }
+
         // Not an if-else because split_dir might've been modified by removing a child
-        if dock_node.split_dir == .None && dock_node.docked_subwindows.count == 0 {
+        if dock_node.split_dir == .None && dock_node.created_by_docking && dock_node.docked_subwindows.count == 0 {
             return RemoveDockNode(dock_node);
         }
 
@@ -256,7 +273,15 @@ GetSubwindowDockNode :: (subwindow_id : ID) -> content : *Node, dock_node : *Doc
     return null, null;
 }
 
-DockSpace :: (parent : *Node, str_id : string) -> *Node, *DockNode {
+DockSpaceStyle :: struct {
+    tab_bar : BoxStyle;
+    tab : ButtonStyle;
+    background : BoxStyle;
+    target_split : BoxStyle;
+    split_hint : BoxStyle;
+}
+
+DockSpace :: (parent : *Node, str_id : string, style : *DockSpaceStyle = null) -> *Node, *DockNode {
     global := AddGlobalUserData(GlobalDockSpaceData, DestroyGlobalDockSpaceData);
     id := GetID(str_id);
     dock_node_ptr := HT.find_or_add(*global.root_dock_nodes, id);
@@ -267,10 +292,12 @@ DockSpace :: (parent : *Node, str_id : string) -> *Node, *DockNode {
         dock_node_ptr.* = dock_node;
     }
 
-    return DockSpace(parent, id, dock_node), dock_node;
+    return DockSpace(parent, id, dock_node, style), dock_node;
 }
 
-DockSpace :: (parent : *Node, id : ID, dock_node : *DockNode) -> *Node {
+DockSpace :: (parent : *Node, id : ID, dock_node : *DockNode, style : *DockSpaceStyle = null) -> *Node {
+    EnsureStyle(*style, "dock_space");
+
     defer {
         dock_node.show_split_hints = false;
         dock_node.show_target_split = false;
@@ -280,8 +307,8 @@ DockSpace :: (parent : *Node, id : ID, dock_node : *DockNode) -> *Node {
     node := GetNode(parent, id);
     {
         SetSize(node, SizeFill(), SizeFill());
-        SetBorderColor(node, 0xffffffff);
-        SetBorderSize(node, 1);
+
+        Apply(node, style.background);
 
         dock_node.node = node;
         dock_node.split_hints = .{};
@@ -294,15 +321,14 @@ DockSpace :: (parent : *Node, id : ID, dock_node : *DockNode) -> *Node {
             SetSize(content, SizeFill(), SizeFill());
             SetLayout(content, .TopToBottom);
 
-            TabBar(content, "docked_subwindows_tab_bar");
+            TabBar(content, "docked_subwindows_tab_bar", style=*style.tab_bar);
 
             if dock_node.show_target_split {
-                color := ColorU32(0,0,1,0.2);
-
                 if dock_node.target_split == .None {
                     target_split := GetNode(node);
                     SetSize(target_split, SizeFill(), SizeFill());
-                    SetBackgroundColor(target_split, color);
+
+                    Apply(target_split, style.target_split);
                 } else {
                     horizontal := dock_node.target_split == .Left || dock_node.target_split == .Right;
 
@@ -327,25 +353,29 @@ DockSpace :: (parent : *Node, id : ID, dock_node : *DockNode) -> *Node {
                         SetSize(target_split, SizeFill(), SizePercent(0.5));
                     }
 
-                    SetBackgroundColor(target_split, color);
+                    Apply(target_split, style.target_split);
                 }
             }
 
             split_hints := GetNode(node, "split_hints");
+            split_hints.flags |= .NoClip;
+
             SetSize(split_hints, SizeFill(), SizeFill());
             SetLayout(split_hints, .TopToBottom);
             SetChildAlign(split_hints, 0.5, 0.5);
             SetChildGap(split_hints, 10, 10);
 
-            split_color := ifx dock_node.show_split_hints then ColorU32(0,0,1,0.5);
+            split_hint_style := ifx dock_node.show_split_hints then style.split_hint;
 
             dock_node.split_hints.top = GetNode(split_hints, "top");
             {
                 SetSize(dock_node.split_hints.top, SizePx(50), SizePx(40));
-                SetBackgroundColor(dock_node.split_hints.top, split_color);
+                Apply(dock_node.split_hints.top, split_hint_style);
             }
 
             middle := GetNode(split_hints, "middle");
+            middle.flags |= .NoClip;
+
             SetSize(middle, SizeFill(), SizeFit());
             SetLayout(middle, .LeftToRight);
             SetChildAlign(middle, 0.5, 0.5);
@@ -354,46 +384,47 @@ DockSpace :: (parent : *Node, id : ID, dock_node : *DockNode) -> *Node {
             dock_node.split_hints.bottom = GetNode(split_hints);
             {
                 SetSize(dock_node.split_hints.bottom, SizePx(50), SizePx(40));
-                SetBackgroundColor(dock_node.split_hints.bottom, split_color);
+
+                Apply(dock_node.split_hints.bottom, split_hint_style);
             }
 
             dock_node.split_hints.left = GetNode(middle, "left");
             {
                 SetSize(dock_node.split_hints.left, SizePx(40), SizePx(50));
-                SetBackgroundColor(dock_node.split_hints.left, split_color);
+                Apply(dock_node.split_hints.left, split_hint_style);
             }
 
             dock_node.split_hints.center = GetNode(middle, "center");
             SetSize(dock_node.split_hints.center, SizePx(50), SizePx(50));
-            SetBackgroundColor(dock_node.split_hints.center, split_color);
+            Apply(dock_node.split_hints.center, split_hint_style);
 
             dock_node.split_hints.right = GetNode(middle, "right");
             {
                 SetSize(dock_node.split_hints.right, SizePx(40), SizePx(50));
-                SetBackgroundColor(dock_node.split_hints.right, split_color);
+                Apply(dock_node.split_hints.right, split_hint_style);
             }
 
         case .Horizontal;
             SetLayout(node, .TopToBottom);
 
-            DockSpace(node, GetID(GetID("top"), id), dock_node.children[0]);
+            DockSpace(node, GetID(GetID("top"), id), dock_node.children[0], style);
 
             resize_handle := GetNode(node, "resize");
             SetSize(resize_handle, SizeFill(), SizePx(2));
             SetBackgroundColor(resize_handle, ColorU32(0,1,0,1));
 
-            DockSpace(node, GetID(GetID("bottom"), id), dock_node.children[1]);
+            DockSpace(node, GetID(GetID("bottom"), id), dock_node.children[1], style);
 
         case .Vertical;
             SetLayout(node, .LeftToRight);
 
-            DockSpace(node, GetID(GetID("left"), id), dock_node.children[0]);
+            DockSpace(node, GetID(GetID("left"), id), dock_node.children[0], style);
 
             resize_handle := GetNode(node, "resize");
             SetSize(resize_handle, SizePx(2), SizeFill());
             SetBackgroundColor(resize_handle, ColorU32(0,1,0,1));
 
-            DockSpace(node, GetID(GetID("right"), id), dock_node.children[1]);
+            DockSpace(node, GetID(GetID("right"), id), dock_node.children[1], style);
         }
     }
 

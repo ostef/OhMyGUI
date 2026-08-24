@@ -377,10 +377,10 @@ EditorFrame :: () {
                 OMG.SetLayout(left_side, .TopToBottom);
 
                 dock, dock_node := OMG.DockSpace(left_side, "dockspace");
-                if g_frame_index == 0 {
-                    OMG.DockSubwindow(dock_node, "color_picker");
-                    OMG.DockSubwindow(dock_node, "tabs");
-                }
+                // if g_frame_index == 0 {
+                //     OMG.DockSubwindow(dock_node, "color_picker");
+                //     OMG.DockSubwindow(dock_node, "tabs");
+                // }
 
                 tabs_subwindow := OMG.Subwindow(window, "Tabs", "tabs", .{250, 250});
                 if tabs_subwindow {

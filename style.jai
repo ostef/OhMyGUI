@@ -418,6 +418,7 @@ DefaultTheme :: struct {
     tree_node : TreeNodeStyle;
     tab_bar : BoxStyle;
     tab : ButtonStyle;
+    dock_space : DockSpaceStyle;
 }
 
 g_default_theme_light : DefaultTheme;
@@ -1028,6 +1029,26 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         }
     }
     SetStyle(theme, "tab", theme.tab);
+
+    {
+        using theme.dock_space;
+
+        tab_bar = theme.tab_bar;
+        tab = theme.tab;
+
+        background.background_color = base_background_color;
+
+        target_split.background_color = SetAlpha(base_accent_color, 0.5);
+
+        split_hint.border_color = ColorU32(0.7,0.7,0.7,1);
+        split_hint.border_size = 1;
+        split_hint.border_inset = 2;
+        split_hint.background_color = SetAlpha(base_accent_color, 0.5);
+        split_hint.corner_radiuses = .{6,6,6,6};
+        split_hint.outer_shadow_blur = 4;
+        split_hint.outer_shadow_color = ColorU32(0,0,0,0.2);
+    }
+    SetStyle(theme, "dock_space", theme.dock_space);
 }
 
 SetGlobalTextSize :: (theme : *Theme, new_size : float) {
