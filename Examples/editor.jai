@@ -10,11 +10,6 @@ g_selected_fruit : enum {
     Banana;
 };
 
-g_dummy_viewport_image : struct {
-    texture : OMG.TextureHandle;
-    width, height : u32;
-}
-
 Entity :: struct {
     id : int;
     name : string;
@@ -153,13 +148,6 @@ g_wants_switch_theme : bool;
 
 EditorFrame :: () {
     defer g_frame_index += 1;
-
-    if !g_dummy_viewport_image.texture {
-        using g_dummy_viewport_image;
-
-        texture, width, height = OMG.LoadImage("dummy_viewport.png");
-        assert(texture != 0);
-    }
 
     if g_entities.count == 0 {
         FillEntities();
