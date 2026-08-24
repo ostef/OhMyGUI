@@ -5,22 +5,6 @@ ComboStyle :: struct {
     arrow_size := Vec2f.{10, 6};
 }
 
-DrawComboArrow :: (draw_list : *DrawList, node : *Node) {
-    if (node.text_color & 0xff) == 0 {
-        return;
-    }
-
-    center := (node.rect.xy + node.rect.zw) * 0.5;
-    half_w := node.size.x * 0.5;
-    half_h := node.size.y * 0.5;
-
-    p0 := center + .{-half_w, -half_h};
-    p1 := center + .{half_w, -half_h};
-    p2 := center + .{0, half_h};
-
-    DrawTriangle(draw_list, p0, p1, p2, node.text_color);
-}
-
 EnumCombo :: inline (
     parent : *Node,
     value : *$T,
@@ -106,10 +90,7 @@ Combo :: (
 
         Apply(text_node, style.button.states[state].text);
 
-        arrow := GetNode(combo, "arrow");
-        SetSize(arrow, SizePx(style.arrow_size.x), SizePx(style.arrow_size.y));
-        SetDraw(arrow, DrawComboArrow);
-        SetTextColor(arrow, style.button.states[state].text.text_color);
+        Arrow(combo, SizePx(style.arrow_size.x), SizePx(style.arrow_size.y), style=.{background_color=style.button.states[state].text.text_color});
     }
 
     modified := false;

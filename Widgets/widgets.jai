@@ -234,3 +234,47 @@ ProgressBar :: (parent : *Node, value : float, style : *ProgressBarStyle = null,
 
     return node;
 }
+
+DrawArrow :: (draw_list : *DrawList, node : *Node) {
+    if (node.background_color & 0xff) == 0 {
+        return;
+    }
+
+    center := (node.rect.xy + node.rect.zw) * 0.5;
+    half_w := node.size.x * 0.5;
+    half_h := node.size.y * 0.5;
+
+    p0 := Vec2f.{-half_w, -half_h};
+    p1 := Vec2f.{half_w, -half_h};
+    p2 := Vec2f.{0, half_h};
+
+    DrawShape(draw_list, .{
+        shape=Triangle(p0, p1, p2),
+        position=center,
+        background_color=node.background_color,
+        background_color2=node.background_color2,
+        background_gradient_vector=node.background_gradient_vector,
+        background_gradient_offset=node.background_gradient_offset,
+        border_color=node.border_color,
+        border_color2=node.border_color2,
+        border_gradient_vector=node.border_gradient_vector,
+        border_gradient_offset=node.border_gradient_offset,
+        border_size=node.border_size,
+        border_inset=node.border_inset,
+        outer_shadow_color=node.outer_shadow_color,
+        outer_shadow_offset=node.outer_shadow_offset,
+        outer_shadow_blur=node.outer_shadow_blur,
+        inner_shadow_color=node.inner_shadow_color,
+        inner_shadow_offset=node.inner_shadow_offset,
+        inner_shadow_blur=node.inner_shadow_blur,
+    });
+}
+
+Arrow :: (parent : *Node, width : Size1D, height : Size1D, style : BoxStyle, location := #caller_location) -> *Node {
+    node := GetNode(parent, location);
+    SetSize(node, width, height);
+    SetDraw(node, DrawArrow);
+    Apply(node, style);
+
+    return node;
+}
