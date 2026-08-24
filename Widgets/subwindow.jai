@@ -408,6 +408,7 @@ Subwindow :: (
         SetSize(content_parent, SizeFill(), SizeFill());
 
         Apply(content_parent, style.background);
+        content_parent.corner_radiuses = .{}; // Override styling to remove rounded corners when docked
     }
 
     content_and_hscrollbar, content_and_vscrollbar : *Node;
