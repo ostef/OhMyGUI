@@ -5,13 +5,34 @@ Tree based immediate mode GUI library in Jai inspired by Clay and PanGui. For no
 
 ## Main features
 * Immediate mode API: declare the UI by code each frame, nodes are added/removed/persisted accordingly.
-* Tree-based UI: unlike Dear ImGUI, OhMyGUI keeps track of the element tree. This is important to allow easily extending/modifying nodes after they've been declared.
-* Layout is done on a separate pass.
+* Tree-based UI: OhMyGUI keeps track of the element tree. This is important to allow easily extending/modifying nodes after they've been declared.
+* Layout system
 * Style aware: all the widgets can be called with an optional style parameter.
-* Draw callbacks: drawing is done after layout at the end of the frame. This allows you to attach a different draw callback to any node that has already been declared to customize its visuals to your own needs.
-* SDF fonts that look good at any size.
+* Draw callbacks: drawing is done after layout at the end of the frame. This allows you to attach a different draw callback to any node that has already been declared to customize its visuals to your own needs
+* SDF fonts that scale well
 * Primitive based renderer: boxes, glyphs and triangles
-* SDF shape renderer: describe shapes using SDF primitives and operations, draw them with a border, background color and outer shadow
+* SDF shape renderer: describe shapes using SDF primitives and operations, draw them with a border, background color, outer shadow and more
+
+## Available widgets
+Here are the widgets that have been implemented so far, with varying level of features for more complex widgets:
+* Clickable text
+* Buttons: classic, toggle, checkbox, radio
+* Sliders of different styles
+* Scrollbar
+* Image
+* Separator
+* Tooltip
+* Progress bar
+* Table
+* Single line text input
+* Number input
+* Subwindow
+* Dock space
+* Combo box
+* Menu, context menu
+* Tab bar
+* Tree nodes
+* Color picker
 
 ## How it works
 Each frame, the user calls `GetNode` with an ID to declare a UI element or get a node that has been declared prior, or any of the widget functions. This builds a tree which is traversed at the end of the frame to lay UI elements out according to properties specified by the user, then draw UI elements that are visible.
