@@ -3,6 +3,8 @@
 
 Tree based immediate mode GUI library in Jai inspired by Clay and PanGui. For now only OpenGL 4.6 is supported, hence it can only be used on Linux and Windows
 
+![Example](Examples/screenshot.png)
+
 ## Main features
 * Immediate mode API: declare the UI by code each frame, nodes are added/removed/persisted accordingly.
 * Tree-based UI: OhMyGUI keeps track of the element tree. This is important to allow easily extending/modifying nodes after they've been declared.
