@@ -1,3 +1,6 @@
+// This file is more of a sandbox than real example code
+// @Todo: better demo
+
 g_frame_index : int;
 g_slider_value := 0.5;
 g_show_password := true;
