@@ -307,6 +307,8 @@ Subwindow :: (
         defer persistent_data.was_undocked_using_mouse = false;
 
         if is_new {
+            BringForward(subwindow);
+
             if !persistent_data || is_new_persistent_data || persistent_data.was_docked {
                 SetSize(subwindow, SizePx(initial_size.x), SizePx(initial_size.y));
 
