@@ -17,7 +17,6 @@ DockNode :: struct {
     children : [2]*DockNode;
     docked_subwindows : [..]ID;
     split_dir : DockNodeSplitDirection;
-    node : *Node;
 
     // Was this node created by a window being docked?
     // If that's the case we want to remove the node when it becomes empty, otherwise it should stay empty
@@ -29,6 +28,8 @@ DockNode :: struct {
     show_target_split : bool;
     target_split : DockNodeSplit;
 
+    node : *Node;
+    tab_bar : *Node;
     split_hints : struct {
         left : *Node;
         right : *Node;
@@ -311,6 +312,7 @@ DockSpace :: (parent : *Node, id : ID, dock_node : *DockNode, style : *DockSpace
         Apply(node, style.background);
 
         dock_node.node = node;
+        dock_node.tab_bar = null;
         dock_node.split_hints = .{};
 
         if #complete dock_node.split_dir == {
@@ -321,7 +323,7 @@ DockSpace :: (parent : *Node, id : ID, dock_node : *DockNode, style : *DockSpace
             SetSize(content, SizeFill(), SizeFill());
             SetLayout(content, .TopToBottom);
 
-            TabBar(content, "docked_subwindows_tab_bar", style=*style.tab_bar);
+            dock_node.tab_bar = TabBar(content, "docked_subwindows_tab_bar", style=*style.tab_bar);
 
             if dock_node.show_target_split {
                 if dock_node.target_split == .None {
@@ -447,6 +449,9 @@ GetHoveredDockSpaceAndSplit :: () -> *DockNode, is_hovering_split : bool, DockNo
                 return dock_node, true, .Bottom;
             }
             if IsHovered(dock_node.split_hints.center) {
+                return dock_node, true, .None;
+            }
+            if dock_node.tab_bar && IsHovered(dock_node.tab_bar) {
                 return dock_node, true, .None;
             }
 
