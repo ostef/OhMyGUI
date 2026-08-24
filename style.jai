@@ -1065,6 +1065,8 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         tab_bar = theme.tab_bar;
         tab = theme.tab;
 
+        border_color = MakeTone(base_background_color, 0.5);
+
         background.background_color = base_background_color;
 
         target_split.background_color = SetAlpha(base_accent_color, 0.5);

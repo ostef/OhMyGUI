@@ -278,6 +278,10 @@ GetSubwindowDockNode :: (subwindow_id : ID) -> content : *Node, dock_node : *Doc
 DockSpaceStyle :: struct {
     tab_bar : BoxStyle;
     tab : ButtonStyle;
+
+    border_color : RGBA8;
+    border_size := 2.0;
+
     background : BoxStyle;
     target_split : BoxStyle;
     split_hint : BoxStyle;
@@ -328,13 +332,13 @@ DockSpace :: (parent : *Node, id : ID, dock_node : *DockNode, style : *DockSpace
         dock_node.tab_bar = null;
         dock_node.split_hints = .{};
 
-        ResizeHandle :: (node : *Node, dock_node : *DockNode, axis : Axis) -> *Node {
+        ResizeHandle :: (node : *Node, dock_node : *DockNode, axis : Axis, style : *DockSpaceStyle) -> *Node {
             cross := GetCrossAxis(axis);
 
             resize_handle := GetNode(node, "resize_handle");
-            resize_handle.desired_size[axis] = SizePx(5);
+            resize_handle.desired_size[axis] = SizePx(style.border_size);
             resize_handle.desired_size[cross] = SizeFill();
-            SetBackgroundColor(resize_handle, ColorU32(0,1,0,1));
+            SetBackgroundColor(resize_handle, style.border_color);
 
             resize := ButtonBehavior(resize_handle);
             if resize.held {
@@ -343,6 +347,13 @@ DockSpace :: (parent : *Node, id : ID, dock_node : *DockNode, style : *DockSpace
                 offset := GetMousePosition(node.window)[axis] - node.rect.xy[axis];
                 offset = clamp(offset, 32, node.size[axis] - 32);
                 dock_node.fill_ratio = offset / node.size[axis];
+            }
+
+            if HasCursorControl(resize_handle) {
+                cursor := ifx axis == .X then GetSystemCursor(.ResizeHorizontal) else GetSystemCursor(.ResizeVertical);
+                if GetState(resize_handle) == .Focused || GetState(resize_handle) == .Hot || GetState(resize_handle) == .Active {
+                    SetCursor(cursor);
+                }
             }
 
             return resize_handle;
@@ -444,7 +455,7 @@ DockSpace :: (parent : *Node, id : ID, dock_node : *DockNode, style : *DockSpace
 
             DockSpace(node, GetID(GetID("top"), id), dock_node.children[0], style);
 
-            ResizeHandle(node, dock_node, .Y);
+            ResizeHandle(node, dock_node, .Y, style);
 
             DockSpace(node, GetID(GetID("bottom"), id), dock_node.children[1], style);
 
@@ -453,7 +464,7 @@ DockSpace :: (parent : *Node, id : ID, dock_node : *DockNode, style : *DockSpace
 
             DockSpace(node, GetID(GetID("left"), id), dock_node.children[0], style);
 
-            ResizeHandle(node, dock_node, .X);
+            ResizeHandle(node, dock_node, .X, style);
 
             DockSpace(node, GetID(GetID("right"), id), dock_node.children[1], style);
         }
