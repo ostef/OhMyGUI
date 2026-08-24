@@ -803,7 +803,8 @@ NumberInput :: (
         Arrow(increase_node, SizeFill(), SizeFill(), .Up, .{background_color=style.increase_button.states[GetState(increase_node)].text.text_color});
 
         if increase {
-            value.* = clamp(value.* + step, min, max);
+            multiplier : T = xx ifx GetModState() == .Shift then 10 else 1;
+            value.* = clamp(value.* + step * multiplier, min, max);
             modified = true;
         }
 
@@ -812,7 +813,8 @@ NumberInput :: (
         Arrow(decrease_node, SizeFill(), SizeFill(), .Down, .{background_color=style.decrease_button.states[GetState(decrease_node)].text.text_color});
 
         if decrease {
-            value.* = clamp(value.* - step, min, max);
+            multiplier : T = xx ifx GetModState() == .Shift then 10 else 1;
+            value.* = clamp(value.* - step * multiplier, min, max);
             modified = true;
         }
     }
