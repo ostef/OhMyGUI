@@ -376,24 +376,8 @@ TableHeadersRow :: (table : *Node) {
                         Text(sort_indicator, "%", sort_order);
                     }
 
-                    sort_icon := GetNode(sort_indicator, "icon");
-                    {
-                        SetSize(sort_icon, SizePx(style.header_sort_icon_size), SizePx(style.header_sort_icon_size));
-                        SetBackgroundColor(sort_icon, style.header_text.text_color);
-
-                        if sort_dir == {
-                        case .Ascending;
-                            SetDraw(sort_icon, (draw_list, node) => {
-                                position := (node.rect.xy + node.rect.zw) * 0.5;
-                                DrawEquilateralTriangle(draw_list, position, node.size.x, PI, node.background_color);
-                            });
-                        case .Descending;
-                            SetDraw(sort_icon, (draw_list, node) => {
-                                position := (node.rect.xy + node.rect.zw) * 0.5;
-                                DrawEquilateralTriangle(draw_list, position, node.size.x, 0, node.background_color);
-                            });
-                        }
-                    }
+                    arrow_dir := ifx sort_dir == .Ascending then ArrowDirection.Up else .Down;
+                    Arrow(sort_indicator, SizePx(style.header_sort_icon_size), SizePx(style.header_sort_icon_size), arrow_dir, .{background_color=style.header_text.text_color});
                 }
             }
         }

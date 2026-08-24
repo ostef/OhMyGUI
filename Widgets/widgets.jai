@@ -235,7 +235,14 @@ ProgressBar :: (parent : *Node, value : float, style : *ProgressBarStyle = null,
     return node;
 }
 
-DrawArrow :: (draw_list : *DrawList, node : *Node) {
+ArrowDirection :: enum {
+    Up;
+    Down;
+    Left;
+    Right;
+}
+
+DrawArrow :: (draw_list : *DrawList, node : *Node, rotation : float) {
     if (node.background_color & 0xff) == 0 {
         return;
     }
@@ -244,9 +251,9 @@ DrawArrow :: (draw_list : *DrawList, node : *Node) {
     half_w := node.size.x * 0.5;
     half_h := node.size.y * 0.5;
 
-    p0 := Vec2f.{-half_w, -half_h};
-    p1 := Vec2f.{half_w, -half_h};
-    p2 := Vec2f.{0, half_h};
+    p0 := Rotate(Vec2f.{-half_w, -half_h}, rotation);
+    p1 := Rotate(Vec2f.{half_w, -half_h}, rotation);
+    p2 := Rotate(Vec2f.{0, half_h}, rotation);
 
     DrawShape(draw_list, .{
         shape=Triangle(p0, p1, p2),
@@ -270,10 +277,19 @@ DrawArrow :: (draw_list : *DrawList, node : *Node) {
     });
 }
 
-Arrow :: (parent : *Node, width : Size1D, height : Size1D, style : BoxStyle, location := #caller_location) -> *Node {
+Arrow :: (parent : *Node, width : Size1D, height : Size1D, direction : ArrowDirection, style : BoxStyle, location := #caller_location) -> *Node {
     node := GetNode(parent, location);
     SetSize(node, width, height);
-    SetDraw(node, DrawArrow);
+    if #complete direction == {
+    case .Up;
+        SetDraw(node, #bake_arguments DrawArrow(rotation=PI));
+    case .Down;
+        SetDraw(node, #bake_arguments DrawArrow(rotation=0));
+    case .Left;
+        SetDraw(node, #bake_arguments DrawArrow(rotation=PI * 0.5));
+    case .Right;
+        SetDraw(node, #bake_arguments DrawArrow(rotation=PI * 0.75));
+    }
     Apply(node, style);
 
     return node;

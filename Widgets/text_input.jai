@@ -686,12 +686,24 @@ ParseIntInput :: (str : string, $T : Type) -> bool, T {
     return ok && remainder.count == 0, value;
 }
 
+NumberInputStyle :: struct {
+    text_input : TextInputStyle;
+    increase_decrease_buttons_width := 16.0;
+    increase_button : ButtonStyle;
+    decrease_button : ButtonStyle;
+}
+
+NumberInputFlags :: enum_flags {
+    NoIncreaseDecreaseButtons;
+}
+
 FloatInput :: (
     parent : *Node,
     value : *$T/.[float32, float64],
-    min : T, max : T,
+    min : T, max : T, step : T,
     trailing_digits := 3,
-    style : *TextInputStyle = null,
+    flags : NumberInputFlags = 0,
+    style : *NumberInputStyle = null,
     location := #caller_location
 ) -> submitted : bool, *Node {
     user : struct {
@@ -710,7 +722,7 @@ FloatInput :: (
         return trim(tprint("%", FormatFloat.{value=value, trailing_width=trailing_digits}));
     }
 
-    submitted, node := NumberInput(parent, value, min, max, *user, FromString, ToString, style=style, location=location);
+    submitted, node := NumberInput(parent, value, min, max, step, flags, *user, FromString, ToString, style=style, location=location);
 
     return submitted, node;
 }
@@ -718,10 +730,11 @@ FloatInput :: (
 IntInput :: (
     parent : *Node,
     value : *$T/.[u8,s8,u16,s16,u32,s32,u64,s64],
-    min : T, max : T,
+    min : T, max : T, step : T = 1,
     base := 10,
     min_digits := 1,
-    style : *TextInputStyle = null,
+    flags : NumberInputFlags = 0,
+    style : *NumberInputStyle = null,
     location := #caller_location
 ) -> submitted : bool, *Node {
     user : struct {
@@ -731,7 +744,6 @@ IntInput :: (
 
     FromString :: (str : string, node : *Node, user_data : *void) -> bool, T {
         using _ := cast(*type_of(user), user_data);
-
         v, ok, remainder := string_to_int(str, base=base, T=T);
         return ok && remainder.count == 0, v;
     }
@@ -741,7 +753,7 @@ IntInput :: (
         return tprint("%", FormatInt.{value=value, base=base, minimum_digits=min_digits});
     }
 
-    submitted, node := NumberInput(parent, value, min, max, *user, FromString, ToString, style=style, location=location);
+    submitted, node := NumberInput(parent, value, min, max, step, flags, *user, FromString, ToString, style=style, location=location);
 
     return submitted, node;
 }
@@ -749,34 +761,73 @@ IntInput :: (
 NumberInput :: (
     parent : *Node,
     value : *$T/.[u8,s8,u16,s16,u32,s32,u64,s64,float32,float64],
-    min : T, max : T,
+    min : T, max : T, step: T,
+    flags : NumberInputFlags = 0,
     user_data := null,
-    from_string : (str : string, node : *Node, user_data := null) -> (bool, T) = null,
-    to_string : (value : T, node : *Node, user_data := null) -> string = null,
-    flags : TextInputFlags = 0,
-    style : *TextInputStyle = null,
+    from_string : (str : string, node : *Node, user_data : *void) -> (bool, T) = null,
+    to_string : (value : T, node : *Node, user_data : *void) -> string = null,
+    style : *NumberInputStyle = null,
     location := #caller_location
 ) -> submitted : bool, *Node {
-    submitted, node := TextInput(parent, flags, style, location);
+    EnsureStyle(*style, "number_input");
+
+    container : *Node;
+    if !(flags & .NoIncreaseDecreaseButtons) {
+        container = GetNode(parent, location);
+        SetSize(container, SizeFill(), SizeFit());
+        SetLayout(container, .LeftToRight);
+    } else {
+        container = parent;
+    }
+
+    text_input_flags : TextInputFlags;
+    submitted, node := TextInput(container, text_input_flags, *style.text_input, location);
+    modified := submitted;
+
+    if !(flags & .NoIncreaseDecreaseButtons) {
+        increase_decrease := GetNode(container);
+        SetSize(increase_decrease, SizeFit(), SizeFill());
+        SetLayout(increase_decrease, .TopToBottom);
+
+        increase, increase_node := Button(increase_decrease, SizePx(style.increase_decrease_buttons_width), SizeFill(), *style.increase_button);
+        increase_node.flags |= .NoPaddedClip;
+        Arrow(increase_node, SizeFill(), SizeFill(), .Up, .{background_color=style.increase_button.states[GetState(increase_node)].text.text_color});
+
+        if increase {
+            value.* = clamp(value.* + step, min, max);
+            modified = true;
+        }
+
+        decrease, decrease_node := Button(increase_decrease, SizePx(style.increase_decrease_buttons_width), SizeFill(), *style.decrease_button);
+        decrease_node.flags |= .NoPaddedClip;
+        Arrow(decrease_node, SizeFill(), SizeFill(), .Down, .{background_color=style.decrease_button.states[GetState(decrease_node)].text.text_color});
+
+        if decrease {
+            value.* = clamp(value.* - step, min, max);
+            modified = true;
+        }
+    }
 
     if submitted {
+        value.* = clamp(value.*, min, max);
+
         str := GetTextInputResult(node);
 
         #if T == float32 {
-            f := ifx from_string then from_string else (str : string, node : *Node, user_data := null) -> (bool, T) { v, ok, remainder := string_to_float(str); return ok && remainder.count == 0, v; };
+            f := ifx from_string then from_string else (str : string, node : *Node, user_data : *void) -> (bool, T) { v, ok, remainder := string_to_float(str); return ok && remainder.count == 0, v; };
             ok, result := f(str, node, user_data);
             if ok {
                 value.* = result;
             }
         } else #if T == float64 {
-            f := ifx from_string then from_string else (str : string, node : *Node, user_data := null) -> (bool, T) { v, ok, remainder := string_to_float64(str); return ok && remainder.count == 0, v; };
-            ok, result := f(str, user_data);
+            f := ifx from_string then from_string else (str : string, node : *Node, user_data : *void) -> (bool, T) { v, ok, remainder := string_to_float64(str); return ok && remainder.count == 0, v; };
+            ok, result := f(str, node, user_data);
             if ok {
                 value.* = result;
             }
         } else {
-            f := ifx from_string then from_string else (str : string, node : *Node, user_data := null) -> (bool, T) { v, ok, remainder := string_to_int(str, T=T); return ok && remainder.count == 0, v; };
-            ok, result := f(str, user_data);
+            f := ifx from_string then from_string else (str : string, node : *Node, user_data : *void) -> (bool, T) { v, ok, remainder := string_to_int(str, T=T); return ok && remainder.count == 0, v; };
+            ok, result := f(str, node, user_data);
             if ok {
                 value.* = result;
             }
@@ -786,11 +837,7 @@ NumberInput :: (
         SetTextInputResult(node, str);
     }
 
-    if submitted {
-        value.* = clamp(value.*, min, max);
-    }
-
-    return submitted, node;
+    return modified, node;
 }
 
 TextInput :: (parent : *Node, flags : TextInputFlags = 0, style : *TextInputStyle = null, location := #caller_location) -> submitted : bool, *Node {

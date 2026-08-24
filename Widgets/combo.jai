@@ -90,7 +90,7 @@ Combo :: (
 
         Apply(text_node, style.button.states[state].text);
 
-        Arrow(combo, SizePx(style.arrow_size.x), SizePx(style.arrow_size.y), style=.{background_color=style.button.states[state].text.text_color});
+        Arrow(combo, SizePx(style.arrow_size.x), SizePx(style.arrow_size.y), .Down, style=.{background_color=style.button.states[state].text.text_color});
     }
 
     modified := false;

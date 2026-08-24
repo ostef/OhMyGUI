@@ -871,16 +871,16 @@ ColorPicker :: (
             SetChildGap(hsv_inputs, 4, 0);
 
             h_field := LabelAndContent(hsv_inputs, "H", style=*label_and_content_style);
-            data.modifying_hsv |= FloatInput(h_field, *data.hsv.hue, 0, 360, trailing_digits=2);
+            data.modifying_hsv |= FloatInput(h_field, *data.hsv.hue, 0, 360, 1, trailing_digits=2);
 
             s_field := LabelAndContent(hsv_inputs, "S", style=*label_and_content_style);
-            data.modifying_hsv |= FloatInput(s_field, *data.hsv.saturation, 0, 1);
+            data.modifying_hsv |= FloatInput(s_field, *data.hsv.saturation, 0, 1, 0.1);
 
             v_field := LabelAndContent(hsv_inputs, "V", style=*label_and_content_style);
-            data.modifying_hsv |= FloatInput(v_field, *data.hsv.value, 0, 1);
+            data.modifying_hsv |= FloatInput(v_field, *data.hsv.value, 0, 1, 0.1);
 
             hsva_field := LabelAndContent(hsv_inputs, "A", style=*label_and_content_style);
-            FloatInput(hsva_field, *color.w, 0, 1);
+            FloatInput(hsva_field, *color.w, 0, 1, 0.1);
 
             rgb_inputs := GetNode(inputs);
             SetSize(rgb_inputs, SizeFill(), SizeFit());
@@ -888,21 +888,21 @@ ColorPicker :: (
             SetChildGap(rgb_inputs, 4, 0);
 
             r_field := LabelAndContent(rgb_inputs, "R", style=*label_and_content_style);
-            rgb_modified := FloatInput(r_field, *color.x, 0, 1);
+            rgb_modified := FloatInput(r_field, *color.x, 0, 1, 0.1);
 
             g_field := LabelAndContent(rgb_inputs, "G", style=*label_and_content_style);
-            rgb_modified |= FloatInput(g_field, *color.y, 0, 1);
+            rgb_modified |= FloatInput(g_field, *color.y, 0, 1, 0.1);
 
             b_field := LabelAndContent(rgb_inputs, "B", style=*label_and_content_style);
-            rgb_modified |= FloatInput(b_field, *color.z, 0, 1);
+            rgb_modified |= FloatInput(b_field, *color.z, 0, 1, 0.1);
 
             rgba_field := LabelAndContent(rgb_inputs, "A", style=*label_and_content_style);
-            FloatInput(rgba_field, *color.w, 0, 1);
+            FloatInput(rgba_field, *color.w, 0, 1, 0.1);
 
             hex_field := LabelAndContent(inputs, "Hex", style=*label_and_content_style);
 
             hex := cast(u32, ColorU32(color));
-            if IntInput(hex_field, *hex, 0, 0xffffffff, base=16, min_digits=8) {
+            if IntInput(hex_field, *hex, 0, 0xffffffff, flags=.NoIncreaseDecreaseButtons, base=16, min_digits=8) {
                 color.* = ColorVec4f(xx hex);
                 rgb_modified = true;
             }
@@ -1015,7 +1015,7 @@ ColorInputFlags :: enum_flags {
 
 ColorInputStyle :: struct {
     label_and_content : LabelAndContentStyle;
-    number_input : TextInputStyle;
+    number_input : NumberInputStyle;
     preview : ColorPreviewStyle;
     number_input_gap : s8;
     preview_gap : s8;
@@ -1081,17 +1081,17 @@ ColorInput :: (
         SetChildGap(inputs, style.number_input_gap, 0);
 
         r_field := LabelAndContent(inputs, "R", style=*style.label_and_content);
-        modified |= FloatInput(r_field, *value.x, 0, 1, style=*style.number_input);
+        modified |= FloatInput(r_field, *value.x, 0, 1, 0.1, style=*style.number_input);
 
         g_field := LabelAndContent(inputs, "G", style=*style.label_and_content);
-        modified |= FloatInput(g_field, *value.y, 0, 1, style=*style.number_input);
+        modified |= FloatInput(g_field, *value.y, 0, 1, 0.1, style=*style.number_input);
 
         b_field := LabelAndContent(inputs, "B", style=*style.label_and_content);
-        modified |= FloatInput(b_field, *value.z, 0, 1, style=*style.number_input);
+        modified |= FloatInput(b_field, *value.z, 0, 1, 0.1, style=*style.number_input);
 
         if !(flags & .NoAlpha) {
             a_field := LabelAndContent(inputs, "A", style=*style.label_and_content);
-            modified |= FloatInput(a_field, *value.w, 0, 1, style=*style.number_input);
+            modified |= FloatInput(a_field, *value.w, 0, 1, 0.1, style=*style.number_input);
         }
 
         if !(flags & .NoPreview) {
