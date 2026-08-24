@@ -215,7 +215,7 @@ EditorFrame :: () {
 
             file_menu := OMG.Menu(title_menu_bar, "File");
             if file_menu {
-                new_menu := OMG.SubMenu(file_menu, "New");
+                new_menu := OMG.Menu(file_menu, "New");
                 if new_menu {
                     if OMG.MenuItem(new_menu, "World") {
                         print("World\n");

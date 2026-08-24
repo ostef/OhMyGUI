@@ -42,6 +42,16 @@ MenuItem :: (parent : *Node, text : string, selected := false, style : *ButtonSt
     }
 }
 
+MenuData :: struct {
+    parent_menu : *Node;
+    submenus : [..]*Node;
+}
+
+DestroyMenuData :: (node : *Node, data : *void) {
+    using _ := cast(*MenuData, data);
+    array_reset(*submenus);
+}
+
 MenuStyle :: struct {
     using background : BoxStyle;
     min_width_px := 50.0;
@@ -67,21 +77,38 @@ Menu :: (
     EnsureStyle(*menu_item_style, "menu_item");
     EnsureStyle(*menu_style, "menu");
 
+    parent_menu_data := GetUserData(parent, MenuData);
+
     popup_root := GetPopupRoot(parent.window);
-    menu_id := GetID(GetID(location), popup_root.id);
+    prev_frame_menu := FindPrevFrameNode(popup_root, GetID(location));
+    menu_data := ifx prev_frame_menu then GetUserData(prev_frame_menu, MenuData);
 
     menu_item := GetNode(parent, location);
     {
-        SetSize(menu_item, SizeFit(), SizeFit());
+        if parent_menu_data {
+            SetSize(menu_item, SizeFill(), SizeFit());
+        } else {
+            SetSize(menu_item, SizeFit(), SizeFit());
+        }
 
         text_node := GetNode(menu_item, "text");
         SetText(text_node, text);
 
+        // Deactivate the menu if we pressed outside the hierarchy of the menu or any submenus
         should_deactivate := IsKeyPressed(.Escape);
-        if menu_item.state_flags & .ActiveLastFrame && !(menu_item.state_flags & .Focused) && IsAnyMouseButtonPressed() {
-            if !IsInTree(context.omg.mouse_hovered_node, menu_id) {
-                should_deactivate = true;
+        if prev_frame_menu && menu_item.state_flags & .ActiveLastFrame && !(menu_item.state_flags & .Focused) && IsAnyMouseButtonPressed() {
+            is_in_menu := IsInTree(context.omg.mouse_hovered_node, prev_frame_menu);
+
+            if menu_data && !is_in_menu {
+                for menu_data.submenus {
+                    if IsInTree(context.omg.mouse_hovered_node, it) {
+                        is_in_menu = true;
+                        break;
+                    }
+                }
             }
+
+            should_deactivate = !is_in_menu;
         }
 
         button := ButtonBehavior(menu_item);
@@ -97,27 +124,26 @@ Menu :: (
 
     menu : *Node;
     if menu_item.state_flags & .Active {
-        menu = GetPopupNode(parent.window, location);
+        menu = GetNode(popup_root, location);
+        assert(prev_frame_menu == null || menu == prev_frame_menu);
         {
             SetLayout(menu, .TopToBottom);
             SetSize(menu, SizeFit(), SizeFit());
 
             BringForward(menu);
 
-            menu.offset = .{menu_item.rect.x, menu_item.rect.w};
+            menu_data = AddUserData(menu, MenuData, DestroyMenuData);
+            array_reset_keeping_memory(*menu_data.submenus);
+
+            if parent_menu_data {
+                array_add(*parent_menu_data.submenus, menu);
+                menu.offset = .{menu_item.rect.z, menu_item.rect.y};
+            } else {
+                menu.offset = .{menu_item.rect.x, menu_item.rect.w};
+            }
+
             Apply(menu, menu_style);
         }
-    }
-
-    return menu, menu_item;
-}
-
-SubMenu :: (parent : *Node, text : string, menu_item_style : *ButtonStyle = null, menu_style : *MenuStyle = null, location := #caller_location) -> menu : *Node, menu_item : *Node {
-    menu, menu_item := Menu(parent, text, menu_item_style, menu_style, location);
-    SetWidth(menu_item, SizeFill());
-
-    if menu {
-        menu.offset = .{menu_item.rect.z, menu_item.rect.y};
     }
 
     return menu, menu_item;

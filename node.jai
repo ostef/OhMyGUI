@@ -530,6 +530,20 @@ FindNode :: (parent : *Node, id : ID) -> *Node {
     return null;
 }
 
+FindPrevFrameNode :: inline (parent : *Node, str_id : string) -> *Node {
+    return FindPrevFrameNode(parent, GetID(str_id));
+}
+
+FindPrevFrameNode :: (parent : *Node, id : ID) -> *Node {
+    for :PrevFrameChildren parent {
+        if it.local_id == id {
+            return it;
+        }
+    }
+
+    return null;
+}
+
 GetNode :: (window : *Window) -> *Node, is_new : bool {
     is_new : bool;
 
@@ -565,21 +579,10 @@ GetNode :: (parent : *Node, id : ID, is_global_id := false) -> *Node, is_new : b
     assert(parent != null && parent.last_used_on_frame == context.omg.frame_index);
     assert(parent.window != null);
 
-    node : *Node;
-    for :PrevFrameChildren parent {
-        if it.local_id == id {
-            node = it;
-            break;
-        }
-    }
+    node := FindPrevFrameNode(parent, id);
 
     if !node {
-        for :Children parent {
-            if it.local_id == id {
-                node = it;
-                break;
-            }
-        }
+        node = FindNode(parent, id);
     }
 
     is_new : bool;
