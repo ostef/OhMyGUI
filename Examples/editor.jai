@@ -99,54 +99,6 @@ FillEntities :: () {
     }
 }
 
-Panel :: (parent : *OMG.Node, str_id : string, title : string) -> *OMG.Node {
-    base_background_color := OMG.GetStyle("base", OMG.BoxStyle).background_color;
-
-    panel := OMG.GetNode(parent, str_id);
-    {
-        OMG.SetLayout(panel, .TopToBottom);
-        OMG.SetSize(panel, OMG.SizeFill());
-
-        OMG.SetBackgroundColor(panel, base_background_color);
-        OMG.SetBorderColor(panel, OMG.MakeTone(base_background_color, 0.2));
-        OMG.SetBorderSize(panel, 1);
-
-        title_bar := OMG.GetNode(panel, "title_bar");
-        {
-            OMG.SetSize(title_bar, OMG.SizeFill(), OMG.SizePx(32));
-            OMG.SetPadding(title_bar, 10, 4);
-            OMG.SetChildAlign(title_bar, 0, 0.5);
-
-            OMG.SetBackgroundColor(title_bar, base_background_color);
-            OMG.SetBorderColor(title_bar, OMG.MakeTone(base_background_color, 0.2));
-            OMG.SetBorderSize(title_bar, 1);
-
-            OMG.Text(title_bar, title);
-        }
-
-        content_and_scrollbar := OMG.GetNode(panel, "content_and_scrollbar");
-        {
-            OMG.SetLayout(content_and_scrollbar, .LeftToRight);
-            OMG.SetSize(content_and_scrollbar, OMG.SizeFill());
-
-            content := OMG.GetNode(content_and_scrollbar, "content");
-            {
-                OMG.SetLayout(content, .TopToBottom);
-                OMG.SetSize(content, OMG.SizeFill());
-                OMG.SetPadding(content, 10, 10);
-
-                OMG.ScrollViewBehavior(content, .Y);
-            }
-
-            if content.children_size.y > content.size.y - content.padding.y - content.padding.w {
-                OMG.Scrollbar(content_and_scrollbar, content, .Y);
-            }
-
-            return content;
-        }
-    }
-}
-
 g_wants_switch_theme : bool;
 
 EditorFrame :: () {
@@ -358,112 +310,94 @@ EditorFrame :: () {
             });
         }
 
-        content := OMG.GetNode(root, "content");
+        OMG.DockSpace(root, "dockspace");
+
+        tabs_subwindow := OMG.Subwindow(window, "Tabs", "tabs", .{250, 250});
+        if tabs_subwindow {
+            tab_bar := OMG.TabBar(tabs_subwindow);
+            if OMG.Tab(tab_bar, "One", "one") {
+                OMG.Text(tabs_subwindow, "One");
+            }
+            if OMG.Tab(tab_bar, "Two", "two") {
+                OMG.Text(tabs_subwindow, "Two");
+            }
+            if OMG.Tab(tab_bar, "Three", "three") {
+                OMG.Text(tabs_subwindow, "Three");
+            }
+            if OMG.Tab(tab_bar, "Four", "four") {
+                OMG.Text(tabs_subwindow, "Four");
+            }
+        }
+
+        content_browser := OMG.Subwindow(window, "Content Browser", "content_browser", .{400, 500});
         {
-            OMG.SetSize(content, OMG.SizeFill());
+            OMG.Text(content_browser, "% nodes", context.omg.node_pool.count);
 
-            left_side := OMG.GetNode(content, "left_side");
+            OMG.Text(content_browser, "CPU: % ms", (g_user_time + context.omg.total_time_last_frame) * 1000);
+            OMG.Text(content_browser, "\tRender: % ms", context.omg.total_time_last_frame * 1000);
+            OMG.Text(content_browser, "\t\tLayout: % ms", context.omg.layout_time_last_frame * 1000);
+            OMG.Text(content_browser, "\t\tDraw: % ms", context.omg.draw_time_last_frame * 1000);
+            OMG.Text(content_browser, "\tUser: % ms", g_user_time * 1000);
+            OMG.Text(content_browser, "GPU: % ms", OMG_GL.GetLastFrameGPUTime() * 1000);
+            OMG.Text(content_browser, "GPU buffers: % MiB", OMG_GL.GetLastFrameMemoryUsage() / (1024.0 * 1024.0));
+
+            password_field := OMG.GetNode(content_browser, "password_field");
             {
-                OMG.SetSize(left_side, OMG.SizeFill());
-                OMG.SetLayout(left_side, .TopToBottom);
+                OMG.SetSize(password_field, OMG.SizeFill(0.3), OMG.SizeFit());
+                OMG.SetLayout(password_field, .LeftToRight);
+                OMG.SetChildAlign(password_field, 0, 0.5);
+                OMG.SetChildGap(password_field, 6, 6);
 
-                dock, dock_node := OMG.DockSpace(left_side, "dockspace");
-                // if g_frame_index == 0 {
-                //     OMG.DockSubwindow(dock_node, "color_picker");
-                //     OMG.DockSubwindow(dock_node, "tabs");
-                // }
+                text_input_submitted, text_input := OMG.TextInput(password_field, ifx !g_show_password then .Password);
 
-                tabs_subwindow := OMG.Subwindow(window, "Tabs", "tabs", .{250, 250});
-                if tabs_subwindow {
-                    tab_bar := OMG.TabBar(tabs_subwindow);
-                    if OMG.Tab(tab_bar, "One", "one") {
-                        OMG.Text(tabs_subwindow, "One");
-                    }
-                    if OMG.Tab(tab_bar, "Two", "two") {
-                        OMG.Text(tabs_subwindow, "Two");
-                    }
-                    if OMG.Tab(tab_bar, "Three", "three") {
-                        OMG.Text(tabs_subwindow, "Three");
-                    }
-                    if OMG.Tab(tab_bar, "Four", "four") {
-                        OMG.Text(tabs_subwindow, "Four");
-                    }
+                if text_input_submitted {
+                    text := OMG.GetTextInputResult(text_input ,, temp);
+                    print("%\n", text);
                 }
 
-                content_browser := Panel(left_side, "content_browser", "Content Browser");
-                {
-                    OMG.SetHeight(content_browser, OMG.SizeFill(0.9));
+                OMG.Text(password_field, "Show Password:");
+                OMG.Checkbox(password_field, *g_show_password);
+            }
 
-                    OMG.SetPadding(content_browser, 12, 12);
-                    OMG.SetChildGap(content_browser, 4, 4);
+            fields := OMG.GetNode(content_browser);
+            {
+                OMG.SetSize(fields, OMG.SizeFill(0.3), OMG.SizeFit());
+                OMG.SetLayout(fields, .TopToBottom);
+                OMG.SetChildGap(fields, 0, 10);
 
-                    OMG.Text(content_browser, "% nodes", context.omg.node_pool.count);
+                OMG.Slider(fields, *g_slider_value, 0, 1, 0.1);
+                OMG.FillSlider(fields, *g_slider_value, 0, 1, 0.1);
+                OMG.KnobSlider(fields, *g_slider_value, 0, 1, 0.1);
 
-                    OMG.Text(content_browser, "CPU: % ms", (g_user_time + context.omg.total_time_last_frame) * 1000);
-                    OMG.Text(content_browser, "\tRender: % ms", context.omg.total_time_last_frame * 1000);
-                    OMG.Text(content_browser, "\t\tLayout: % ms", context.omg.layout_time_last_frame * 1000);
-                    OMG.Text(content_browser, "\t\tDraw: % ms", context.omg.draw_time_last_frame * 1000);
-                    OMG.Text(content_browser, "\tUser: % ms", g_user_time * 1000);
-                    OMG.Text(content_browser, "GPU: % ms", OMG_GL.GetLastFrameGPUTime() * 1000);
-                    OMG.Text(content_browser, "GPU buffers: % MiB", OMG_GL.GetLastFrameMemoryUsage() / (1024.0 * 1024.0));
+                OMG.Separator(fields);
 
-                    password_field := OMG.GetNode(content_browser, "password_field");
-                    {
-                        OMG.SetSize(password_field, OMG.SizeFill(0.3), OMG.SizeFit());
-                        OMG.SetLayout(password_field, .LeftToRight);
-                        OMG.SetChildAlign(password_field, 0, 0.5);
-                        OMG.SetChildGap(password_field, 6, 6);
+                if OMG.EnumCombo(fields, *g_selected_fruit) {
+                    print("Selected: %\n", g_selected_fruit);
+                }
 
-                        text_input_submitted, text_input := OMG.TextInput(password_field, ifx !g_show_password then .Password);
+                OMG.ColorInput(fields, *g_color);
 
-                        if text_input_submitted {
-                            text := OMG.GetTextInputResult(text_input ,, temp);
-                            print("%\n", text);
-                        }
+                OMG.Separator(fields);
 
-                        OMG.Text(password_field, "Show Password:");
-                        OMG.Checkbox(password_field, *g_show_password);
-                    }
+                for type_info(type_of(g_selected_fruit)).values {
+                    OMG.PushIDOffset(xx it);
+                    defer OMG.PopIDOffset();
 
-                    fields := OMG.GetNode(content_browser);
-                    {
-                        OMG.SetSize(fields, OMG.SizeFill(0.3), OMG.SizeFit());
-                        OMG.SetLayout(fields, .TopToBottom);
-                        OMG.SetChildGap(fields, 0, 10);
+                    field := OMG.GetNode(fields);
+                    OMG.SetSize(field, OMG.SizeFill(), OMG.SizeFit());
+                    OMG.SetChildAlign(field, 0, 0.5);
+                    OMG.SetChildGap(field, 8, 0);
 
-                        OMG.Slider(fields, *g_slider_value, 0, 1, 0.1);
-                        OMG.FillSlider(fields, *g_slider_value, 0, 1, 0.1);
-                        OMG.KnobSlider(fields, *g_slider_value, 0, 1, 0.1);
+                    OMG.RadioButton(field, *g_selected_fruit, xx it);
+                    OMG.Text(field, "%", type_info(type_of(g_selected_fruit)).names[it_index]);
+                }
 
-                        OMG.Separator(fields);
+                OMG.Separator(fields);
 
-                        if OMG.EnumCombo(fields, *g_selected_fruit) {
-                            print("Selected: %\n", g_selected_fruit);
-                        }
+                OMG.ProgressBar(fields, (cos(g_time) + 1) * 0.5);
+            }
 
-                        OMG.ColorInput(fields, *g_color);
-
-                        OMG.Separator(fields);
-
-                        for type_info(type_of(g_selected_fruit)).values {
-                            OMG.PushIDOffset(xx it);
-                            defer OMG.PopIDOffset();
-
-                            field := OMG.GetNode(fields);
-                            OMG.SetSize(field, OMG.SizeFill(), OMG.SizeFit());
-                            OMG.SetChildAlign(field, 0, 0.5);
-                            OMG.SetChildGap(field, 8, 0);
-
-                            OMG.RadioButton(field, *g_selected_fruit, xx it);
-                            OMG.Text(field, "%", type_info(type_of(g_selected_fruit)).names[it_index]);
-                        }
-
-                        OMG.Separator(fields);
-
-                        OMG.ProgressBar(fields, (cos(g_time) + 1) * 0.5);
-                    }
-
-                    OMG.Separator(content_browser);
+            OMG.Separator(content_browser);
 
 Text :: #string END
 The quick brown fox jumps over the lazy dog?
@@ -473,85 +407,75 @@ THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG!
 Voix ambiguë d'un cœur qui, au zéphyr, préfère les jattes de kiwis.
 END
 
-                    _, _, the_quick := OMG.ClickableText(content_browser, Text);
-                    OMG.SetWidth(the_quick, OMG.SizeFill());
-                    the_quick.flags |= .WrapText;
-                    the_quick.text_size = 10 + (cos(g_time) + 2) * 0.5 * 30;
+            _, _, the_quick := OMG.ClickableText(content_browser, Text);
+            OMG.SetWidth(the_quick, OMG.SizeFill());
+            the_quick.flags |= .WrapText;
+            the_quick.text_size = 10 + (cos(g_time) + 2) * 0.5 * 30;
+        }
+
+        entity_outliner := OMG.Subwindow(window, "Entity Outliner", "entity_outliner", .{400, 500});
+        {
+            table := OMG.Table(entity_outliner);
+            OMG.TableAddColumn(table, "ID", "id", OMG.SizeFill(0.2), flags=.Sortable);
+            OMG.TableAddColumn(table, "Name", "name", OMG.SizeFill(0.4), flags=.Sortable);
+            OMG.TableAddColumn(table, "Type", "type", OMG.SizeFill(0.4), flags=.Sortable);
+            OMG.TableHeadersRow(table);
+
+            sort_params := OMG.GetTableSortParams(table);
+            if sort_params && sort_params.modified {
+                SortEntities(sort_params);
+            }
+
+            for g_entities {
+                cell := OMG.TableNextRow(table);
+
+                OMG.Text(cell, "%", it.id);
+
+                cell = OMG.TableNextColumn(table);
+
+                if it.name {
+                    OMG.Text(cell, "%", it.name);
+                } else {
+                    text := OMG.Text(cell, "Unnamed");
+                    OMG.SetAlpha(*text.text_color, 0.5);
+                }
+
+                cell = OMG.TableNextColumn(table);
+
+                OMG.Text(cell, "%", it.type);
+            }
+        }
+
+        entity_inspector := OMG.Subwindow(window, "Entity Inspector", "entity_inspector", .{400, 500});
+        {
+            tree1 := OMG.TreeNode(entity_inspector, "1", flags=.OpenByDefault);
+            if tree1 {
+                tree1_1 := OMG.TreeNode(tree1, "1.1");
+                if tree1_1 {
+                    OMG.TreeNode(tree1_1, "1.1.1", .Leaf);
+                }
+
+                OMG.TreeNode(tree1, "1.2", .Leaf);
+            }
+
+            tree2 := OMG.TreeNode(entity_inspector, "2");
+            if tree2 {
+                tree2_1 := OMG.TreeNode(tree2, "2.1");
+                if tree2_1 {
+                    OMG.TreeNode(tree2_1, "2.1.1", .Leaf);
+                }
+
+                OMG.TreeNode(tree2, "2.2", .Leaf);
+            }
+
+            InfiniteTreeNode :: (parent : *OMG.Node, location := #caller_location) {
+                tree := OMG.TreeNode(parent, "Infinity Tree");
+                if tree {
+                    InfiniteTreeNode(tree);
                 }
             }
 
-            if content.size.x > 500 {
-                right_side := OMG.GetNode(content, "right_side");
-                {
-                    OMG.SetSize(right_side, OMG.SizePx(400), OMG.SizeFill());
-                    OMG.SetLayout(right_side, .TopToBottom);
-
-                    entity_outliner := Panel(right_side, "entity_outliner", "Entity Outliner");
-                    {
-                        table := OMG.Table(entity_outliner);
-                        OMG.TableAddColumn(table, "ID", "id", OMG.SizeFill(0.2), flags=.Sortable);
-                        OMG.TableAddColumn(table, "Name", "name", OMG.SizeFill(0.4), flags=.Sortable);
-                        OMG.TableAddColumn(table, "Type", "type", OMG.SizeFill(0.4), flags=.Sortable);
-                        OMG.TableHeadersRow(table);
-
-                        sort_params := OMG.GetTableSortParams(table);
-                        if sort_params && sort_params.modified {
-                            SortEntities(sort_params);
-                        }
-
-                        for g_entities {
-                            cell := OMG.TableNextRow(table);
-
-                            OMG.Text(cell, "%", it.id);
-
-                            cell = OMG.TableNextColumn(table);
-
-                            if it.name {
-                                OMG.Text(cell, "%", it.name);
-                            } else {
-                                text := OMG.Text(cell, "Unnamed");
-                                OMG.SetAlpha(*text.text_color, 0.5);
-                            }
-
-                            cell = OMG.TableNextColumn(table);
-
-                            OMG.Text(cell, "%", it.type);
-                        }
-                    }
-
-                    entity_inspector := Panel(right_side, "entity_inspector", "Entity Inspector");
-                    {
-                        tree1 := OMG.TreeNode(entity_inspector, "1", flags=.OpenByDefault);
-                        if tree1 {
-                            tree1_1 := OMG.TreeNode(tree1, "1.1");
-                            if tree1_1 {
-                                OMG.TreeNode(tree1_1, "1.1.1", .Leaf);
-                            }
-
-                            OMG.TreeNode(tree1, "1.2", .Leaf);
-                        }
-
-                        tree2 := OMG.TreeNode(entity_inspector, "2");
-                        if tree2 {
-                            tree2_1 := OMG.TreeNode(tree2, "2.1");
-                            if tree2_1 {
-                                OMG.TreeNode(tree2_1, "2.1.1", .Leaf);
-                            }
-
-                            OMG.TreeNode(tree2, "2.2", .Leaf);
-                        }
-
-                        InfiniteTreeNode :: (parent : *OMG.Node, location := #caller_location) {
-                            tree := OMG.TreeNode(parent, "Infinity Tree");
-                            if tree {
-                                InfiniteTreeNode(tree);
-                            }
-                        }
-
-                        InfiniteTreeNode(entity_inspector);
-                    }
-                }
-            }
+            InfiniteTreeNode(entity_inspector);
         }
     }
 }
