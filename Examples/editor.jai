@@ -330,7 +330,7 @@ EditorFrame :: () {
         }
 
         content_browser := OMG.Subwindow(window, "Content Browser", "content_browser", .{400, 500});
-        {
+        if content_browser {
             OMG.Text(content_browser, "% nodes", context.omg.node_pool.count);
 
             OMG.Text(content_browser, "CPU: % ms", (g_user_time + context.omg.total_time_last_frame) * 1000);
@@ -414,7 +414,7 @@ END
         }
 
         entity_outliner := OMG.Subwindow(window, "Entity Outliner", "entity_outliner", .{400, 500});
-        {
+        if entity_outliner {
             table := OMG.Table(entity_outliner);
             OMG.TableAddColumn(table, "ID", "id", OMG.SizeFill(0.2), flags=.Sortable);
             OMG.TableAddColumn(table, "Name", "name", OMG.SizeFill(0.4), flags=.Sortable);
@@ -447,7 +447,7 @@ END
         }
 
         entity_inspector := OMG.Subwindow(window, "Entity Inspector", "entity_inspector", .{400, 500});
-        {
+        if entity_inspector {
             tree1 := OMG.TreeNode(entity_inspector, "1", flags=.OpenByDefault);
             if tree1 {
                 tree1_1 := OMG.TreeNode(tree1, "1.1");
