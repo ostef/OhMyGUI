@@ -65,6 +65,13 @@ BoxStyle :: struct {
     inner_shadow_color : RGBA8;
 }
 
+SetColors :: (using style : *StateStyle(BoxStyle), base_background_color : RGBA8) {
+    normal.background_color = base_background_color;
+    focused.background_color = Whiten(base_background_color, 0.05);
+    hot.background_color = Darken(base_background_color, 0.05);
+    active.background_color = Whiten(base_background_color, 0.1);
+}
+
 Apply :: inline (node : *Node, style : BoxStyle) {
     node.padding = style.padding;
     node.child_gap = style.child_gap;
@@ -1065,7 +1072,13 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         tab_bar = theme.tab_bar;
         tab = theme.tab;
 
-        border_color = MakeTone(base_background_color, 0.5);
+        resize_handle.focused.background_color = MakeTone(base_background_color, 0.1);
+        resize_handle.hot.background_color = MakeTone(base_background_color, 0.1);
+        resize_handle.active.background_color = Whiten(base_accent_color, 0.1);
+
+        for * resize_handle.states {
+            it.corner_radiuses = Vec4f.{1,1,1,1} * resize_handle_size * 0.5;
+        }
 
         background.background_color = base_background_color;
 
