@@ -436,7 +436,7 @@ Init :: (platform_funcs : PlatformFunctions, renderer_funcs : RendererFunctions)
     );
 
     SetTheme(*g_default_theme_dark);
-}
+} @Profile
 
 Terminate :: () {
     while context.omg.windows {
@@ -464,7 +464,7 @@ Terminate :: () {
 
     free(context.omg);
     context.omg = null;
-}
+} @Profile
 
 SetMouseFocus :: inline (node : *Node) {
     if context.omg.mouse_focused_node {
@@ -560,7 +560,7 @@ NewFrame :: (delta_time : float) {
     if omg.mouse_focused_node {
         omg.mouse_focused_node.state_flags |= .Focused;
     }
-}
+} @Profile
 
 Render :: () {
     // @Todo: find a way to not hardcode this
@@ -668,7 +668,7 @@ Render :: () {
 
     total_end := current_time_monotonic();
     omg.total_time_last_frame += xx to_float64_seconds(total_end - total_start);
-}
+} @Profile
 
 LoadImage :: (filename : string) -> TextureHandle, width : u32, height : u32 {
     contents, ok := read_entire_file(filename);
@@ -689,7 +689,7 @@ LoadImage :: (filename : string) -> TextureHandle, width : u32, height : u32 {
     handle := RendererCreateRGBA8Texture(tprint("Texture '%'", filename), data, xx w, xx h);
 
     return handle, xx w, xx h;
-}
+} @Profile
 
 ReadCompileTimeFile :: (filename : string, location := #caller_location) -> string {
     #import "File";

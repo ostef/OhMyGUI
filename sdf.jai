@@ -317,7 +317,7 @@ EvalSDF :: (p : Vec2f, shape : *Shape) -> float {
     }
 
     return FLOAT32_INFINITY;
-}
+} @Profile
 
 GetBounds :: (shape : *Shape) -> Vec4f {
     if shape.bounds != Shape_Bounds_Invalid {
@@ -385,9 +385,9 @@ GetBounds :: (shape : *Shape) -> Vec4f {
     }
 
     return .{};
-}
+} @Profile
 
-IsInside :: (p : Vec2f, shape : *Shape, offset := Vec2f.{}) -> bool {
+IsInside :: inline (p : Vec2f, shape : *Shape, offset := Vec2f.{}) -> bool {
     v := EvalSDF(p - offset, shape);
     return v < 0;
 }

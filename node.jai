@@ -404,7 +404,7 @@ FreeNode :: (node : *Node, free_children := true) {
     if window.popup_root_node == node {
         window.popup_root_node = null;
     }
-}
+} @Profile
 
 PushChild :: (parent : *Node, node : *Node) {
     after := parent.last_child;
@@ -562,7 +562,7 @@ GetNode :: (window : *Window) -> *Node, is_new : bool {
     TouchNode(window.root_node);
 
     return window.root_node, is_new;
-}
+} @Profile
 
 GetNode :: inline (parent : *Node, location := #caller_location, is_global_id := false) -> *Node, is_new : bool {
     node, is_new := GetNode(parent, GetID(location), is_global_id);
@@ -603,7 +603,7 @@ GetNode :: (parent : *Node, id : ID, is_global_id := false) -> *Node, is_new : b
     TouchNode(node);
 
     return node, is_new;
-}
+} @Profile
 
 GetPopupNode :: inline (window : *Window, location := #caller_location, is_global_id := true) -> *Node, is_new : bool {
     node, is_new := GetNode(GetPopupRoot(window), location, is_global_id);

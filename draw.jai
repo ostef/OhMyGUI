@@ -342,7 +342,7 @@ ClipBoxAgainstBox :: (a : ClipBox, b : ClipBox) -> ClipBox {
     }
 
     return .{bounds=clipped_bounds, corner_radiuses=new_corner_radiuses};
-}
+} @Profile
 
 PushClipBox :: (draw_list : *DrawList, bounds : Vec4f, corner_radiuses : Vec4f = .{}) {
     box := array_add(*draw_list.clip_boxes);
@@ -478,7 +478,7 @@ DrawTriangle :: (draw_list : *DrawList, triangle : TriangleDrawing, texture : Te
     return draw_list.triangles.count - 1;
 }
 
-DrawText :: (
+DrawText :: inline (
     draw_list : *DrawList,
     font : *Font,
     position : Vec2f,
@@ -602,7 +602,7 @@ DrawWrappedText :: (
             }
         }
     }
-}
+} @Profile
 
 DrawShape :: inline (draw_list : *DrawList, shape : *Shape, position : Vec2f, color : RGBA8) -> int {
     return DrawShape(draw_list, .{
@@ -638,7 +638,7 @@ DrawShape :: (draw_list : *DrawList, drawing : ShapeDrawing, texture : TextureHa
     ptr.clip_box_index = GetCurrentClipBoxIndex(draw_list);
 
     return draw_list.shapes.count - 1;
-}
+} @Profile
 
 DrawNodeDefault :: (draw_list : *DrawList, node : *Node) {
     DrawBox(draw_list, .{
@@ -702,7 +702,7 @@ DrawNodeDefault :: (draw_list : *DrawList, node : *Node) {
             node.text_effects
         );
     }
-}
+} @Profile
 
 FlattenShapes :: (shape : *Shape, buffer : *[..]ShaderShape) -> u32 {
     num_shapes : u32;
@@ -782,7 +782,7 @@ FlattenShapes :: (shape : *Shape, buffer : *[..]ShaderShape) -> u32 {
     num_shapes += 1;
 
     return num_shapes;
-}
+} @Profile
 
 DrawNodes :: (draw_list : *DrawList, node : *Node) {
     if IsClipped(draw_list, node.rect) {
@@ -813,7 +813,7 @@ DrawNodes :: (draw_list : *DrawList, node : *Node) {
             PopClipBox(*node.window.draw_list);
         }
     }
-}
+} @Profile
 
 DrawCheckerboard :: (draw_list : *DrawList, rect : Vec4f, checker_size : float, white : RGBA8, black : RGBA8) {
     if white & 0xff == 0 && black & 0xff == 0 {
@@ -842,7 +842,7 @@ DrawCheckerboard :: (draw_list : *DrawList, rect : Vec4f, checker_size : float, 
         white_square_x = !white_square_x;
         px += checker_size;
     }
-}
+} @Profile
 
 DrawEquilateralTriangle :: (draw_list : *DrawList, position : Vec2f, size : float, rotation : float, color : RGBA8) {
     h := sqrt(size * size - (size * 0.5) * (size * 0.5));
@@ -858,4 +858,4 @@ DrawEquilateralTriangle :: (draw_list : *DrawList, position : Vec2f, size : floa
     }
 
     DrawTriangle(draw_list, position + p0, position + p1, position + p2, color);
-}
+} @Profile

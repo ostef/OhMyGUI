@@ -80,7 +80,7 @@ LoadDefaultFonts :: () {
 
     bold := LoadFontFromMemory("__default_bold", Roboto_Bold, config);
     assert(bold != null, "Could not load default bold font");
-}
+} @Profile
 
 LoadFontFromFile :: (filename : string, config : FontConfig) -> *Font {
     return LoadFontFromFile(basename(filename), filename, config);
@@ -99,7 +99,7 @@ LoadFontFromFile :: (name : string, filename : string, config : FontConfig) -> *
     }
 
     return font;
-}
+} @Profile
 
 LoadFontFromMemory :: (name : string, data : string, config : FontConfig) -> *Font {
     if !g_ft_lib {
@@ -171,7 +171,7 @@ LoadFontFromMemory :: (name : string, data : string, config : FontConfig) -> *Fo
     context.omg.fonts = font;
 
     return font;
-}
+} @Profile
 
 DestroyFont :: (font : *Font) {
     if font.prev {
@@ -190,7 +190,7 @@ DestroyFont :: (font : *Font) {
     HT.deinit(*font.glyph_map);
 
     free(font);
-}
+} @Profile
 
 GetFont :: (name : string) -> *Font {
     font := context.omg.fonts;
@@ -206,7 +206,7 @@ GetFont :: (name : string) -> *Font {
 }
 
 GetGlyph :: (font : *Font, codepoint : u32, replace_if_missing := true) -> *Glyph {
-    if codepoint < 128 {
+    if codepoint < 128 #no_abc {
         glyph := *font.ascii_glyphs[codepoint];
         if glyph.codepoint != codepoint {
             return ifx replace_if_missing then *font.unicode_replacement_glyph else null;
@@ -227,7 +227,7 @@ GetGlyph :: (font : *Font, codepoint : u32, replace_if_missing := true) -> *Glyp
     }
 
     return glyph;
-}
+} @Profile
 
 #scope_file
 
@@ -295,7 +295,7 @@ LoadGlyph :: (font : *Font, codepoint : u32, ft_face : FT_Face, packer : *RectPa
         if existing_glyph.codepoint == Unicode_Replacement {
             return existing_glyph;
         }
-    } else if codepoint < 128 {
+    } else if codepoint < 128 #no_abc {
         existing_glyph := *font.ascii_glyphs[codepoint];
         if existing_glyph.codepoint == codepoint {
             return existing_glyph;
@@ -358,13 +358,13 @@ LoadGlyph :: (font : *Font, codepoint : u32, ft_face : FT_Face, packer : *RectPa
     if codepoint == Unicode_Replacement {
         font.unicode_replacement_glyph = glyph;
         return *font.unicode_replacement_glyph;
-    } else if codepoint < 128 {
+    } else if codepoint < 128 #no_abc {
         font.ascii_glyphs[codepoint] = glyph;
         return *font.ascii_glyphs[codepoint];
     } else {
         return HT.table_add(*font.glyph_map, codepoint, glyph);
     }
-}
+} @Profile
 
 #scope_export
 
@@ -547,4 +547,4 @@ CalculateTextSize :: (font : *Font, size : float, text : string) -> Vec2f {
     for iter {}
 
     return iter.computed_size;
-}
+} @Profile

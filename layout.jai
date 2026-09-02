@@ -48,11 +48,11 @@ Size2D :: struct {
     axes : [2]Size1D;
 }
 
-operator*[] :: inline (size : Size2D, index : int) -> *Size1D {
+operator*[] :: inline (size : Size2D, index : int) -> *Size1D #no_abc {
     return *size.axes[index];
 }
 
-operator*[] :: inline (size : Size2D, axis : Axis) -> *Size1D {
+operator*[] :: inline (size : Size2D, axis : Axis) -> *Size1D #no_abc {
     return *size.axes[axis];
 }
 
@@ -166,9 +166,9 @@ SortChildren :: (node : *Node) {
     for :Children node {
         SortChildren(it);
     }
-}
+} @Profile
 
-LayoutNodes :: (root : *Node) {
+LayoutNodes :: (root : *Node) #no_abc {
     assert(root.parent == null);
     assert(root.desired_size.x.kind == .Pixels);
     assert(root.desired_size.y.kind == .Pixels);
@@ -189,9 +189,9 @@ LayoutNodes :: (root : *Node) {
     root.clipped_rect = root.rect;
 
     LayoutPosition(root);
-}
+} @Profile
 
-LayoutFixedAndFitSizing :: (node : *Node, axis : Axis) {
+LayoutFixedAndFitSizing :: (node : *Node, axis : Axis) #no_abc {
     layout_axis := GetLayoutAxis(node);
 
     for :Children node {
@@ -236,9 +236,9 @@ LayoutFixedAndFitSizing :: (node : *Node, axis : Axis) {
         node.size[axis] += ceil((node.num_children - 1) * cast(float, node.child_gap[axis]));
         node.size[axis] = clamp(node.size[axis], node.min_size[axis], node.max_size[axis]);
     }
-}
+} @Profile
 
-LayoutFillAndPercentSizing :: (node : *Node, axis : Axis) {
+LayoutFillAndPercentSizing :: (node : *Node, axis : Axis) #no_abc {
     layout_axis := GetLayoutAxis(node);
 
     for :Children node {
@@ -350,9 +350,9 @@ LayoutFillAndPercentSizing :: (node : *Node, axis : Axis) {
 
         LayoutFillAndPercentSizing(it, axis);
     }
-}
+} @Profile
 
-LayoutPosition :: (node : *Node) {
+LayoutPosition :: (node : *Node) #no_abc {
     if node.child_layout_mode == .None {
         remaining_size := node.size - ToVec2f(node.padding.xy) - ToVec2f(node.padding.zw) - node.children_size;
 
@@ -411,9 +411,9 @@ LayoutPosition :: (node : *Node) {
 
         LayoutPosition(it);
     }
-}
+} @Profile
 
-LayoutWrapText :: (node : *Node) {
+LayoutWrapText :: (node : *Node) #no_abc {
     if (node.flags & .TextNode) && (node.flags & .WrapText) && node.desired_size.y.kind == .FitChildren {
         iter : TextGlyphIterator;
         iter.font = node.font;
@@ -429,4 +429,4 @@ LayoutWrapText :: (node : *Node) {
     for :Children node {
         LayoutWrapText(it);
     }
-}
+} @Profile
