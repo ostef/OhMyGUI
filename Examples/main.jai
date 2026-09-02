@@ -12,6 +12,10 @@ OMG_GL :: #import "OhMyGUI/GL";
 #import "SDL";
 #import "GL";
 
+#if #exists(__Tracy) {
+    Tracy :: __Tracy;
+}
+
 #load "editor.jai";
 
 g_quit := false;
@@ -26,6 +30,13 @@ g_slow_down : bool;
 main :: () {
     #if Memory_Debugger {
         defer report_memory_leaks();
+    }
+
+    #if #exists(Tracy) {
+        Tracy.EnableProfiling();
+        if Tracy.IsProfiling() {
+            print("Profiling is enabled\n");
+        }
     }
 
     window_flags := SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE;
@@ -54,6 +65,10 @@ main :: () {
     while !g_quit {
         reset_temporary_storage();
 
+        #if #exists(Tracy) {
+            Tracy.EmitMessage("Frame Start");
+        }
+
         frame_start := current_time_monotonic();
 
         g_time = xx to_float64_seconds(frame_start - program_start);
@@ -74,6 +89,9 @@ main :: () {
             OMG_SDL.HandleEvent(event);
         }
 
+        #if #exists(Tracy) {
+            Tracy.EmitMessage("OMG.NewFrame");
+        }
         OMG.NewFrame(g_delta_time);
 
         EditorFrame();
@@ -81,6 +99,9 @@ main :: () {
         user_end := current_time_monotonic();
         g_user_time = xx to_float64_seconds(user_end - user_start);
 
+        #if #exists(Tracy) {
+            Tracy.EmitMessage("OMG.Render");
+        }
         OMG.Render();
 
         if g_frame_syncs[g_frame_in_flight] {
