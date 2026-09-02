@@ -122,7 +122,6 @@ VerticalSeparator :: (parent : *Node, space := 25.0, width := 1.0, style : *BoxS
 
     Apply(separator, style);
 
-
     return node;
 }
 

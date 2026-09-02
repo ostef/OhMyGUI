@@ -793,7 +793,6 @@ DrawNodes :: (draw_list : *DrawList, node : *Node) {
         node.draw(draw_list, node);
     }
 
-    position := (node.rect.xy + node.rect.zw) * 0.5;
     if node.num_children > 0 {
         if !(node.flags & .NoClip) {
             if node.flags & .NoPaddedClip {

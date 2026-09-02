@@ -85,22 +85,6 @@ IsLayoutReverseDirection :: inline (mode : LayoutMode) -> bool, float {
     return mode == .RightToLeft || mode == .BottomToTop, cast(float, mode == .RightToLeft || mode == .BottomToTop) * 2 - 1;
 }
 
-// for_expansion
-LayoutDirection :: (node : *Node, body : Code, flags : For_Flags) #expand {
-    reverse := IsLayoutReverseDirection(node);
-    reverse |= flags & .REVERSE != 0;
-
-    `it := ifx reverse then node.last_child else node.first_child;
-    `it_index := ifx reverse then node.num_children - 1 else 0;
-
-    while it {
-        next := ifx reverse then it.prev_sibling else it.next_sibling;
-        defer it = next;
-
-        #insert body;
-    }
-}
-
 MergeSort :: (first : *Node) -> *Node {
     Split :: (first : *Node) -> *Node {
         fast := first;
