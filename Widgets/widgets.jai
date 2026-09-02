@@ -99,6 +99,7 @@ HorizontalSeparator :: (parent : *Node, space := 25.0, width := 1.0, style : *Bo
     node := GetNode(parent, location);
     SetSize(node, SizeFill(), SizePx(space));
     SetChildAlign(node, 0.5, 0.5);
+    SetPadding(node, style.padding);
 
     separator := GetNode(node);
     SetSize(separator, SizeFill(), SizePx(width));
@@ -114,6 +115,7 @@ VerticalSeparator :: (parent : *Node, space := 25.0, width := 1.0, style : *BoxS
     node := GetNode(parent, location);
     SetSize(node, SizePx(space), SizeFill());
     SetChildAlign(node, 0.5, 0.5);
+    SetPadding(node, style.padding);
 
     separator := GetNode(node);
     SetSize(separator, SizePx(width), SizeFill());
