@@ -16,6 +16,9 @@ Font :: struct {
     desired_underline_thickness : float;
     sdf_range : float;
     texture : TextureHandle;
+
+    unicode_replacement_glyph : Glyph;
+    ascii_glyphs : [128]Glyph;
 }
 
 FontConfig :: struct {
@@ -203,9 +206,24 @@ GetFont :: (name : string) -> *Font {
 }
 
 GetGlyph :: (font : *Font, codepoint : u32, replace_if_missing := true) -> *Glyph {
+    if codepoint < 128 {
+        glyph := *font.ascii_glyphs[codepoint];
+        if glyph.codepoint != codepoint {
+            return ifx replace_if_missing then *font.unicode_replacement_glyph else null;
+        }
+
+        return glyph;
+    } else if codepoint == Unicode_Replacement {
+        if font.unicode_replacement_glyph.codepoint == codepoint {
+            return *font.unicode_replacement_glyph;
+        }
+
+        return null;
+    }
+
     glyph := HT.table_find_pointer(*font.glyph_map, codepoint);
     if !glyph && replace_if_missing {
-        return HT.table_find_pointer(*font.glyph_map, Unicode_Replacement);
+        return *font.unicode_replacement_glyph;
     }
 
     return glyph;
@@ -272,9 +290,21 @@ Fract16ToFloat :: inline (value : s64) -> float {
 }
 
 LoadGlyph :: (font : *Font, codepoint : u32, ft_face : FT_Face, packer : *RectPacker) -> *Glyph {
-    existing_glyph := HT.table_find_pointer(*font.glyph_map, codepoint);
-    if existing_glyph {
-        return existing_glyph;
+    if codepoint == Unicode_Replacement {
+        existing_glyph := *font.unicode_replacement_glyph;
+        if existing_glyph.codepoint == Unicode_Replacement {
+            return existing_glyph;
+        }
+    } else if codepoint < 128 {
+        existing_glyph := *font.ascii_glyphs[codepoint];
+        if existing_glyph.codepoint == codepoint {
+            return existing_glyph;
+        }
+    } else {
+        existing_glyph := HT.table_find_pointer(*font.glyph_map, codepoint);
+        if existing_glyph {
+            return existing_glyph;
+        }
     }
 
     char_index := FT_Get_Char_Index(ft_face, codepoint);
@@ -325,7 +355,15 @@ LoadGlyph :: (font : *Font, codepoint : u32, ft_face : FT_Face, packer : *RectPa
     };
     glyph.uv_rect.zw += glyph.uv_rect.xy;
 
-    return HT.table_add(*font.glyph_map, codepoint, glyph);
+    if codepoint == Unicode_Replacement {
+        font.unicode_replacement_glyph = glyph;
+        return *font.unicode_replacement_glyph;
+    } else if codepoint < 128 {
+        font.ascii_glyphs[codepoint] = glyph;
+        return *font.ascii_glyphs[codepoint];
+    } else {
+        return HT.table_add(*font.glyph_map, codepoint, glyph);
+    }
 }
 
 #scope_export
