@@ -173,10 +173,6 @@ LayoutNodes :: (root : *Node) #no_abc {
     assert(root.desired_size.x.kind == .Pixels);
     assert(root.desired_size.y.kind == .Pixels);
 
-    if !(root.flags & .NeedsComputeLayout) {
-        return;
-    }
-
     SortChildren(root);
 
     LayoutFixedAndFitSizing(root, .X);
@@ -196,10 +192,6 @@ LayoutNodes :: (root : *Node) #no_abc {
 } @Profile
 
 LayoutFixedAndFitSizing :: (node : *Node, axis : Axis) #no_abc {
-    if !(node.flags & .NeedsComputeLayout) {
-        return;
-    }
-
     layout_axis := GetLayoutAxis(node);
 
     for :Children node {
@@ -247,10 +239,6 @@ LayoutFixedAndFitSizing :: (node : *Node, axis : Axis) #no_abc {
 } @Profile
 
 LayoutFillAndPercentSizing :: (node : *Node, axis : Axis) #no_abc {
-    if !(node.flags & .NeedsComputeLayout) {
-        return;
-    }
-
     layout_axis := GetLayoutAxis(node);
 
     for :Children node {
@@ -365,10 +353,6 @@ LayoutFillAndPercentSizing :: (node : *Node, axis : Axis) #no_abc {
 } @Profile
 
 LayoutPosition :: (node : *Node) #no_abc {
-    if !(node.flags & .NeedsComputeLayout) {
-        return;
-    }
-
     if node.child_layout_mode == .None {
         remaining_size := node.size - ToVec2f(node.padding.xy) - ToVec2f(node.padding.zw) - node.children_size;
 
@@ -430,10 +414,6 @@ LayoutPosition :: (node : *Node) #no_abc {
 } @Profile
 
 LayoutWrapText :: (node : *Node) #no_abc {
-    if !(node.flags & .NeedsComputeLayout) {
-        return;
-    }
-
     if (node.flags & .TextNode) && (node.flags & .WrapText) && node.desired_size.y.kind == .FitChildren {
         iter : TextGlyphIterator;
         iter.font = node.font;

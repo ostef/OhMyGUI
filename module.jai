@@ -42,7 +42,6 @@ Context :: struct {
     fonts : *Font;
     node_pool : Bucket_Array(Node, 300);
     nodes_by_id : HT.Table(ID, *Node);
-    nodes_in_declaration_order : [..]*Node;
     user_data : *NodeUserData;
 
     theme : *Theme;
@@ -593,35 +592,9 @@ Render :: () {
         PlatformSetCursor(GetSystemCursor(.Arrow));
     }
 
-    needs_layout_position := 0;
-    needs_layout_size := 0;
-    for omg.nodes_in_declaration_order {
-        // Compare the properties hash to see if we need to re-layout
-        // @Robustness: hash collisions can cause layout to not be recomputed even when it should
-        position_hash, size_hash := HashProperties(it.properties);
-
-        if it.layout_position_properties_hash != position_hash {
-            it.layout_position_properties_hash = position_hash;
-            it.flags |= .NeedsComputeLayoutPosition;
-            needs_layout_position += 1;
-        }
-
-        if it.layout_size_properties_hash != size_hash {
-            it.layout_size_properties_hash = size_hash;
-            it.flags |= .NeedsComputeLayoutSizing;
-            needs_layout_size += 1;
-        }
-
-        // Propagate recompute to parents
-        if it.flags & .NeedsComputeLayoutSizing {
-            parent := it.parent;
-            while parent {
-                parent = parent.parent;
-            }
-        }
+    for * omg.node_pool {
+        it.layout = .{};
     }
-
-    print_vars(needs_layout_position, needs_layout_size);
 
     for :Windows omg {
         w, h := PlatformGetWindowSize(it.platform_handle);
@@ -659,17 +632,13 @@ Render :: () {
         omg.draw_time_last_frame += xx to_float64_seconds(draw_end - draw_start);
     }
 
-    for omg.nodes_in_declaration_order {
+    for * omg.node_pool {
         if it.last_used_on_frame != omg.frame_index {
             FreeNode(it, free_children=false);
         } else {
             it.tree_last_frame = it.tree;
-
-            it.flags &= ~.NeedsComputeLayout;
         }
     }
-
-    array_reset_keeping_memory(*omg.nodes_in_declaration_order); // We removed some nodes, this array can contain trash data so don't take risks and clear it right away
 
     if omg.debug_mode {
         if omg.mouse_hovered_node {

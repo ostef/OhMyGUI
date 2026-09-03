@@ -19,10 +19,6 @@ NodeFlags :: enum_flags u32 {
     // Don't pad the clip box
     NoPaddedClip;
 
-    NeedsComputeLayoutPosition;
-    NeedsComputeLayoutSizing;
-    NeedsComputeLayout :: NeedsComputeLayoutPosition | NeedsComputeLayoutSizing;
-
     LayoutRelated :: TextNode | WrapText | SortChildren;
 }
 
@@ -535,8 +531,6 @@ TouchNode :: (node : *Node) {
         return;
     }
 
-    array_add(*context.omg.nodes_in_declaration_order, node);
-
     node.last_used_on_frame = context.omg.frame_index;
 
     position_hash := node.layout_position_properties_hash;
@@ -564,7 +558,6 @@ GetPopupRoot :: (window : *Window) -> *Node, is_new : bool {
         window.popup_root_node.window = window;
         window.popup_root_node.local_id = GetID("PopupRoot");
         window.popup_root_node.id = GetID(window.popup_root_node.local_id, cast(u64, window));
-        window.popup_root_node.flags |= .NeedsComputeLayout;
 
         table_entry := HT.find_or_add(*context.omg.nodes_by_id, window.popup_root_node.id);
         table_entry.* = window.popup_root_node;
@@ -613,7 +606,6 @@ GetNode :: (window : *Window) -> *Node, is_new : bool {
         window.root_node.window = window;
         window.root_node.local_id = GetID("Root");
         window.root_node.id = GetID(window.root_node.local_id, cast(u64, window));
-        window.root_node.flags |= .NeedsComputeLayout;
 
         table_entry := HT.find_or_add(*context.omg.nodes_by_id, window.root_node.id);
         table_entry.* = window.root_node;
@@ -654,7 +646,6 @@ GetNode :: (parent : *Node, id : ID, is_global_id := false) -> *Node, is_new : b
         node.window = parent.window;
         node.parent = parent;
         node.local_id = id;
-        node.flags |= .NeedsComputeLayout;
         node.id = ifx is_global_id then GetID(id, base=parent.id) else id;
 
         table_entry := HT.find_or_add(*context.omg.nodes_by_id, node.id);
