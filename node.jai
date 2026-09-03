@@ -18,6 +18,10 @@ NodeFlags :: enum_flags u32 {
     NoClip;
     // Don't pad the clip box
     NoPaddedClip;
+
+    NeedsComputeLayout;
+
+    LayoutRelated :: TextNode | WrapText | SortChildren;
 }
 
 TextEffects :: enum_flags u8 {
@@ -133,6 +137,8 @@ Node :: struct {
 
     // User controlled properties mostly related to layout, reset each frame except for scroll and offset
     using properties : struct {
+        layout_properties_hash : u64;
+
         font : *Font;
         text : string;
         text_size : float;
@@ -183,6 +189,18 @@ Node :: struct {
     };
 
     state_flags : NodeStateFlags;
+}
+
+HashProperties :: inline (properties : *type_of(Node.properties)) -> u64 {
+    prev_hash := properties.layout_properties_hash;
+    properties.layout_properties_hash = 0;
+    defer properties.layout_properties_hash = prev_hash;
+
+    prev_flags := properties.flags;
+    properties.flags &= .LayoutRelated;
+    defer properties.flags = prev_flags;
+
+    return fnv1a_hash(properties, size_of(type_of(Node.properties)));
 }
 
 // for_expansion
@@ -504,6 +522,7 @@ GetPopupRoot :: (window : *Window) -> *Node, is_new : bool {
         window.popup_root_node.window = window;
         window.popup_root_node.local_id = GetID("PopupRoot");
         window.popup_root_node.id = GetID(window.popup_root_node.local_id, cast(u64, window));
+        window.popup_root_node.flags |= .NeedsComputeLayout;
 
         table_entry := HT.find_or_add(*context.omg.nodes_by_id, window.popup_root_node.id);
         table_entry.* = window.popup_root_node;
@@ -552,6 +571,7 @@ GetNode :: (window : *Window) -> *Node, is_new : bool {
         window.root_node.window = window;
         window.root_node.local_id = GetID("Root");
         window.root_node.id = GetID(window.root_node.local_id, cast(u64, window));
+        window.root_node.flags |= .NeedsComputeLayout;
 
         table_entry := HT.find_or_add(*context.omg.nodes_by_id, window.root_node.id);
         table_entry.* = window.root_node;
@@ -592,6 +612,7 @@ GetNode :: (parent : *Node, id : ID, is_global_id := false) -> *Node, is_new : b
         node.window = parent.window;
         node.parent = parent;
         node.local_id = id;
+        node.flags |= .NeedsComputeLayout;
         node.id = ifx is_global_id then GetID(id, base=parent.id) else id;
 
         table_entry := HT.find_or_add(*context.omg.nodes_by_id, node.id);

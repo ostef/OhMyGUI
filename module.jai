@@ -593,8 +593,32 @@ Render :: () {
     }
 
     for * omg.node_pool {
+        // Compare the properties hash to see if we need to re-layout
+        new_hash := HashProperties(*it.properties);
+        if new_hash != it.layout_properties_hash {
+            it.layout_properties_hash = new_hash;
+            it.flags |= .NeedsComputeLayout;
+        }
+
+        if it.flags & .NeedsComputeLayout {
+            parent := it.parent;
+            while parent && !(parent.flags & .NeedsComputeLayout) {
+                parent.flags |= .NeedsComputeLayout;
+                parent = parent.parent;
+            }
+        }
+
         it.layout = .{};
     }
+
+    needs_layout := 0;
+    for omg.node_pool {
+        if it.flags & .NeedsComputeLayout {
+            needs_layout += 1;
+        }
+    }
+
+    print_vars(needs_layout);
 
     for :Windows omg {
         w, h := PlatformGetWindowSize(it.platform_handle);
@@ -637,6 +661,8 @@ Render :: () {
             FreeNode(it, free_children=false);
         } else {
             it.tree_last_frame = it.tree;
+
+            it.flags &= ~.NeedsComputeLayout;
         }
     }
 
