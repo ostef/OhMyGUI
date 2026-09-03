@@ -42,6 +42,7 @@ Context :: struct {
     fonts : *Font;
     node_pool : Bucket_Array(Node, 300);
     nodes_by_id : HT.Table(ID, *Node);
+    nodes_in_declaration_order : [..]*Node;
     user_data : *NodeUserData;
 
     theme : *Theme;
@@ -592,33 +593,35 @@ Render :: () {
         PlatformSetCursor(GetSystemCursor(.Arrow));
     }
 
-    for * omg.node_pool {
+    needs_layout_position := 0;
+    needs_layout_size := 0;
+    for omg.nodes_in_declaration_order {
         // Compare the properties hash to see if we need to re-layout
-        new_hash := HashProperties(*it.properties);
-        if new_hash != it.layout_properties_hash {
-            it.layout_properties_hash = new_hash;
-            it.flags |= .NeedsComputeLayout;
+        // @Robustness: hash collisions can cause layout to not be recomputed even when it should
+        position_hash, size_hash := HashProperties(it.properties);
+
+        if it.layout_position_properties_hash != position_hash {
+            it.layout_position_properties_hash = position_hash;
+            it.flags |= .NeedsComputeLayoutPosition;
+            needs_layout_position += 1;
         }
 
-        if it.flags & .NeedsComputeLayout {
+        if it.layout_size_properties_hash != size_hash {
+            it.layout_size_properties_hash = size_hash;
+            it.flags |= .NeedsComputeLayoutSizing;
+            needs_layout_size += 1;
+        }
+
+        // Propagate recompute to parents
+        if it.flags & .NeedsComputeLayoutSizing {
             parent := it.parent;
-            while parent && !(parent.flags & .NeedsComputeLayout) {
-                parent.flags |= .NeedsComputeLayout;
+            while parent {
                 parent = parent.parent;
             }
         }
-
-        it.layout = .{};
     }
 
-    needs_layout := 0;
-    for omg.node_pool {
-        if it.flags & .NeedsComputeLayout {
-            needs_layout += 1;
-        }
-    }
-
-    print_vars(needs_layout);
+    print_vars(needs_layout_position, needs_layout_size);
 
     for :Windows omg {
         w, h := PlatformGetWindowSize(it.platform_handle);
@@ -656,7 +659,7 @@ Render :: () {
         omg.draw_time_last_frame += xx to_float64_seconds(draw_end - draw_start);
     }
 
-    for * omg.node_pool {
+    for omg.nodes_in_declaration_order {
         if it.last_used_on_frame != omg.frame_index {
             FreeNode(it, free_children=false);
         } else {
@@ -665,6 +668,8 @@ Render :: () {
             it.flags &= ~.NeedsComputeLayout;
         }
     }
+
+    array_reset_keeping_memory(*omg.nodes_in_declaration_order); // We removed some nodes, this array can contain trash data so don't take risks and clear it right away
 
     if omg.debug_mode {
         if omg.mouse_hovered_node {
