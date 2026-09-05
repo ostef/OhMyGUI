@@ -1,6 +1,6 @@
-Memory_Debugger :: false;
+Enable_Memory_Debugger :: false;
 
-#import "Basic"()(MEMORY_DEBUGGER=Memory_Debugger);
+#import "Basic"()(MEMORY_DEBUGGER=Enable_Memory_Debugger);
 #import "Math";
 
 OMG :: #import "OhMyGUI";
@@ -28,7 +28,7 @@ g_user_time : float;
 g_slow_down : bool;
 
 main :: () {
-    #if Memory_Debugger {
+    #if Enable_Memory_Debugger {
         defer report_memory_leaks();
     }
 
@@ -64,6 +64,8 @@ main :: () {
     g_delta_time = 1 / 60.0;
     while !g_quit {
         reset_temporary_storage();
+
+        memory_visualizer_per_frame_update();
 
         #if #exists(Tracy) {
             Tracy.EmitMessage("Frame Start");
