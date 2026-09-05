@@ -312,23 +312,6 @@ EditorFrame :: () {
 
         OMG.DockSpace(root, "dockspace");
 
-        tabs_subwindow := OMG.Subwindow(window, "Tabs", "tabs", .{250, 250});
-        if tabs_subwindow {
-            tab_bar := OMG.TabBar(tabs_subwindow);
-            if OMG.Tab(tab_bar, "One", "one") {
-                OMG.Text(tabs_subwindow, "One");
-            }
-            if OMG.Tab(tab_bar, "Two", "two") {
-                OMG.Text(tabs_subwindow, "Two");
-            }
-            if OMG.Tab(tab_bar, "Three", "three") {
-                OMG.Text(tabs_subwindow, "Three");
-            }
-            if OMG.Tab(tab_bar, "Four", "four") {
-                OMG.Text(tabs_subwindow, "Four");
-            }
-        }
-
         content_browser := OMG.Subwindow(window, "Content Browser", "content_browser", .{400, 500});
         if content_browser {
             OMG.Text(content_browser, "% nodes", context.omg.node_pool.count);
