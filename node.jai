@@ -18,8 +18,6 @@ NodeFlags :: enum_flags u32 {
     NoClip;
     // Don't pad the clip box
     NoPaddedClip;
-
-    LayoutRelated :: TextNode | WrapText | SortChildren;
 }
 
 TextEffects :: enum_flags u8 {
@@ -135,9 +133,6 @@ Node :: struct {
 
     // User controlled properties mostly related to layout, reset each frame except for scroll and offset
     using properties : struct {
-        layout_position_properties_hash : u64;
-        layout_size_properties_hash : u64;
-
         font : *Font;
         text : string;
         text_size : float;
@@ -188,51 +183,6 @@ Node :: struct {
     };
 
     state_flags : NodeStateFlags;
-}
-
-HashProperties :: (properties : type_of(Node.properties)) -> position : u64, size : u64 {
-    position_props : struct {
-        offset : Vec2f;
-        scroll : Vec2f;
-        child_align : Vec2f;
-        child_gap : Vec2b;
-        padding : Vec4b;
-        child_layout_mode : LayoutMode;
-    } = .{
-        properties.offset,
-        properties.scroll,
-        properties.child_align,
-        properties.child_gap,
-        properties.padding,
-        properties.child_layout_mode,
-    };
-    position_hash := fnv1a_hash(*position_props, size_of(type_of(position_props)));
-
-    size_props : struct {
-        font : *Font;
-        text_size : float;
-        flags : NodeFlags;
-        desired_size : Size2D;
-        min_size : Vec2f;
-        max_size : Vec2f;
-        min_size_fit : type_of(properties.min_size_fit);
-        child_gap : Vec2b;
-        padding : Vec4b;
-    } = .{
-        properties.font,
-        properties.text_size,
-        properties.flags & .LayoutRelated,
-        properties.desired_size,
-        properties.min_size,
-        properties.max_size,
-        properties.min_size_fit,
-        properties.child_gap,
-        properties.padding,
-    };
-    size_hash := fnv1a_hash(*size_props, size_of(type_of(size_props)));
-    size_hash = fnv1a_hash(properties.text.data, properties.text.count, size_hash);
-
-    return position_hash, size_hash;
 }
 
 // for_expansion
@@ -532,13 +482,9 @@ TouchNode :: (node : *Node) {
 
     node.last_used_on_frame = context.omg.frame_index;
 
-    position_hash := node.layout_position_properties_hash;
-    size_hash := node.layout_size_properties_hash;
     scroll := node.scroll;
     offset := node.offset;
     node.properties = .{};
-    node.layout_position_properties_hash = position_hash;
-    node.layout_size_properties_hash = size_hash;
     node.scroll = scroll;
     node.offset = offset;
 
