@@ -455,11 +455,22 @@ Terminate :: () {
         free(it ,, context.omg.general_purpose_allocator);
     }
 
+    for * node : context.omg.node_pool {
+        for :UserData node {
+            if it.destroy {
+                it.destroy(node, cast(*void, it + 1));
+            }
+
+            free(it ,, context.omg.general_purpose_allocator);
+        }
+    }
+
     array_reset(*context.omg.id_offset_stack);
 
     DestroyInput(*context.omg.input);
     DestroySystemCursors();
 
+    HT.table_reset(*context.omg.nodes_by_id);
     bucket_array_reset(*context.omg.node_pool);
 
     free(context.omg);

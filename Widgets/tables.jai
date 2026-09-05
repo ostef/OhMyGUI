@@ -164,6 +164,11 @@ ClearTableData :: (data : *TableData) {
 
 DestroyTableData :: (node : *Node, data : *void) {
     using _ := cast(*TableData, data);
+
+    for columns {
+        array_reset(*it.rows);
+    }
+
     array_reset(*columns);
 }
 
@@ -172,7 +177,7 @@ Table :: (parent : *Node, flags : TableFlags = 0, style : *TableStyle = null, lo
 
     table := GetNode(parent, location);
     {
-        data := AddUserData(table, TableData);
+        data := AddUserData(table, TableData, DestroyTableData);
         ClearTableData(data);
         data.flags = flags;
 

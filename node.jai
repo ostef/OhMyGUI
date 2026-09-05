@@ -427,7 +427,6 @@ AllocNode :: () -> *Node {
     return node;
 }
 
-// @Todo: remove child from tree
 FreeNode :: (node : *Node, free_children := true) {
     window := node.window;
 

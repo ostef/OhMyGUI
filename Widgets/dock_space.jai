@@ -231,6 +231,23 @@ GlobalDockSpaceData :: struct {
 
 DestroyGlobalDockSpaceData :: (_ : *Node, data : *void) {
     using _ := cast(*GlobalDockSpaceData, data);
+
+    FreeNodeTree :: (dock_node : *DockNode) {
+        if !dock_node {
+            return;
+        }
+
+        for dock_node.children {
+            FreeNodeTree(it);
+        }
+
+        FreeDockNode(dock_node);
+    }
+
+    for root_dock_nodes {
+        FreeNodeTree(it);
+    }
+
     HT.table_reset(*root_dock_nodes);
 }
 
