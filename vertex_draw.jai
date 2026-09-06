@@ -277,6 +277,46 @@ DrawRect :: (
     array_reset_keeping_memory(*draw_list.path);
 }
 
+DrawRectOutline :: inline (
+    draw_list : *VtxDrawList,
+    bounds : Vec4f,
+    color : RGBA8,
+    thickness : float,
+    corner_radiuses : Vec4f = .{0,0,0,0},
+    uv_bounds : Vec4f = .{0,0,1,1},
+    blur_size := 0.0
+) {
+    DrawRectOutline(draw_list, bounds, color, color, color, color, thickness, corner_radiuses, uv_bounds, blur_size);
+}
+
+DrawRectOutline :: (
+    draw_list : *VtxDrawList,
+    bounds : Vec4f,
+    color_top_left : RGBA8,
+    color_top_right : RGBA8,
+    color_bottom_left : RGBA8,
+    color_bottom_right : RGBA8,
+    thickness : float,
+    corner_radiuses : Vec4f = .{0,0,0,0},
+    uv_bounds : Vec4f = .{0,0,1,1},
+    blur_size := 0.0
+) {
+    if IsClipped(draw_list, bounds) {
+        return;
+    }
+
+    if (color_top_left & 0xff) == 0
+    || (color_top_right & 0xff) == 0
+    || (color_bottom_left & 0xff) == 0
+    || (color_bottom_right & 0xff) == 0 {
+        return;
+    }
+
+    PathPushRoundedRect(*draw_list.path, bounds, corner_radiuses);
+    DrawPolygonLine(draw_list, draw_list.path, true, thickness, color_top_left, blur_size);
+    array_reset_keeping_memory(*draw_list.path);
+}
+
 DrawBox :: inline (draw_list : *VtxDrawList, box : BoxDrawing, texture : TextureHandle = 0) -> int {
     prev_texture := SetTexture(draw_list, texture);
     defer SetTexture(draw_list, prev_texture);
@@ -290,13 +330,22 @@ DrawBox :: inline (draw_list : *VtxDrawList, box : BoxDrawing, texture : Texture
             box.uv_bounds,
             box.outer_shadow_blur,
         );
-
     }
 
     DrawRect(
         draw_list,
         .{xy=box.position - box.size * 0.5, zw=box.position + box.size * 0.5},
         box.background_color,
+        box.corner_radiuses,
+        box.uv_bounds
+    );
+
+    border_inset := Vec2f.{box.border_size * 0.5 + box.border_inset, box.border_size * 0.5 + box.border_inset};
+    DrawRectOutline(
+        draw_list,
+        .{xy=box.position - (box.size - border_inset) * 0.5, zw=box.position + (box.size - border_inset) * 0.5},
+        box.border_color,
+        box.border_size,
         box.corner_radiuses,
         box.uv_bounds
     );
@@ -589,9 +638,190 @@ DrawNodes :: (draw_list : *VtxDrawList, node : *Node) {
     }
 } @Profile
 
-DrawConvexPolygon :: (draw_list : *VtxDrawList, points : []PathPoint, color : RGBA8, blur_size := 0.0) {
-    auto_release_temp();
+DrawPolygonLine :: (draw_list : *VtxDrawList, points : []PathPoint, closed : bool, thickness : float, color : RGBA8, blur_size := 0.0) #no_abc {
+    if points.count < 2 || (color & 0xff) == 0 {
+        return;
+    }
 
+    color_alpha0 := SetAlpha(color, 0);
+
+    thickness = max(thickness, 1);
+    margin := 1.0 + max(blur_size, 0.0);
+    is_thick := thickness > margin;
+
+    first := GetCurrentIndex(draw_list);
+    num_indices : u32;
+    if closed {
+        num_indices = xx ifx is_thick then points.count * 18 else points.count * 12;
+    } else {
+        num_indices = xx ifx is_thick then (points.count - 1) * 18 else (points.count - 1) * 12;
+    }
+
+    indices := PushIndices(draw_list, xx num_indices);
+    indices_index := 0;
+
+    num_vertices := ifx is_thick then points.count * 3 else points.count * 4;
+    ReserveVertices(draw_list, num_vertices);
+
+    half_inner_thickness := (thickness - margin) * 0.5;
+    half_thickness := thickness * 0.5;
+
+    for i : 0..cast(u32, points.count - 1) {
+        n : Vec2f = ---;
+
+        if i < points.count - 1 {
+            n0 := points[i].normal;
+            n1 := points[i + 1].normal;
+            n = (n0 + n1) * 0.5;
+        } else if closed {
+            n0 := points[i].normal;
+            n1 := points[0].normal;
+            n = (n0 + n1) * 0.5;
+        } else {
+            n = points[i].normal;
+        }
+
+        if is_thick {
+            v := PushVertex(draw_list);
+            v.position = points[i].position + n * half_inner_thickness;
+            v.color = color;
+
+            v = PushVertex(draw_list);
+            v.position = points[i].position - n * half_inner_thickness;
+            v.color = color;
+
+            v = PushVertex(draw_list);
+            v.position = points[i].position + n * half_thickness;
+            v.color = color_alpha0;
+
+            v = PushVertex(draw_list);
+            v.position = points[i].position - n * half_thickness;
+            v.color = color_alpha0;
+
+            // Indices
+            if i < points.count - 1 || closed {
+                ii0 := i * 4;
+                ii1 := ifx i == points.count - 1 then 0 else ii0 + 4;
+
+                // Middle
+                indices[indices_index] = first + ii0;
+                indices_index += 1;
+
+                indices[indices_index] = first + ii1;
+                indices_index += 1;
+
+                indices[indices_index] = first + ii0 + 1;
+                indices_index += 1;
+
+                indices[indices_index] = first + ii0 + 1;
+                indices_index += 1;
+
+                indices[indices_index] = first + ii1;
+                indices_index += 1;
+
+                indices[indices_index] = first + ii1 + 1;
+                indices_index += 1;
+
+                // Margin 1
+                indices[indices_index] = first + ii0 + 2;
+                indices_index += 1;
+
+                indices[indices_index] = first + ii1 + 2;
+                indices_index += 1;
+
+                indices[indices_index] = first + ii0;
+                indices_index += 1;
+
+                indices[indices_index] = first + ii0;
+                indices_index += 1;
+
+                indices[indices_index] = first + ii1 + 2;
+                indices_index += 1;
+
+                indices[indices_index] = first + ii1;
+                indices_index += 1;
+
+                // Margin 2
+                indices[indices_index] = first + ii0 + 3;
+                indices_index += 1;
+
+                indices[indices_index] = first + ii1 + 3;
+                indices_index += 1;
+
+                indices[indices_index] = first + ii0 + 1;
+                indices_index += 1;
+
+                indices[indices_index] = first + ii0 + 1;
+                indices_index += 1;
+
+                indices[indices_index] = first + ii1 + 3;
+                indices_index += 1;
+
+                indices[indices_index] = first + ii1 + 1;
+                indices_index += 1;
+            }
+        } else {
+            // If the line is not thick, we only have three segments
+            v := PushVertex(draw_list);
+            v.position = points[i].position + n * margin;
+            v.color = color_alpha0;
+
+            v = PushVertex(draw_list);
+            v.position = points[i].position;
+            v.color = color;
+
+            v = PushVertex(draw_list);
+            v.position = points[i].position - n * margin;
+            v.color = color_alpha0;
+
+            // Indices
+            if i < points.count - 1 || closed {
+                ii0 := i * 3;
+                ii1 := ifx i == points.count - 1 then 0 else ii0 + 3;
+
+                // Margin 1
+                indices[indices_index] = first + ii0;
+                indices_index += 1;
+
+                indices[indices_index] = first + ii1;
+                indices_index += 1;
+
+                indices[indices_index] = first + ii0 + 1;
+                indices_index += 1;
+
+                indices[indices_index] = first + ii0 + 1;
+                indices_index += 1;
+
+                indices[indices_index] = first + ii1;
+                indices_index += 1;
+
+                indices[indices_index] = first + ii1 + 1;
+                indices_index += 1;
+
+                // Margin 2
+                indices[indices_index] = first + ii0 + 1;
+                indices_index += 1;
+
+                indices[indices_index] = first + ii1 + 1;
+                indices_index += 1;
+
+                indices[indices_index] = first + ii0 + 2;
+                indices_index += 1;
+
+                indices[indices_index] = first + ii0 + 2;
+                indices_index += 1;
+
+                indices[indices_index] = first + ii1 + 1;
+                indices_index += 1;
+
+                indices[indices_index] = first + ii1 + 2;
+                indices_index += 1;
+            }
+        }
+    }
+}
+
+DrawConvexPolygon :: (draw_list : *VtxDrawList, points : []PathPoint, color : RGBA8, blur_size := 0.0) #no_abc {
     if points.count < 3 || (color & 0xff) == 0 {
         return;
     }
@@ -631,9 +861,6 @@ DrawConvexPolygon :: (draw_list : *VtxDrawList, points : []PathPoint, color : RG
         n0 := points[i0].normal;
         n1 := points[i1].normal;
         n := (n0 + n1) * 0.5;
-
-        d2 := dot(n, n);
-
         n *= margin * 0.5;
 
         // Inner
@@ -672,9 +899,15 @@ PathPoint :: struct {
     normal : Vec2f;
 }
 
-PathCalcNormals :: (points : []PathPoint) {
-    i0 : u32 = xx (points.count - 1);
-    i1 : u32 = 0;
+PathCalcNormals :: (points : []PathPoint, closed : bool) {
+    i0, i1 : u32;
+    if closed {
+        i0 = 0;
+        i1 = 1;
+    } else {
+        i0 = xx (points.count - 1);
+    }
+
     while i1 < points.count {
         defer {
             i0 = i1;
@@ -686,6 +919,11 @@ PathCalcNormals :: (points : []PathPoint) {
         d := Normalize(p1 - p0);
         points[i0].normal.x = d.y;
         points[i0].normal.y = -d.x;
+
+        if !closed && i1 == points.count - 1 {
+            points[i1].normal.x = d.y;
+            points[i1].normal.y = -d.x;
+        }
     }
 }
 

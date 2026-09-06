@@ -290,7 +290,7 @@ BlitGlyph :: (packer : *RectPacker, bitmap_data : *u8, bitmap_x : u32, bitmap_y 
         for x : 0..bitmap_width - 1 {
             index := (bitmap_y + y) * packer.width + (bitmap_x + x);
             value := bitmap_data[y * bitmap_pitch + x];
-            packer.data[index] = ColorU32(255, 0, 0, value);
+            packer.data[index] = PackRGBA8(255, 0, 0, value);
         }
     }
 }
