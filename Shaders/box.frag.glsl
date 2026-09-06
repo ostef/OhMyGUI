@@ -15,6 +15,8 @@ layout(location=0) in flat uint in_box_index;
 layout(location=0) out vec4 out_color;
 
 void main() {
+    out_color = ColorVec4(u_boxes[in_box_index].background_color);
+    /*
     vec2 p = gl_FragCoord.xy;
     p.y = u_viewport_size.y - p.y;
 
@@ -87,4 +89,5 @@ void main() {
         ClipBox clip = u_clip_boxes[box.clip_box_index];
         out_color *= SampleClipBox(clip, p, aa);
     }
+    */
 }

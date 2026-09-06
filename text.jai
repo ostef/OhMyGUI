@@ -69,8 +69,8 @@ LoadDefaultFonts :: () {
         .{0xa0, 0x24f}, // Latin
         .{0x20A0, 0x20CF}, // Currency symbols
     ];
-    config.atlas_width = 4096;
-    config.atlas_height = 4096;
+    config.atlas_width = 2048;
+    config.atlas_height = 2048;
 
     regular := LoadFontFromMemory("__default", Roboto_Regular, config);
     assert(regular != null, "Could not load default regular font");
@@ -145,9 +145,14 @@ LoadFontFromMemory :: (name : string, data : string, config : FontConfig) -> *Fo
     packer : RectPacker;
     packer.width = config.atlas_width;
     packer.height = config.atlas_height;
-    packer.data = xx alloc(packer.width * packer.height);
-    memset(packer.data, 0, packer.width * packer.height);
+    packer.data = xx alloc(packer.width * packer.height * size_of(RGBA8));
+    memset(packer.data, 0, packer.width * packer.height * size_of(RGBA8));
     defer free(packer.data);
+
+    // Reserve a 1px by 1px white square
+    packed, white_x, white_y := PackRect(*packer, 1, 1);
+    assert(packed && white_x == 0 && white_y == 0);
+    BlitPixel(*packer, 0xffffffff, white_x, white_y);
 
     space_glyph := LoadGlyph(font, #char " ", ft_face, *packer);
     if space_glyph {
@@ -162,7 +167,7 @@ LoadFontFromMemory :: (name : string, data : string, config : FontConfig) -> *Fo
         }
     }
 
-    font.texture = RendererCreateR8Texture(tprint("Font SDF Texture '%'", font.name), packer.data, packer.width, packer.height);
+    font.texture = RendererCreateRGBA8Texture(tprint("Font SDF Texture '%'", font.name), packer.data, packer.width, packer.height);
 
     font.next = context.omg.fonts;
     if font.next {
@@ -232,7 +237,7 @@ GetGlyph :: (font : *Font, codepoint : u32, replace_if_missing := true) -> *Glyp
 #scope_file
 
 RectPacker :: struct {
-    data : *u8;
+    data : *RGBA8;
     width : u32;
     height : u32;
     cursor_x : u32;
@@ -267,6 +272,15 @@ PackRect :: (packer : *RectPacker, width : u32, height : u32) -> bool, x : u32, 
     return true, x, y;
 }
 
+BlitPixel :: (packer : *RectPacker, pixel : RGBA8, x : u32, y : u32) {
+    if x >= packer.width || y >= packer.height {
+        return;
+    }
+
+    index := y * packer.width + x;
+    packer.data[index] = pixel;
+}
+
 BlitGlyph :: (packer : *RectPacker, bitmap_data : *u8, bitmap_x : u32, bitmap_y : u32, bitmap_width : u32, bitmap_height : u32, bitmap_pitch : u32) {
     if bitmap_width == 0 || bitmap_height == 0 {
         return;
@@ -276,7 +290,7 @@ BlitGlyph :: (packer : *RectPacker, bitmap_data : *u8, bitmap_x : u32, bitmap_y 
         for x : 0..bitmap_width - 1 {
             index := (bitmap_y + y) * packer.width + (bitmap_x + x);
             value := bitmap_data[y * bitmap_pitch + x];
-            packer.data[index] = value;
+            packer.data[index] = ColorU32(255, 0, 0, value);
         }
     }
 }

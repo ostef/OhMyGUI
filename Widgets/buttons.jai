@@ -269,7 +269,7 @@ Checkbox :: (parent : *Node, value : *bool, size := 20.0, style : *CheckboxStyle
 
         if value.* {
             checkmark := GetNode(node, "text");
-            SetDraw(checkmark, DrawCheckmark);
+            // SetDraw(checkmark, DrawCheckmark);
             SetSize(checkmark, SizeFill(), SizeFill());
 
             Apply(checkmark, style.states[state].checkmark);

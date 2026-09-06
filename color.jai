@@ -53,6 +53,15 @@ ColorU32 :: inline (r : float, g : float, b : float, a : float) -> RGBA8 {
     return cast(RGBA8, (ur << 24) | (ug << 16) | (ub << 8) | ua);
 }
 
+ColorU32 :: inline (r : u8, g : u8, b : u8, a : u8) -> RGBA8 {
+    ur := cast(u32, r);
+    ug := cast(u32, g);
+    ub := cast(u32, b);
+    ua := cast(u32, a);
+
+    return cast(RGBA8, (ur << 24) | (ug << 16) | (ub << 8) | ua);
+}
+
 ColorVec4f :: inline (rgba : RGBA8) -> Vec4f {
     r := (cast(u32, rgba) >> 24) & 0xff;
     g := (cast(u32, rgba) >> 16) & 0xff;

@@ -40,14 +40,15 @@ TreeNode :: (parent : *Node, text : string, flags : TreeNodeFlags = 0, style : *
 
             SetBackgroundColor(icon, style.tree_item.states[state].text.text_color);
 
-            if flags & .Leaf {
-                SetDraw(icon, null);
-            } else {
-                SetDraw(icon, (draw_list, node) => {
-                    rotation := ifx !(node.parent.parent.state_flags & .Active) then -PI * 0.5 else 0.0;
-                    DrawEquilateralTriangle(draw_list, (node.rect.xy + node.rect.zw) * 0.5, node.size.x, rotation, node.background_color);
-                });
-            }
+            SetDraw(icon, null);
+            // if flags & .Leaf {
+            //     SetDraw(icon, null);
+            // } else {
+            //     SetDraw(icon, (draw_list, node) => {
+            //         rotation := ifx !(node.parent.parent.state_flags & .Active) then -PI * 0.5 else 0.0;
+            //         DrawEquilateralTriangle(draw_list, (node.rect.xy + node.rect.zw) * 0.5, node.size.x, rotation, node.background_color);
+            //     });
+            // }
 
             Apply(tree_item, style.tree_item.states[state].background);
 

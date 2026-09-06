@@ -124,7 +124,7 @@ HSVTriangleWheel :: (parent : *Node, using data : *ColorPickerData, style : *HSV
     {
         SetSize(node, SizeFill(), SizeFill());
         SetLayout(node, .None);
-        SetDraw(node, Draw);
+        // SetDraw(node, Draw);
         SetUserData(node, data);
         SetUserData(node, style.*);
         SetPadding(node, style.padding);
@@ -211,7 +211,7 @@ SaturationValueTriangle :: (parent : *Node, using data : *ColorPickerData, style
     node := GetNode(parent, location);
     node.flags |= .NoClip;
     SetSize(node, SizeFill(), SizeFill());
-    SetDraw(node, Draw);
+    // SetDraw(node, Draw);
     SetHitTest(node, HitTest);
 
     using _ := GetHSVWheelGeometricData(style, node.rect, hsv);
@@ -336,7 +336,7 @@ HueWheel :: (parent : *Node, using data : *ColorPickerData, style : *HSVTriangle
     node := GetNode(parent);
     node.flags |= .NoClip;
     SetSize(node, SizeFill(), SizeFill());
-    SetDraw(node, Draw);
+    // SetDraw(node, Draw);
     SetHitTest(node, HitTest);
 
     using _ := GetHSVWheelGeometricData(style, node.rect, hsv);
@@ -492,10 +492,10 @@ ColoredSlider :: (parent : *Node, value : *float, min : float, max : float, step
 
     modified, slider, background, handle := Slider(parent, value, min, max, step, style=style, location=location);
     if dynamic_color {
-        SetDraw(background, DrawBackground);
+        // SetDraw(background, DrawBackground);
     }
 
-    SetDraw(handle, DrawTriangularCursor);
+    // SetDraw(handle, DrawTriangularCursor);
 
     return modified, slider, background, handle;
 }
@@ -553,7 +553,7 @@ ColorPreview :: (parent : *Node, color : RGBA8, style : *ColorPreviewStyle, loca
     node.flags |= .Focusable;
 
     SetSize(node, SizePx(50), SizePx(40));
-    SetDraw(node, Draw);
+    // SetDraw(node, Draw);
     SetUserData(node, style.*);
     Apply(node, style.box);
     SetBackgroundColor(node, color);
@@ -649,7 +649,7 @@ PickColorButton :: (parent : *Node, color : *Vec4f, previous_color : Vec4f, data
 
     pick_icon := GetNode(pick_button);
     SetSize(pick_icon, SizeFill(), SizeFill());
-    SetDraw(pick_icon, DrawPickColorIcon);
+    // SetDraw(pick_icon, DrawPickColorIcon);
 
     state := GetState(pick_button);
     SetTextColor(pick_icon, btn_style.states[state].text.text_color);

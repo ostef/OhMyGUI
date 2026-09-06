@@ -281,16 +281,16 @@ DrawArrow :: (draw_list : *DrawList, node : *Node, rotation : float) {
 Arrow :: (parent : *Node, width : Size1D, height : Size1D, direction : ArrowDirection, style : BoxStyle, location := #caller_location) -> *Node {
     node := GetNode(parent, location);
     SetSize(node, width, height);
-    if #complete direction == {
-    case .Up;
-        SetDraw(node, #bake_arguments DrawArrow(rotation=PI));
-    case .Down;
-        SetDraw(node, #bake_arguments DrawArrow(rotation=0));
-    case .Left;
-        SetDraw(node, #bake_arguments DrawArrow(rotation=PI * 0.5));
-    case .Right;
-        SetDraw(node, #bake_arguments DrawArrow(rotation=PI * 0.75));
-    }
+    // if #complete direction == {
+    // case .Up;
+    //     SetDraw(node, #bake_arguments DrawArrow(rotation=PI));
+    // case .Down;
+    //     SetDraw(node, #bake_arguments DrawArrow(rotation=0));
+    // case .Left;
+    //     SetDraw(node, #bake_arguments DrawArrow(rotation=PI * 0.5));
+    // case .Right;
+    //     SetDraw(node, #bake_arguments DrawArrow(rotation=PI * 0.75));
+    // }
     Apply(node, style);
 
     return node;

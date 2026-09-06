@@ -553,7 +553,7 @@ SetColors :: (using style : *TextInputStyle, base_background_color : RGBA8, acce
     active.background.border_color = accent_color;
 }
 
-DrawTextInputText :: (draw_list : *DrawList, node : *Node) {
+DrawTextInputText :: (draw_list : *VtxDrawList, node : *Node) {
     if !node.font || (node.text_color & 0xff) == 0 {
         return;
     }
@@ -566,10 +566,7 @@ DrawTextInputText :: (draw_list : *DrawList, node : *Node) {
             node.rect.xy,
             node.text_size,
             node.text,
-            node.text_color,
-            node.outer_shadow_color,
-            node.outer_shadow_offset,
-            node.outer_shadow_blur
+            node.text_color
         );
 
         return;
@@ -579,9 +576,11 @@ DrawTextInputText :: (draw_list : *DrawList, node : *Node) {
 
     sdf_range := node.font.sdf_range * node.text_size;
 
-    selection_box_index := ifx node.parent.state_flags & .Active && input.selection != 0
-        then DrawBox(draw_list, .{size=.{FLOAT32_INFINITY, FLOAT32_INFINITY}, background_color=0xffffffff})
-        else -1;
+    // selection_box_index := ifx node.parent.state_flags & .Active && input.selection != 0
+    //     then DrawBox(draw_list, .{size=.{FLOAT32_INFINITY, FLOAT32_INFINITY}, background_color=0xffffffff})
+    //     else -1;
+
+    prev_texture := SetTexture(draw_list, node.font.texture, has_white_px=true);
 
     selection_position := node.rect.xy;
     cursor_position := node.rect.xy;
@@ -595,17 +594,7 @@ DrawTextInputText :: (draw_list : *DrawList, node : *Node) {
             zw=glyph_position + it.texture_size * iter.font_size * 0.5,
         };
 
-        DrawGlyph(draw_list, .{
-                bounds=bounds,
-                uv_bounds=it.uv_rect,
-                sdf_range=.{sdf_range, -sdf_range},
-                color=node.text_color,
-                outer_shadow_color=node.outer_shadow_color,
-                outer_shadow_offset=node.outer_shadow_offset,
-                outer_shadow_blur=node.outer_shadow_blur,
-            },
-            node.font.texture
-        );
+        DrawSDFGlyph(draw_list, bounds, node.text_color, it.uv_rect, sdf_range);
 
         if it_index == input.cursor {
             cursor_position += Vec2f.{iter.pen.x, iter.pen.y - iter.font.ascent * iter.font_size};
@@ -614,6 +603,8 @@ DrawTextInputText :: (draw_list : *DrawList, node : *Node) {
             selection_position += Vec2f.{iter.pen.x, iter.pen.y - iter.font.ascent * iter.font_size};
         }
     }
+
+    SetTexture(draw_list, prev_texture);
 
     if input.cursor == input.buffer.count {
         cursor_position += Vec2f.{iter.pen.x, iter.pen.y - iter.font.ascent * iter.font_size};
@@ -637,36 +628,36 @@ DrawTextInputText :: (draw_list : *DrawList, node : *Node) {
     }
 
     // Draw selection
-    if selection_box_index >= 0 {
-        selection_size := Vec2f.{abs(cursor_position.x - selection_position.x), node.rect.w - node.rect.y};
-        selection_size.x = ceil(selection_size.x);
-        selection_size.y = ceil(selection_size.y);
+    // if selection_box_index >= 0 {
+    //     selection_size := Vec2f.{abs(cursor_position.x - selection_position.x), node.rect.w - node.rect.y};
+    //     selection_size.x = ceil(selection_size.x);
+    //     selection_size.y = ceil(selection_size.y);
 
-        selection_position = min(cursor_position, selection_position);
-        selection_position.x = floor(selection_position.x);
-        selection_position.y = floor(selection_position.y);
+    //     selection_position = min(cursor_position, selection_position);
+    //     selection_position.x = floor(selection_position.x);
+    //     selection_position.y = floor(selection_position.y);
 
-        box := *draw_list.boxes[selection_box_index];
-        box.size = selection_size;
-        box.position = selection_position + selection_size * 0.5;
-        box.corner_radiuses = style.selection.corner_radiuses;
-        box.background_color = style.selection.background_color;
-        box.background_color2 = style.selection.background_color2;
-        box.background_gradient_offset = style.selection.background_gradient_offset;
-        box.background_gradient_vector = style.selection.background_gradient_vector;
-        box.border_color = style.selection.border_color;
-        box.border_color2 = style.selection.border_color2;
-        box.border_gradient_offset = style.selection.border_gradient_offset;
-        box.border_gradient_vector = style.selection.border_gradient_vector;
-        box.border_size = style.selection.border_size;
-        box.border_inset = style.selection.border_inset;
-        box.outer_shadow_color = style.selection.outer_shadow_color;
-        box.outer_shadow_offset = style.selection.outer_shadow_offset;
-        box.outer_shadow_blur = style.selection.outer_shadow_blur;
-        box.inner_shadow_color = style.selection.inner_shadow_color;
-        box.inner_shadow_offset = style.selection.inner_shadow_offset;
-        box.inner_shadow_blur = style.selection.inner_shadow_blur;
-    }
+    //     box := *draw_list.boxes[selection_box_index];
+    //     box.size = selection_size;
+    //     box.position = selection_position + selection_size * 0.5;
+    //     box.corner_radiuses = style.selection.corner_radiuses;
+    //     box.background_color = style.selection.background_color;
+    //     box.background_color2 = style.selection.background_color2;
+    //     box.background_gradient_offset = style.selection.background_gradient_offset;
+    //     box.background_gradient_vector = style.selection.background_gradient_vector;
+    //     box.border_color = style.selection.border_color;
+    //     box.border_color2 = style.selection.border_color2;
+    //     box.border_gradient_offset = style.selection.border_gradient_offset;
+    //     box.border_gradient_vector = style.selection.border_gradient_vector;
+    //     box.border_size = style.selection.border_size;
+    //     box.border_inset = style.selection.border_inset;
+    //     box.outer_shadow_color = style.selection.outer_shadow_color;
+    //     box.outer_shadow_offset = style.selection.outer_shadow_offset;
+    //     box.outer_shadow_blur = style.selection.outer_shadow_blur;
+    //     box.inner_shadow_color = style.selection.inner_shadow_color;
+    //     box.inner_shadow_offset = style.selection.inner_shadow_offset;
+    //     box.inner_shadow_blur = style.selection.inner_shadow_blur;
+    // }
 }
 
 TextInputFlags :: enum_flags {

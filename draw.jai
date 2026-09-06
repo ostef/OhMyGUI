@@ -424,6 +424,13 @@ DrawBox :: (draw_list : *DrawList, box : BoxDrawing, texture : TextureHandle = 0
 }
 
 DrawGlyph :: (draw_list : *DrawList, glyph : GlyphDrawing, texture : TextureHandle) -> int {
+    DrawBox(draw_list, .{
+        position=(glyph.bounds.xy + glyph.bounds.zw) * 0.5,
+        size=glyph.bounds.zw - glyph.bounds.xy,
+        background_color=xx glyph.color,
+    });
+    return -1;
+
     if (glyph.color & 0xff) == 0 && (glyph.outer_shadow_color & 0xff) == 0 {
         return -1;
     }
@@ -457,6 +464,8 @@ DrawTriangle :: inline (draw_list : *DrawList, p0 : Vec2f, p1 : Vec2f, p2 : Vec2
 }
 
 DrawTriangle :: (draw_list : *DrawList, triangle : TriangleDrawing, texture : TextureHandle = 0) -> int {
+    return -1;
+
     if (triangle.c0 & 0xff) == 0 && (triangle.c1 & 0xff) == 0 && (triangle.c2 & 0xff) == 0 {
         return -1;
     }
@@ -613,6 +622,8 @@ DrawShape :: inline (draw_list : *DrawList, shape : *Shape, position : Vec2f, co
 }
 
 DrawShape :: (draw_list : *DrawList, drawing : ShapeDrawing, texture : TextureHandle = 0) -> int {
+    return -1;
+
     if (drawing.background_color & 0xff) == 0
     && ((drawing.border_color & 0xff) == 0 || drawing.border_size <= 0)
     && (drawing.outer_shadow_color & 0xff) == 0 {
