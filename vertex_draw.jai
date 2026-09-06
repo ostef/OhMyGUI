@@ -24,6 +24,7 @@ VtxDrawList :: struct {
     clip_box_stack : [..]s32;
     vertices : [..]Vertex;
     indices : [..]u32;
+    path : [..]PathPoint;
 
     gpu_buffer_clip_boxes_offset : u32;
     gpu_buffer_vertices_offset : u32;
@@ -36,6 +37,7 @@ InitDrawList :: (draw_list : *VtxDrawList) {
     draw_list.clip_box_stack.allocator = context.allocator;
     draw_list.vertices.allocator = context.allocator;
     draw_list.indices.allocator = context.allocator;
+    draw_list.path.allocator = context.allocator;
 }
 
 DestroyDrawList :: (draw_list : *VtxDrawList) {
@@ -44,6 +46,7 @@ DestroyDrawList :: (draw_list : *VtxDrawList) {
     array_reset(*draw_list.clip_box_stack);
     array_reset(*draw_list.vertices);
     array_reset(*draw_list.indices);
+    array_reset(*draw_list.path);
     draw_list.* = .{};
 }
 
@@ -53,6 +56,7 @@ ClearDrawList :: (draw_list : *VtxDrawList) {
     array_reset_keeping_memory(*draw_list.clip_box_stack);
     array_reset_keeping_memory(*draw_list.vertices);
     array_reset_keeping_memory(*draw_list.indices);
+    array_reset_keeping_memory(*draw_list.path);
 
     draw_list.gpu_buffer_clip_boxes_offset = 0;
     draw_list.gpu_buffer_vertices_offset = 0;
@@ -100,6 +104,24 @@ PushIndex :: inline (draw_list : *VtxDrawList, value : u32) {
     draw_call.num_indices += 1;
 
     array_add(*draw_list.indices, value);
+}
+
+PushIndices :: (draw_list : *VtxDrawList, count : u32) -> []u32 {
+    draw_call := GetCurrentDrawCall(draw_list);
+    if !draw_call {
+        draw_call = array_add(*draw_list.draw_calls);
+    }
+
+    draw_call.num_indices += count;
+
+    if draw_list.indices.count + count > draw_list.indices.allocated {
+        array_reserve(*draw_list.indices, draw_list.indices.allocated + count);
+    }
+
+    data := draw_list.indices.data + draw_list.indices.count;
+    draw_list.indices.count += count;
+
+    return .{data=data, count=count};
 }
 
 PushClipBox :: (draw_list : *VtxDrawList, bounds : Vec4f) {
@@ -221,9 +243,10 @@ DrawRect :: inline (
     bounds : Vec4f,
     color : RGBA8,
     corner_radiuses : Vec4f = .{0,0,0,0},
-    uv_bounds : Vec4f = .{0,0,1,1}
+    uv_bounds : Vec4f = .{0,0,1,1},
+    blur_size := 0.0
 ) {
-    DrawRect(draw_list, bounds, color, color, color, color, corner_radiuses, uv_bounds);
+    DrawRect(draw_list, bounds, color, color, color, color, corner_radiuses, uv_bounds, blur_size);
 }
 
 DrawRect :: (
@@ -234,7 +257,8 @@ DrawRect :: (
     color_bottom_left : RGBA8,
     color_bottom_right : RGBA8,
     corner_radiuses : Vec4f = .{0,0,0,0},
-    uv_bounds : Vec4f = .{0,0,1,1}
+    uv_bounds : Vec4f = .{0,0,1,1},
+    blur_size := 0.0
 ) {
     if IsClipped(draw_list, bounds) {
         return;
@@ -247,49 +271,30 @@ DrawRect :: (
         return;
     }
 
-    first := GetCurrentIndex(draw_list);
-
-    ReserveVertices(draw_list, 4);
-    p0 := PushVertex(draw_list);
-    p1 := PushVertex(draw_list);
-    p2 := PushVertex(draw_list);
-    p3 := PushVertex(draw_list);
-
-    p0.position = bounds.xy;
-    p0.tex_coords = uv_bounds.xy;
-    p0.color = color_top_left;
-
-    p1.position = .{bounds.z, bounds.y};
-    p1.tex_coords = .{uv_bounds.z, uv_bounds.y};
-    p1.color = color_top_right;
-
-    p2.position = .{bounds.x, bounds.w};
-    p2.tex_coords = .{uv_bounds.x, uv_bounds.w};
-    p2.color = color_bottom_left;
-
-    p3.position = bounds.zw;
-    p3.tex_coords = uv_bounds.zw;
-    p3.color = color_bottom_right;
-
-    PushIndex(draw_list, first);
-    PushIndex(draw_list, first + 1);
-    PushIndex(draw_list, first + 2);
-
-    PushIndex(draw_list, first + 2);
-    PushIndex(draw_list, first + 1);
-    PushIndex(draw_list, first + 3);
+    PathPushRoundedRect(*draw_list.path, bounds, corner_radiuses);
+    DrawConvexPolygon(draw_list, draw_list.path, color_top_left, blur_size);
+    array_reset_keeping_memory(*draw_list.path);
 }
 
 DrawBox :: inline (draw_list : *VtxDrawList, box : BoxDrawing, texture : TextureHandle = 0) -> int {
     prev_texture := SetTexture(draw_list, texture);
     defer SetTexture(draw_list, prev_texture);
 
+    if (box.outer_shadow_color & 0xff) != 0 {
+        DrawRect(
+            draw_list,
+            .{xy=box.outer_shadow_offset + box.position - box.size * 0.5, zw=box.outer_shadow_offset + box.position + box.size * 0.5},
+            box.outer_shadow_color,
+            box.corner_radiuses,
+            box.uv_bounds,
+            box.outer_shadow_blur,
+        );
+
+    }
+
     DrawRect(
         draw_list,
         .{xy=box.position - box.size * 0.5, zw=box.position + box.size * 0.5},
-        box.background_color,
-        box.background_color,
-        box.background_color,
         box.background_color,
         box.corner_radiuses,
         box.uv_bounds
@@ -582,3 +587,152 @@ DrawNodes :: (draw_list : *VtxDrawList, node : *Node) {
         }
     }
 } @Profile
+
+DrawConvexPolygon :: (draw_list : *VtxDrawList, points : []PathPoint, color : RGBA8, blur_size := 0.0) {
+    auto_release_temp();
+
+    if points.count < 3 || (color & 0xff) == 0 {
+        return;
+    }
+
+    first_inner := GetCurrentIndex(draw_list);
+    first_outer := first_inner + 1;
+
+    num_indices := cast(u32, (points.count - 2) * 3 + points.count * 6);
+
+    indices := PushIndices(draw_list, num_indices);
+    indices_index := 0;
+    for i : 2..cast(u32, points.count - 1) {
+        indices[indices_index] = first_inner;
+        indices_index += 1;
+
+        indices[indices_index] = first_inner + ((i - 1) << 1);
+        indices_index += 1;
+
+        indices[indices_index] = first_inner + (i << 1);
+        indices_index += 1;
+    }
+
+    color_alpha0 := SetAlpha(color, 0);
+
+    num_vertices := points.count * 2;
+    ReserveVertices(draw_list, num_vertices);
+
+    margin := 1.0 + max(blur_size, 0.0);
+    i0 : u32 = xx (points.count - 1);
+    i1 : u32 = 0;
+    while i1 < points.count {
+        defer {
+            i0 = i1;
+            i1 += 1;
+        }
+
+        n0 := points[i0].normal;
+        n1 := points[i1].normal;
+        n := (n0 + n1) * 0.5;
+
+        d2 := dot(n, n);
+
+        n *= margin * 0.5;
+
+        // Inner
+        v := PushVertex(draw_list);
+        v.position = points[i1].position - n;
+        v.color = color;
+
+        // Outer
+        v = PushVertex(draw_list);
+        v.position = points[i1].position + n;
+        v.color = color_alpha0;
+
+        // AA margin indices
+        indices[indices_index] = first_inner + (i1 << 1);
+        indices_index += 1;
+
+        indices[indices_index] = first_inner + (i0 << 1);
+        indices_index += 1;
+
+        indices[indices_index] = first_outer + (i0 << 1);
+        indices_index += 1;
+
+        indices[indices_index] = first_outer + (i0 << 1);
+        indices_index += 1;
+
+        indices[indices_index] = first_outer + (i1 << 1);
+        indices_index += 1;
+
+        indices[indices_index] = first_inner + (i1 << 1);
+        indices_index += 1;
+    }
+}
+
+PathPoint :: struct {
+    position : Vec2f;
+    normal : Vec2f;
+}
+
+PathCalcNormals :: (points : []PathPoint) {
+    i0 : u32 = xx (points.count - 1);
+    i1 : u32 = 0;
+    while i1 < points.count {
+        defer {
+            i0 = i1;
+            i1 += 1;
+        }
+
+        p0 := points[i0].position;
+        p1 := points[i1].position;
+        d := Normalize(p1 - p0);
+        points[i0].normal.x = d.y;
+        points[i0].normal.y = -d.x;
+    }
+}
+
+PathPushRoundedRect :: (points : *[..]PathPoint, bounds : Vec4f, corner_radiuses : Vec4f) {
+    half_size := (bounds.zw - bounds.xy) * 0.5;
+    max_radius := min(half_size.x, half_size.y);
+
+    top_left := bounds.xy;
+    top_left.x += min(corner_radiuses.x, max_radius);
+    top_left.y += min(corner_radiuses.x, max_radius);
+
+    top_right := Vec2f.{bounds.z, bounds.y};
+    top_right.x -= min(corner_radiuses.y, max_radius);
+    top_right.y += min(corner_radiuses.y, max_radius);
+
+    bottom_left := Vec2f.{bounds.x, bounds.w};
+    bottom_left.x += min(corner_radiuses.z, max_radius);
+    bottom_left.y -= min(corner_radiuses.z, max_radius);
+
+    bottom_right := bounds.zw;
+    bottom_right.x -= min(corner_radiuses.w, max_radius);
+    bottom_right.y -= min(corner_radiuses.w, max_radius);
+
+    PathPushArc(points, bottom_left,  min(corner_radiuses.z, max_radius), PI, PI * 0.5);
+    PathPushArc(points, bottom_right, min(corner_radiuses.w, max_radius), -PI * 0.5, PI * 0.5);
+    PathPushArc(points, top_right,    min(corner_radiuses.y, max_radius), 0, PI * 0.5);
+    PathPushArc(points, top_left,     min(corner_radiuses.x, max_radius), PI * 0.5, PI * 0.5);
+}
+
+PathPushArc :: (points : *[..]PathPoint, center : Vec2f, radius : float, start_angle : float, angle : float, num_segments := 0) {
+    if angle < 0 {
+        start_angle -= angle;
+        angle = -angle;
+    }
+
+    if radius < 0.5 {
+        normal := Vec2f.{cos(-start_angle - angle * 0.5), sin(-start_angle - angle * 0.5)};
+        array_add(points, .{position=center, normal=normal});
+        return;
+    }
+
+    if num_segments == 0 {
+        num_segments = max(cast(int, radius / 3) * 3, 8);
+    }
+
+    for i : 0..num_segments {
+        theta := i / cast(float, num_segments) * angle;
+        p := Vec2f.{cos(-start_angle - theta), sin(-start_angle - theta)};
+        array_add(points, .{position=center + p * radius, normal=p});
+    }
+}

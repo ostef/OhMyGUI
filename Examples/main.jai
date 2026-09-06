@@ -106,14 +106,14 @@ main :: () {
         }
         OMG.Render();
 
-        // if g_frame_syncs[g_frame_in_flight] {
-        //     Second :: 1000 * 1000 * 1000;
-        //     wait := glClientWaitSync(g_frame_syncs[g_frame_in_flight], GL_SYNC_FLUSH_COMMANDS_BIT, 2 * Second);
-        //     assert(wait != GL_TIMEOUT_EXPIRED, "GPU timeout");
-        //     assert(wait != GL_WAIT_FAILED, "glClientWaitSync failed");
+        if g_frame_syncs[g_frame_in_flight] {
+            Second :: 1000 * 1000 * 1000;
+            wait := glClientWaitSync(g_frame_syncs[g_frame_in_flight], GL_SYNC_FLUSH_COMMANDS_BIT, 2 * Second);
+            assert(wait != GL_TIMEOUT_EXPIRED, "GPU timeout");
+            assert(wait != GL_WAIT_FAILED, "glClientWaitSync failed");
 
-        //     glDeleteSync(g_frame_syncs[g_frame_in_flight]);
-        // }
+            glDeleteSync(g_frame_syncs[g_frame_in_flight]);
+        }
 
         w, h : s32;
         SDL_GetWindowSize(g_window, *w, *h);
@@ -124,7 +124,7 @@ main :: () {
 
         OMG_GL.Render(xx w, xx h);
 
-        // g_frame_syncs[g_frame_in_flight] = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+        g_frame_syncs[g_frame_in_flight] = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 
         g_frame_in_flight = (g_frame_in_flight + 1) % 2;
 
