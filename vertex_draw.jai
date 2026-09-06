@@ -20,7 +20,7 @@ Vertex :: struct {
 
 VtxDrawList :: struct {
     draw_calls : [..]VtxDrawCall;
-    clip_boxes : [..]Vec4f;
+    clip_boxes : [..]ClipBox;
     clip_box_stack : [..]s32;
     vertices : [..]Vertex;
     indices : [..]u32;
@@ -124,14 +124,15 @@ PushIndices :: (draw_list : *VtxDrawList, count : u32) -> []u32 {
     return .{data=data, count=count};
 }
 
-PushClipBox :: (draw_list : *VtxDrawList, bounds : Vec4f) {
+PushClipBox :: (draw_list : *VtxDrawList, bounds : Vec4f, corner_radiuses : Vec4f = .{}) {
     box := array_add(*draw_list.clip_boxes);
-    box.* = bounds;
+    box.bounds = bounds;
+    box.corner_radiuses = corner_radiuses;
 
     current_index := GetCurrentClipBoxIndex(draw_list);
     if current_index >= 0 {
         current := draw_list.clip_boxes[current_index];
-        box.* = ClipRect(box, current);
+        box.* = ClipBoxAgainstBox(box, current);
     }
 
     array_add(*draw_list.clip_box_stack, xx (draw_list.clip_boxes.count - 1));
@@ -147,7 +148,7 @@ IsClipped :: (draw_list : *VtxDrawList, bounds : Vec4f) -> bool {
         return false;
     }
 
-    clipped := ClipRect(bounds, draw_list.clip_boxes[index]);
+    clipped := ClipRect(bounds, draw_list.clip_boxes[index].bounds);
     return clipped.x > clipped.z || clipped.y > clipped.w;
 }
 
@@ -569,12 +570,12 @@ DrawNodes :: (draw_list : *VtxDrawList, node : *Node) {
     if node.num_children > 0 {
         if !(node.flags & .NoClip) {
             if node.flags & .NoPaddedClip {
-                PushClipBox(*node.window.draw_list, node.rect);
+                PushClipBox(*node.window.draw_list, node.rect, node.corner_radiuses);
             } else {
                 bounds := node.rect;
                 bounds.xy += ToVec2f(node.padding.xy);
                 bounds.zw -= ToVec2f(node.padding.zw);
-                PushClipBox(*node.window.draw_list, bounds);
+                PushClipBox(*node.window.draw_list, bounds, node.corner_radiuses);
             }
         }
 

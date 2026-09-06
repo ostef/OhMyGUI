@@ -372,7 +372,7 @@ RenderVtxDrawLists :: (viewport_w : u32, viewport_h : u32) {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glBlendEquation(GL_FUNC_ADD);
 
-    clip_boxes : [..]Vec4f;
+    clip_boxes : [..]ClipBox;
     vertices : [..]Vertex;
     indices : [..]u32;
 
@@ -389,7 +389,7 @@ RenderVtxDrawLists :: (viewport_w : u32, viewport_h : u32) {
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, g_clip_boxes_buffer);
     defer glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
-    clip_boxes_size := clip_boxes.count * size_of(Vec4f);
+    clip_boxes_size := clip_boxes.count * size_of(ClipBox);
     glBufferData(GL_SHADER_STORAGE_BUFFER, xx clip_boxes_size, clip_boxes.data, GL_STREAM_DRAW);
 
     glBindVertexArray(g_vertex_vao);
@@ -409,8 +409,8 @@ RenderVtxDrawLists :: (viewport_w : u32, viewport_h : u32) {
 
     clip_boxes_offset := 0;
     for :Windows context.omg {
-        glBindBufferRange(GL_SHADER_STORAGE_BUFFER, xx GLBufferBinding.ClipBoxes, g_clip_boxes_buffer, xx clip_boxes_offset, xx (it.draw_list.clip_boxes.count * size_of(Vec4f)));
-        clip_boxes_offset += it.draw_list.clip_boxes.count * size_of(Vec4f);
+        glBindBufferRange(GL_SHADER_STORAGE_BUFFER, xx GLBufferBinding.ClipBoxes, g_clip_boxes_buffer, xx clip_boxes_offset, xx (it.draw_list.clip_boxes.count * size_of(ClipBox)));
+        clip_boxes_offset += it.draw_list.clip_boxes.count * size_of(ClipBox);
 
         SendDrawCommands(*it.draw_list, viewport_w, viewport_h);
 

@@ -1,7 +1,12 @@
 #version 430 core
 
+struct ClipBox {
+    vec4 bounds;
+    vec4 corner_radiuses;
+};
+
 layout(std430) readonly buffer ClipBoxData {
-    vec4 u_clip_boxes[];
+    ClipBox u_clip_boxes[];
 };
 
 uniform vec2 u_viewport_size;
@@ -26,13 +31,12 @@ float FxStrokeColor(float d, float blur, float size, float inset) {
     return clamp(a, 0, 1);
 }
 
-float BoxSDF(vec2 p, vec4 bounds) {
-    vec2 size = bounds.zw - bounds.xy;
-    vec2 position = (bounds.xy + bounds.zw) * 0.5;
+float PrimBox(vec2 p, vec2 size, vec4 corner_radiuses) {
+    corner_radiuses.xy = p.x > 0.0 ? corner_radiuses.yw : corner_radiuses.xz;
+    corner_radiuses.x  = p.y > 0.0 ? corner_radiuses.y  : corner_radiuses.x;
+    vec2 q = abs(p) - size * 0.5 + corner_radiuses.x;
 
-    vec2 q = abs(p - position) - size * 0.5;
-
-    return min(max(q.x, q.y), 0.0) + length(max(q, 0.0));
+    return min(max(q.x, q.y), 0.0) + length(max(q, 0.0)) - corner_radiuses.x;
 }
 
 void main() {
@@ -54,8 +58,11 @@ void main() {
     }
 
     if (clip_box_index >= 0) {
-        vec4 clip = u_clip_boxes[clip_box_index];
-        float d = BoxSDF(p, clip);
+        ClipBox clip = u_clip_boxes[clip_box_index];
+        vec2 position = (clip.bounds.xy + clip.bounds.zw) * 0.5;
+        vec2 size = clip.bounds.zw - clip.bounds.xy;
+
+        float d = PrimBox(p - position, size, clip.corner_radiuses);
 
         float a = FxSolidColor(d, aa);
 

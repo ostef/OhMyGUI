@@ -130,8 +130,6 @@ EditorFrame :: () {
         OMG.SetGlobalTextSize(theme, max(text.text_size + 2, 5));
     }
 
-    print("GPU: % ms\n", OMG_GL.GetLastFrameGPUTime() * 1000);
-
     base_background_color := OMG.GetStyle("base", OMG.BoxStyle).background_color;
 
     window := OMG.GetWindow(g_window);
@@ -330,6 +328,7 @@ EditorFrame :: () {
             password_field := OMG.GetNode(content_browser, "password_field");
             {
                 OMG.SetSize(password_field, OMG.SizeFill(0.3), OMG.SizeFit());
+                OMG.SetMinWidth(password_field, 300);
                 OMG.SetLayout(password_field, .LeftToRight);
                 OMG.SetChildAlign(password_field, 0, 0.5);
                 OMG.SetChildGap(password_field, 6, 6);
@@ -348,6 +347,7 @@ EditorFrame :: () {
             fields := OMG.GetNode(content_browser);
             {
                 OMG.SetSize(fields, OMG.SizeFill(0.3), OMG.SizeFit());
+                OMG.SetMinWidth(fields, 300);
                 OMG.SetLayout(fields, .TopToBottom);
                 OMG.SetChildGap(fields, 0, 10);
 
