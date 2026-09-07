@@ -422,3 +422,23 @@ InverseLerp :: inline (a : float, b : float, t : float) -> float {
     return (t - a) / (b - a);
 }
 
+LineIntersection :: (a_p0 : Vec2f, a_p1 : Vec2f, b_p0 : Vec2f, b_p1 : Vec2f) -> bool, Vec2f {
+    ax := a_p1.x - a_p0.x;
+    ay := a_p1.y - a_p0.y;
+    bx := b_p1.x - b_p0.x;
+    by := b_p1.y - b_p0.y;
+
+    denom := ax * by - ay * bx;
+
+    if abs(denom) < 0.000001 {
+        return false, .{};
+    }
+
+    dx := b_p0.x - a_p0.x;
+    dy := b_p0.y - a_p0.y;
+
+    t := (dx * by - dy * bx) / denom;
+    u := (dx * ay - dy * ax) / denom;
+
+    return true, a_p0 + t * Vec2f.{ax, ay};
+}

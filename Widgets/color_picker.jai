@@ -264,7 +264,7 @@ HueWheel :: (parent : *Node, using data : *ColorPickerData, style : *HSVTriangle
             || IsInsideCircle(point, cursor, cursor_style.radius);
     }
 
-    Draw :: (draw_list : *DrawList, node : *Node) {
+    Draw :: (draw_list : *VtxDrawList, node : *Node) {
         if !node.parent {
             return;
         }
@@ -305,14 +305,14 @@ HueWheel :: (parent : *Node, using data : *ColorPickerData, style : *HSVTriangle
             p2 := center + outer_radius * p;
             p3 := center + inner_radius * p;
 
-            DrawTriangle(draw_list, .{
+            DrawTriangle(draw_list,
                 p0=p0, p1=p1, p2=p2,
                 c0=c0, c1=c0, c2=c1,
-            });
-            DrawTriangle(draw_list, .{
+            );
+            DrawTriangle(draw_list,
                 p0=p0, p1=p2, p2=p3,
                 c0=c0, c1=c1, c2=c1,
-            });
+            );
         }
 
         // Draw cursor ring
@@ -336,7 +336,7 @@ HueWheel :: (parent : *Node, using data : *ColorPickerData, style : *HSVTriangle
     node := GetNode(parent);
     node.flags |= .NoClip;
     SetSize(node, SizeFill(), SizeFill());
-    // SetDraw(node, Draw);
+    SetDraw(node, Draw);
     SetHitTest(node, HitTest);
 
     using _ := GetHSVWheelGeometricData(style, node.rect, hsv);
@@ -365,7 +365,7 @@ ColoredSliderData :: struct {
 }
 
 ColoredSlider :: (parent : *Node, value : *float, min : float, max : float, step : float, style : *SliderStyle, dynamic_color : bool, location := #caller_location) -> bool, slider : *Node, background : *Node, handle : *Node {
-    DrawTriangularCursor :: (draw_list : *DrawList, node : *Node) {
+    DrawTriangularCursor :: (draw_list : *VtxDrawList, node : *Node) {
         if !node.parent {
             return;
         }
@@ -374,22 +374,15 @@ ColoredSlider :: (parent : *Node, value : *float, min : float, max : float, step
             then Axis.Y else Axis.X;
         cross := GetCrossAxis(axis);
 
-        a := ifx axis == .X then node.rect.xy else Vec2f.{node.rect.x, node.rect.w};
-        b := ifx axis == .X then Vec2f.{node.rect.z, node.rect.y} else node.rect.xy;
+        a := ifx axis == .X then Vec2f.{node.rect.z, node.rect.y} else node.rect.xy;
+        b := ifx axis == .X then node.rect.xy else Vec2f.{node.rect.x, node.rect.w};
 
         c := ifx axis == .X then Vec2f.{node.size.x,0} else Vec2f.{0,-node.size.y};
-        c = a + Rotate(c, PI / 3);
+        c = b + Rotate(c, PI / 3);
 
-        DrawShape(draw_list, .{
-            shape=Triangle(a, b, c),
-            background_color=node.background_color,
-            border_color=node.border_color,
-            border_size=node.border_size,
-            border_inset=node.border_inset,
-            outer_shadow_color=node.outer_shadow_color,
-            outer_shadow_offset=node.outer_shadow_offset,
-            outer_shadow_blur=node.outer_shadow_blur,
-        });
+        // @Todo: triangle border
+        DrawTriangle(draw_list, a + node.outer_shadow_offset, b + node.outer_shadow_offset, c + node.outer_shadow_offset, node.outer_shadow_color, blur_size=node.outer_shadow_blur + 1);
+        DrawTriangle(draw_list, a, b, c, node.background_color);
 
         a = ifx axis == .X then Vec2f.{node.rect.x, node.rect.w} else node.rect.zw;
         b = ifx axis == .X then node.rect.zw else Vec2f.{node.rect.z, node.rect.y};
@@ -397,16 +390,8 @@ ColoredSlider :: (parent : *Node, value : *float, min : float, max : float, step
         c = ifx axis == .X then Vec2f.{node.size.x,0} else Vec2f.{0,-node.size.y};
         c = a + Rotate(c, -PI / 3);
 
-        DrawShape(draw_list, .{
-            shape=Triangle(a, b, c),
-            background_color=node.background_color,
-            border_color=node.border_color,
-            border_size=node.border_size,
-            border_inset=node.border_inset,
-            outer_shadow_color=node.outer_shadow_color,
-            outer_shadow_offset=node.outer_shadow_offset,
-            outer_shadow_blur=node.outer_shadow_blur,
-        });
+        DrawTriangle(draw_list, a + node.outer_shadow_offset, b + node.outer_shadow_offset, c + node.outer_shadow_offset, node.outer_shadow_color, blur_size=node.outer_shadow_blur + 1);
+        DrawTriangle(draw_list, a, b, c, node.background_color);
     }
 
     DrawBackground :: (draw_list : *DrawList, node : *Node) {
@@ -495,7 +480,7 @@ ColoredSlider :: (parent : *Node, value : *float, min : float, max : float, step
         // SetDraw(background, DrawBackground);
     }
 
-    // SetDraw(handle, DrawTriangularCursor);
+    SetDraw(handle, DrawTriangularCursor);
 
     return modified, slider, background, handle;
 }
