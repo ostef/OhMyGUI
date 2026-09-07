@@ -360,6 +360,10 @@ PerpendicularCW :: inline (v : Vec2f) -> Vec2f {
     return .{v.y, -v.x};
 }
 
+PerpendicularCCW :: inline (v : Vec2f) -> Vec2f {
+    return .{-v.y, v.x};
+}
+
 Rotate :: inline (v : Vec2f, angle : float) -> Vec2f {
     ct := cos(angle);
     st := sin(angle);

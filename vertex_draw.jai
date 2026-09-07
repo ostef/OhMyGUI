@@ -359,7 +359,8 @@ DrawLine :: (
     end : Vec2f,
     thickness : float,
     start_color : RGBA8,
-    end_color : RGBA8
+    end_color : RGBA8,
+    blur_size := 0.0
 ) {
     if (start_color & 0xff) == 0 && (end_color & 0xff) == 0 {
         return;
@@ -370,32 +371,11 @@ DrawLine :: (
     normal := Vec2f.{dir.y, -dir.x};
     half_thickness := thickness * 0.5;
 
-    first := GetCurrentIndex(draw_list);
-    ReserveVertices(draw_list, 4);
-    p0 := PushVertex(draw_list);
-    p1 := PushVertex(draw_list);
-    p2 := PushVertex(draw_list);
-    p3 := PushVertex(draw_list);
-
-    p0.position = start + normal * half_thickness;
-    p0.color = start_color;
-
-    p1.position = end + normal * half_thickness;
-    p1.color = end_color;
-
-    p2.position = start - normal * half_thickness;
-    p2.color = start_color;
-
-    p3.position = end - normal * half_thickness;
-    p3.color = end_color;
-
-    PushIndex(draw_list, first);
-    PushIndex(draw_list, first + 1);
-    PushIndex(draw_list, first + 2);
-
-    PushIndex(draw_list, first + 2);
-    PushIndex(draw_list, first + 1);
-    PushIndex(draw_list, first + 3);
+    array_add(*draw_list.path, .{start, normal});
+    array_add(*draw_list.path, .{end, normal});
+    // @Todo: end_color
+    DrawPolygonLine(draw_list, draw_list.path, false, thickness, start_color, blur_size);
+    array_reset_keeping_memory(*draw_list.path);
 }
 
 DrawSDFGlyph :: (
@@ -668,42 +648,59 @@ DrawPolygonLine :: (draw_list : *VtxDrawList, points : []PathPoint, closed : boo
     half_inner_thickness := (thickness - margin) * 0.5;
     half_thickness := thickness * 0.5;
 
-    for i : 0..cast(u32, points.count - 1) {
-        n : Vec2f = ---;
+    i0 : u32 = xx (points.count - 1);
+    i1 : u32 = 0;
+    i2 : u32 = 1;
+    while i1 < xx points.count {
+        defer {
+            i0 = i1;
+            i1 += 1;
+            i2 = (i2 + 1) % cast(u32, points.count);
+        }
 
-        if i < points.count - 1 {
-            n0 := points[i].normal;
-            n1 := points[i + 1].normal;
-            n = (n0 + n1) * 0.5;
-        } else if closed {
-            n0 := points[i].normal;
-            n1 := points[0].normal;
-            n = (n0 + n1) * 0.5;
+        n : Vec2f = ---;
+        if !closed && (i1 == 0 || i1 == points.count - 1) {
+            n = points[i1].normal;
         } else {
-            n = points[i].normal;
+            p0 := points[i0];
+            p1 := points[i1];
+            p2 := points[i2];
+
+            n0 := PerpendicularCW(p1.position - p0.position);
+            normalize(*n0);
+
+            n1 := PerpendicularCW(p2.position - p1.position);
+            normalize(*n1);
+
+            inter, p := LineIntersection(p0.position + n0, p1.position + n0, p1.position + n1, p2.position + n1);
+            if !inter {
+                p = p1.position + (n0 + n1) * 0.5;
+            }
+
+            n = p1.position - p;
         }
 
         if is_thick {
             v := PushVertex(draw_list);
-            v.position = points[i].position + n * half_inner_thickness;
+            v.position = points[i1].position + n * half_inner_thickness;
             v.color = color;
 
             v = PushVertex(draw_list);
-            v.position = points[i].position - n * half_inner_thickness;
+            v.position = points[i1].position - n * half_inner_thickness;
             v.color = color;
 
             v = PushVertex(draw_list);
-            v.position = points[i].position + n * half_thickness;
+            v.position = points[i1].position + n * half_thickness;
             v.color = color_alpha0;
 
             v = PushVertex(draw_list);
-            v.position = points[i].position - n * half_thickness;
+            v.position = points[i1].position - n * half_thickness;
             v.color = color_alpha0;
 
             // Indices
-            if i < points.count - 1 || closed {
-                ii0 := i * 4;
-                ii1 := ifx i == points.count - 1 then 0 else ii0 + 4;
+            if i1 < points.count - 1 || closed {
+                ii0 := i1 * 4;
+                ii1 := ifx i1 == points.count - 1 then 0 else ii0 + 4;
 
                 // Middle
                 indices[indices_index] = first + ii0;
@@ -765,21 +762,21 @@ DrawPolygonLine :: (draw_list : *VtxDrawList, points : []PathPoint, closed : boo
         } else {
             // If the line is not thick, we only have three segments
             v := PushVertex(draw_list);
-            v.position = points[i].position + n * margin;
+            v.position = points[i1].position + n * margin;
             v.color = color_alpha0;
 
             v = PushVertex(draw_list);
-            v.position = points[i].position;
+            v.position = points[i1].position;
             v.color = color;
 
             v = PushVertex(draw_list);
-            v.position = points[i].position - n * margin;
+            v.position = points[i1].position - n * margin;
             v.color = color_alpha0;
 
             // Indices
-            if i < points.count - 1 || closed {
-                ii0 := i * 3;
-                ii1 := ifx i == points.count - 1 then 0 else ii0 + 3;
+            if i1 < points.count - 1 || closed {
+                ii0 := i1 * 3;
+                ii1 := ifx i1 == points.count - 1 then 0 else ii0 + 3;
 
                 // Margin 1
                 indices[indices_index] = first + ii0;
