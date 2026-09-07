@@ -287,7 +287,7 @@ DrawRect :: (
         GetTexCoords, *get_tex_coords_data,
         blur_size);
     array_reset_keeping_memory(*draw_list.path);
-}
+} @Profile
 
 DrawRectOutline :: inline (
     draw_list : *VtxDrawList,
@@ -329,7 +329,7 @@ DrawRectOutline :: (
     PathPushRoundedRect(*draw_list.path, bounds, corner_radiuses);
     DrawPolygonLine(draw_list, draw_list.path, true, thickness, color_top_left, blur_size, blur_sides);
     array_reset_keeping_memory(*draw_list.path);
-}
+} @Profile
 
 BoxDrawing :: struct {
     size : Vec2f;
@@ -409,7 +409,7 @@ DrawBox :: inline (draw_list : *VtxDrawList, box : BoxDrawing, texture : Texture
         box.corner_radiuses,
         box.uv_bounds
     );
-}
+} @Profile
 
 DrawCircle :: (
     draw_list : *VtxDrawList,
@@ -429,7 +429,7 @@ DrawCircle :: (
     PathPushArc(*draw_list.path, center, radius, 0, 2 * PI);
     DrawConvexPolygon(draw_list, draw_list.path, color, blur_size);
     array_reset_keeping_memory(*draw_list.path);
-}
+} @Profile
 
 DrawCircleOutline :: (
     draw_list : *VtxDrawList,
@@ -451,7 +451,7 @@ DrawCircleOutline :: (
     PathPushArc(*draw_list.path, center, radius, 0, 2 * PI);
     DrawPolygonLine(draw_list, draw_list.path, true, thickness, color, blur_size, blur_sides);
     array_reset_keeping_memory(*draw_list.path);
-}
+} @Profile
 
 DrawLine :: inline (
     draw_list : *VtxDrawList,
@@ -496,7 +496,7 @@ DrawLine :: (
 
     DrawPolygonLine(draw_list, draw_list.path, false, thickness, GetColor, *get_color_data, blur_size);
     array_reset_keeping_memory(*draw_list.path);
-}
+} @Profile
 
 DrawSDFGlyph :: (
     draw_list : *VtxDrawList,
@@ -1061,7 +1061,7 @@ DrawPolygonLine :: (
             }
         }
     }
-}
+} @Profile
 
 DrawConvexPolygon :: inline (
     draw_list : *VtxDrawList,
@@ -1166,7 +1166,7 @@ DrawConvexPolygon :: (
         indices[indices_index] = first_inner + (i1 << 1);
         indices_index += 1;
     }
-}
+} @Profile
 
 TriangleSides :: enum_flags {
     P0P1;
@@ -1391,7 +1391,7 @@ DrawTriangle :: (
         indices[indices_index] = first;
         indices_index += 1;
     }
-}
+} @Profile
 
 PathPoint :: struct {
     position : Vec2f;
@@ -1424,7 +1424,7 @@ PathCalcNormals :: (points : []PathPoint, closed : bool) {
             points[i1].normal.y = -d.x;
         }
     }
-}
+} @Profile
 
 PathPushRoundedRect :: (points : *[..]PathPoint, bounds : Vec4f, corner_radiuses : Vec4f) {
     half_size := (bounds.zw - bounds.xy) * 0.5;
@@ -1450,7 +1450,7 @@ PathPushRoundedRect :: (points : *[..]PathPoint, bounds : Vec4f, corner_radiuses
     PathPushArc(points, bottom_right, min(corner_radiuses.w, max_radius), -PI * 0.5, PI * 0.5);
     PathPushArc(points, top_right,    min(corner_radiuses.y, max_radius), 0, PI * 0.5);
     PathPushArc(points, top_left,     min(corner_radiuses.x, max_radius), PI * 0.5, PI * 0.5);
-}
+} @Profile
 
 PathPushArc :: (points : *[..]PathPoint, center : Vec2f, radius : float, start_angle : float, angle : float, num_segments := 0) {
     Half_Circle_Points_Count :: 50;
@@ -1544,4 +1544,4 @@ PathPushArc :: (points : *[..]PathPoint, center : Vec2f, radius : float, start_a
             array_add(points, .{position=center + p * radius, normal=p});
         }
     }
-}
+} @Profile
