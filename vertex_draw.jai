@@ -369,6 +369,17 @@ DrawCircleOutline :: (
     array_reset_keeping_memory(*draw_list.path);
 }
 
+DrawLine :: inline (
+    draw_list : *VtxDrawList,
+    start : Vec2f,
+    end : Vec2f,
+    thickness : float,
+    color : RGBA8,
+    blur_size := 1.0
+) {
+    DrawLine(draw_list, start, end, thickness, color, color, blur_size);
+}
+
 DrawLine :: (
     draw_list : *VtxDrawList,
     start : Vec2f,
