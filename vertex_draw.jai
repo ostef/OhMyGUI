@@ -193,54 +193,6 @@ SetTexture :: (draw_list : *VtxDrawList, texture : VtxDrawCall.Texture) -> previ
     return previous;
 }
 
-/*
-DrawTriangle :: inline (
-    draw_list : *VtxDrawList,
-    p0 : Vec2f,
-    p1 : Vec2f,
-    p2 : Vec2f,
-    color : RGBA8
-) {
-    DrawTriangle(draw_list, p0, p1, p2, color, color, color);
-}
-
-DrawTriangle :: (
-    draw_list : *VtxDrawList,
-    p0 : Vec2f,
-    p1 : Vec2f,
-    p2 : Vec2f,
-    color0 : RGBA8,
-    color1 : RGBA8,
-    color2 : RGBA8,
-    uv0 := Vec2f.{0,0},
-    uv1 := Vec2f.{0,0},
-    uv2 := Vec2f.{0,0}
-) {
-    if (color0 & 0xff) == 0 && (color1 & 0xff) == 0 && (color2 & 0xff) == 0 {
-        return;
-    }
-
-    first := GetCurrentIndex(draw_list);
-
-    ReserveVertices(draw_list, 3);
-    v0 := PushVertex(draw_list);
-    v1 := PushVertex(draw_list);
-    v2 := PushVertex(draw_list);
-
-    v0.position = p0;
-    v0.color = color0;
-    v0.tex_coords = uv0;
-
-    v1.position = p1;
-    v1.color = color1;
-    v1.tex_coords = uv1;
-
-    v2.position = p2;
-    v2.color = color2;
-    v2.tex_coords = uv2;
-}
-*/
-
 DrawRect :: inline (
     draw_list : *VtxDrawList,
     bounds : Vec4f,
@@ -1077,8 +1029,8 @@ DrawTriangle :: (
     c2 : RGBA8,
     // A blur of 1.0 can be used for anti-aliasing
     // For blur to work the points need to be in counter clockwise order
-    blur_size := 0.0,
-    blurred_sides : TriangleSides = 0
+    blur_size := 1.0,
+    blurred_sides := TriangleSides.All
 ) {
     if (c0 & 0xff) == 0 && (c1 & 0xff) == 0 && (c2 & 0xff) == 0 {
         return;
