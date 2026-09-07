@@ -150,12 +150,6 @@ CheckmarkStyle :: struct {
     background_color2 : RGBA8;
     background_gradient_vector : Vec2f;
     background_gradient_offset : float;
-    border_color : RGBA8;
-    border_color2 : RGBA8;
-    border_gradient_vector : Vec2f;
-    border_gradient_offset : float;
-    border_size : float;
-    border_inset : float;
     outer_shadow_blur : float;
     outer_shadow_offset : Vec2f;
     outer_shadow_color : RGBA8;
@@ -166,12 +160,6 @@ Apply :: inline (node : *Node, style : CheckmarkStyle) {
     node.background_color2 = style.background_color2;
     node.background_gradient_vector = style.background_gradient_vector;
     node.background_gradient_offset = style.background_gradient_offset;
-    node.border_color = style.border_color;
-    node.border_color2 = style.border_color2;
-    node.border_gradient_vector = style.border_gradient_vector;
-    node.border_gradient_offset = style.border_gradient_offset;
-    node.border_size = style.border_size;
-    node.border_inset = style.border_inset;
     node.outer_shadow_blur = style.outer_shadow_blur;
     node.outer_shadow_offset = style.outer_shadow_offset;
     node.outer_shadow_color = style.outer_shadow_color;
@@ -196,7 +184,7 @@ SetColors :: (using style : *CheckboxStyle, base_background_color : RGBA8, check
     active.checkmark.background_color = checkmark_color;
 }
 
-DrawCheckmark :: (draw_list : *DrawList, node : *Node) {
+DrawCheckmark :: (draw_list : *VtxDrawList, node : *Node) {
     checkbox_style := GetUserData(node.parent, CheckboxStyle);
     if !checkbox_style {
         return;
@@ -222,32 +210,33 @@ DrawCheckmark :: (draw_list : *DrawList, node : *Node) {
     thickness := size * checkmark.thickness;
     radiuses := Vec4f.{checkmark.rounding, checkmark.rounding, 2, 2} * scale;
 
-    left := Box(thickness, left_height, radiuses);
-    left = Transform(left, Rotate2D(-checkmark.angle) * Translate2D(0, -left_height * 0.5));
+    n0 := Rotate(Vec2f.{0, 1}, -checkmark.angle);
+    n1 := Rotate(Vec2f.{0, 1},  checkmark.angle);
 
-    right := Box(thickness, right_height, radiuses);
-    right = Transform(right, Rotate2D(checkmark.angle) * Translate2D(0, -right_height * 0.5));
+    p0 := position - n0 * left_height;
+    p0 += Vec2f.{size * 0.5 * checkmark.offset.x, -thickness * 0.5 + checkmark.offset.y * size};
+    p1 := position;
+    p1 += Vec2f.{size * 0.5 * checkmark.offset.x, -thickness * 0.5 + checkmark.offset.y * size};
+    p2 := position - n1 * right_height;
+    p2 += Vec2f.{size * 0.5 * checkmark.offset.x, -thickness * 0.5 + checkmark.offset.y * size};
 
-    shape := Union(left, right, 0.5 * scale);
-    shape = Move(shape, size * 0.5 * checkmark.offset.x, -thickness * 0.5 + checkmark.offset.y * size);
+    if (node.outer_shadow_color & 0xff) != 0 {
+        array_add(*draw_list.path, .{position=p0 + node.outer_shadow_offset, normal=PerpendicularCCW(n0)});
+        array_add(*draw_list.path, .{position=p1 + node.outer_shadow_offset});
+        array_add(*draw_list.path, .{position=p2 + node.outer_shadow_offset, normal=PerpendicularCW(n1)});
 
-    DrawShape(*node.window.draw_list, .{
-        shape=shape,
-        position=position,
-        background_color=node.background_color,
-        background_color2=node.background_color2,
-        background_gradient_vector=node.background_gradient_vector,
-        background_gradient_offset=node.background_gradient_offset,
-        border_color=node.border_color,
-        border_color2=node.border_color2,
-        border_gradient_vector=node.border_gradient_vector,
-        border_gradient_offset=node.border_gradient_offset,
-        border_size=node.border_size,
-        border_inset=node.border_inset,
-        outer_shadow_color=node.outer_shadow_color,
-        outer_shadow_offset=node.outer_shadow_offset,
-        outer_shadow_blur=node.outer_shadow_blur,
-    });
+        DrawPolygonLine(draw_list, draw_list.path, false, thickness, node.outer_shadow_color, blur_size=1 + node.outer_shadow_blur);
+
+        array_reset_keeping_memory(*draw_list.path);
+    }
+
+    array_add(*draw_list.path, .{position=p0, normal=PerpendicularCCW(n0)});
+    array_add(*draw_list.path, .{position=p1});
+    array_add(*draw_list.path, .{position=p2, normal=PerpendicularCW(n1)});
+
+    DrawPolygonLine(draw_list, draw_list.path, false, thickness, node.background_color);
+
+    array_reset_keeping_memory(*draw_list.path);
 }
 
 Checkbox :: (parent : *Node, value : *bool, size := 20.0, style : *CheckboxStyle = null, location := #caller_location) -> modified : bool, *Node {
@@ -269,7 +258,7 @@ Checkbox :: (parent : *Node, value : *bool, size := 20.0, style : *CheckboxStyle
 
         if value.* {
             checkmark := GetNode(node, "text");
-            // SetDraw(checkmark, DrawCheckmark);
+            SetDraw(checkmark, DrawCheckmark);
             SetSize(checkmark, SizeFill(), SizeFill());
 
             Apply(checkmark, style.states[state].checkmark);

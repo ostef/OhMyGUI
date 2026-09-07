@@ -741,7 +741,7 @@ DrawPolygonLine :: (
     if closed {
         num_indices = xx points.count * num_indices_per_point;
     } else {
-        num_indices = xx(points.count - 1) * num_indices_per_point;
+        num_indices = xx (points.count - 1) * num_indices_per_point;
     }
 
     indices := PushIndices(draw_list, xx num_indices);
