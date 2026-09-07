@@ -277,28 +277,31 @@ DrawBox :: inline (draw_list : *VtxDrawList, box : BoxDrawing, texture : Texture
     prev_texture := SetTexture(draw_list, texture);
     defer SetTexture(draw_list, prev_texture);
 
-    if (box.outer_shadow_color & 0xff) != 0 {
-        DrawRect(
-            draw_list,
-            .{xy=box.outer_shadow_offset + box.position - box.size * 0.5, zw=box.outer_shadow_offset + box.position + box.size * 0.5},
-            box.outer_shadow_color,
-            box.corner_radiuses,
-            box.uv_bounds,
-            box.outer_shadow_blur,
-        );
-    }
-
+    // Outer shadow
     DrawRect(
         draw_list,
-        .{xy=box.position - box.size * 0.5, zw=box.position + box.size * 0.5},
+        .{xy=box.outer_shadow_offset + box.position - box.size * 0.5, zw=box.outer_shadow_offset + box.position + box.size * 0.5},
+        box.outer_shadow_color,
+        box.corner_radiuses,
+        box.uv_bounds,
+        box.outer_shadow_blur,
+    );
+
+    bounds := Vec4f.{xy=box.position - box.size * 0.5, zw=box.position + box.size * 0.5};
+
+    // Background
+    DrawRect(
+        draw_list,
+        bounds,
         box.background_color,
         box.corner_radiuses,
         box.uv_bounds
     );
 
+    // Inner shadow
     DrawRectOutline(
         draw_list,
-        .{xy=box.position - box.size * 0.5, zw=box.position + box.size * 0.5},
+        bounds,
         box.inner_shadow_color,
         0,
         box.corner_radiuses,
@@ -307,15 +310,63 @@ DrawBox :: inline (draw_list : *VtxDrawList, box : BoxDrawing, texture : Texture
         .Interior,
     );
 
+    // Border
     border_inset := Vec2f.{box.border_size * 0.5 + box.border_inset, box.border_size * 0.5 + box.border_inset};
+    border_bounds := bounds;
+    border_bounds.x += box.border_size * 0.5 + box.border_inset;
+    border_bounds.y += box.border_size * 0.5 + box.border_inset;
+    border_bounds.z -= box.border_size * 0.5 + box.border_inset;
+    border_bounds.w -= box.border_size * 0.5 + box.border_inset;
     DrawRectOutline(
         draw_list,
-        .{xy=box.position - (box.size - border_inset) * 0.5, zw=box.position + (box.size - border_inset) * 0.5},
+        border_bounds,
         box.border_color,
         box.border_size,
         box.corner_radiuses,
         box.uv_bounds
     );
+}
+
+DrawCircle :: (
+    draw_list : *VtxDrawList,
+    center : Vec2f,
+    radius : float,
+    color : RGBA8,
+    blur_size := 1.0,
+) {
+    if IsClipped(draw_list, Vec4f.{center.x - radius, center.y - radius, center.x + radius, center.y + radius}) {
+        return;
+    }
+
+    if (color & 0xff) == 0 {
+        return;
+    }
+
+    PathPushArc(*draw_list.path, center, radius, 0, 2 * PI);
+    DrawConvexPolygon(draw_list, draw_list.path, color, blur_size);
+    array_reset_keeping_memory(*draw_list.path);
+}
+
+DrawCircleOutline :: (
+    draw_list : *VtxDrawList,
+    center : Vec2f,
+    radius : float,
+    color : RGBA8,
+    thickness : float,
+    blur_size := 1.0,
+    blur_sides := LineSides.All
+) {
+    if IsClipped(draw_list, Vec4f.{center.x - radius, center.y - radius, center.x + radius, center.y + radius}) {
+        return;
+    }
+
+    if (color & 0xff) == 0 {
+        return;
+    }
+
+    PathPushArc(*draw_list.path, center, radius, 0, 2 * PI);
+    DrawPolygonLine(draw_list, draw_list.path, true, thickness, color, blur_size, blur_sides);
+    array_reset_keeping_memory(*draw_list.path);
 }
 
 DrawLine :: (
@@ -334,7 +385,6 @@ DrawLine :: (
     dir := end - start;
     length := normalize(*dir);
     normal := Vec2f.{dir.y, -dir.x};
-    half_thickness := thickness * 0.5;
 
     array_add(*draw_list.path, .{start, normal});
     array_add(*draw_list.path, .{end, normal});
@@ -595,6 +645,33 @@ DrawNodes :: (draw_list : *VtxDrawList, node : *Node) {
     }
 } @Profile
 
+DrawCheckerboard :: (draw_list : *VtxDrawList, rect : Vec4f, checker_size : float, white : RGBA8, black : RGBA8) {
+    if (white & 0xff) == 0 && (black & 0xff) == 0 {
+        return;
+    }
+
+    if rect.x >= rect.z || rect.y >= rect.w {
+        return;
+    }
+
+    white_square_x := false;
+    px := rect.x;
+    while px < rect.z {
+        py := rect.y;
+        white_square := white_square_x;
+        while py < rect.w {
+            bounds := Vec4f.{px, py, px + checker_size, py + checker_size};
+            DrawRect(draw_list, bounds, ifx white_square then white else black);
+
+            white_square = !white_square;
+            py += checker_size;
+        }
+
+        white_square_x = !white_square_x;
+        px += checker_size;
+    }
+} @Profile
+
 DrawPolygonLine :: inline (
     draw_list : *VtxDrawList,
     points : []PathPoint,
@@ -676,7 +753,6 @@ DrawPolygonLine :: (
     ReserveVertices(draw_list, num_vertices);
 
     half_inner_thickness := (thickness - blur_size) * 0.5;
-    half_thickness := thickness * 0.5;
 
     i0 : u32 = xx (points.count - 1);
     i1 : u32 = 0;
@@ -724,13 +800,13 @@ DrawPolygonLine :: (
 
             if blur_sides & .Exterior {
                 v = PushVertex(draw_list);
-                v.position = points[i1].position + n * half_thickness;
+                v.position = points[i1].position + n * (half_inner_thickness + blur_size);
                 v.color = color_alpha0;
             }
 
             if blur_sides & .Interior {
                 v = PushVertex(draw_list);
-                v.position = points[i1].position - n * half_thickness;
+                v.position = points[i1].position - n * (half_inner_thickness + blur_size);
                 v.color = color_alpha0;
             }
 
@@ -742,9 +818,9 @@ DrawPolygonLine :: (
                 i1_interior := i1 * num_vertices_per_point + 3;
 
                 i2_middle0  := ifx i1 == points.count - 1 then 0 else i1_middle0  + num_vertices_per_point;
-                i2_middle1  := ifx i1 == points.count - 1 then 0 else i1_middle1  + num_vertices_per_point;
-                i2_exterior := ifx i1 == points.count - 1 then 1 else i1_exterior + num_vertices_per_point;
-                i2_interior := ifx i1 == points.count - 1 then 2 else i1_interior + num_vertices_per_point;
+                i2_middle1  := ifx i1 == points.count - 1 then 1 else i1_middle1  + num_vertices_per_point;
+                i2_exterior := ifx i1 == points.count - 1 then 2 else i1_exterior + num_vertices_per_point;
+                i2_interior := ifx i1 == points.count - 1 then 3 else i1_interior + num_vertices_per_point;
 
                 if !(blur_sides & .Exterior) {
                     i1_interior = i1_exterior;
