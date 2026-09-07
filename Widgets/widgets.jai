@@ -255,6 +255,9 @@ DrawArrow :: (draw_list : *VtxDrawList, node : *Node, rotation : float) {
     p0 := Rotate(Vec2f.{half_w, -half_h}, rotation);
     p1 := Rotate(Vec2f.{-half_w, -half_h}, rotation);
     p2 := Rotate(Vec2f.{0, half_h}, rotation);
+    p0 += center;
+    p1 += center;
+    p2 += center;
 
     DrawTriangle(draw_list, p0 + node.outer_shadow_offset, p1 + node.outer_shadow_offset, p2 + node.outer_shadow_offset, node.outer_shadow_color, node.outer_shadow_blur + 1);
     DrawTriangle(draw_list, p0, p1, p2, node.background_color);
