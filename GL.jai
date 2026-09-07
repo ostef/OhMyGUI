@@ -3,10 +3,6 @@
 #import "Basic";
 #import "String";
 
-GetLastFrameGPUTime :: inline () -> float {
-    return g_last_frame_gpu_time;
-}
-
 GetRendererFuncs :: inline () -> RendererFunctions {
     return .{
         CreateR8Texture=CreateR8Texture,
@@ -29,15 +25,9 @@ g_shader : Shader;
 
 g_vao : GLuint;
 
-g_num_frames_in_flight : int;
-g_frame_in_flight : int;
-g_timestamp_queries : [][2]GLuint;
-
 g_clip_boxes_buffer : GLuint;
 g_vertices_buffer : GLuint;
 g_indices_buffer : GLuint;
-
-g_last_frame_gpu_time : float;
 
 LoadShader :: (name : string, vertex_source : string, fragment_source : string) -> Shader {
     status, log_length : GLint;
@@ -238,15 +228,11 @@ GLSL
 
 #scope_export
 
-Init :: (num_frames_in_flight := 2, frame_data_buffer_size := 1 * 1024 * 1024) -> bool {
-    g_num_frames_in_flight = num_frames_in_flight;
-
+Init :: () {
     #import "File";
 
     g_shader = LoadShader("OhMyGUI", Vertex_Shader, Fragment_Shader);
-    if !g_shader.handle {
-        return false;
-    }
+    assert(g_shader.handle != 0, "Could not load OhMyGUI shader");
 
     glGenBuffers(1, *g_clip_boxes_buffer);
     glGenBuffers(1, *g_vertices_buffer);
@@ -277,32 +263,11 @@ Init :: (num_frames_in_flight := 2, frame_data_buffer_size := 1 * 1024 * 1024) -
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    g_timestamp_queries = NewArray(num_frames_in_flight, [2]GLuint);
-    glGenQueries(xx (g_timestamp_queries.count * 2), xx g_timestamp_queries.data);
-
-    // Make first query result not cause an error
-    for queries, query_backbuffer_index : g_timestamp_queries {
-        for queries {
-            glQueryCounter(it, GL_TIMESTAMP);
-
-            name := tprint("Query 'Frame Time %, Backbuffer %'", ifx it_index == 0 then "Start" else "End", query_backbuffer_index);
-            glObjectLabel(GL_QUERY, it, xx name.count, name.data);
-        }
-    }
-
     white : u32 = 0xffffffff;
     g_white_texture = xx CreateRGBA8Texture("White Texture", *white, 1, 1);
-
-    log("Initialized GL backend");
-    log("Num frames in flight: %", g_num_frames_in_flight);
-
-    return true;
 }
 
 Terminate :: () {
-    glDeleteQueries(xx (g_timestamp_queries.count * 2), xx g_timestamp_queries.data);
-    free(g_timestamp_queries.data);
-
     glDeleteProgram(g_shader.handle);
     g_shader.handle = 0;
 
@@ -315,22 +280,6 @@ Terminate :: () {
 }
 
 Render :: (viewport_w : u32, viewport_h : u32) {
-    last_query_index := g_frame_in_flight - (g_num_frames_in_flight - 1);
-    if last_query_index < 0 {
-        last_query_index += g_num_frames_in_flight;
-    }
-
-    start_time, end_time : s64;
-    glGetQueryObjecti64v(g_timestamp_queries[last_query_index][0], GL_QUERY_RESULT, *start_time);
-    glGetQueryObjecti64v(g_timestamp_queries[last_query_index][1], GL_QUERY_RESULT, *end_time);
-
-    elapsed := end_time - start_time;
-    g_last_frame_gpu_time = cast(float, elapsed / 1_000_000_000.0);
-
-    glQueryCounter(g_timestamp_queries[g_frame_in_flight][0], GL_TIMESTAMP);
-
-    defer g_frame_in_flight = (g_frame_in_flight + 1) % g_num_frames_in_flight;
-
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
     glEnable(GL_BLEND);
@@ -383,8 +332,6 @@ Render :: (viewport_w : u32, viewport_h : u32) {
 
         ClearDrawList(*it.draw_list);
     }
-
-    glQueryCounter(g_timestamp_queries[g_frame_in_flight][1], GL_TIMESTAMP);
 }
 
 SendDrawCommands :: (draw_list : *VtxDrawList, viewport_w : u32, viewport_h : u32) {
