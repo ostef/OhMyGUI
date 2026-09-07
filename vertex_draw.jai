@@ -572,12 +572,18 @@ DrawNodes :: (draw_list : *VtxDrawList, node : *Node) {
     }
 } @Profile
 
-DrawPolygonLine :: (draw_list : *VtxDrawList, points : []PathPoint, closed : bool, thickness : float, color : RGBA8, blur_size := 0.0) #no_abc {
-    if points.count < 2 || (color & 0xff) == 0 {
+DrawPolygonLine :: inline (draw_list : *VtxDrawList, points : []PathPoint, closed : bool, thickness : float, color : RGBA8, blur_size := 0.0) {
+    if (color & 0xff) == 0 {
         return;
     }
 
-    color_alpha0 := SetAlpha(color, 0);
+    DrawPolygonLine(draw_list, points, closed, thickness, (index, data) => cast(*RGBA8, data).*, *color, blur_size);
+}
+
+DrawPolygonLine :: (draw_list : *VtxDrawList, points : []PathPoint, closed : bool, thickness : float, $get_color : #type (index : int, data : *void) -> RGBA8, get_color_data : *void = null, blur_size := 0.0) #no_abc {
+    if points.count < 2 {
+        return;
+    }
 
     thickness = max(thickness, 1);
     margin := 1.0 + max(blur_size, 0.0);
@@ -609,6 +615,9 @@ DrawPolygonLine :: (draw_list : *VtxDrawList, points : []PathPoint, closed : boo
             i1 += 1;
             i2 = (i2 + 1) % cast(u32, points.count);
         }
+
+        color := inline get_color(i1, get_color_data);
+        color_alpha0 := SetAlpha(color, 0);
 
         n : Vec2f = ---;
         if !closed && (i1 == 0 || i1 == points.count - 1) {

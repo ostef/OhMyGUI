@@ -282,40 +282,15 @@ HueWheel :: (parent : *Node, using data : *ColorPickerData, style : *HSVTriangle
         using _ := data.*;
         using _ := GetHSVWheelGeometricData(style, node.rect, hsv);
 
-        Resolution :: 100;
-        theta := PI * 2 / Resolution;
-        cost := cos(theta);
-        sint := sin(theta);
-        p := Vec2f.{1,0};
-
-        for i : 0..Resolution - 1 {
-            hue0 := i / cast(float, Resolution) * 360;
-            hue1 := hue0 + ToDegs(theta);
-            c0 := ColorU32(HSVToRGB(.{hue0, 1, 1}), 1);
-            c1 := ColorU32(HSVToRGB(.{hue1, 1, 1}), 1);
-
-            p0 := center + inner_radius * p;
-            p1 := center + outer_radius * p;
-
-            p = .{
-                p.x * cost - p.y * sint,
-                p.x * sint + p.y * cost,
-            };
-
-            p2 := center + outer_radius * p;
-            p3 := center + inner_radius * p;
-
-            DrawTriangle(draw_list,
-                p0=p0, p1=p2, p2=p1,
-                c0=c0, c1=c1, c2=c0,
-                blurred_sides=.P1P2
-            );
-            DrawTriangle(draw_list,
-                p0=p0, p1=p3, p2=p2,
-                c0=c0, c1=c1, c2=c1,
-                blurred_sides=.P0P1
-            );
+        GetColor :: (index : int, data : *void) -> RGBA8 {
+            points := cast(*[]PathPoint, data);
+            hue := 360 - index / cast(float, points.count) * 360;
+            return ColorU32(HSVToRGB(.{hue, 1, 1}), 1);
         }
+
+        PathPushArc(*draw_list.path, center, (inner_radius + outer_radius) * 0.5, 0, 2 * PI);
+        DrawPolygonLine(draw_list, draw_list.path, true, outer_radius - inner_radius, GetColor, *draw_list.path);
+        array_reset_keeping_memory(*draw_list.path);
 
         // Draw cursor ring
         angle := ToRads(hsv.hue);
