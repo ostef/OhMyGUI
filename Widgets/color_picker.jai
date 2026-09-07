@@ -62,6 +62,13 @@ ColorPickerData :: struct {
     picking_color : bool;
 }
 
+g_pick_icon_image : TextureHandle;
+
+LoadPickIconImage :: () {
+    g_pick_icon_image = LoadImageFromFileContents("eyedropper", Eyedropper_Contents);
+    assert(g_pick_icon_image != 0, "Could not load pick icon");
+}
+
 GetHSVWheelGeometricData :: (style : *HSVTriangleWheelStyle, rect : Vec4f, hsv : HSV) -> struct {
     center : Vec2f;
     inner_radius : float;
@@ -553,41 +560,6 @@ ColorPreview :: (parent : *Node, color : RGBA8, style : *ColorPreviewStyle, loca
 }
 
 PickColorButton :: (parent : *Node, color : *Vec4f, previous_color : Vec4f, data : *ColorPickerData, location := #caller_location) -> *Node {
-    DrawPickColorIcon :: (draw_list : *DrawList, position : Vec2f, size : float, color : RGBA8) {
-        width := size * 0.17;
-        height := size - width;
-
-        shaft := Union(
-            Box(width, height, width * 0.5),
-            Move(Circle(width * 0.2), 0, height * 0.5 + width * 0.2),
-            size * 0.01
-        );
-
-        outline_thickness := size * 0.03;
-
-        handle_size := height * 0.35;
-        handle := Union(
-            Move(Box(width + 2 * outline_thickness, handle_size, width * 0.5, width * 0.5, 0, 0), 0, -height * 0.5 + handle_size * 0.5),
-            Move(Box((width + 2 * outline_thickness) * 1.4, width * 0.5, size * 0.03), 0, -height * 0.5 + handle_size)
-        );
-
-        shaft = Rotate(shaft, PI * 0.25);
-        handle = Rotate(handle, PI * 0.25);
-
-        shaft_outline := Onion(shaft, outline_thickness * 0.5);
-        ink := Inter(shaft, Move(Box(size, size * 0.5), 0, size * 0.4));
-        shape := Union(Union(shaft_outline, ink), handle);
-
-        DrawShape(draw_list, shape, position, color);
-    }
-
-    DrawPickColorIcon :: (draw_list : *DrawList, node : *Node) {
-        size := min(node.size.x, node.size.y);
-        size = sqrt(2 * size * size);
-
-        DrawPickColorIcon(draw_list, (node.rect.xy + node.rect.zw) * 0.5, size, node.text_color);
-    }
-
     clicked, pick_button := Toggle(parent, SizePx(32), SizePx(32), *data.picking_color, location=location);
     pick_button.flags |= .NoPaddedClip;
     pick_button.padding = .{7,7,7,7};
@@ -620,12 +592,16 @@ PickColorButton :: (parent : *Node, color : *Vec4f, previous_color : Vec4f, data
 
     btn_style := GetStyle("button", ButtonStyle);
 
+    if !g_pick_icon_image {
+        LoadPickIconImage();
+    }
+
     pick_icon := GetNode(pick_button);
-    SetSize(pick_icon, SizeFill(), SizeFill());
-    // SetDraw(pick_icon, DrawPickColorIcon);
+    SetSize(pick_icon, SizePx(20), SizePx(20));
+    SetImage(pick_icon, g_pick_icon_image);
 
     state := GetState(pick_button);
-    SetTextColor(pick_icon, btn_style.states[state].text.text_color);
+    SetBackgroundColor(pick_icon, btn_style.states[state].text.text_color);
 
     return pick_button;
 }

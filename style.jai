@@ -165,6 +165,8 @@ g_system_cursors : [SystemCursor.Count]PlatformCursorHandle;
 
 #scope_export
 
+Eyedropper_Contents :: #run ReadCompileTimeFile("eyedropper-cursor.png");
+
 InitSystemCursors :: () {
     g_system_cursors[SystemCursor.Arrow] = PlatformCreateSystemCursor(.Arrow);
     g_system_cursors[SystemCursor.IBeam] = PlatformCreateSystemCursor(.IBeam);
@@ -179,7 +181,6 @@ InitSystemCursors :: () {
     g_system_cursors[SystemCursor.Forbidden] = PlatformCreateSystemCursor(.Forbidden);
     g_system_cursors[SystemCursor.Hand] = PlatformCreateSystemCursor(.Hand);
 
-    Eyedropper_Contents :: #run ReadCompileTimeFile("eyedropper-cursor.png");
     g_system_cursors[SystemCursor.EyeDropper] = CreateCursorFromFileContents(Eyedropper_Contents, 0, 1);
 
     SetCursor(g_system_cursors[SystemCursor.Arrow]);

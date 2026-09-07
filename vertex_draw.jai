@@ -193,41 +193,49 @@ SetTexture :: (draw_list : *VtxDrawList, texture : VtxDrawCall.Texture) -> previ
     return previous;
 }
 
-DrawRect :: inline (
+DrawRect :: (
     draw_list : *VtxDrawList,
     bounds : Vec4f,
     color : RGBA8,
     corner_radiuses : Vec4f = .{0,0,0,0},
-    uv_bounds : Vec4f = .{0,0,1,1},
-    blur_size := 1.0
-) {
-    DrawRect(draw_list, bounds, color, color, color, color, corner_radiuses, uv_bounds, blur_size);
-}
-
-DrawRect :: (
-    draw_list : *VtxDrawList,
-    bounds : Vec4f,
-    color_top_left : RGBA8,
-    color_top_right : RGBA8,
-    color_bottom_left : RGBA8,
-    color_bottom_right : RGBA8,
-    corner_radiuses : Vec4f = .{0,0,0,0},
-    uv_bounds : Vec4f = .{0,0,1,1},
+    uv_bounds : Vec4f = .{0,0,0,0},
     blur_size := 1.0
 ) {
     if IsClipped(draw_list, bounds) {
         return;
     }
 
-    if (color_top_left & 0xff) == 0
-    || (color_top_right & 0xff) == 0
-    || (color_bottom_left & 0xff) == 0
-    || (color_bottom_right & 0xff) == 0 {
+    if (color & 0xff) == 0 {
         return;
     }
 
     PathPushRoundedRect(*draw_list.path, bounds, corner_radiuses);
-    DrawConvexPolygon(draw_list, draw_list.path, color_top_left, blur_size);
+
+    get_tex_coords_data : struct {
+        points : []PathPoint;
+        bounds : Vec4f;
+        uv_bounds : Vec4f;
+    } = .{points=draw_list.path, bounds=bounds, uv_bounds=uv_bounds};
+
+    GetTexCoords :: (index : int, data : *void) -> Vec2f {
+        using _ := cast(*type_of(get_tex_coords_data), data);
+
+        point := points[index];
+        tx := InverseLerp(bounds.x, bounds.z, point.position.x);
+        ty := InverseLerp(bounds.y, bounds.w, point.position.y);
+
+        return .{
+            lerp(uv_bounds.x, uv_bounds.z, tx),
+            lerp(uv_bounds.y, uv_bounds.w, ty),
+        };
+    }
+
+    DrawConvexPolygon(
+        draw_list,
+        draw_list.path,
+        (index, data) => cast(*RGBA8, data).*, *color,
+        GetTexCoords, *get_tex_coords_data,
+        blur_size);
     array_reset_keeping_memory(*draw_list.path);
 }
 
@@ -237,7 +245,7 @@ DrawRectOutline :: inline (
     color : RGBA8,
     thickness : float,
     corner_radiuses : Vec4f = .{0,0,0,0},
-    uv_bounds : Vec4f = .{0,0,1,1},
+    uv_bounds : Vec4f = .{0,0,0,0},
     blur_size := 1.0,
     blur_sides := LineSides.All
 ) {
@@ -253,7 +261,7 @@ DrawRectOutline :: (
     color_bottom_right : RGBA8,
     thickness : float,
     corner_radiuses : Vec4f = .{0,0,0,0},
-    uv_bounds : Vec4f = .{0,0,1,1},
+    uv_bounds : Vec4f = .{0,0,0,0},
     blur_size := 1.0,
     blur_sides := LineSides.All
 ) {
@@ -274,22 +282,21 @@ DrawRectOutline :: (
 }
 
 DrawBox :: inline (draw_list : *VtxDrawList, box : BoxDrawing, texture : TextureHandle = 0) {
-    prev_texture := SetTexture(draw_list, texture);
-    defer SetTexture(draw_list, prev_texture);
+    bounds := Vec4f.{xy=box.position - box.size * 0.5, zw=box.position + box.size * 0.5};
 
     // Outer shadow
     DrawRect(
         draw_list,
-        .{xy=box.outer_shadow_offset + box.position - box.size * 0.5, zw=box.outer_shadow_offset + box.position + box.size * 0.5},
+        .{xy=box.outer_shadow_offset + bounds.xy, zw=box.outer_shadow_offset + bounds.zw},
         box.outer_shadow_color,
         box.corner_radiuses,
         box.uv_bounds,
         box.outer_shadow_blur,
     );
 
-    bounds := Vec4f.{xy=box.position - box.size * 0.5, zw=box.position + box.size * 0.5};
-
     // Background
+    prev_texture := SetTexture(draw_list, texture);
+
     DrawRect(
         draw_list,
         bounds,
@@ -297,6 +304,8 @@ DrawBox :: inline (draw_list : *VtxDrawList, box : BoxDrawing, texture : Texture
         box.corner_radiuses,
         box.uv_bounds
     );
+
+    SetTexture(draw_list, prev_texture);
 
     // Inner shadow
     DrawRectOutline(
@@ -696,7 +705,13 @@ DrawPolygonLine :: inline (
         return;
     }
 
-    DrawPolygonLine(draw_list, points, closed, thickness, (index, data) => cast(*RGBA8, data).*, *color, blur_size, blur_sides);
+    DrawPolygonLine(
+        draw_list,
+        points,
+        closed,
+        thickness,
+        (index, data) => cast(*RGBA8, data).*, *color,
+        blur_size, blur_sides);
 }
 
 LineSides :: enum_flags {
@@ -712,7 +727,7 @@ DrawPolygonLine :: (
     closed : bool,
     thickness : float,
     $get_color : #type (index : int, data : *void) -> RGBA8,
-    get_color_data : *void = null,
+    get_color_data : *void,
     blur_size := 1.0,
     blur_sides := LineSides.All
 ) #no_abc {
@@ -973,8 +988,35 @@ DrawPolygonLine :: (
     }
 }
 
-DrawConvexPolygon :: (draw_list : *VtxDrawList, points : []PathPoint, color : RGBA8, blur_size := 1.0) #no_abc {
-    if points.count < 3 || (color & 0xff) == 0 {
+DrawConvexPolygon :: inline (
+    draw_list : *VtxDrawList,
+    points : []PathPoint,
+    color : RGBA8,
+    blur_size := 1.0
+) #no_abc {
+    if (color & 0xff) == 0 {
+        return;
+    }
+
+    DrawConvexPolygon(
+        draw_list,
+        points,
+        (index, data) => cast(*RGBA8, data).*, *color,
+        (index, data) => Vec2f.{}, null,
+        blur_size
+    );
+}
+
+DrawConvexPolygon :: (
+    draw_list : *VtxDrawList,
+    points : []PathPoint,
+    $get_color : (index : int, data : *void) -> RGBA8,
+    get_color_data : *void,
+    $get_tex_coords : (index : int, data : *void) -> Vec2f,
+    get_tex_coords_data : *void,
+    blur_size := 1.0
+) #no_abc {
+    if points.count < 3 {
         return;
     }
 
@@ -996,8 +1038,6 @@ DrawConvexPolygon :: (draw_list : *VtxDrawList, points : []PathPoint, color : RG
         indices_index += 1;
     }
 
-    color_alpha0 := SetAlpha(color, 0);
-
     num_vertices := points.count * 2;
     ReserveVertices(draw_list, num_vertices);
 
@@ -1010,6 +1050,11 @@ DrawConvexPolygon :: (draw_list : *VtxDrawList, points : []PathPoint, color : RG
             i1 += 1;
         }
 
+        color := inline get_color(i1, get_color_data);
+        color_alpha0 := SetAlpha(color, 0);
+
+        tex_coords := inline get_tex_coords(i1, get_tex_coords_data);
+
         n0 := points[i0].normal;
         n1 := points[i1].normal;
         n := (n0 + n1) * 0.5;
@@ -1019,11 +1064,13 @@ DrawConvexPolygon :: (draw_list : *VtxDrawList, points : []PathPoint, color : RG
         v := PushVertex(draw_list);
         v.position = points[i1].position - n;
         v.color = color;
+        v.tex_coords = tex_coords;
 
         // Outer
         v = PushVertex(draw_list);
         v.position = points[i1].position + n;
         v.color = color_alpha0;
+        v.tex_coords = tex_coords;
 
         // Blur indices
         indices[indices_index] = first_inner + (i1 << 1);
