@@ -168,7 +168,7 @@ SaturationValueTriangle :: (parent : *Node, using data : *ColorPickerData, style
             || IsInsideCircle(point, cursor, cursor_style.radius);
     }
 
-    Draw :: (draw_list : *DrawList, node : *Node) {
+    Draw :: (draw_list : *VtxDrawList, node : *Node) {
         if !node.parent {
             return;
         }
@@ -186,10 +186,10 @@ SaturationValueTriangle :: (parent : *Node, using data : *ColorPickerData, style
         using _ := data.*;
         using _ := GetHSVWheelGeometricData(style, node.rect, hsv);
 
-        DrawTriangle(draw_list, .{
-            p0=hue_point, p1=white_point, p2=black_point,
-            c0=ColorU32(HSVToRGB(.{hsv.hue, 1, 1}), 1), c1=0xffffffff, c2=0x000000ff,
-        });
+        DrawTriangle(draw_list,
+            p0=hue_point, p1=black_point, p2=white_point,
+            c0=ColorU32(HSVToRGB(.{hsv.hue, 1, 1}), 1), c1=0x000000ff, c2=0xffffffff,
+        );
 
         cursor := lerp(hue_point, white_point, 1 - hsv.saturation);
         cursor = lerp(cursor, black_point, 1 - hsv.value);
@@ -211,7 +211,7 @@ SaturationValueTriangle :: (parent : *Node, using data : *ColorPickerData, style
     node := GetNode(parent, location);
     node.flags |= .NoClip;
     SetSize(node, SizeFill(), SizeFill());
-    // SetDraw(node, Draw);
+    SetDraw(node, Draw);
     SetHitTest(node, HitTest);
 
     using _ := GetHSVWheelGeometricData(style, node.rect, hsv);
