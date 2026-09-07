@@ -266,13 +266,10 @@ EditorFrame :: () {
             OMG.SetDraw(minimize_icon, (draw_list : *OMG.VtxDrawList, node : *OMG.Node) {
                 center := (node.rect.xy + node.rect.zw) * 0.5;
                 length := node.size.x * 0.7;
+                start := center - OMG.Vec2f.{length * 0.5, 0};
+                end := center + OMG.Vec2f.{length * 0.5, 0};
 
-                OMG.DrawBox(draw_list, .{
-                    position=center,
-                    size=.{length, 1},
-                    border_color=node.background_color,
-                    border_size=1,
-                });
+                OMG.DrawLine(draw_list, start, end, 1, node.background_color);
             });
 
             maximize_icon := OMG.GetNode(maximize_node);
