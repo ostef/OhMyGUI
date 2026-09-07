@@ -265,9 +265,11 @@ EditorFrame :: () {
             OMG.SetBackgroundColor(minimize_icon, OMG.ChooseTextColor(base_background_color));
             OMG.SetDraw(minimize_icon, (draw_list : *OMG.VtxDrawList, node : *OMG.Node) {
                 center := (node.rect.xy + node.rect.zw) * 0.5;
+                center.x = ceil(center.x);
+                center.y = ceil(center.y);
                 length := node.size.x * 0.7;
-                start := center - OMG.Vec2f.{length * 0.5, 0};
-                end := center + OMG.Vec2f.{length * 0.5, 0};
+                start := center + OMG.Vec2f.{-floor(length * 0.5), 0.5};
+                end := center + OMG.Vec2f.{floor(length * 0.5), 0.5};
 
                 OMG.DrawLine(draw_list, start, end, 1, node.background_color);
             });
