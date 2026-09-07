@@ -283,8 +283,8 @@ EditorFrame :: () {
                 center := (node.rect.xy + node.rect.zw) * 0.5;
                 rect := OMG.Vec4f.{xy=center - size * 0.5, zw=center + size * 0.5};
 
-                p0 := OMG.Vec2f.{size.x * 0.3, 0};
-                p1 := OMG.Vec2f.{size.x, 0};
+                p0 := OMG.Vec2f.{size.x, 0};
+                p1 := OMG.Vec2f.{size.x * 0.3, 0};
                 p2 := OMG.Vec2f.{size.x, size.y - size.y * 0.3};
 
                 OMG.DrawTriangle(draw_list, rect.xy + p0, rect.xy + p1, rect.xy + p2, node.background_color);
@@ -299,15 +299,17 @@ EditorFrame :: () {
             close_icon := OMG.GetNode(close_node);
             OMG.SetSize(close_icon, OMG.SizeFill(), OMG.SizeFill());
             OMG.SetBackgroundColor(close_icon, OMG.ChooseTextColor(base_background_color));
-            // OMG.SetDraw(close_icon, (draw_list : *OMG.DrawList, node : *OMG.Node) {
-            //     center := (node.rect.xy + node.rect.zw) * 0.5;
-            //     length := node.size.x;
+            OMG.SetDraw(close_icon, (draw_list : *OMG.VtxDrawList, node : *OMG.Node) {
+                center := (node.rect.xy + node.rect.zw) * 0.5;
+                dir := normalize(node.rect.zw - node.rect.xy);
+                length := node.size.x;
 
-            //     a := OMG.Rotate(OMG.Box(1, length), PI * 0.25);
-            //     b := OMG.Rotate(OMG.Box(1, length), -PI * 0.25);
-            //     shape := OMG.Union(a, b);
-            //     OMG.DrawShape(draw_list, shape, center, node.background_color);
-            // });
+                OMG.DrawLine(draw_list, center - dir * length * 0.5, center + dir * length * 0.5, 1, node.background_color, node.background_color);
+
+                dir = .{dir.y, -dir.x};
+
+                OMG.DrawLine(draw_list, center - dir * length * 0.5, center + dir * length * 0.5, 1, node.background_color, node.background_color);
+            });
         }
 
         OMG.DockSpace(root, "dockspace");
