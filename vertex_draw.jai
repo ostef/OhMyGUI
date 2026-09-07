@@ -1525,7 +1525,7 @@ PathPushArc :: (points : *[..]PathPoint, center : Vec2f, radius : float, start_a
 
     if num_segments == 0 {
         num_quadrants := angle / (PI * 0.5);
-        num_segments = xx max(radius / num_quadrants, num_quadrants * 4, 2);
+        num_segments = xx max(radius * num_quadrants * 0.25, num_quadrants * 4, 2);
     }
 
     connected := angle == PI * 2;
