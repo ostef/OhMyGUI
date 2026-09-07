@@ -54,7 +54,7 @@ void main() {
         float d = mix(sdf_texture_range, -sdf_texture_range, sampled.r);
         float a = FxSolidColor(d, aa + blur);
         out_color = color;
-        out_color.a = a;
+        out_color.a *= a;
     }
 
     if (clip_box_index >= 0) {
