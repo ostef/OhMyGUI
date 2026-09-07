@@ -954,10 +954,69 @@ PathPushRoundedRect :: (points : *[..]PathPoint, bounds : Vec4f, corner_radiuses
 }
 
 PathPushArc :: (points : *[..]PathPoint, center : Vec2f, radius : float, start_angle : float, angle : float, num_segments := 0) {
+    Half_Circle_Points_Count :: 50;
+    Half_Circle_Points :: #run () -> [Half_Circle_Points_Count + 1]Vec2f {
+        result : [Half_Circle_Points_Count + 1]Vec2f = ---;
+
+        for i : 0..Half_Circle_Points_Count {
+            theta := i / cast(float, Half_Circle_Points_Count) * PI * 0.5;
+            result[i] = Vec2f.{cos(theta), sin(theta)};
+        }
+
+        return result;
+    }();
+
+    SamplePointsArray :: (angle : float) -> Vec2f {
+        while angle > 2 * PI {
+            angle -= 2 * PI;
+        }
+        while angle < 0 {
+            angle += 2 * PI;
+        }
+
+        theta := angle;
+        if angle >= PI * 1.5 {
+            theta -= PI * 1.5;
+        } else if angle >= PI {
+            theta -= PI;
+        } else if angle >= PI * 0.5 {
+            theta -= PI * 0.5;
+        }
+
+        f0 := Half_Circle_Points_Count * theta / (PI * 0.5);
+        i0 := cast(int, f0);
+        i1 := i0 + 1;
+        p0 := Half_Circle_Points[i0];
+        p1 := Half_Circle_Points[i1];
+        t := f0 - i0;
+
+        p := lerp(p0, p1, t);
+        if angle >= PI * 0.5 {
+            p = .{-p.y, p.x};
+        }
+        if angle >= PI {
+            p = .{-p.y, p.x};
+        }
+        if angle >= PI * 1.5 {
+            p = .{-p.y, p.x};
+        }
+
+        return normalize(p);
+    }
+
     if angle < 0 {
         start_angle -= angle;
         angle = -angle;
     }
+
+    while start_angle > 2 * PI {
+        start_angle -= 2 * PI;
+    }
+    while start_angle < 0 {
+        start_angle += 2 * PI;
+    }
+
+    angle = min(angle, PI * 2);
 
     if radius < 0.5 {
         normal := Vec2f.{cos(-start_angle - angle * 0.5), sin(-start_angle - angle * 0.5)};
@@ -969,9 +1028,20 @@ PathPushArc :: (points : *[..]PathPoint, center : Vec2f, radius : float, start_a
         num_segments = max(cast(int, radius / 3) * 3, 8);
     }
 
-    for i : 0..num_segments {
-        theta := i / cast(float, num_segments) * angle;
-        p := Vec2f.{cos(-start_angle - theta), sin(-start_angle - theta)};
-        array_add(points, .{position=center + p * radius, normal=p});
+    connected := angle == PI * 2;
+    iterations := ifx connected then num_segments - 1 else num_segments;
+
+    if num_segments <= Half_Circle_Points.count {
+        for i : 0..iterations {
+            theta := i / cast(float, num_segments) * angle;
+            p := SamplePointsArray(-start_angle - theta);
+            array_add(points, .{position=center + p * radius, normal=p});
+        }
+    } else {
+        for i : 0..iterations {
+            theta := i / cast(float, num_segments) * angle;
+            p := Vec2f.{cos(-start_angle - theta), sin(-start_angle - theta)};
+            array_add(points, .{position=center + p * radius, normal=p});
+        }
     }
 }
