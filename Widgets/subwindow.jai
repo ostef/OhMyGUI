@@ -242,7 +242,7 @@ SubwindowResizeHandles :: (subwindow : *Node, min_size : Vec2f, style : *Subwind
 
     resize_handles_expand := Vec2f.{1,1} * max(-style.resize_handle_inset, 0);
     avail_area := subwindow.parent.rect;
-    avail_area = InflateBounds(avail_area, Vec4f.{xy=resize_handles_expand,zw=resize_handles_expand});
+    avail_area = InflateRect(avail_area, Vec4f.{xy=resize_handles_expand,zw=resize_handles_expand});
 
     SubwindowResizeBehavior(subwindow, resize_t, min_size + resize_handles_expand * 2, avail_area, .Top);
     SubwindowResizeBehavior(subwindow, resize_b, min_size + resize_handles_expand * 2, avail_area, .Bottom);
@@ -339,7 +339,7 @@ Subwindow :: (
 
         avail_area = subwindow.parent.rect;
         if !(flags & .NoResize) {
-            avail_area = InflateBounds(avail_area, Vec4f.{xy=resize_handles_expand,zw=resize_handles_expand});
+            avail_area = InflateRect(avail_area, Vec4f.{xy=resize_handles_expand,zw=resize_handles_expand});
         }
 
         title_bar := ifx !(flags & .NoTitleBar)

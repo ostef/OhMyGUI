@@ -26,15 +26,8 @@ TableRowStyle :: struct {
     cell_child_align : Vec2f;
 
     background_color : RGBA8;
-    background_color2 : RGBA8;
-    background_gradient_offset : float;
-    background_gradient_vector : Vec2f;
     alternate_background_color : RGBA8;
-    alternate_background_color2 : RGBA8;
-    alternate_background_gradient_offset : float;
-    alternate_background_gradient_vector : Vec2f;
     inner_shadow_blur : float;
-    inner_shadow_offset : Vec2f;
     inner_shadow_color : RGBA8;
 }
 
@@ -44,18 +37,11 @@ Apply :: inline (node : *Node, style : TableRowStyle, alternate : bool) {
 
     if alternate {
         node.background_color = style.alternate_background_color;
-        node.background_color2 = style.alternate_background_color2;
-        node.background_gradient_offset = style.alternate_background_gradient_offset;
-        node.background_gradient_vector = style.alternate_background_gradient_vector;
     } else {
         node.background_color = style.background_color;
-        node.background_color2 = style.background_color2;
-        node.background_gradient_offset = style.background_gradient_offset;
-        node.background_gradient_vector = style.background_gradient_vector;
     }
 
     node.inner_shadow_blur = style.inner_shadow_blur;
-    node.inner_shadow_offset = style.inner_shadow_offset;
     node.inner_shadow_color = style.inner_shadow_color;
 }
 

@@ -173,10 +173,17 @@ fract :: inline (x : float) -> float {
     return x - floor(x);
 }
 
-InflateBounds :: inline (bounds : Vec4f, amount : Vec4f) -> Vec4f {
+MoveRect :: inline (rect : Vec4f, amount : Vec2f) -> Vec4f {
     return .{
-        xy=bounds.xy - amount.xy,
-        zw=bounds.zw + amount.zw,
+        xy=rect.xy + amount,
+        zw=rect.zw + amount,
+    };
+}
+
+InflateRect :: inline (rect : Vec4f, amount : Vec4f) -> Vec4f {
+    return .{
+        xy=rect.xy - amount.xy,
+        zw=rect.zw + amount.zw,
     };
 }
 

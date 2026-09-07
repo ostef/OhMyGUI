@@ -332,37 +332,26 @@ DrawRectOutline :: (
 } @Profile
 
 BoxDrawing :: struct {
-    size : Vec2f;
-    position : Vec2f;
+    bounds : Vec4f;
     uv_bounds : Vec4f;
-    rotation : float;
     corner_radiuses : Vec4f;
     background_color : RGBA8;
-    background_color2 : RGBA8;
-    background_gradient_offset : float;
-    background_gradient_vector : Vec2f;
     border_color : RGBA8;
-    border_color2 : RGBA8;
-    border_gradient_offset : float;
-    border_gradient_vector : Vec2f;
     border_size : float;
     border_inset : float;
     outer_shadow_color : RGBA8;
     outer_shadow_offset : Vec2f;
     outer_shadow_blur : float;
     inner_shadow_color : RGBA8;
-    inner_shadow_offset : Vec2f;
     inner_shadow_blur : float;
     clip_box_index : s32;
 }
 
 DrawBox :: inline (draw_list : *VtxDrawList, box : BoxDrawing, texture : TextureHandle = 0) {
-    bounds := Vec4f.{xy=box.position - box.size * 0.5, zw=box.position + box.size * 0.5};
-
     // Outer shadow
     DrawRect(
         draw_list,
-        .{xy=box.outer_shadow_offset + bounds.xy, zw=box.outer_shadow_offset + bounds.zw},
+        MoveRect(box.bounds, box.outer_shadow_offset),
         box.outer_shadow_color,
         box.corner_radiuses,
         box.uv_bounds,
@@ -374,7 +363,7 @@ DrawBox :: inline (draw_list : *VtxDrawList, box : BoxDrawing, texture : Texture
 
     DrawRect(
         draw_list,
-        bounds,
+        box.bounds,
         box.background_color,
         box.corner_radiuses,
         box.uv_bounds
@@ -385,7 +374,7 @@ DrawBox :: inline (draw_list : *VtxDrawList, box : BoxDrawing, texture : Texture
     // Inner shadow
     DrawRectOutline(
         draw_list,
-        bounds,
+        box.bounds,
         box.inner_shadow_color,
         0,
         box.corner_radiuses,
@@ -395,15 +384,10 @@ DrawBox :: inline (draw_list : *VtxDrawList, box : BoxDrawing, texture : Texture
     );
 
     // Border
-    border_inset := Vec2f.{box.border_size * 0.5 + box.border_inset, box.border_size * 0.5 + box.border_inset};
-    border_bounds := bounds;
-    border_bounds.x += box.border_size * 0.5 + box.border_inset;
-    border_bounds.y += box.border_size * 0.5 + box.border_inset;
-    border_bounds.z -= box.border_size * 0.5 + box.border_inset;
-    border_bounds.w -= box.border_size * 0.5 + box.border_inset;
+    border_inset := Vec4f.{-1,-1,-1,-1} * (box.border_size * 0.5 + box.border_inset);
     DrawRectOutline(
         draw_list,
-        border_bounds,
+        InflateRect(box.bounds, border_inset),
         box.border_color,
         box.border_size,
         box.corner_radiuses,
@@ -665,25 +649,17 @@ DrawWrappedText :: (
 
 DrawNodeDefault :: (draw_list : *VtxDrawList, node : *Node) {
     DrawBox(draw_list, .{
-        size=node.rect.zw - node.rect.xy,
-        position=(node.rect.xy + node.rect.zw) * 0.5,
+        bounds=node.rect,
         uv_bounds=node.image_uv_bounds,
         corner_radiuses=node.corner_radiuses,
         background_color=node.background_color,
-        background_color2=node.background_color2,
-        background_gradient_vector=node.background_gradient_vector,
-        background_gradient_offset=node.background_gradient_offset,
         border_color=node.border_color,
-        border_color2=node.border_color2,
-        border_gradient_vector=node.border_gradient_vector,
-        border_gradient_offset=node.border_gradient_offset,
         border_size=node.border_size,
         border_inset=node.border_inset,
         outer_shadow_color=node.outer_shadow_color,
         outer_shadow_offset=node.outer_shadow_offset,
         outer_shadow_blur=node.outer_shadow_blur,
         inner_shadow_color=node.inner_shadow_color,
-        inner_shadow_offset=node.inner_shadow_offset,
         inner_shadow_blur=node.inner_shadow_blur,
     }, texture=node.image);
 
@@ -865,6 +841,10 @@ DrawPolygonLine :: (
             i2 = (i2 + 1) % cast(u32, points.count);
         }
 
+        #if #exists(__Tracy) {
+            __Tracy.ZoneScoped("Iteration");
+        }
+
         color := inline get_color(i1, get_color_data);
         color_alpha0 := SetAlpha(color, 0);
 
@@ -872,6 +852,10 @@ DrawPolygonLine :: (
         if !closed && (i1 == 0 || i1 == points.count - 1) {
             n = points[i1].normal;
         } else {
+            #if #exists(__Tracy) {
+                __Tracy.ZoneScoped("Calculate intersection");
+            }
+
             p0 := points[i0];
             p1 := points[i1];
             p2 := points[i2];
@@ -888,6 +872,10 @@ DrawPolygonLine :: (
             }
 
             n = p1.position - p;
+        }
+
+        #if #exists(__Tracy) {
+            __Tracy.ZoneScoped("Push vertices and indices");
         }
 
         if has_middle_part {

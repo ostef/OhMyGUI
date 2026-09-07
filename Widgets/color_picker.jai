@@ -110,7 +110,7 @@ HSVTriangleWheel :: (parent : *Node, using data : *ColorPickerData, style : *HSV
         }
 
         using _ := data.*;
-        using _ := GetHSVWheelGeometricData(style, InflateBounds(node.rect, ToVec4f(node.padding) * -1), hsv);
+        using _ := GetHSVWheelGeometricData(style, InflateRect(node.rect, ToVec4f(node.padding) * -1), hsv);
 
         p0 := hue_point - center;
         p0 += normalize(p0) * (style.border_size + 1);
@@ -212,8 +212,7 @@ SaturationValueTriangle :: (parent : *Node, using data : *ColorPickerData, style
         cursor_style := style.triangle_cursor.states[GetState(node)];
 
         DrawBox(draw_list, .{
-            position=cursor,
-            size=Vec2f.{1,1} * (cursor_style.radius * 2),
+            bounds=.{xy=cursor - Vec2f.{cursor_style.radius, cursor_style.radius}, zw=cursor + Vec2f.{cursor_style.radius, cursor_style.radius}},
             corner_radiuses=Vec4f.{1,1,1,1} * cursor_style.radius,
             background_color=ColorU32(HSVToRGB(hsv), 1),
             border_color=cursor_style.border_color,
@@ -314,8 +313,7 @@ HueWheel :: (parent : *Node, using data : *ColorPickerData, style : *HSVTriangle
         cursor_style := style.wheel_cursor.states[GetState(node)];
 
         DrawBox(draw_list, .{
-            position=cursor,
-            size=Vec2f.{1,1} * (cursor_style.radius * 2),
+            bounds=.{xy=cursor - Vec2f.{cursor_style.radius, cursor_style.radius}, zw=cursor + Vec2f.{cursor_style.radius, cursor_style.radius}},
             corner_radiuses=Vec4f.{1,1,1,1} * cursor_style.radius,
             background_color=ColorU32(HSVToRGB(.{hsv.hue, 1, 1}), 1),
             border_color=cursor_style.border_color,
@@ -487,8 +485,7 @@ ColorPreviewStyle :: struct {
 ColorPreview :: (parent : *Node, color : RGBA8, style : *ColorPreviewStyle, location := #caller_location) -> *Node {
     Draw :: (draw_list : *VtxDrawList, node : *Node) {
         DrawBox(draw_list, .{
-            size=node.size,
-            position=(node.rect.xy + node.rect.zw) * 0.5,
+            bounds=node.rect,
             corner_radiuses=node.corner_radiuses,
             outer_shadow_color=node.outer_shadow_color,
             outer_shadow_offset=node.outer_shadow_offset,
@@ -502,23 +499,22 @@ ColorPreview :: (parent : *Node, color : RGBA8, style : *ColorPreviewStyle, loca
             PopClipBox(draw_list);
         }
 
+        left := Vec4f.{xy=node.rect.xy, z=floor(node.rect.x + node.size.x * 0.5), w=node.rect.w};
         DrawBox(draw_list, .{
-            size=.{node.size.x * 0.5, node.size.y},
-            position=(node.rect.xy + node.rect.zw) * 0.5 - .{node.size.x * 0.25, 0},
+            bounds=left,
             corner_radiuses=.{node.corner_radiuses.x,0,node.corner_radiuses.z,0},
             background_color=SetAlpha(node.background_color, 1),
         });
 
+        right := Vec4f.{x=left.z, y=left.y, zw=node.rect.zw};
         DrawBox(draw_list, .{
-            size=.{node.size.x * 0.5 + 1, node.size.y},
-            position=(node.rect.xy + node.rect.zw) * 0.5 + .{node.size.x * 0.25 - 1, 0},
+            bounds=right,
             corner_radiuses=.{0,node.corner_radiuses.y,0,node.corner_radiuses.w},
             background_color=node.background_color,
         });
 
         DrawBox(draw_list, .{
-            size=node.size,
-            position=(node.rect.xy + node.rect.zw) * 0.5,
+            bounds=node.rect,
             corner_radiuses=node.corner_radiuses,
             border_color=node.border_color,
             border_size=node.border_size,

@@ -654,8 +654,7 @@ Render :: () {
         if omg.mouse_hovered_node {
             node := omg.mouse_hovered_node;
             DrawBox(*node.window.draw_list, .{
-                size=node.size,
-                position=(node.rect.xy + node.rect.zw) * 0.5,
+                bounds=node.rect,
                 border_color=ColorU32(1, 0, 0, 1),
                 border_size=2,
                 border_inset=-4
@@ -665,8 +664,7 @@ Render :: () {
         if omg.mouse_focused_node {
             node := omg.mouse_focused_node;
             DrawBox(*node.window.draw_list, .{
-                size=node.size,
-                position=(node.rect.xy + node.rect.zw) * 0.5,
+                bounds=node.rect,
                 border_color=ColorU32(0, 1, 0, 1),
                 border_size=2,
                 border_inset=-2

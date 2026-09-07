@@ -147,9 +147,6 @@ CheckmarkStyle :: struct {
     angle := PI * 0.17;
 
     background_color : RGBA8;
-    background_color2 : RGBA8;
-    background_gradient_vector : Vec2f;
-    background_gradient_offset : float;
     outer_shadow_blur : float;
     outer_shadow_offset : Vec2f;
     outer_shadow_color : RGBA8;
@@ -157,9 +154,6 @@ CheckmarkStyle :: struct {
 
 Apply :: inline (node : *Node, style : CheckmarkStyle) {
     node.background_color = style.background_color;
-    node.background_color2 = style.background_color2;
-    node.background_gradient_vector = style.background_gradient_vector;
-    node.background_gradient_offset = style.background_gradient_offset;
     node.outer_shadow_blur = style.outer_shadow_blur;
     node.outer_shadow_offset = style.outer_shadow_offset;
     node.outer_shadow_color = style.outer_shadow_color;

@@ -607,24 +607,16 @@ DrawTextInputText :: (draw_list : *VtxDrawList, node : *Node) {
         selection_position.y = floor(selection_position.y);
 
         DrawBox(draw_list, .{
-            size=selection_size,
-            position=selection_position + selection_size * 0.5,
+            bounds=.{xy=selection_position, zw=selection_position + selection_size},
             corner_radiuses=style.selection.corner_radiuses,
             background_color=style.selection.background_color,
-            background_color2=style.selection.background_color2,
-            background_gradient_offset=style.selection.background_gradient_offset,
-            background_gradient_vector=style.selection.background_gradient_vector,
             border_color=style.selection.border_color,
-            border_color2=style.selection.border_color2,
-            border_gradient_offset=style.selection.border_gradient_offset,
-            border_gradient_vector=style.selection.border_gradient_vector,
             border_size=style.selection.border_size,
             border_inset=style.selection.border_inset,
             outer_shadow_color=style.selection.outer_shadow_color,
             outer_shadow_offset=style.selection.outer_shadow_offset,
             outer_shadow_blur=style.selection.outer_shadow_blur,
             inner_shadow_color=style.selection.inner_shadow_color,
-            inner_shadow_offset=style.selection.inner_shadow_offset,
             inner_shadow_blur=style.selection.inner_shadow_blur,
         });
     }
@@ -650,13 +642,13 @@ DrawTextInputText :: (draw_list : *VtxDrawList, node : *Node) {
 
     // Draw cursor
     if node.parent.state_flags & .Active && (fmod_cycling(input.cursor_blink_time, 1) < 0.5 || input.cursor_blink_time > 5) {
-        cursor_size := Vec2f.{1, node.rect.w - node.rect.y};
+        start := cursor_position;
+        start.x += 0.5;
 
-        DrawBox(draw_list, .{
-            size=cursor_size,
-            position=cursor_position + cursor_size * 0.5,
-            background_color=node.text_color,
-        });
+        end := cursor_position + Vec2f.{0, node.size.y};
+        end.x += 0.5;
+
+        DrawLine(draw_list, start, end, 1, node.text_color);
     }
 }
 
