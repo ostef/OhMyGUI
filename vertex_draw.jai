@@ -199,7 +199,7 @@ DrawRect :: inline (
     color : RGBA8,
     corner_radiuses : Vec4f = .{0,0,0,0},
     uv_bounds : Vec4f = .{0,0,1,1},
-    blur_size := 0.0
+    blur_size := 1.0
 ) {
     DrawRect(draw_list, bounds, color, color, color, color, corner_radiuses, uv_bounds, blur_size);
 }
@@ -213,7 +213,7 @@ DrawRect :: (
     color_bottom_right : RGBA8,
     corner_radiuses : Vec4f = .{0,0,0,0},
     uv_bounds : Vec4f = .{0,0,1,1},
-    blur_size := 0.0
+    blur_size := 1.0
 ) {
     if IsClipped(draw_list, bounds) {
         return;
@@ -238,9 +238,10 @@ DrawRectOutline :: inline (
     thickness : float,
     corner_radiuses : Vec4f = .{0,0,0,0},
     uv_bounds : Vec4f = .{0,0,1,1},
-    blur_size := 0.0
+    blur_size := 1.0,
+    blur_sides := LineSides.All
 ) {
-    DrawRectOutline(draw_list, bounds, color, color, color, color, thickness, corner_radiuses, uv_bounds, blur_size);
+    DrawRectOutline(draw_list, bounds, color, color, color, color, thickness, corner_radiuses, uv_bounds, blur_size, blur_sides);
 }
 
 DrawRectOutline :: (
@@ -253,7 +254,8 @@ DrawRectOutline :: (
     thickness : float,
     corner_radiuses : Vec4f = .{0,0,0,0},
     uv_bounds : Vec4f = .{0,0,1,1},
-    blur_size := 0.0
+    blur_size := 1.0,
+    blur_sides := LineSides.All
 ) {
     if IsClipped(draw_list, bounds) {
         return;
@@ -267,7 +269,7 @@ DrawRectOutline :: (
     }
 
     PathPushRoundedRect(*draw_list.path, bounds, corner_radiuses);
-    DrawPolygonLine(draw_list, draw_list.path, true, thickness, color_top_left, blur_size);
+    DrawPolygonLine(draw_list, draw_list.path, true, thickness, color_top_left, blur_size, blur_sides);
     array_reset_keeping_memory(*draw_list.path);
 }
 
@@ -294,6 +296,17 @@ DrawBox :: inline (draw_list : *VtxDrawList, box : BoxDrawing, texture : Texture
         box.uv_bounds
     );
 
+    DrawRectOutline(
+        draw_list,
+        .{xy=box.position - box.size * 0.5, zw=box.position + box.size * 0.5},
+        box.inner_shadow_color,
+        0,
+        box.corner_radiuses,
+        box.uv_bounds,
+        box.inner_shadow_blur,
+        .Interior,
+    );
+
     border_inset := Vec2f.{box.border_size * 0.5 + box.border_inset, box.border_size * 0.5 + box.border_inset};
     DrawRectOutline(
         draw_list,
@@ -312,7 +325,7 @@ DrawLine :: (
     thickness : float,
     start_color : RGBA8,
     end_color : RGBA8,
-    blur_size := 0.0
+    blur_size := 1.0
 ) {
     if (start_color & 0xff) == 0 && (end_color & 0xff) == 0 {
         return;
@@ -325,8 +338,18 @@ DrawLine :: (
 
     array_add(*draw_list.path, .{start, normal});
     array_add(*draw_list.path, .{end, normal});
-    // @Todo: end_color
-    DrawPolygonLine(draw_list, draw_list.path, false, thickness, start_color, blur_size);
+
+    get_color_data : struct {
+        start : RGBA8;
+        end : RGBA8;
+    } = .{start_color, end_color};
+
+    GetColor :: (index : int, data : *void) -> RGBA8 {
+        using _ := cast(*type_of(get_color_data), data);
+        return ifx index == 0 then start else end;
+    }
+
+    DrawPolygonLine(draw_list, draw_list.path, false, thickness, GetColor, *get_color_data, blur_size);
     array_reset_keeping_memory(*draw_list.path);
 }
 
@@ -572,38 +595,87 @@ DrawNodes :: (draw_list : *VtxDrawList, node : *Node) {
     }
 } @Profile
 
-DrawPolygonLine :: inline (draw_list : *VtxDrawList, points : []PathPoint, closed : bool, thickness : float, color : RGBA8, blur_size := 0.0) {
+DrawPolygonLine :: inline (
+    draw_list : *VtxDrawList,
+    points : []PathPoint,
+    closed : bool,
+    thickness : float,
+    color : RGBA8,
+    blur_size := 1.0,
+    blur_sides := LineSides.All
+) {
     if (color & 0xff) == 0 {
         return;
     }
 
-    DrawPolygonLine(draw_list, points, closed, thickness, (index, data) => cast(*RGBA8, data).*, *color, blur_size);
+    DrawPolygonLine(draw_list, points, closed, thickness, (index, data) => cast(*RGBA8, data).*, *color, blur_size, blur_sides);
 }
 
-DrawPolygonLine :: (draw_list : *VtxDrawList, points : []PathPoint, closed : bool, thickness : float, $get_color : #type (index : int, data : *void) -> RGBA8, get_color_data : *void = null, blur_size := 0.0) #no_abc {
+LineSides :: enum_flags {
+    Interior;
+    Exterior;
+
+    All :: Interior | Exterior;
+}
+
+DrawPolygonLine :: (
+    draw_list : *VtxDrawList,
+    points : []PathPoint,
+    closed : bool,
+    thickness : float,
+    $get_color : #type (index : int, data : *void) -> RGBA8,
+    get_color_data : *void = null,
+    blur_size := 1.0,
+    blur_sides := LineSides.All
+) #no_abc {
     if points.count < 2 {
         return;
     }
 
     thickness = max(thickness, 1);
-    margin := 1.0 + max(blur_size, 0.0);
-    is_thick := thickness > margin;
+    blur_size = max(blur_size, 0);
+    has_middle_part := thickness > blur_size;
 
     first := GetCurrentIndex(draw_list);
+
+    num_indices_per_point : u32;
+    if has_middle_part {
+        num_indices_per_point += 6;
+    }
+    if blur_sides & .Exterior {
+        num_indices_per_point += 6;
+    }
+    if blur_sides & .Interior {
+        num_indices_per_point += 6;
+    }
+
     num_indices : u32;
     if closed {
-        num_indices = xx ifx is_thick then points.count * 18 else points.count * 12;
+        num_indices = xx points.count * num_indices_per_point;
     } else {
-        num_indices = xx ifx is_thick then (points.count - 1) * 18 else (points.count - 1) * 12;
+        num_indices = xx(points.count - 1) * num_indices_per_point;
     }
 
     indices := PushIndices(draw_list, xx num_indices);
     indices_index := 0;
 
-    num_vertices := ifx is_thick then points.count * 3 else points.count * 4;
+    num_vertices_per_point : u32;
+    if has_middle_part {
+        num_vertices_per_point += 2;
+    } else {
+        num_vertices_per_point += 1;
+    }
+    if blur_sides & .Exterior {
+        num_vertices_per_point += 1;
+    }
+    if blur_sides & .Interior {
+        num_vertices_per_point += 1;
+    }
+
+    num_vertices := cast(u32, points.count) * num_vertices_per_point;
     ReserveVertices(draw_list, num_vertices);
 
-    half_inner_thickness := (thickness - margin) * 0.5;
+    half_inner_thickness := (thickness - blur_size) * 0.5;
     half_thickness := thickness * 0.5;
 
     i0 : u32 = xx (points.count - 1);
@@ -641,7 +713,7 @@ DrawPolygonLine :: (draw_list : *VtxDrawList, points : []PathPoint, closed : boo
             n = p1.position - p;
         }
 
-        if is_thick {
+        if has_middle_part {
             v := PushVertex(draw_list);
             v.position = points[i1].position + n * half_inner_thickness;
             v.color = color;
@@ -650,138 +722,171 @@ DrawPolygonLine :: (draw_list : *VtxDrawList, points : []PathPoint, closed : boo
             v.position = points[i1].position - n * half_inner_thickness;
             v.color = color;
 
-            v = PushVertex(draw_list);
-            v.position = points[i1].position + n * half_thickness;
-            v.color = color_alpha0;
+            if blur_sides & .Exterior {
+                v = PushVertex(draw_list);
+                v.position = points[i1].position + n * half_thickness;
+                v.color = color_alpha0;
+            }
 
-            v = PushVertex(draw_list);
-            v.position = points[i1].position - n * half_thickness;
-            v.color = color_alpha0;
+            if blur_sides & .Interior {
+                v = PushVertex(draw_list);
+                v.position = points[i1].position - n * half_thickness;
+                v.color = color_alpha0;
+            }
 
             // Indices
             if i1 < points.count - 1 || closed {
-                ii0 := i1 * 4;
-                ii1 := ifx i1 == points.count - 1 then 0 else ii0 + 4;
+                i1_middle0  := i1 * num_vertices_per_point;
+                i1_middle1  := i1 * num_vertices_per_point + 1;
+                i1_exterior := i1 * num_vertices_per_point + 2;
+                i1_interior := i1 * num_vertices_per_point + 3;
+
+                i2_middle0  := ifx i1 == points.count - 1 then 0 else i1_middle0  + num_vertices_per_point;
+                i2_middle1  := ifx i1 == points.count - 1 then 0 else i1_middle1  + num_vertices_per_point;
+                i2_exterior := ifx i1 == points.count - 1 then 1 else i1_exterior + num_vertices_per_point;
+                i2_interior := ifx i1 == points.count - 1 then 2 else i1_interior + num_vertices_per_point;
+
+                if !(blur_sides & .Exterior) {
+                    i1_interior = i1_exterior;
+                    i2_interior = i2_exterior;
+                }
 
                 // Middle
-                indices[indices_index] = first + ii0;
+                indices[indices_index] = first + i1_middle0;
                 indices_index += 1;
 
-                indices[indices_index] = first + ii1;
+                indices[indices_index] = first + i2_middle0;
                 indices_index += 1;
 
-                indices[indices_index] = first + ii0 + 1;
+                indices[indices_index] = first + i1_middle1;
                 indices_index += 1;
 
-                indices[indices_index] = first + ii0 + 1;
+                indices[indices_index] = first + i1_middle1;
                 indices_index += 1;
 
-                indices[indices_index] = first + ii1;
+                indices[indices_index] = first + i2_middle0;
                 indices_index += 1;
 
-                indices[indices_index] = first + ii1 + 1;
+                indices[indices_index] = first + i2_middle1;
                 indices_index += 1;
 
-                // Margin 1
-                indices[indices_index] = first + ii0 + 2;
-                indices_index += 1;
+                if blur_sides & .Exterior {
+                    indices[indices_index] = first + i1_exterior;
+                    indices_index += 1;
 
-                indices[indices_index] = first + ii1 + 2;
-                indices_index += 1;
+                    indices[indices_index] = first + i2_exterior;
+                    indices_index += 1;
 
-                indices[indices_index] = first + ii0;
-                indices_index += 1;
+                    indices[indices_index] = first + i1_middle0;
+                    indices_index += 1;
 
-                indices[indices_index] = first + ii0;
-                indices_index += 1;
+                    indices[indices_index] = first + i1_middle0;
+                    indices_index += 1;
 
-                indices[indices_index] = first + ii1 + 2;
-                indices_index += 1;
+                    indices[indices_index] = first + i2_exterior;
+                    indices_index += 1;
 
-                indices[indices_index] = first + ii1;
-                indices_index += 1;
+                    indices[indices_index] = first + i2_middle0;
+                    indices_index += 1;
+                }
 
-                // Margin 2
-                indices[indices_index] = first + ii0 + 3;
-                indices_index += 1;
+                if blur_sides & .Interior {
+                    indices[indices_index] = first + i1_interior;
+                    indices_index += 1;
 
-                indices[indices_index] = first + ii1 + 3;
-                indices_index += 1;
+                    indices[indices_index] = first + i2_interior;
+                    indices_index += 1;
 
-                indices[indices_index] = first + ii0 + 1;
-                indices_index += 1;
+                    indices[indices_index] = first + i1_middle1;
+                    indices_index += 1;
 
-                indices[indices_index] = first + ii0 + 1;
-                indices_index += 1;
+                    indices[indices_index] = first + i1_middle1;
+                    indices_index += 1;
 
-                indices[indices_index] = first + ii1 + 3;
-                indices_index += 1;
+                    indices[indices_index] = first + i2_interior;
+                    indices_index += 1;
 
-                indices[indices_index] = first + ii1 + 1;
-                indices_index += 1;
+                    indices[indices_index] = first + i2_middle1;
+                    indices_index += 1;
+                }
             }
         } else {
-            // If the line is not thick, we only have three segments
             v := PushVertex(draw_list);
-            v.position = points[i1].position + n * margin;
-            v.color = color_alpha0;
-
-            v = PushVertex(draw_list);
             v.position = points[i1].position;
             v.color = color;
 
-            v = PushVertex(draw_list);
-            v.position = points[i1].position - n * margin;
-            v.color = color_alpha0;
+            if blur_sides & .Exterior {
+                v = PushVertex(draw_list);
+                v.position = points[i1].position + n * blur_size;
+                v.color = color_alpha0;
+            }
+
+            if blur_sides & .Interior {
+                v = PushVertex(draw_list);
+                v.position = points[i1].position - n * blur_size;
+                v.color = color_alpha0;
+            }
 
             // Indices
             if i1 < points.count - 1 || closed {
-                ii0 := i1 * 3;
-                ii1 := ifx i1 == points.count - 1 then 0 else ii0 + 3;
+                i1_middle   := i1 * num_vertices_per_point;
+                i1_exterior := i1 * num_vertices_per_point + 1;
+                i1_interior := i1 * num_vertices_per_point + 2;
 
-                // Margin 1
-                indices[indices_index] = first + ii0;
-                indices_index += 1;
+                i2_middle   := ifx i1 == points.count - 1 then 0 else i1_middle   + num_vertices_per_point;
+                i2_exterior := ifx i1 == points.count - 1 then 1 else i1_exterior + num_vertices_per_point;
+                i2_interior := ifx i1 == points.count - 1 then 2 else i1_interior + num_vertices_per_point;
 
-                indices[indices_index] = first + ii1;
-                indices_index += 1;
+                if !(blur_sides & .Exterior) {
+                    i1_interior = i1_exterior;
+                    i2_interior = i2_exterior;
+                }
 
-                indices[indices_index] = first + ii0 + 1;
-                indices_index += 1;
+                if blur_sides & .Exterior {
+                    indices[indices_index] = first + i1_exterior;
+                    indices_index += 1;
 
-                indices[indices_index] = first + ii0 + 1;
-                indices_index += 1;
+                    indices[indices_index] = first + i2_exterior;
+                    indices_index += 1;
 
-                indices[indices_index] = first + ii1;
-                indices_index += 1;
+                    indices[indices_index] = first + i1_middle;
+                    indices_index += 1;
 
-                indices[indices_index] = first + ii1 + 1;
-                indices_index += 1;
+                    indices[indices_index] = first + i1_middle;
+                    indices_index += 1;
 
-                // Margin 2
-                indices[indices_index] = first + ii0 + 1;
-                indices_index += 1;
+                    indices[indices_index] = first + i2_exterior;
+                    indices_index += 1;
 
-                indices[indices_index] = first + ii1 + 1;
-                indices_index += 1;
+                    indices[indices_index] = first + i2_middle;
+                    indices_index += 1;
+                }
 
-                indices[indices_index] = first + ii0 + 2;
-                indices_index += 1;
+                if blur_sides & .Interior {
+                    indices[indices_index] = first + i1_interior;
+                    indices_index += 1;
 
-                indices[indices_index] = first + ii0 + 2;
-                indices_index += 1;
+                    indices[indices_index] = first + i2_interior;
+                    indices_index += 1;
 
-                indices[indices_index] = first + ii1 + 1;
-                indices_index += 1;
+                    indices[indices_index] = first + i1_middle;
+                    indices_index += 1;
 
-                indices[indices_index] = first + ii1 + 2;
-                indices_index += 1;
+                    indices[indices_index] = first + i1_middle;
+                    indices_index += 1;
+
+                    indices[indices_index] = first + i2_interior;
+                    indices_index += 1;
+
+                    indices[indices_index] = first + i2_middle;
+                    indices_index += 1;
+                }
             }
         }
     }
 }
 
-DrawConvexPolygon :: (draw_list : *VtxDrawList, points : []PathPoint, color : RGBA8, blur_size := 0.0) #no_abc {
+DrawConvexPolygon :: (draw_list : *VtxDrawList, points : []PathPoint, color : RGBA8, blur_size := 1.0) #no_abc {
     if points.count < 3 || (color & 0xff) == 0 {
         return;
     }
@@ -809,7 +914,7 @@ DrawConvexPolygon :: (draw_list : *VtxDrawList, points : []PathPoint, color : RG
     num_vertices := points.count * 2;
     ReserveVertices(draw_list, num_vertices);
 
-    margin := 1.0 + max(blur_size, 0.0);
+    blur_size = max(blur_size, 0);
     i0 : u32 = xx (points.count - 1);
     i1 : u32 = 0;
     while i1 < points.count {
@@ -821,7 +926,7 @@ DrawConvexPolygon :: (draw_list : *VtxDrawList, points : []PathPoint, color : RG
         n0 := points[i0].normal;
         n1 := points[i1].normal;
         n := (n0 + n1) * 0.5;
-        n *= margin * 0.5;
+        n *= blur_size * 0.5;
 
         // Inner
         v := PushVertex(draw_list);
@@ -833,7 +938,7 @@ DrawConvexPolygon :: (draw_list : *VtxDrawList, points : []PathPoint, color : RG
         v.position = points[i1].position + n;
         v.color = color_alpha0;
 
-        // AA margin indices
+        // Blur indices
         indices[indices_index] = first_inner + (i1 << 1);
         indices_index += 1;
 
@@ -850,6 +955,231 @@ DrawConvexPolygon :: (draw_list : *VtxDrawList, points : []PathPoint, color : RG
         indices_index += 1;
 
         indices[indices_index] = first_inner + (i1 << 1);
+        indices_index += 1;
+    }
+}
+
+TriangleSides :: enum_flags {
+    P0P1;
+    P1P2;
+    P2P0;
+
+    All :: P0P1 | P1P2 | P2P0;
+}
+
+DrawTriangle :: inline (
+    draw_list : *VtxDrawList,
+    p0 : Vec2f,
+    p1 : Vec2f,
+    p2 : Vec2f,
+    color : RGBA8,
+    // A blur of 1.0 can be used for anti-aliasing
+    // For blur to work the points need to be in counter clockwise order
+    blur_size := 1.0,
+    blur_sides := TriangleSides.All
+) {
+    DrawTriangle(draw_list, p0, p1, p2, color, color, color, blur_size, blur_sides);
+}
+
+DrawTriangle :: (
+    draw_list : *VtxDrawList,
+    p0 : Vec2f,
+    p1 : Vec2f,
+    p2 : Vec2f,
+    c0 : RGBA8,
+    c1 : RGBA8,
+    c2 : RGBA8,
+    // A blur of 1.0 can be used for anti-aliasing
+    // For blur to work the points need to be in counter clockwise order
+    blur_size := 1.0,
+    blur_sides := TriangleSides.All
+) {
+    if (c0 & 0xff) == 0 && (c1 & 0xff) == 0 && (c2 & 0xff) == 0 {
+        return;
+    }
+
+    color0_alpha0 := SetAlpha(c0, 0);
+    color1_alpha0 := SetAlpha(c1, 0);
+    color2_alpha0 := SetAlpha(c2, 0);
+
+    num_indices : u32 = 3;
+    if blur_sides & .P0P1 {
+        num_indices += 6;
+    }
+    if blur_sides & .P1P2 {
+        num_indices += 6;
+    }
+    if blur_sides & .P2P0 {
+        num_indices += 6;
+    }
+
+    num_vertices : u32 = 3;
+    has_p0_blur := (blur_sides & .P0P1) != 0 || (blur_sides & .P2P0) != 0;
+    has_p1_blur := (blur_sides & .P0P1) != 0 || (blur_sides & .P1P2) != 0;
+    has_p2_blur := (blur_sides & .P1P2) != 0 || (blur_sides & .P2P0) != 0;
+    if has_p0_blur {
+        num_vertices += 1;
+    }
+    if has_p1_blur {
+        num_vertices += 1;
+    }
+    if has_p2_blur {
+        num_vertices += 1;
+    }
+
+    first := GetCurrentIndex(draw_list);
+    indices := PushIndices(draw_list, num_indices);
+    indices_index := 0;
+
+    ReserveVertices(draw_list, num_vertices);
+
+    v := PushVertex(draw_list);
+    v.position = p0;
+    v.color = c0;
+
+    v = PushVertex(draw_list);
+    v.position = p1;
+    v.color = c1;
+
+    v = PushVertex(draw_list);
+    v.position = p2;
+    v.color = c2;
+
+    if has_p0_blur {
+        a := p1 - p0;
+        a = .{-a.y, a.x};
+        normalize(*a);
+
+        b := p2 - p0;
+        b = .{b.y, -b.x};
+        normalize(*b);
+
+        inter, p := LineIntersection(
+            p0 + a * blur_size, p1 + a * blur_size,
+            p0 + b * blur_size, p2 + b * blur_size
+        );
+
+        if !inter {
+            p = p0 + a * blur_size;
+        }
+
+        v = PushVertex(draw_list);
+        v.position = p;
+        v.color = color0_alpha0;
+    }
+
+    if has_p1_blur {
+        a := p0 - p1;
+        a = .{-a.y, a.x};
+        normalize(*a);
+
+        b := p2 - p1;
+        b = .{b.y, -b.x};
+        normalize(*b);
+
+        inter, p := LineIntersection(
+            p1 - a * blur_size, p0 - a * blur_size,
+            p1 - b * blur_size, p2 - b * blur_size
+        );
+
+        if !inter {
+            p = p1 - a * blur_size;
+        }
+
+        v = PushVertex(draw_list);
+        v.position = p;
+        v.color = color1_alpha0;
+    }
+
+    if has_p2_blur {
+        a := p1 - p2;
+        a = .{-a.y, a.x};
+        normalize(*a);
+
+        b := p0 - p2;
+        b = .{b.y, -b.x};
+        normalize(*b);
+
+        inter, p := LineIntersection(
+            p2 - a * blur_size, p1 - a * blur_size,
+            p2 - b * blur_size, p0 - b * blur_size
+        );
+
+        if !inter {
+            p = p2 - a * blur_size;
+        }
+
+        v = PushVertex(draw_list);
+        v.position = p;
+        v.color = color2_alpha0;
+    }
+
+    indices[indices_index] = first;
+    indices_index += 1;
+
+    indices[indices_index] = first + 1;
+    indices_index += 1;
+
+    indices[indices_index] = first + 2;
+    indices_index += 1;
+
+    if blur_sides & .P0P1 {
+        indices[indices_index] = first;
+        indices_index += 1;
+
+        indices[indices_index] = first + 3;
+        indices_index += 1;
+
+        indices[indices_index] = first + 4;
+        indices_index += 1;
+
+        indices[indices_index] = first;
+        indices_index += 1;
+
+        indices[indices_index] = first + 4;
+        indices_index += 1;
+
+        indices[indices_index] = first + 1;
+        indices_index += 1;
+    }
+
+    if blur_sides & .P1P2 {
+        indices[indices_index] = first + 1;
+        indices_index += 1;
+
+        indices[indices_index] = first + 4;
+        indices_index += 1;
+
+        indices[indices_index] = first + 5;
+        indices_index += 1;
+
+        indices[indices_index] = first + 1;
+        indices_index += 1;
+
+        indices[indices_index] = first + 5;
+        indices_index += 1;
+
+        indices[indices_index] = first + 2;
+        indices_index += 1;
+    }
+
+    if blur_sides & .P2P0 {
+        indices[indices_index] = first + 2;
+        indices_index += 1;
+
+        indices[indices_index] = first + 5;
+        indices_index += 1;
+
+        indices[indices_index] = first + 3;
+        indices_index += 1;
+
+        indices[indices_index] = first + 2;
+        indices_index += 1;
+
+        indices[indices_index] = first + 3;
+        indices_index += 1;
+
+        indices[indices_index] = first;
         indices_index += 1;
     }
 }
@@ -1003,230 +1333,5 @@ PathPushArc :: (points : *[..]PathPoint, center : Vec2f, radius : float, start_a
             p := Vec2f.{cos(-start_angle - theta), sin(-start_angle - theta)};
             array_add(points, .{position=center + p * radius, normal=p});
         }
-    }
-}
-
-TriangleSides :: enum_flags {
-    P0P1;
-    P1P2;
-    P2P0;
-
-    All :: P0P1 | P1P2 | P2P0;
-}
-
-DrawTriangle :: inline (
-    draw_list : *VtxDrawList,
-    p0 : Vec2f,
-    p1 : Vec2f,
-    p2 : Vec2f,
-    color : RGBA8,
-    // A blur of 1.0 can be used for anti-aliasing
-    // For blur to work the points need to be in counter clockwise order
-    blur_size := 1.0,
-    blurred_sides := TriangleSides.All
-) {
-    DrawTriangle(draw_list, p0, p1, p2, color, color, color, blur_size, blurred_sides);
-}
-
-DrawTriangle :: (
-    draw_list : *VtxDrawList,
-    p0 : Vec2f,
-    p1 : Vec2f,
-    p2 : Vec2f,
-    c0 : RGBA8,
-    c1 : RGBA8,
-    c2 : RGBA8,
-    // A blur of 1.0 can be used for anti-aliasing
-    // For blur to work the points need to be in counter clockwise order
-    blur_size := 1.0,
-    blurred_sides := TriangleSides.All
-) {
-    if (c0 & 0xff) == 0 && (c1 & 0xff) == 0 && (c2 & 0xff) == 0 {
-        return;
-    }
-
-    color0_alpha0 := SetAlpha(c0, 0);
-    color1_alpha0 := SetAlpha(c1, 0);
-    color2_alpha0 := SetAlpha(c2, 0);
-
-    num_indices : u32 = 3;
-    if blurred_sides & .P0P1 {
-        num_indices += 6;
-    }
-    if blurred_sides & .P1P2 {
-        num_indices += 6;
-    }
-    if blurred_sides & .P2P0 {
-        num_indices += 6;
-    }
-
-    num_vertices : u32 = 3;
-    has_p0_blur := (blurred_sides & .P0P1) != 0 || (blurred_sides & .P2P0) != 0;
-    has_p1_blur := (blurred_sides & .P0P1) != 0 || (blurred_sides & .P1P2) != 0;
-    has_p2_blur := (blurred_sides & .P1P2) != 0 || (blurred_sides & .P2P0) != 0;
-    if has_p0_blur {
-        num_vertices += 1;
-    }
-    if has_p1_blur {
-        num_vertices += 1;
-    }
-    if has_p2_blur {
-        num_vertices += 1;
-    }
-
-    first := GetCurrentIndex(draw_list);
-    indices := PushIndices(draw_list, num_indices);
-    indices_index := 0;
-
-    ReserveVertices(draw_list, num_vertices);
-
-    v := PushVertex(draw_list);
-    v.position = p0;
-    v.color = c0;
-
-    v = PushVertex(draw_list);
-    v.position = p1;
-    v.color = c1;
-
-    v = PushVertex(draw_list);
-    v.position = p2;
-    v.color = c2;
-
-    if has_p0_blur {
-        a := p1 - p0;
-        a = .{-a.y, a.x};
-        normalize(*a);
-
-        b := p2 - p0;
-        b = .{b.y, -b.x};
-        normalize(*b);
-
-        inter, p := LineIntersection(
-            p0 + a * blur_size, p1 + a * blur_size,
-            p0 + b * blur_size, p2 + b * blur_size
-        );
-
-        if !inter {
-            p = p0 + a * blur_size;
-        }
-
-        v = PushVertex(draw_list);
-        v.position = p;
-        v.color = color0_alpha0;
-    }
-
-    if has_p1_blur {
-        a := p0 - p1;
-        a = .{-a.y, a.x};
-        normalize(*a);
-
-        b := p2 - p1;
-        b = .{b.y, -b.x};
-        normalize(*b);
-
-        inter, p := LineIntersection(
-            p1 - a * blur_size, p0 - a * blur_size,
-            p1 - b * blur_size, p2 - b * blur_size
-        );
-
-        if !inter {
-            p = p1 - a * blur_size;
-        }
-
-        v = PushVertex(draw_list);
-        v.position = p;
-        v.color = color1_alpha0;
-    }
-
-    if has_p2_blur {
-        a := p1 - p2;
-        a = .{-a.y, a.x};
-        normalize(*a);
-
-        b := p0 - p2;
-        b = .{b.y, -b.x};
-        normalize(*b);
-
-        inter, p := LineIntersection(
-            p2 - a * blur_size, p1 - a * blur_size,
-            p2 - b * blur_size, p0 - b * blur_size
-        );
-
-        if !inter {
-            p = p2 - a * blur_size;
-        }
-
-        v = PushVertex(draw_list);
-        v.position = p;
-        v.color = color2_alpha0;
-    }
-
-    indices[indices_index] = first;
-    indices_index += 1;
-
-    indices[indices_index] = first + 1;
-    indices_index += 1;
-
-    indices[indices_index] = first + 2;
-    indices_index += 1;
-
-    if blurred_sides & .P0P1 {
-        indices[indices_index] = first;
-        indices_index += 1;
-
-        indices[indices_index] = first + 3;
-        indices_index += 1;
-
-        indices[indices_index] = first + 4;
-        indices_index += 1;
-
-        indices[indices_index] = first;
-        indices_index += 1;
-
-        indices[indices_index] = first + 4;
-        indices_index += 1;
-
-        indices[indices_index] = first + 1;
-        indices_index += 1;
-    }
-
-    if blurred_sides & .P1P2 {
-        indices[indices_index] = first + 1;
-        indices_index += 1;
-
-        indices[indices_index] = first + 4;
-        indices_index += 1;
-
-        indices[indices_index] = first + 5;
-        indices_index += 1;
-
-        indices[indices_index] = first + 1;
-        indices_index += 1;
-
-        indices[indices_index] = first + 5;
-        indices_index += 1;
-
-        indices[indices_index] = first + 2;
-        indices_index += 1;
-    }
-
-    if blurred_sides & .P2P0 {
-        indices[indices_index] = first + 2;
-        indices_index += 1;
-
-        indices[indices_index] = first + 5;
-        indices_index += 1;
-
-        indices[indices_index] = first + 3;
-        indices_index += 1;
-
-        indices[indices_index] = first + 2;
-        indices_index += 1;
-
-        indices[indices_index] = first + 3;
-        indices_index += 1;
-
-        indices[indices_index] = first;
-        indices_index += 1;
     }
 }
