@@ -481,12 +481,11 @@ ColorPreviewStyle :: struct {
 }
 
 ColorPreview :: (parent : *Node, color : RGBA8, style : *ColorPreviewStyle, location := #caller_location) -> *Node {
-    Draw :: (draw_list : *DrawList, node : *Node) {
+    Draw :: (draw_list : *VtxDrawList, node : *Node) {
         DrawBox(draw_list, .{
             size=node.size,
             position=(node.rect.xy + node.rect.zw) * 0.5,
             corner_radiuses=node.corner_radiuses,
-            background_color=0xffffffff,
             outer_shadow_color=node.outer_shadow_color,
             outer_shadow_offset=node.outer_shadow_offset,
             outer_shadow_blur=node.outer_shadow_blur,
@@ -527,7 +526,7 @@ ColorPreview :: (parent : *Node, color : RGBA8, style : *ColorPreviewStyle, loca
     node.flags |= .Focusable;
 
     SetSize(node, SizePx(50), SizePx(40));
-    // SetDraw(node, Draw);
+    SetDraw(node, Draw);
     SetUserData(node, style.*);
     Apply(node, style.box);
     SetBackgroundColor(node, color);
