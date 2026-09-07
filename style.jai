@@ -538,7 +538,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         normal.background.border_size = 1;
         normal.background.border_color = MakeTone(button_base_background_color, 0.3);
         normal.background.inner_shadow_blur = 5;
-        normal.background.inner_shadow_color = SetAlpha(Darken(button_base_background_color, 0.2), 0.7);
+        normal.background.inner_shadow_color = SetAlpha(Darken(button_base_background_color, 0.2), 0.4);
         normal.fill.corner_radiuses = .{3,3,3,3};
         normal.handle.corner_radiuses = .{3,3,3,3};
         normal.text = theme.text;
@@ -562,7 +562,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         normal.background.border_size = 1;
         normal.background.border_color = MakeTone(button_base_background_color, 0.3);
         normal.background.inner_shadow_blur = 5;
-        normal.background.inner_shadow_color = SetAlpha(Darken(button_base_background_color, 0.2), 0.7);
+        normal.background.inner_shadow_color = SetAlpha(Darken(button_base_background_color, 0.2), 0.4);
         normal.fill.corner_radiuses = .{3,3,3,3};
         normal.handle.corner_radiuses = .{3,3,3,3};
         normal.text = theme.text;
@@ -626,7 +626,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         normal.background.border_size = 1;
         normal.background.border_color = MakeTone(button_base_background_color, 0.3);
         normal.background.inner_shadow_blur = 5;
-        normal.background.inner_shadow_color = SetAlpha(Darken(button_base_background_color, 0.2), 0.7);
+        normal.background.inner_shadow_color = SetAlpha(Darken(button_base_background_color, 0.2), 0.4);
         normal.text.font = theme.text.font;
         normal.text.text_size = theme.text.text_size;
 
@@ -754,7 +754,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         border_color = MakeTone(base_background_color, 0.3);
         border_size = 1;
 
-        outer_shadow_color = ColorU32(0,0,0,0.5);
+        outer_shadow_color = ColorU32(0,0,0,0.25);
         outer_shadow_offset = .{3,3};
         outer_shadow_blur = 5;
     }
@@ -779,7 +779,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         background.border_color = MakeTone(base_background_color, 0.3);
         background.border_size = 1;
 
-        background.outer_shadow_color = ColorU32(0,0,0,0.5);
+        background.outer_shadow_color = ColorU32(0,0,0,0.25);
         background.outer_shadow_offset = .{6,6};
         background.outer_shadow_blur = 5;
 
@@ -813,11 +813,11 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
 
         wheel.border_color = MakeTone(0xffffffff, 0.3);
         wheel.outer_shadow_offset = .{wheel.border_size * 0.5, wheel.border_size * 0.5};
-        wheel.outer_shadow_color = ColorU32(0,0,0,0.5);
+        wheel.outer_shadow_color = ColorU32(0,0,0,0.25);
         wheel.outer_shadow_blur = 5;
 
         wheel.wheel_cursor.normal.border_color = wheel.border_color;
-        wheel.wheel_cursor.normal.outer_shadow_color = ColorU32(0,0,0,0.5);
+        wheel.wheel_cursor.normal.outer_shadow_color = ColorU32(0,0,0,0.25);
         wheel.wheel_cursor.normal.outer_shadow_blur = 2;
 
         wheel.wheel_cursor.focused = wheel.wheel_cursor.normal;
@@ -829,7 +829,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
 
         wheel.triangle_cursor.normal.radius = 6;
         wheel.triangle_cursor.normal.border_color = wheel.border_color;
-        wheel.triangle_cursor.normal.outer_shadow_color = ColorU32(0,0,0,0.5);
+        wheel.triangle_cursor.normal.outer_shadow_color = ColorU32(0,0,0,0.25);
         wheel.triangle_cursor.normal.outer_shadow_blur = 2;
 
         wheel.triangle_cursor.focused = wheel.triangle_cursor.normal;
@@ -864,7 +864,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         slider_base.normal.handle.background_color = wheel.border_color;
         // slider_base.normal.handle.border_color = MakeTone(button_base_background_color, 0.3);
         // slider_base.normal.handle.border_size = 1;
-        slider_base.normal.handle.outer_shadow_color = ColorU32(0,0,0,0.5);
+        slider_base.normal.handle.outer_shadow_color = ColorU32(0,0,0,0.25);
         slider_base.normal.handle.outer_shadow_blur = 2;
 
         slider_base.focused = slider_base.normal;
@@ -919,7 +919,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         preview.corner_radiuses = .{5,5,5,5};
         preview.border_size = 1;
         preview.border_color = wheel.border_color;
-        preview.outer_shadow_color = ColorU32(0,0,0,0.5);
+        preview.outer_shadow_color = ColorU32(0,0,0,0.25);
         preview.outer_shadow_blur = 2;
         preview.opacity_checkerboard_white = opacity_checkerboard_white;
         preview.opacity_checkerboard_black = opacity_checkerboard_black;
@@ -970,7 +970,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         background.border_color = MakeTone(base_background_color, 0.3);
         background.border_size = 1;
 
-        background.outer_shadow_color = ColorU32(0,0,0,0.5);
+        background.outer_shadow_color = ColorU32(0,0,0,0.25);
         background.outer_shadow_offset = .{3,3};
         background.outer_shadow_blur = 5;
 
@@ -1090,7 +1090,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         split_hint.background_color = SetAlpha(base_accent_color, 0.5);
         split_hint.corner_radiuses = .{6,6,6,6};
         split_hint.outer_shadow_blur = 4;
-        split_hint.outer_shadow_color = ColorU32(0,0,0,0.2);
+        split_hint.outer_shadow_color = ColorU32(0,0,0,0.15);
     }
     SetStyle(theme, "dock_space", theme.dock_space);
 }
