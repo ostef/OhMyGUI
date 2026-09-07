@@ -91,7 +91,7 @@ GetHSVWheelGeometricData :: (style : *HSVTriangleWheelStyle, rect : Vec4f, hsv :
 }
 
 HSVTriangleWheel :: (parent : *Node, using data : *ColorPickerData, style : *HSVTriangleWheelStyle, location := #caller_location) -> bool, *Node {
-    Draw :: (draw_list : *DrawList, node : *Node) {
+    Draw :: (draw_list : *VtxDrawList, node : *Node) {
         data := GetUserData(node, *ColorPickerData);
         if !data {
             return;
@@ -108,14 +108,26 @@ HSVTriangleWheel :: (parent : *Node, using data : *ColorPickerData, style : *HSV
         wheel_shape := Onion(Circle(outer_radius - style.wheel_thickness * 0.5), style.wheel_thickness * 0.5 + style.border_size);
         triangle_shape := Inflate(Triangle(hue_point - center, white_point - center, black_point - center), style.border_size);
 
-        DrawShape(draw_list, .{
-            shape=Union(wheel_shape, triangle_shape, 1),
-            position=center,
-            background_color=style.border_color,
-            outer_shadow_color=style.outer_shadow_color,
-            outer_shadow_offset=style.outer_shadow_offset,
-            outer_shadow_blur=style.outer_shadow_blur,
-        });
+        p0 := hue_point - center;
+        p0 += normalize(p0) * (style.border_size + 1);
+        p0 += center;
+
+        p1 := black_point - center;
+        p1 += normalize(p1) * (style.border_size + 1);
+        p1 += center;
+
+        p2 := white_point - center;
+        p2 += normalize(p2) * (style.border_size + 1);
+        p2 += center;
+
+        DrawTriangle(draw_list, p0 + style.outer_shadow_offset, p1 + style.outer_shadow_offset, p2 + style.outer_shadow_offset, style.outer_shadow_color, blur_size=1 + style.outer_shadow_blur);
+        DrawTriangle(draw_list, p0, p1, p2, style.border_color);
+
+        circle_thickness := outer_radius - inner_radius + 2 * style.border_size;
+        circle_radius := (outer_radius + inner_radius) * 0.5;
+
+        DrawCircleOutline(draw_list, center + style.outer_shadow_offset, circle_radius, style.outer_shadow_color, circle_thickness, blur_size = 1 + style.outer_shadow_blur);
+        DrawCircleOutline(draw_list, center, circle_radius, style.border_color, circle_thickness);
     }
 
     modified := false;
@@ -124,7 +136,7 @@ HSVTriangleWheel :: (parent : *Node, using data : *ColorPickerData, style : *HSV
     {
         SetSize(node, SizeFill(), SizeFill());
         SetLayout(node, .None);
-        // SetDraw(node, Draw);
+        SetDraw(node, Draw);
         SetUserData(node, data);
         SetUserData(node, style.*);
         SetPadding(node, style.padding);
@@ -371,7 +383,7 @@ ColoredSlider :: (parent : *Node, value : *float, min : float, max : float, step
         DrawTriangle(draw_list, a, b, c, node.background_color);
     }
 
-    DrawBackground :: (draw_list : *DrawList, node : *Node) {
+    DrawBackground :: (draw_list : *VtxDrawList, node : *Node) {
         if !node.parent {
             return;
         }
@@ -416,35 +428,35 @@ ColoredSlider :: (parent : *Node, value : *float, min : float, max : float, step
                 p2[axis] = t1;
                 p2[cross] = node.rect.xy[cross];
 
-                DrawTriangle(draw_list, .{p0=p0, p1=p1, p2=p2, c0=c0, c1=c0, c2=c1});
+                DrawTriangle(draw_list, p0=p0, p1=p1, p2=p2, c0=c0, c1=c0, c2=c1, blur_sides=0);
 
                 p1 = p2;
 
                 p2[axis] = t1;
                 p2[cross] = node.rect.zw[cross];
 
-                DrawTriangle(draw_list, .{p0=p0, p1=p1, p2=p2, c0=c0, c1=c1, c2=c1});
+                DrawTriangle(draw_list, p0=p0, p1=p1, p2=p2, c0=c0, c1=c1, c2=c1, blur_sides=0);
             }
         } else {
-            // We do not use gradients because gradients use smoothstep instead of linear interpolation
-
             c0 := start_color;
             c1 := ifx axis == .X then start_color else end_color;
             c2 := end_color;
 
-            DrawTriangle(draw_list, .{
+            DrawTriangle(draw_list,
                 p0=.{node.rect.x, node.rect.w}, p1=.{node.rect.x, node.rect.y}, p2=.{node.rect.z, node.rect.y},
                 c0=c0, c1=c1, c2=c2,
-            });
+                blur_sides=0
+            );
 
             c0 = start_color;
             c1 = end_color;
             c2 = ifx axis == .X then end_color else start_color;
 
-            DrawTriangle(draw_list, .{
+            DrawTriangle(draw_list,
                 p0=.{node.rect.x, node.rect.w}, p1=.{node.rect.z, node.rect.y}, p2=.{node.rect.z, node.rect.w},
                 c0=c0, c1=c1, c2=c2,
-            });
+                blur_sides=0
+            );
         }
 
         PopClipBox(draw_list);
@@ -454,7 +466,7 @@ ColoredSlider :: (parent : *Node, value : *float, min : float, max : float, step
 
     modified, slider, background, handle := Slider(parent, value, min, max, step, style=style, location=location);
     if dynamic_color {
-        // SetDraw(background, DrawBackground);
+        SetDraw(background, DrawBackground);
     }
 
     SetDraw(handle, DrawTriangularCursor);
