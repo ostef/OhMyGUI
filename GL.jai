@@ -348,8 +348,6 @@ SendDrawCommands :: (draw_list : *VtxDrawList, viewport_w : u32, viewport_h : u3
             continue;
         }
 
-        num_vertices : u32;
-
         if it_index == 0 || current_texture != it.texture.handle {
             if !it.texture.handle {
                 glBindTexture(GL_TEXTURE_2D, g_white_texture);
