@@ -112,9 +112,6 @@ HSVTriangleWheel :: (parent : *Node, using data : *ColorPickerData, style : *HSV
         using _ := data.*;
         using _ := GetHSVWheelGeometricData(style, InflateBounds(node.rect, ToVec4f(node.padding) * -1), hsv);
 
-        wheel_shape := Onion(Circle(outer_radius - style.wheel_thickness * 0.5), style.wheel_thickness * 0.5 + style.border_size);
-        triangle_shape := Inflate(Triangle(hue_point - center, white_point - center, black_point - center), style.border_size);
-
         p0 := hue_point - center;
         p0 += normalize(p0) * (style.border_size + 1);
         p0 += center;

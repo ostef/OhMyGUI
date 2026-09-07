@@ -1,3 +1,10 @@
+TextureHandle :: u64;
+
+ClipBox :: struct {
+    bounds : Vec4f;
+    corner_radiuses : Vec4f;
+}
+
 VtxDrawCall :: struct {
     Texture :: struct {
         handle : TextureHandle;
@@ -76,6 +83,49 @@ GetCurrentClipBoxIndex :: (draw_list : *VtxDrawList) -> s32 {
     }
     return draw_list.clip_box_stack[draw_list.clip_box_stack.count - 1];
 }
+
+ClipBoxAgainstBox :: (a : ClipBox, b : ClipBox) -> ClipBox {
+    a_corners := Vec2f.[
+        .{a.bounds.x, a.bounds.y},
+        .{a.bounds.z, a.bounds.y},
+        .{a.bounds.x, a.bounds.w},
+        .{a.bounds.z, a.bounds.w},
+    ];
+    a_inner_corners := Vec2f.[
+        .{a.bounds.x + a.corner_radiuses.x, a.bounds.y + a.corner_radiuses.x},
+        .{a.bounds.z - a.corner_radiuses.y, a.bounds.y + a.corner_radiuses.y},
+        .{a.bounds.x + a.corner_radiuses.z, a.bounds.w - a.corner_radiuses.z},
+        .{a.bounds.z - a.corner_radiuses.w, a.bounds.w - a.corner_radiuses.w},
+    ];
+    b_corners := Vec2f.[
+        .{b.bounds.x, b.bounds.y},
+        .{b.bounds.z, b.bounds.y},
+        .{b.bounds.x, b.bounds.w},
+        .{b.bounds.z, b.bounds.w},
+    ];
+    b_inner_corners := Vec2f.[
+        .{b.bounds.x + b.corner_radiuses.x, b.bounds.y + b.corner_radiuses.x},
+        .{b.bounds.z - b.corner_radiuses.y, b.bounds.y + b.corner_radiuses.y},
+        .{b.bounds.x + b.corner_radiuses.z, b.bounds.w - b.corner_radiuses.z},
+        .{b.bounds.z - b.corner_radiuses.w, b.bounds.w - b.corner_radiuses.w},
+    ];
+    new_corner_radiuses := a.corner_radiuses;
+
+    clipped_bounds := ClipRect(a.bounds, b.bounds);
+
+    for i : 0..3 {
+        b_corner_rect := Vec4f.{
+            xy=min(b_corners[i], b_inner_corners[i]),
+            zw=max(b_corners[i], b_inner_corners[i])
+        };
+
+        if RectIntersectsRect(b_corner_rect, a.bounds) {
+            new_corner_radiuses[i] = max(new_corner_radiuses[i], b.corner_radiuses[i]);
+        }
+    }
+
+    return .{bounds=clipped_bounds, corner_radiuses=new_corner_radiuses};
+} @Profile
 
 ReserveVertices :: (draw_list : *VtxDrawList, count : int) {
     if draw_list.vertices.count + count <= draw_list.vertices.allocated {
@@ -279,6 +329,31 @@ DrawRectOutline :: (
     PathPushRoundedRect(*draw_list.path, bounds, corner_radiuses);
     DrawPolygonLine(draw_list, draw_list.path, true, thickness, color_top_left, blur_size, blur_sides);
     array_reset_keeping_memory(*draw_list.path);
+}
+
+BoxDrawing :: struct {
+    size : Vec2f;
+    position : Vec2f;
+    uv_bounds : Vec4f;
+    rotation : float;
+    corner_radiuses : Vec4f;
+    background_color : RGBA8;
+    background_color2 : RGBA8;
+    background_gradient_offset : float;
+    background_gradient_vector : Vec2f;
+    border_color : RGBA8;
+    border_color2 : RGBA8;
+    border_gradient_offset : float;
+    border_gradient_vector : Vec2f;
+    border_size : float;
+    border_inset : float;
+    outer_shadow_color : RGBA8;
+    outer_shadow_offset : Vec2f;
+    outer_shadow_blur : float;
+    inner_shadow_color : RGBA8;
+    inner_shadow_offset : Vec2f;
+    inner_shadow_blur : float;
+    clip_box_index : s32;
 }
 
 DrawBox :: inline (draw_list : *VtxDrawList, box : BoxDrawing, texture : TextureHandle = 0) {

@@ -10,8 +10,6 @@ using,only(.["for_expansion"]) HT;
 #load "color.jai";
 #load "unicode.jai";
 #load "input.jai";
-#load "sdf.jai";
-#load "draw.jai";
 #load "vertex_draw.jai";
 #load "text.jai";
 #load "node.jai";
