@@ -848,16 +848,22 @@ DrawPolygonLine :: (
         color := inline get_color(i1, get_color_data);
         color_alpha0 := SetAlpha(color, 0);
 
+        p1 := points[i1];
+
         n : Vec2f = ---;
-        if !closed && (i1 == 0 || i1 == points.count - 1) {
-            n = points[i1].normal;
+        if p1.normal != .{0,0} {
+            n = p1.normal;
+        } else if !closed && (i1 == 0 || i1 == points.count - 1) {
+            p2 := ifx i1 == 0 then points[1] else points[points.count - 2];
+
+            n = PerpendicularCW(p2.position - p1.position);
+            normalize(*n);
         } else {
             #if #exists(__Tracy) {
                 __Tracy.ZoneScoped("Calculate intersection");
             }
 
             p0 := points[i0];
-            p1 := points[i1];
             p2 := points[i2];
 
             n0 := PerpendicularCW(p1.position - p0.position);
@@ -1120,22 +1126,29 @@ DrawConvexPolygon :: (
 
         tex_coords := inline get_tex_coords(i1, get_tex_coords_data);
 
-        p0 := points[i0];
         p1 := points[i1];
-        p2 := points[i2];
 
-        n0 := PerpendicularCW(p1.position - p0.position);
-        normalize(*n0);
+        n : Vec2f = ---;
+        if p1.normal != .{0,0} {
+            n = p1.normal;
+        } else {
+            p0 := points[i0];
+            p2 := points[i2];
 
-        n1 := PerpendicularCW(p2.position - p1.position);
-        normalize(*n1);
+            n0 := PerpendicularCW(p1.position - p0.position);
+            normalize(*n0);
 
-        inter, p := LineIntersection(p0.position + n0, p1.position + n0, p1.position + n1, p2.position + n1);
-        if !inter {
-            p = p1.position + (n0 + n1) * 0.5;
+            n1 := PerpendicularCW(p2.position - p1.position);
+            normalize(*n1);
+
+            inter, p := LineIntersection(p0.position + n0, p1.position + n0, p1.position + n1, p2.position + n1);
+            if !inter {
+                p = p1.position + (n0 + n1) * 0.5;
+            }
+
+            n = p1.position - p;
         }
 
-        n := p1.position - p;
         n *= blur_size * 0.5;
 
         // Inner
@@ -1419,12 +1432,10 @@ PathCalcNormals :: (points : []PathPoint, closed : bool) {
         p0 := points[i0].position;
         p1 := points[i1].position;
         d := Normalize(p1 - p0);
-        points[i0].normal.x = d.y;
-        points[i0].normal.y = -d.x;
+        d = PerpendicularCW(d);
 
         if !closed && i1 == points.count - 1 {
-            points[i1].normal.x = d.y;
-            points[i1].normal.y = -d.x;
+            points[i1].normal.x = d;
         }
     }
 } @Profile
@@ -1521,8 +1532,7 @@ PathPushArc :: (points : *[..]PathPoint, center : Vec2f, radius : float, start_a
     angle = min(angle, PI * 2);
 
     if radius < 0.5 {
-        normal := Vec2f.{cos(-start_angle - angle * 0.5), sin(-start_angle - angle * 0.5)};
-        array_add(points, .{position=center, normal=normal});
+        array_add(points, .{position=center});
         return;
     }
 
