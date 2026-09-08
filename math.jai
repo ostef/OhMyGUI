@@ -180,6 +180,15 @@ MoveRect :: inline (rect : Vec4f, amount : Vec2f) -> Vec4f {
     };
 }
 
+InflateRect :: inline (rect : Vec4f, amount : float) -> Vec4f {
+    return .{
+        rect.x - amount,
+        rect.y - amount,
+        rect.z + amount,
+        rect.w + amount,
+    };
+}
+
 InflateRect :: inline (rect : Vec4f, amount : Vec4f) -> Vec4f {
     return .{
         xy=rect.xy - amount.xy,

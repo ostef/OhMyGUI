@@ -351,7 +351,7 @@ DrawBox :: inline (draw_list : *DrawList, box : BoxDrawing, texture : TextureHan
     // Outer shadow
     DrawRect(
         draw_list,
-        MoveRect(box.bounds, box.outer_shadow_offset),
+        InflateRect(MoveRect(box.bounds, box.outer_shadow_offset), -box.outer_shadow_blur * 0.5),
         box.outer_shadow_color,
         box.corner_radiuses,
         box.uv_bounds,
