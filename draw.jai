@@ -32,6 +32,7 @@ DrawList :: struct {
     vertices : [..]Vertex;
     indices : [..]u32;
     path : [..]PathPoint;
+    anti_alias_margin := 1.0;
 
     gpu_buffer_clip_boxes_offset : u32;
     gpu_buffer_vertices_offset : u32;
@@ -249,7 +250,7 @@ DrawRect :: (
     color : RGBA8,
     corner_radiuses : Vec4f = .{0,0,0,0},
     uv_bounds : Vec4f = .{0,0,0,0},
-    blur_size := 1.0
+    blur_size := 0.0
 ) {
     if IsClipped(draw_list, bounds) {
         return;
@@ -285,7 +286,8 @@ DrawRect :: (
         draw_list.path,
         (index, data) => cast(*RGBA8, data).*, *color,
         GetTexCoords, *get_tex_coords_data,
-        blur_size);
+        blur_size
+    );
     array_reset_keeping_memory(*draw_list.path);
 } @Profile
 
@@ -296,7 +298,7 @@ DrawRectOutline :: inline (
     thickness : float,
     corner_radiuses : Vec4f = .{0,0,0,0},
     uv_bounds : Vec4f = .{0,0,0,0},
-    blur_size := 1.0,
+    blur_size := 0.0,
     blur_sides := LineSides.All
 ) {
     DrawRectOutline(draw_list, bounds, color, color, color, color, thickness, corner_radiuses, uv_bounds, blur_size, blur_sides);
@@ -312,7 +314,7 @@ DrawRectOutline :: (
     thickness : float,
     corner_radiuses : Vec4f = .{0,0,0,0},
     uv_bounds : Vec4f = .{0,0,0,0},
-    blur_size := 1.0,
+    blur_size := 0.0,
     blur_sides := LineSides.All
 ) {
     if IsClipped(draw_list, bounds) {
@@ -400,7 +402,7 @@ DrawCircle :: (
     center : Vec2f,
     radius : float,
     color : RGBA8,
-    blur_size := 1.0,
+    blur_size := 0.0,
 ) {
     if IsClipped(draw_list, Vec4f.{center.x - radius, center.y - radius, center.x + radius, center.y + radius}) {
         return;
@@ -421,7 +423,7 @@ DrawCircleOutline :: (
     radius : float,
     color : RGBA8,
     thickness : float,
-    blur_size := 1.0,
+    blur_size := 0.0,
     blur_sides := LineSides.All
 ) {
     if IsClipped(draw_list, Vec4f.{center.x - radius, center.y - radius, center.x + radius, center.y + radius}) {
@@ -443,7 +445,7 @@ DrawLine :: inline (
     end : Vec2f,
     thickness : float,
     color : RGBA8,
-    blur_size := 1.0
+    blur_size := 0.0
 ) {
     DrawLine(draw_list, start, end, thickness, color, color, blur_size);
 }
@@ -455,7 +457,7 @@ DrawLine :: (
     thickness : float,
     start_color : RGBA8,
     end_color : RGBA8,
-    blur_size := 1.0
+    blur_size := 0.0
 ) {
     if (start_color & 0xff) == 0 && (end_color & 0xff) == 0 {
         return;
@@ -749,7 +751,7 @@ DrawPolygonLine :: inline (
     closed : bool,
     thickness : float,
     color : RGBA8,
-    blur_size := 1.0,
+    blur_size := 0.0,
     blur_sides := LineSides.All
 ) {
     if (color & 0xff) == 0 {
@@ -762,7 +764,8 @@ DrawPolygonLine :: inline (
         closed,
         thickness,
         (index, data) => cast(*RGBA8, data).*, *color,
-        blur_size, blur_sides);
+        blur_size, blur_sides
+    );
 }
 
 LineSides :: enum_flags {
@@ -779,16 +782,22 @@ DrawPolygonLine :: (
     thickness : float,
     $get_color : #type (index : int, data : *void) -> RGBA8,
     get_color_data : *void,
-    blur_size := 1.0,
+    blur_size := 0.0,
     blur_sides := LineSides.All
 ) #no_abc {
-    if points.count < 2 {
+    if blur_size <= 0 {
+        blur_sides = 0;
+    }
+
+    if points.count < 2 || (thickness <= 0 && blur_sides == 0) {
         return;
     }
 
+    aa := draw_list.anti_alias_margin;
+
     thickness = max(thickness, 1);
     blur_size = max(blur_size, 0);
-    has_middle_part := thickness > blur_size;
+    has_middle_part := thickness > max(blur_size, aa);
 
     first := GetCurrentIndex(draw_list);
 
@@ -796,10 +805,10 @@ DrawPolygonLine :: (
     if has_middle_part {
         num_indices_per_point += 6;
     }
-    if blur_sides & .Exterior {
+    if aa > 0 || blur_sides & .Exterior {
         num_indices_per_point += 6;
     }
-    if blur_sides & .Interior {
+    if aa > 0 || blur_sides & .Interior {
         num_indices_per_point += 6;
     }
 
@@ -819,17 +828,17 @@ DrawPolygonLine :: (
     } else {
         num_vertices_per_point += 1;
     }
-    if blur_sides & .Exterior {
+    if aa > 0 || blur_sides & .Exterior {
         num_vertices_per_point += 1;
     }
-    if blur_sides & .Interior {
+    if aa > 0 || blur_sides & .Interior {
         num_vertices_per_point += 1;
     }
 
     num_vertices := cast(u32, points.count) * num_vertices_per_point;
     ReserveVertices(draw_list, num_vertices);
 
-    half_inner_thickness := (thickness - blur_size) * 0.5;
+    half_inner_thickness := (thickness - max(blur_size, aa)) * 0.5;
 
     i0 : u32 = xx (points.count - 1);
     i1 : u32 = 0;
@@ -893,15 +902,15 @@ DrawPolygonLine :: (
             v.position = points[i1].position - n * half_inner_thickness;
             v.color = color;
 
-            if blur_sides & .Exterior {
+            if aa > 0 || blur_sides & .Exterior {
                 v = PushVertex(draw_list);
-                v.position = points[i1].position + n * (half_inner_thickness + blur_size);
+                v.position = points[i1].position + n * (half_inner_thickness + ifx blur_sides & .Exterior then blur_size else aa);
                 v.color = color_alpha0;
             }
 
-            if blur_sides & .Interior {
+            if aa > 0 || blur_sides & .Interior {
                 v = PushVertex(draw_list);
-                v.position = points[i1].position - n * (half_inner_thickness + blur_size);
+                v.position = points[i1].position - n * (half_inner_thickness + ifx blur_sides & .Interior then blur_size else aa);
                 v.color = color_alpha0;
             }
 
@@ -917,7 +926,7 @@ DrawPolygonLine :: (
                 i2_exterior := ifx i1 == points.count - 1 then 2 else i1_exterior + num_vertices_per_point;
                 i2_interior := ifx i1 == points.count - 1 then 3 else i1_interior + num_vertices_per_point;
 
-                if !(blur_sides & .Exterior) {
+                if aa <= 0 && !(blur_sides & .Exterior) {
                     i1_interior = i1_exterior;
                     i2_interior = i2_exterior;
                 }
@@ -941,7 +950,7 @@ DrawPolygonLine :: (
                 indices[indices_index] = first + i2_middle1;
                 indices_index += 1;
 
-                if blur_sides & .Exterior {
+                if aa > 0 || blur_sides & .Exterior {
                     indices[indices_index] = first + i1_exterior;
                     indices_index += 1;
 
@@ -961,7 +970,7 @@ DrawPolygonLine :: (
                     indices_index += 1;
                 }
 
-                if blur_sides & .Interior {
+                if aa > 0 || blur_sides & .Interior {
                     indices[indices_index] = first + i1_interior;
                     indices_index += 1;
 
@@ -986,15 +995,15 @@ DrawPolygonLine :: (
             v.position = points[i1].position;
             v.color = color;
 
-            if blur_sides & .Exterior {
+            if aa > 0 || blur_sides & .Exterior {
                 v = PushVertex(draw_list);
-                v.position = points[i1].position + n * blur_size;
+                v.position = points[i1].position + n * ifx blur_sides & .Exterior then blur_size else aa;
                 v.color = color_alpha0;
             }
 
-            if blur_sides & .Interior {
+            if aa > 0 || blur_sides & .Interior {
                 v = PushVertex(draw_list);
-                v.position = points[i1].position - n * blur_size;
+                v.position = points[i1].position - n * ifx blur_sides & .Interior then blur_size else aa;
                 v.color = color_alpha0;
             }
 
@@ -1008,12 +1017,12 @@ DrawPolygonLine :: (
                 i2_exterior := ifx i1 == points.count - 1 then 1 else i1_exterior + num_vertices_per_point;
                 i2_interior := ifx i1 == points.count - 1 then 2 else i1_interior + num_vertices_per_point;
 
-                if !(blur_sides & .Exterior) {
+                if aa <= 0 && !(blur_sides & .Exterior) {
                     i1_interior = i1_exterior;
                     i2_interior = i2_exterior;
                 }
 
-                if blur_sides & .Exterior {
+                if aa > 0 || blur_sides & .Exterior {
                     indices[indices_index] = first + i1_exterior;
                     indices_index += 1;
 
@@ -1033,7 +1042,7 @@ DrawPolygonLine :: (
                     indices_index += 1;
                 }
 
-                if blur_sides & .Interior {
+                if aa > 0 || blur_sides & .Interior {
                     indices[indices_index] = first + i1_interior;
                     indices_index += 1;
 
@@ -1061,7 +1070,7 @@ DrawConvexPolygon :: inline (
     draw_list : *DrawList,
     points : []PathPoint,
     color : RGBA8,
-    blur_size := 1.0
+    blur_size := 0.0
 ) #no_abc {
     if (color & 0xff) == 0 {
         return;
@@ -1083,7 +1092,7 @@ DrawConvexPolygon :: (
     get_color_data : *void,
     $get_tex_coords : (index : int, data : *void) -> Vec2f,
     get_tex_coords_data : *void,
-    blur_size := 1.0
+    blur_size := 0.0
 ) #no_abc {
     if points.count < 3 {
         return;
@@ -1092,7 +1101,12 @@ DrawConvexPolygon :: (
     first_inner := GetCurrentIndex(draw_list);
     first_outer := first_inner + 1;
 
-    num_indices := cast(u32, (points.count - 2) * 3 + points.count * 6);
+    blur_size = max(blur_size, draw_list.anti_alias_margin, 0.0);
+
+    num_indices := cast(u32, (points.count - 2) * 3);
+    if blur_size > 0 {
+        num_indices += cast(u32, points.count * 6);
+    }
 
     indices := PushIndices(draw_list, num_indices);
     indices_index := 0;
@@ -1107,10 +1121,13 @@ DrawConvexPolygon :: (
         indices_index += 1;
     }
 
-    num_vertices := points.count * 2;
+    num_vertices := points.count;
+    if blur_size > 0 {
+        num_vertices += points.count;
+    }
+
     ReserveVertices(draw_list, num_vertices);
 
-    blur_size = max(blur_size, 0);
     i0 : u32 = xx (points.count - 1);
     i1 : u32 = 0;
     i2 : u32 = 1;
@@ -1157,30 +1174,32 @@ DrawConvexPolygon :: (
         v.color = color;
         v.tex_coords = tex_coords;
 
-        // Outer
-        v = PushVertex(draw_list);
-        v.position = points[i1].position + n;
-        v.color = color_alpha0;
-        v.tex_coords = tex_coords;
+        if blur_size > 0 {
+            // Outer
+            v = PushVertex(draw_list);
+            v.position = points[i1].position + n;
+            v.color = color_alpha0;
+            v.tex_coords = tex_coords;
 
-        // Blur indices
-        indices[indices_index] = first_inner + (i1 << 1);
-        indices_index += 1;
+            // Blur indices
+            indices[indices_index] = first_inner + (i1 << 1);
+            indices_index += 1;
 
-        indices[indices_index] = first_inner + (i0 << 1);
-        indices_index += 1;
+            indices[indices_index] = first_inner + (i0 << 1);
+            indices_index += 1;
 
-        indices[indices_index] = first_outer + (i0 << 1);
-        indices_index += 1;
+            indices[indices_index] = first_outer + (i0 << 1);
+            indices_index += 1;
 
-        indices[indices_index] = first_outer + (i0 << 1);
-        indices_index += 1;
+            indices[indices_index] = first_outer + (i0 << 1);
+            indices_index += 1;
 
-        indices[indices_index] = first_outer + (i1 << 1);
-        indices_index += 1;
+            indices[indices_index] = first_outer + (i1 << 1);
+            indices_index += 1;
 
-        indices[indices_index] = first_inner + (i1 << 1);
-        indices_index += 1;
+            indices[indices_index] = first_inner + (i1 << 1);
+            indices_index += 1;
+        }
     }
 } @Profile
 

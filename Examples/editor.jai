@@ -235,6 +235,8 @@ EditorFrame :: () {
             minimize_node.flags |= .NoPaddedClip;
             OMG.SetCornerRadius(minimize_node, Btn_Size * 0.5);
             OMG.SetPadding(minimize_node, 5, 5);
+            OMG.SetInnerShadowOpacity(minimize_node, 0.15);
+            OMG.SetInnerShadowBlur(minimize_node, 4);
             if minimize {
                 SDL_MinimizeWindow(g_window);
             }
@@ -243,6 +245,8 @@ EditorFrame :: () {
             maximize_node.flags |= .NoPaddedClip;
             OMG.SetCornerRadius(maximize_node, Btn_Size * 0.5);
             OMG.SetPadding(maximize_node, 5, 5);
+            OMG.SetInnerShadowOpacity(maximize_node, 0.15);
+            OMG.SetInnerShadowBlur(maximize_node, 4);
             if maximize {
                 flags := SDL_GetWindowFlags(g_window);
                 if flags & SDL_WINDOW_MAXIMIZED {
@@ -256,6 +260,8 @@ EditorFrame :: () {
             close_node.flags |= .NoPaddedClip;
             OMG.SetCornerRadius(close_node, Btn_Size * 0.5);
             OMG.SetPadding(close_node, 5, 5);
+            OMG.SetInnerShadowOpacity(close_node, 0.15);
+            OMG.SetInnerShadowBlur(close_node, 4);
             if close {
                 g_quit = true;
             }
@@ -282,15 +288,17 @@ EditorFrame :: () {
                 center := (node.rect.xy + node.rect.zw) * 0.5;
                 rect := OMG.Vec4f.{xy=center - size * 0.5, zw=center + size * 0.5};
 
+                Size :: 0.6;
+
                 p0 := OMG.Vec2f.{size.x, 0};
-                p1 := OMG.Vec2f.{size.x * 0.3, 0};
-                p2 := OMG.Vec2f.{size.x, size.y - size.y * 0.3};
+                p1 := OMG.Vec2f.{size.x * Size, 0};
+                p2 := OMG.Vec2f.{size.x, size.y - size.y * Size};
 
                 OMG.DrawTriangle(draw_list, rect.xy + p0, rect.xy + p1, rect.xy + p2, node.background_color);
 
-                p0 = OMG.Vec2f.{0, size.y * 0.3};
+                p0 = OMG.Vec2f.{0, size.y * Size};
                 p1 = OMG.Vec2f.{0, size.y};
-                p2 = OMG.Vec2f.{size.x - size.x * 0.3, size.y};
+                p2 = OMG.Vec2f.{size.x - size.x * Size, size.y};
 
                 OMG.DrawTriangle(draw_list, rect.xy + p0, rect.xy + p1, rect.xy + p2, node.background_color);
             });
