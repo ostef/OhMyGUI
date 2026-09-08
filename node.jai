@@ -105,7 +105,7 @@ Node :: struct {
     last_used_on_frame : u64;
     z_index : s32 = -1; // Used when the parent wants to sort children such as popups
 
-    draw : (*VtxDrawList, *Node) = DrawNodeDefault;
+    draw : (*VtxDrawList, *Node); // Initialized to the context's default drawing function
     hit_test : (*Node, point : Vec2f) -> bool = DefaultHitTest;
     user_data : *NodeUserData;
 
@@ -363,6 +363,7 @@ GetUserData :: (node : *Node, id : ID, size : int, create := false) -> *void, is
 AllocNode :: () -> *Node {
     node, index := find_and_occupy_empty_slot(*context.omg.node_pool);
     node.index = index;
+    node.draw = context.omg.default_draw_node;
 
     return node;
 }

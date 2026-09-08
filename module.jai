@@ -27,6 +27,7 @@ Context :: struct {
 
     platform_funcs : PlatformFunctions;
     renderer_funcs : RendererFunctions;
+    default_draw_node : type_of(Node.draw) = DrawNodeDefault;
 
     debug_mode := false;
 
