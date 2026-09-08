@@ -1107,10 +1107,12 @@ DrawConvexPolygon :: (
     blur_size = max(blur_size, 0);
     i0 : u32 = xx (points.count - 1);
     i1 : u32 = 0;
+    i2 : u32 = 1;
     while i1 < points.count {
         defer {
             i0 = i1;
             i1 += 1;
+            i2 = (i2 + 1) % cast(u32, points.count);
         }
 
         color := inline get_color(i1, get_color_data);
@@ -1118,9 +1120,22 @@ DrawConvexPolygon :: (
 
         tex_coords := inline get_tex_coords(i1, get_tex_coords_data);
 
-        n0 := points[i0].normal;
-        n1 := points[i1].normal;
-        n := (n0 + n1) * 0.5;
+        p0 := points[i0];
+        p1 := points[i1];
+        p2 := points[i2];
+
+        n0 := PerpendicularCW(p1.position - p0.position);
+        normalize(*n0);
+
+        n1 := PerpendicularCW(p2.position - p1.position);
+        normalize(*n1);
+
+        inter, p := LineIntersection(p0.position + n0, p1.position + n0, p1.position + n1, p2.position + n1);
+        if !inter {
+            p = p1.position + (n0 + n1) * 0.5;
+        }
+
+        n := p1.position - p;
         n *= blur_size * 0.5;
 
         // Inner
