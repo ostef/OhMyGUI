@@ -105,7 +105,7 @@ Node :: struct {
     last_used_on_frame : u64;
     z_index : s32 = -1; // Used when the parent wants to sort children such as popups
 
-    draw : (*DrawList, *Node) = DrawNodeDefault;
+    draw : (*DrawList, *Node); // Initialized to the context's default drawing function
     hit_test : (*Node, point : Vec2f) -> bool = DefaultHitTest;
     user_data : *NodeUserData;
 
@@ -160,25 +160,15 @@ Node :: struct {
         image_uv_bounds : Vec4f;
         corner_radiuses : Vec4f;
         background_color : RGBA8;
-        background_color2 : RGBA8;
-        background_gradient_offset : float;
-        background_gradient_vector : Vec2f;
         border_color : RGBA8;
-        border_color2 : RGBA8;
-        border_gradient_offset : float;
-        border_gradient_vector : Vec2f;
         border_size : float;
         border_inset : float;
         outer_shadow_blur : float;
         outer_shadow_offset : Vec2f;
         outer_shadow_color : RGBA8;
         inner_shadow_blur : float;
-        inner_shadow_offset : Vec2f;
         inner_shadow_color : RGBA8;
         text_color : RGBA8;
-        text_color2 : RGBA8;
-        text_gradient_offset : float;
-        text_gradient_vector : Vec2f;
         text_effects : TextEffects;
     };
 
@@ -373,6 +363,7 @@ GetUserData :: (node : *Node, id : ID, size : int, create := false) -> *void, is
 AllocNode :: () -> *Node {
     node, index := find_and_occupy_empty_slot(*context.omg.node_pool);
     node.index = index;
+    node.draw = context.omg.default_draw_node;
 
     return node;
 }
@@ -862,14 +853,6 @@ SetOuterShadowOpacity :: inline (node : *Node, alpha : float) {
 
 SetOuterShadowBlur :: inline (node : *Node, blur : float) {
     node.outer_shadow_blur = blur;
-}
-
-SetInnerShadowOffset :: inline (node : *Node, x : float, y : float) {
-    node.inner_shadow_offset = .{x,y};
-}
-
-SetInnerShadowOffset :: inline (node : *Node, offset : Vec2f) {
-    node.inner_shadow_offset = offset;
 }
 
 SetInnerShadowColor :: inline (node : *Node, r : float, g : float, b : float, a : float) {

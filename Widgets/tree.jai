@@ -45,7 +45,7 @@ TreeNode :: (parent : *Node, text : string, flags : TreeNodeFlags = 0, style : *
             } else {
                 SetDraw(icon, (draw_list, node) => {
                     rotation := ifx !(node.parent.parent.state_flags & .Active) then -PI * 0.5 else 0.0;
-                    DrawEquilateralTriangle(draw_list, (node.rect.xy + node.rect.zw) * 0.5, node.size.x, rotation, node.background_color);
+                    DrawArrow(draw_list, node, rotation);
                 });
             }
 

@@ -5,286 +5,70 @@ ClipBox :: struct {
     corner_radiuses : Vec4f;
 }
 
-ShaderClipBox :: struct {
-    bounds : Vec4f;
-    corner_radiuses : Vec4f;
-}
-
-BoxDrawing :: struct {
-    size : Vec2f;
-    position : Vec2f;
-    uv_bounds : Vec4f;
-    rotation : float;
-    corner_radiuses : Vec4f;
-    background_color : RGBA8;
-    background_color2 : RGBA8;
-    background_gradient_offset : float;
-    background_gradient_vector : Vec2f;
-    border_color : RGBA8;
-    border_color2 : RGBA8;
-    border_gradient_offset : float;
-    border_gradient_vector : Vec2f;
-    border_size : float;
-    border_inset : float;
-    outer_shadow_color : RGBA8;
-    outer_shadow_offset : Vec2f;
-    outer_shadow_blur : float;
-    inner_shadow_color : RGBA8;
-    inner_shadow_offset : Vec2f;
-    inner_shadow_blur : float;
-    clip_box_index : s32;
-}
-
-GetRealBounds :: (box : BoxDrawing) -> Vec4f {
-    bounds := Vec4f.{
-        xy=box.position - box.size * 0.5,
-        zw=box.position + box.size * 0.5,
-    };
-
-    bounds.x -= max(-box.border_inset, 0);
-    bounds.y -= max(-box.border_inset, 0);
-    bounds.z += max(-box.border_inset, 0);
-    bounds.w += max(-box.border_inset, 0);
-
-    bounds.x -= max(box.outer_shadow_blur, 0);
-    bounds.y -= max(box.outer_shadow_blur, 0);
-    bounds.z += max(box.outer_shadow_blur, 0);
-    bounds.w += max(box.outer_shadow_blur, 0);
-
-    bounds.xy = min(bounds.xy, bounds.xy + box.outer_shadow_offset);
-    bounds.zw = max(bounds.zw, bounds.zw + box.outer_shadow_offset);
-
-    return bounds;
-}
-
-ShaderBoxDrawing :: struct {
-    size_and_position : Vec4f;
-    corner_radiuses : Vec4f;
-    uv_bounds : Vec4f;
-    border_size_and_inset : Vec2f;
-    outer_shadow_offset : Vec2f;
-    inner_shadow_offset : Vec2f;
-    background_gradient_vector : Vec2f;
-    border_gradient_vector : Vec2f;
-    background_gradient_offset : float;
-    border_gradient_offset : float;
-    background_color : u32;
-    background_color2 : u32;
-    border_color : u32;
-    border_color2 : u32;
-    outer_shadow_color : u32;
-    outer_shadow_blur : float;
-    inner_shadow_color : u32;
-    inner_shadow_blur : float;
-    rotation : float;
-    clip_box_index : s32;
-    padding : [2]u32;
-}
-
-TriangleDrawing :: struct {
-    p0 : Vec2f;
-    p1 : Vec2f;
-    p2 : Vec2f;
-    uv0 : Vec2f;
-    uv1 : Vec2f;
-    uv2 : Vec2f;
-    c0 : RGBA8;
-    c1 : RGBA8;
-    c2 : RGBA8;
-    clip_box_index : s32;
-}
-
-ShaderTriangleDrawing :: TriangleDrawing;
-
-GlyphDrawing :: struct {
-    bounds : Vec4f;
-    uv_bounds : Vec4f;
-    sdf_range : Vec2f;
-    color : u32;
-    color2 : u32;
-    gradient_vector : Vec2f;
-    gradient_offset : float;
-    outer_shadow_color : u32;
-    outer_shadow_offset : Vec2f;
-    outer_shadow_blur : float;
-    inner_shadow_color : u32;
-    inner_shadow_offset : Vec2f;
-    inner_shadow_blur : float;
-    clip_box_index : s32;
-}
-
-GetRealBounds :: (glyph : GlyphDrawing) -> Vec4f {
-    bounds := glyph.bounds;
-
-    bounds.x -= max(glyph.outer_shadow_blur, 0);
-    bounds.y -= max(glyph.outer_shadow_blur, 0);
-    bounds.z += max(glyph.outer_shadow_blur, 0);
-    bounds.w += max(glyph.outer_shadow_blur, 0);
-
-    bounds.xy = min(bounds.xy, bounds.xy + glyph.outer_shadow_offset);
-    bounds.zw = max(bounds.zw, bounds.zw + glyph.outer_shadow_offset);
-
-    return bounds;
-}
-
-ShaderGlyphDrawing :: struct {
-    bounds : Vec4f;
-    uv_bounds : Vec4f;
-    sdf_range : Vec2f;
-    outer_shadow_offset : Vec2f;
-    inner_shadow_offset : Vec2f;
-    gradient_vector : Vec2f;
-    gradient_offset : float;
-    color : u32;
-    color2 : u32;
-    outer_shadow_color : u32;
-    outer_shadow_blur : float;
-    inner_shadow_color : u32;
-    inner_shadow_blur : float;
-    clip_box_index : s32;
-}
-
-ShaderShape :: struct {
-    kind : u32;
-    padding : [3]u32;
-    params : [8]float;
-}
-
-ShapeDrawing :: struct {
-    shape : *Shape;
-    position : Vec2f;
-    background_color : RGBA8;
-    background_color2 : u32;
-    background_gradient_vector : Vec2f;
-    background_gradient_offset : float;
-    border_color : RGBA8;
-    border_color2 : u32;
-    border_gradient_vector : Vec2f;
-    border_gradient_offset : float;
-    border_size : float;
-    border_inset : float;
-    outer_shadow_color : RGBA8;
-    outer_shadow_offset : Vec2f;
-    outer_shadow_blur : float;
-    inner_shadow_color : RGBA8;
-    inner_shadow_offset : Vec2f;
-    inner_shadow_blur : float;
-    clip_box_index : s32;
-}
-
-GetRealBounds :: (shape : ShapeDrawing) -> Vec4f {
-    bounds := GetBounds(shape.shape);
-    bounds.xy += shape.position;
-    bounds.zw += shape.position;
-
-    bounds.x -= max(-shape.border_inset, 0);
-    bounds.y -= max(-shape.border_inset, 0);
-    bounds.z += max(-shape.border_inset, 0);
-    bounds.w += max(-shape.border_inset, 0);
-
-    bounds.x -= max(shape.outer_shadow_blur, 0);
-    bounds.y -= max(shape.outer_shadow_blur, 0);
-    bounds.z += max(shape.outer_shadow_blur, 0);
-    bounds.w += max(shape.outer_shadow_blur, 0);
-
-    bounds.xy = min(bounds.xy, bounds.xy + shape.outer_shadow_offset);
-    bounds.zw = max(bounds.zw, bounds.zw + shape.outer_shadow_offset);
-
-    return bounds;
-}
-
-ShaderShapeDrawing :: struct {
-    bounds : Vec4f;
-    position : Vec2f;
-    border_size_and_inset : Vec2f;
-    outer_shadow_offset : Vec2f;
-    inner_shadow_offset : Vec2f;
-    background_gradient_vector : Vec2f;
-    border_gradient_vector : Vec2f;
-    background_gradient_offset : float;
-    border_gradient_offset : float;
-    first_shape_index : u32;
-    num_shapes : u32;
-    clip_box_index : s32;
-    background_color : u32;
-    background_color2 : u32;
-    border_color : u32;
-    border_color2 : u32;
-    outer_shadow_color : u32;
-    outer_shadow_blur : float;
-    inner_shadow_color : u32;
-    inner_shadow_blur : float;
-    padding : [3]u32;
-}
-
 DrawCall :: struct {
-    kind : enum {
-        Boxes;
-        Glyphs;
-        Triangles;
-        Shapes;
-    };
+    Texture :: struct {
+        handle : TextureHandle;
+        has_white_px : bool;
+    }
 
-    first : u32;
-    last : u32;
-    texture : TextureHandle;
+    texture : Texture;
+    index_offset : u32;
+    num_indices : u32;
+}
+
+Vertex :: struct {
+    position : Vec2f;
+    tex_coords : Vec2f;
+    color : RGBA8;
+    sdf_texture_blur : float;
+    sdf_texture_range : float;
+    clip_box_index : s32;
 }
 
 DrawList :: struct {
     draw_calls : [..]DrawCall;
     clip_boxes : [..]ClipBox;
     clip_box_stack : [..]s32;
-    boxes : [..]BoxDrawing;
-    glyphs : [..]GlyphDrawing;
-    triangles : [..]TriangleDrawing;
-    shapes : [..]ShapeDrawing;
+    vertices : [..]Vertex;
+    indices : [..]u32;
+    path : [..]PathPoint;
+    anti_alias_margin := 1.0;
 
     gpu_buffer_clip_boxes_offset : u32;
-    gpu_buffer_boxes_offset : u32;
-    gpu_buffer_glyphs_offset : u32;
-    gpu_buffer_triangles_offset : u32;
-    gpu_buffer_shape_drawings_offset : u32;
-    gpu_buffer_shapes_offset : u32;
-    num_shapes : u32;
+    gpu_buffer_vertices_offset : u32;
+    gpu_buffer_indices_offset : u32;
 }
 
 InitDrawList :: (draw_list : *DrawList) {
     draw_list.draw_calls.allocator = context.allocator;
-    draw_list.boxes.allocator = context.allocator;
     draw_list.clip_boxes.allocator = context.allocator;
     draw_list.clip_box_stack.allocator = context.allocator;
-    draw_list.glyphs.allocator = context.allocator;
-    draw_list.triangles.allocator = context.allocator;
-    draw_list.shapes.allocator = context.allocator;
+    draw_list.vertices.allocator = context.allocator;
+    draw_list.indices.allocator = context.allocator;
+    draw_list.path.allocator = context.allocator;
 }
 
 DestroyDrawList :: (draw_list : *DrawList) {
     array_reset(*draw_list.draw_calls);
-    array_reset(*draw_list.boxes);
     array_reset(*draw_list.clip_boxes);
     array_reset(*draw_list.clip_box_stack);
-    array_reset(*draw_list.glyphs);
-    array_reset(*draw_list.triangles);
-    array_reset(*draw_list.shapes);
+    array_reset(*draw_list.vertices);
+    array_reset(*draw_list.indices);
+    array_reset(*draw_list.path);
     draw_list.* = .{};
 }
 
 ClearDrawList :: (draw_list : *DrawList) {
     array_reset_keeping_memory(*draw_list.draw_calls);
-    array_reset_keeping_memory(*draw_list.boxes);
     array_reset_keeping_memory(*draw_list.clip_boxes);
     array_reset_keeping_memory(*draw_list.clip_box_stack);
-    array_reset_keeping_memory(*draw_list.glyphs);
-    array_reset_keeping_memory(*draw_list.triangles);
-    array_reset_keeping_memory(*draw_list.shapes);
+    array_reset_keeping_memory(*draw_list.vertices);
+    array_reset_keeping_memory(*draw_list.indices);
+    array_reset_keeping_memory(*draw_list.path);
 
     draw_list.gpu_buffer_clip_boxes_offset = 0;
-    draw_list.gpu_buffer_boxes_offset = 0;
-    draw_list.gpu_buffer_glyphs_offset = 0;
-    draw_list.gpu_buffer_triangles_offset = 0;
-    draw_list.gpu_buffer_shape_drawings_offset = 0;
-    draw_list.gpu_buffer_shapes_offset = 0;
-    draw_list.num_shapes = 0;
+    draw_list.gpu_buffer_vertices_offset = 0;
+    draw_list.gpu_buffer_indices_offset = 0;
 }
 
 GetCurrentDrawCall :: (draw_list : *DrawList) -> *DrawCall {
@@ -344,6 +128,53 @@ ClipBoxAgainstBox :: (a : ClipBox, b : ClipBox) -> ClipBox {
     return .{bounds=clipped_bounds, corner_radiuses=new_corner_radiuses};
 } @Profile
 
+ReserveVertices :: (draw_list : *DrawList, count : int) {
+    if draw_list.vertices.count + count <= draw_list.vertices.allocated {
+        return;
+    }
+
+    array_reserve(*draw_list.vertices, draw_list.vertices.count + count);
+}
+
+PushVertex :: inline (draw_list : *DrawList) -> *Vertex {
+    vertex := array_add(*draw_list.vertices);
+    vertex.clip_box_index = GetCurrentClipBoxIndex(draw_list);
+    return vertex;
+}
+
+GetCurrentIndex :: inline (draw_list : *DrawList) -> u32 {
+    return xx draw_list.vertices.count;
+}
+
+PushIndex :: inline (draw_list : *DrawList, value : u32) {
+    draw_call := GetCurrentDrawCall(draw_list);
+    if !draw_call {
+        draw_call = array_add(*draw_list.draw_calls);
+    }
+
+    draw_call.num_indices += 1;
+
+    array_add(*draw_list.indices, value);
+}
+
+PushIndices :: (draw_list : *DrawList, count : u32) -> []u32 {
+    draw_call := GetCurrentDrawCall(draw_list);
+    if !draw_call {
+        draw_call = array_add(*draw_list.draw_calls);
+    }
+
+    draw_call.num_indices += count;
+
+    if draw_list.indices.count + count > draw_list.indices.allocated {
+        array_reserve(*draw_list.indices, draw_list.indices.allocated + count);
+    }
+
+    data := draw_list.indices.data + draw_list.indices.count;
+    draw_list.indices.count += count;
+
+    return .{data=data, count=count};
+}
+
 PushClipBox :: (draw_list : *DrawList, bounds : Vec4f, corner_radiuses : Vec4f = .{}) {
     box := array_add(*draw_list.clip_boxes);
     box.bounds = bounds;
@@ -362,7 +193,6 @@ PopClipBox :: (draw_list : *DrawList) {
     pop(*draw_list.clip_box_stack);
 }
 
-// @Todo: handle rotation
 IsClipped :: (draw_list : *DrawList, bounds : Vec4f) -> bool {
     index := GetCurrentClipBoxIndex(draw_list);
     if index < 0 {
@@ -373,109 +203,359 @@ IsClipped :: (draw_list : *DrawList, bounds : Vec4f) -> bool {
     return clipped.x > clipped.z || clipped.y > clipped.w;
 }
 
-DrawBox :: inline (draw_list : *DrawList, position : Vec2f, size : Vec2f, color : RGBA8, corner_radiuses := Vec4f.{}) -> int {
-    return DrawBox(draw_list, .{
-            size=size,
-            position=position,
-            background_color=color,
-            corner_radiuses=corner_radiuses,
-        });
+PushDrawCall :: (draw_list : *DrawList) -> *DrawCall {
+    new : *DrawCall;
+    if draw_list.draw_calls.count > 0 {
+        current := GetCurrentDrawCall(draw_list).*;
+        new = array_add(*draw_list.draw_calls);
+        new.* = current;
+    } else {
+        new = array_add(*draw_list.draw_calls);
+    }
+
+    new.index_offset = xx draw_list.indices.count;
+    new.num_indices = 0;
+
+    return new;
 }
 
-DrawLine :: (draw_list : *DrawList, start : Vec2f, end : Vec2f, thickness : float, color : RGBA8) -> int {
+SetTexture :: (draw_list : *DrawList, texture : TextureHandle, has_white_px : bool = false) -> previous : DrawCall.Texture {
+    return SetTexture(draw_list, .{texture, has_white_px});
+}
+
+SetTexture :: (draw_list : *DrawList, texture : DrawCall.Texture) -> previous : DrawCall.Texture {
+    draw_call := GetCurrentDrawCall(draw_list);
+    previous := ifx draw_call then draw_call.texture;
+
+    if draw_call && texture.handle == 0 && previous.has_white_px {
+        return previous;
+    }
+
+    if !draw_call
+    || (draw_call.num_indices > 0 && (draw_call.texture.handle != texture.handle || draw_call.texture.has_white_px != texture.has_white_px)) {
+        draw_call = PushDrawCall(draw_list);
+    }
+
+    draw_call.texture = texture;
+    if draw_call.texture.handle == 0 {
+        draw_call.texture.has_white_px = true;
+    }
+
+    return previous;
+}
+
+DrawRect :: (
+    draw_list : *DrawList,
+    bounds : Vec4f,
+    color : RGBA8,
+    corner_radiuses : Vec4f = .{0,0,0,0},
+    uv_bounds : Vec4f = .{0,0,0,0},
+    blur_size := 0.0
+) {
+    if IsClipped(draw_list, bounds) {
+        return;
+    }
+
+    if (color & 0xff) == 0 {
+        return;
+    }
+
+    PathPushRoundedRect(*draw_list.path, bounds, corner_radiuses);
+
+    get_tex_coords_data : struct {
+        points : []PathPoint;
+        bounds : Vec4f;
+        uv_bounds : Vec4f;
+    } = .{points=draw_list.path, bounds=bounds, uv_bounds=uv_bounds};
+
+    GetTexCoords :: (index : int, data : *void) -> Vec2f {
+        using _ := cast(*type_of(get_tex_coords_data), data);
+
+        point := points[index];
+        tx := InverseLerp(bounds.x, bounds.z, point.position.x);
+        ty := InverseLerp(bounds.y, bounds.w, point.position.y);
+
+        return .{
+            lerp(uv_bounds.x, uv_bounds.z, tx),
+            lerp(uv_bounds.y, uv_bounds.w, ty),
+        };
+    }
+
+    DrawConvexPolygon(
+        draw_list,
+        draw_list.path,
+        (index, data) => cast(*RGBA8, data).*, *color,
+        GetTexCoords, *get_tex_coords_data,
+        blur_size
+    );
+    array_reset_keeping_memory(*draw_list.path);
+} @Profile
+
+DrawRectOutline :: inline (
+    draw_list : *DrawList,
+    bounds : Vec4f,
+    color : RGBA8,
+    thickness : float,
+    corner_radiuses : Vec4f = .{0,0,0,0},
+    uv_bounds : Vec4f = .{0,0,0,0},
+    blur_size := 0.0,
+    blur_sides := LineSides.All
+) {
+    DrawRectOutline(draw_list, bounds, color, color, color, color, thickness, corner_radiuses, uv_bounds, blur_size, blur_sides);
+}
+
+DrawRectOutline :: (
+    draw_list : *DrawList,
+    bounds : Vec4f,
+    color_top_left : RGBA8,
+    color_top_right : RGBA8,
+    color_bottom_left : RGBA8,
+    color_bottom_right : RGBA8,
+    thickness : float,
+    corner_radiuses : Vec4f = .{0,0,0,0},
+    uv_bounds : Vec4f = .{0,0,0,0},
+    blur_size := 0.0,
+    blur_sides := LineSides.All
+) {
+    if IsClipped(draw_list, bounds) {
+        return;
+    }
+
+    if (color_top_left & 0xff) == 0
+    || (color_top_right & 0xff) == 0
+    || (color_bottom_left & 0xff) == 0
+    || (color_bottom_right & 0xff) == 0 {
+        return;
+    }
+
+    PathPushRoundedRect(*draw_list.path, bounds, corner_radiuses);
+    DrawPolygonLine(draw_list, draw_list.path, true, thickness, color_top_left, blur_size, blur_sides);
+    array_reset_keeping_memory(*draw_list.path);
+} @Profile
+
+BoxDrawing :: struct {
+    bounds : Vec4f;
+    uv_bounds : Vec4f;
+    corner_radiuses : Vec4f;
+    background_color : RGBA8;
+    border_color : RGBA8;
+    border_size : float;
+    border_inset : float;
+    outer_shadow_color : RGBA8;
+    outer_shadow_offset : Vec2f;
+    outer_shadow_blur : float;
+    inner_shadow_color : RGBA8;
+    inner_shadow_blur : float;
+    clip_box_index : s32;
+}
+
+DrawBox :: inline (draw_list : *DrawList, box : BoxDrawing, texture : TextureHandle = 0) {
+    // Outer shadow
+    DrawRect(
+        draw_list,
+        MoveRect(box.bounds, box.outer_shadow_offset),
+        box.outer_shadow_color,
+        box.corner_radiuses,
+        box.uv_bounds,
+        box.outer_shadow_blur,
+    );
+
+    // Background
+    prev_texture := SetTexture(draw_list, texture);
+
+    DrawRect(
+        draw_list,
+        box.bounds,
+        box.background_color,
+        box.corner_radiuses,
+        box.uv_bounds
+    );
+
+    SetTexture(draw_list, prev_texture);
+
+    // Inner shadow
+    DrawRectOutline(
+        draw_list,
+        box.bounds,
+        box.inner_shadow_color,
+        0,
+        box.corner_radiuses,
+        box.uv_bounds,
+        box.inner_shadow_blur,
+        .Interior,
+    );
+
+    // Border
+    border_inset := Vec4f.{-1,-1,-1,-1} * (box.border_size * 0.5 + box.border_inset);
+    DrawRectOutline(
+        draw_list,
+        InflateRect(box.bounds, border_inset),
+        box.border_color,
+        box.border_size,
+        box.corner_radiuses,
+        box.uv_bounds
+    );
+} @Profile
+
+DrawCircle :: (
+    draw_list : *DrawList,
+    center : Vec2f,
+    radius : float,
+    color : RGBA8,
+    blur_size := 0.0,
+) {
+    if IsClipped(draw_list, Vec4f.{center.x - radius, center.y - radius, center.x + radius, center.y + radius}) {
+        return;
+    }
+
+    if (color & 0xff) == 0 {
+        return;
+    }
+
+    PathPushArc(*draw_list.path, center, radius, 0, 2 * PI);
+    DrawConvexPolygon(draw_list, draw_list.path, color, blur_size);
+    array_reset_keeping_memory(*draw_list.path);
+} @Profile
+
+DrawCircleOutline :: (
+    draw_list : *DrawList,
+    center : Vec2f,
+    radius : float,
+    color : RGBA8,
+    thickness : float,
+    blur_size := 0.0,
+    blur_sides := LineSides.All
+) {
+    if IsClipped(draw_list, Vec4f.{center.x - radius, center.y - radius, center.x + radius, center.y + radius}) {
+        return;
+    }
+
+    if (color & 0xff) == 0 {
+        return;
+    }
+
+    PathPushArc(*draw_list.path, center, radius, 0, 2 * PI);
+    DrawPolygonLine(draw_list, draw_list.path, true, thickness, color, blur_size, blur_sides);
+    array_reset_keeping_memory(*draw_list.path);
+} @Profile
+
+DrawLine :: inline (
+    draw_list : *DrawList,
+    start : Vec2f,
+    end : Vec2f,
+    thickness : float,
+    color : RGBA8,
+    blur_size := 0.0
+) {
+    DrawLine(draw_list, start, end, thickness, color, color, blur_size);
+}
+
+DrawLine :: (
+    draw_list : *DrawList,
+    start : Vec2f,
+    end : Vec2f,
+    thickness : float,
+    start_color : RGBA8,
+    end_color : RGBA8,
+    blur_size := 0.0
+) {
+    if (start_color & 0xff) == 0 && (end_color & 0xff) == 0 {
+        return;
+    }
+
     dir := end - start;
     length := normalize(*dir);
-    angle := atan2(dir.x, -dir.y);
+    normal := Vec2f.{dir.y, -dir.x};
 
-    return DrawBox(draw_list, .{
-        position=(start + end) * 0.5,
-        size=.{thickness, length},
-        rotation=angle,
-        background_color=color,
-    });
+    array_add(*draw_list.path, .{start, normal});
+    array_add(*draw_list.path, .{end, normal});
+
+    get_color_data : struct {
+        start : RGBA8;
+        end : RGBA8;
+    } = .{start_color, end_color};
+
+    GetColor :: (index : int, data : *void) -> RGBA8 {
+        using _ := cast(*type_of(get_color_data), data);
+        return ifx index == 0 then start else end;
+    }
+
+    DrawPolygonLine(draw_list, draw_list.path, false, thickness, GetColor, *get_color_data, blur_size);
+    array_reset_keeping_memory(*draw_list.path);
+} @Profile
+
+DrawSDFGlyph :: (
+    draw_list : *DrawList,
+    bounds : Vec4f,
+    color : RGBA8,
+    uv_bounds : Vec4f,
+    sdf_range : float,
+    blur_amount := 0.0
+) {
+    DrawSDFGlyph(draw_list, bounds, color, color, color, color, uv_bounds, sdf_range, blur_amount);
 }
 
-DrawBox :: (draw_list : *DrawList, box : BoxDrawing, texture : TextureHandle = 0) -> int {
-    if (box.background_color & 0xff) == 0
-    && ((box.border_color & 0xff) == 0 || box.border_size <= 0)
-    && (box.outer_shadow_color & 0xff) == 0 {
-        return -1;
+DrawSDFGlyph :: (
+    draw_list : *DrawList,
+    bounds : Vec4f,
+    color_top_left : RGBA8,
+    color_top_right : RGBA8,
+    color_bottom_left : RGBA8,
+    color_bottom_right : RGBA8,
+    uv_bounds : Vec4f,
+    sdf_range : float,
+    blur_amount := 0.0
+) {
+    if IsClipped(draw_list, bounds) {
+        return;
     }
 
-    if IsClipped(draw_list, GetRealBounds(box)) {
-        return -1;
+    if (color_top_left & 0xff) == 0
+    || (color_top_right & 0xff) == 0
+    || (color_bottom_left & 0xff) == 0
+    || (color_bottom_right & 0xff) == 0 {
+        return;
     }
 
-    draw_call := GetCurrentDrawCall(draw_list);
-    if !draw_call || draw_call.kind != .Boxes || draw_call.texture != texture {
-        draw_call = array_add(*draw_list.draw_calls);
-        draw_call.kind = .Boxes;
-        draw_call.first = xx draw_list.boxes.count;
-        draw_call.texture = texture;
-    }
+    first := GetCurrentIndex(draw_list);
 
-    draw_call.last = xx draw_list.boxes.count;
+    ReserveVertices(draw_list, 4);
+    p0 := PushVertex(draw_list);
+    p1 := PushVertex(draw_list);
+    p2 := PushVertex(draw_list);
+    p3 := PushVertex(draw_list);
 
-    ptr := array_add(*draw_list.boxes);
-    ptr.* = box;
-    ptr.clip_box_index = GetCurrentClipBoxIndex(draw_list);
+    p0.position = bounds.xy;
+    p0.tex_coords = uv_bounds.xy;
+    p0.color = color_top_left;
+    p0.sdf_texture_blur = 1 + blur_amount;
+    p0.sdf_texture_range = sdf_range;
 
-    return draw_list.boxes.count - 1;
-}
+    p1.position = .{bounds.z, bounds.y};
+    p1.tex_coords = .{uv_bounds.z, uv_bounds.y};
+    p1.color = color_top_right;
+    p1.sdf_texture_blur = 1 + blur_amount;
+    p1.sdf_texture_range = sdf_range;
 
-DrawGlyph :: (draw_list : *DrawList, glyph : GlyphDrawing, texture : TextureHandle) -> int {
-    if (glyph.color & 0xff) == 0 && (glyph.outer_shadow_color & 0xff) == 0 {
-        return -1;
-    }
+    p2.position = .{bounds.x, bounds.w};
+    p2.tex_coords = .{uv_bounds.x, uv_bounds.w};
+    p2.color = color_bottom_left;
+    p2.sdf_texture_blur = 1 + blur_amount;
+    p2.sdf_texture_range = sdf_range;
 
-    if IsClipped(draw_list, GetRealBounds(glyph)) {
-        return -1;
-    }
+    p3.position = bounds.zw;
+    p3.tex_coords = uv_bounds.zw;
+    p3.color = color_bottom_right;
+    p3.sdf_texture_blur = 1 + blur_amount;
+    p3.sdf_texture_range = sdf_range;
 
-    draw_call := GetCurrentDrawCall(draw_list);
-    if !draw_call || draw_call.kind != .Glyphs || draw_call.texture != texture {
-        draw_call = array_add(*draw_list.draw_calls);
-        draw_call.kind = .Glyphs;
-        draw_call.first = xx draw_list.glyphs.count;
-        draw_call.texture = texture;
-    }
+    PushIndex(draw_list, first);
+    PushIndex(draw_list, first + 1);
+    PushIndex(draw_list, first + 2);
 
-    draw_call.last = xx draw_list.glyphs.count;
-
-    ptr := array_add(*draw_list.glyphs);
-    ptr.* = glyph;
-    ptr.clip_box_index = GetCurrentClipBoxIndex(draw_list);
-
-    return draw_list.glyphs.count - 1;
-}
-
-DrawTriangle :: inline (draw_list : *DrawList, p0 : Vec2f, p1 : Vec2f, p2 : Vec2f, color : RGBA8) -> int {
-    return DrawTriangle(draw_list, .{
-            p0=p0, p1=p1, p2=p2,
-            c0=color, c1=color, c2=color,
-        });
-}
-
-DrawTriangle :: (draw_list : *DrawList, triangle : TriangleDrawing, texture : TextureHandle = 0) -> int {
-    if (triangle.c0 & 0xff) == 0 && (triangle.c1 & 0xff) == 0 && (triangle.c2 & 0xff) == 0 {
-        return -1;
-    }
-
-    draw_call := GetCurrentDrawCall(draw_list);
-    if !draw_call || draw_call.kind != .Triangles || draw_call.texture != texture {
-        draw_call = array_add(*draw_list.draw_calls);
-        draw_call.kind = .Triangles;
-        draw_call.first = xx draw_list.triangles.count;
-        draw_call.texture = texture;
-    }
-
-    draw_call.last = xx draw_list.triangles.count;
-
-    ptr := array_add(*draw_list.triangles);
-    ptr.* = triangle;
-    ptr.clip_box_index = GetCurrentClipBoxIndex(draw_list);
-
-    return draw_list.triangles.count - 1;
+    PushIndex(draw_list, first + 2);
+    PushIndex(draw_list, first + 1);
+    PushIndex(draw_list, first + 3);
 }
 
 DrawText :: inline (
@@ -485,15 +565,6 @@ DrawText :: inline (
     size : float,
     text : string,
     color : RGBA8,
-    color2 : RGBA8 = 0,
-    gradient_vector : Vec2f = .{},
-    gradient_offset : float = 0,
-    outer_shadow_color : RGBA8 = 0,
-    outer_shadow_offset := Vec2f.{0,0},
-    outer_shadow_blur := 0.0,
-    inner_shadow_color : RGBA8 = 0,
-    inner_shadow_offset := Vec2f.{0,0},
-    inner_shadow_blur := 0.0,
     effects : TextEffects = 0
 ) {
     DrawWrappedText(
@@ -504,15 +575,6 @@ DrawText :: inline (
         text,
         .{FLOAT32_INFINITY, FLOAT32_INFINITY},
         color,
-        color2,
-        gradient_vector,
-        gradient_offset,
-        outer_shadow_color,
-        outer_shadow_offset,
-        outer_shadow_blur,
-        inner_shadow_color,
-        inner_shadow_offset,
-        inner_shadow_blur,
         effects
     );
 }
@@ -525,20 +587,13 @@ DrawWrappedText :: (
     text : string,
     bounds : Vec2f,
     color : RGBA8,
-    color2 : RGBA8 = 0,
-    gradient_vector : Vec2f = .{},
-    gradient_offset : float = 0,
-    outer_shadow_color : RGBA8 = 0,
-    outer_shadow_offset := Vec2f.{0,0},
-    outer_shadow_blur := 0.0,
-    inner_shadow_color : RGBA8 = 0,
-    inner_shadow_offset := Vec2f.{0,0},
-    inner_shadow_blur := 0.0,
     effects : TextEffects = 0
 ) {
-    if !font || ((color & 0xff) == 0 && (outer_shadow_color & 0xff) == 0) {
+    if !font || (color & 0xff) == 0 {
         return;
     }
+
+    prev_texture := SetTexture(draw_list, font.texture, has_white_px=true);
 
     sdf_range := font.sdf_range * size;
 
@@ -556,24 +611,10 @@ DrawWrappedText :: (
             zw=glyph_position + it.texture_size * iter.font_size * 0.5,
         };
 
-        DrawGlyph(draw_list, .{
-                bounds=bounds,
-                uv_bounds=it.uv_rect,
-                sdf_range=.{sdf_range, -sdf_range},
-                color=color,
-                color2=color2,
-                gradient_vector=gradient_vector,
-                gradient_offset=gradient_offset,
-                outer_shadow_color=outer_shadow_color,
-                outer_shadow_offset=outer_shadow_offset,
-                outer_shadow_blur=outer_shadow_blur,
-                inner_shadow_color=inner_shadow_color,
-                inner_shadow_offset=inner_shadow_offset,
-                inner_shadow_blur=inner_shadow_blur,
-            },
-            font.texture
-        );
+        DrawSDFGlyph(draw_list, bounds, color, color, color, color, it.uv_rect, sdf_range);
     }
+
+    SetTexture(draw_list, prev_texture);
 
     if effects {
         ResetPen(*iter);
@@ -586,81 +627,41 @@ DrawWrappedText :: (
 
         for :WordWrappedLines iter {
             if effects & .Underline {
-                box_position := (it.line_pen_start + it.line_pen_end) * 0.5;
-                box_position.y += (underline_position + underline_thickness * 0.5);
-                box_size := Vec2f.{it.line_pen_end.x - it.line_pen_start.x, underline_thickness};
+                start := it.line_pen_start + position;
+                start.y += (underline_position + underline_thickness * 0.5);
 
-                DrawBox(draw_list, box_position + position, box_size, color);
+                end := it.line_pen_end + position;
+                end.y += (underline_position + underline_thickness * 0.5);
+
+                DrawLine(draw_list, start, end, underline_thickness, color, color);
             }
 
             if effects & .Strikethrough {
-                box_position := (it.line_pen_start + it.line_pen_end) * 0.5;
-                box_position.y -= font.ascent * 0.35 * size;
-                box_size := Vec2f.{it.line_pen_end.x - it.line_pen_start.x, underline_thickness};
+                start := it.line_pen_start + position;
+                start.y -= font.ascent * 0.35 * size;
 
-                DrawBox(draw_list, box_position + position, box_size, color);
+                end := it.line_pen_end + position;
+                end.y -= font.ascent * 0.35 * size;
+
+                DrawLine(draw_list, start, end, underline_thickness, color, color);
             }
         }
     }
 } @Profile
 
-DrawShape :: inline (draw_list : *DrawList, shape : *Shape, position : Vec2f, color : RGBA8) -> int {
-    return DrawShape(draw_list, .{
-        shape=shape,
-        position=position,
-        background_color=color,
-    });
-}
-
-DrawShape :: (draw_list : *DrawList, drawing : ShapeDrawing, texture : TextureHandle = 0) -> int {
-    if (drawing.background_color & 0xff) == 0
-    && ((drawing.border_color & 0xff) == 0 || drawing.border_size <= 0)
-    && (drawing.outer_shadow_color & 0xff) == 0 {
-        return -1;
-    }
-
-    if IsClipped(draw_list, GetRealBounds(drawing)) {
-        return -1;
-    }
-
-    draw_call := GetCurrentDrawCall(draw_list);
-    if !draw_call || draw_call.kind != .Shapes || draw_call.texture != texture {
-        draw_call = array_add(*draw_list.draw_calls);
-        draw_call.kind = .Shapes;
-        draw_call.first = xx draw_list.shapes.count;
-        draw_call.texture = texture;
-    }
-
-    draw_call.last = xx draw_list.shapes.count;
-
-    ptr := array_add(*draw_list.shapes);
-    ptr.* = drawing;
-    ptr.clip_box_index = GetCurrentClipBoxIndex(draw_list);
-
-    return draw_list.shapes.count - 1;
-} @Profile
-
 DrawNodeDefault :: (draw_list : *DrawList, node : *Node) {
     DrawBox(draw_list, .{
-        size=node.rect.zw - node.rect.xy,
-        position=(node.rect.xy + node.rect.zw) * 0.5,
+        bounds=node.rect,
         uv_bounds=node.image_uv_bounds,
         corner_radiuses=node.corner_radiuses,
         background_color=node.background_color,
-        background_color2=node.background_color2,
-        background_gradient_vector=node.background_gradient_vector,
-        background_gradient_offset=node.background_gradient_offset,
         border_color=node.border_color,
-        border_color2=node.border_color2,
-        border_gradient_vector=node.border_gradient_vector,
-        border_gradient_offset=node.border_gradient_offset,
         border_size=node.border_size,
         border_inset=node.border_inset,
         outer_shadow_color=node.outer_shadow_color,
         outer_shadow_offset=node.outer_shadow_offset,
         outer_shadow_blur=node.outer_shadow_blur,
         inner_shadow_color=node.inner_shadow_color,
-        inner_shadow_offset=node.inner_shadow_offset,
         inner_shadow_blur=node.inner_shadow_blur,
     }, texture=node.image);
 
@@ -672,15 +673,6 @@ DrawNodeDefault :: (draw_list : *DrawList, node : *Node) {
             node.text,
             node.size,
             node.text_color,
-            node.text_color2,
-            node.text_gradient_vector,
-            node.text_gradient_offset,
-            node.outer_shadow_color,
-            node.outer_shadow_offset,
-            node.outer_shadow_blur,
-            node.inner_shadow_color,
-            node.inner_shadow_offset,
-            node.inner_shadow_blur,
             node.text_effects
         );
     } else {
@@ -690,98 +682,9 @@ DrawNodeDefault :: (draw_list : *DrawList, node : *Node) {
             node.text_size,
             node.text,
             node.text_color,
-            node.text_color2,
-            node.text_gradient_vector,
-            node.text_gradient_offset,
-            node.outer_shadow_color,
-            node.outer_shadow_offset,
-            node.outer_shadow_blur,
-            node.inner_shadow_color,
-            node.inner_shadow_offset,
-            node.inner_shadow_blur,
             node.text_effects
         );
     }
-} @Profile
-
-FlattenShapes :: (shape : *Shape, buffer : *[..]ShaderShape) -> u32 {
-    num_shapes : u32;
-
-    shshape : ShaderShape;
-    shshape.kind = xx shape.kind;
-
-    if #complete shape.kind == {
-    case .CirclePrimitive;
-        shshape.params[0] = shape.circle_prim.radius;
-
-    case .BoxPrimitive;
-        shshape.params[0] = shape.box_prim.size.x;
-        shshape.params[1] = shape.box_prim.size.y;
-        shshape.params[2] = shape.box_prim.corner_radiuses.x;
-        shshape.params[3] = shape.box_prim.corner_radiuses.y;
-        shshape.params[4] = shape.box_prim.corner_radiuses.z;
-        shshape.params[5] = shape.box_prim.corner_radiuses.w;
-
-    case .TrianglePrimitive;
-        shshape.params[0] = shape.triangle_prim.p0.x;
-        shshape.params[1] = shape.triangle_prim.p0.y;
-        shshape.params[2] = shape.triangle_prim.p1.x;
-        shshape.params[3] = shape.triangle_prim.p1.y;
-        shshape.params[4] = shape.triangle_prim.p2.x;
-        shshape.params[5] = shape.triangle_prim.p2.y;
-
-    case .SubtractionOperation; #through;
-    case .IntersectionOperation; #through;
-    case .UnionOperation;
-        shshape.params[0] = shape.union_op.k;
-        num_shapes += FlattenShapes(shape.union_op.shape_a, buffer);
-        num_shapes += FlattenShapes(shape.union_op.shape_b, buffer);
-
-    case .InflateOperation;
-        num_shapes += FlattenShapes(shape.inflate_op.shape, buffer);
-
-        shshape.params[0] = shape.inflate_op.radius;
-
-    case .OnionOperation;
-        num_shapes += FlattenShapes(shape.onion_op.shape, buffer);
-
-        shshape.params[0] = shape.onion_op.radius;
-
-    case .MorphOperation;
-        shshape.params[0] = shape.morph_op.t;
-        num_shapes += FlattenShapes(shape.morph_op.shape_a, buffer);
-        num_shapes += FlattenShapes(shape.morph_op.shape_b, buffer);
-
-    case .TransformOperation;
-        // For transform operations, we push 1 transformation to the coordinate
-        // system, then we push the shape, then we push another transformation
-        // back to the original coordinate system
-        t := Invert(shape.transform_op.transform);
-        shshape.params[0] = t.a;
-        shshape.params[1] = t.b;
-        shshape.params[2] = t.tx;
-        shshape.params[3] = t.c;
-        shshape.params[4] = t.d;
-        shshape.params[5] = t.ty;
-
-        array_add(buffer, shshape);
-        num_shapes += 1;
-
-        num_shapes += FlattenShapes(shape.transform_op.shape, buffer);
-
-        t = shape.transform_op.transform;
-        shshape.params[0] = t.a;
-        shshape.params[1] = t.b;
-        shshape.params[2] = t.tx;
-        shshape.params[3] = t.c;
-        shshape.params[4] = t.d;
-        shshape.params[5] = t.ty;
-    }
-
-    array_add(buffer, shshape);
-    num_shapes += 1;
-
-    return num_shapes;
 } @Profile
 
 DrawNodes :: (draw_list : *DrawList, node : *Node) {
@@ -816,7 +719,7 @@ DrawNodes :: (draw_list : *DrawList, node : *Node) {
 } @Profile
 
 DrawCheckerboard :: (draw_list : *DrawList, rect : Vec4f, checker_size : float, white : RGBA8, black : RGBA8) {
-    if white & 0xff == 0 && black & 0xff == 0 {
+    if (white & 0xff) == 0 && (black & 0xff) == 0 {
         return;
     }
 
@@ -830,10 +733,8 @@ DrawCheckerboard :: (draw_list : *DrawList, rect : Vec4f, checker_size : float, 
         py := rect.y;
         white_square := white_square_x;
         while py < rect.w {
-            size := Vec2f.{checker_size, checker_size};
-            position := Vec2f.{px, py} + size * 0.5;
-
-            DrawBox(draw_list, position, size, ifx white_square then white else black);
+            bounds := Vec4f.{px, py, px + checker_size, py + checker_size};
+            DrawRect(draw_list, bounds, ifx white_square then white else black);
 
             white_square = !white_square;
             py += checker_size;
@@ -844,18 +745,835 @@ DrawCheckerboard :: (draw_list : *DrawList, rect : Vec4f, checker_size : float, 
     }
 } @Profile
 
-DrawEquilateralTriangle :: (draw_list : *DrawList, position : Vec2f, size : float, rotation : float, color : RGBA8) {
-    h := sqrt(size * size - (size * 0.5) * (size * 0.5));
-
-    p0 := Vec2f.{0, size * 0.5};
-    p1 := Vec2f.{-size * 0.5, size * 0.5 - h};
-    p2 := Vec2f.{ size * 0.5, size * 0.5 - h};
-
-    if rotation != 0 {
-        p0 = Rotate(p0, rotation);
-        p1 = Rotate(p1, rotation);
-        p2 = Rotate(p2, rotation);
+DrawPolygonLine :: inline (
+    draw_list : *DrawList,
+    points : []PathPoint,
+    closed : bool,
+    thickness : float,
+    color : RGBA8,
+    blur_size := 0.0,
+    blur_sides := LineSides.All
+) {
+    if (color & 0xff) == 0 {
+        return;
     }
 
-    DrawTriangle(draw_list, position + p0, position + p1, position + p2, color);
+    DrawPolygonLine(
+        draw_list,
+        points,
+        closed,
+        thickness,
+        (index, data) => cast(*RGBA8, data).*, *color,
+        blur_size, blur_sides
+    );
+}
+
+LineSides :: enum_flags {
+    Interior;
+    Exterior;
+
+    All :: Interior | Exterior;
+}
+
+DrawPolygonLine :: (
+    draw_list : *DrawList,
+    points : []PathPoint,
+    closed : bool,
+    thickness : float,
+    $get_color : #type (index : int, data : *void) -> RGBA8,
+    get_color_data : *void,
+    blur_size := 0.0,
+    blur_sides := LineSides.All
+) #no_abc {
+    if blur_size <= 0 {
+        blur_sides = 0;
+    }
+
+    if points.count < 2 || (thickness <= 0 && blur_sides == 0) {
+        return;
+    }
+
+    aa := draw_list.anti_alias_margin;
+
+    thickness = max(thickness, 1);
+    blur_size = max(blur_size, 0);
+    has_middle_part := thickness > max(blur_size, aa);
+
+    first := GetCurrentIndex(draw_list);
+
+    num_indices_per_point : u32;
+    if has_middle_part {
+        num_indices_per_point += 6;
+    }
+    if aa > 0 || blur_sides & .Exterior {
+        num_indices_per_point += 6;
+    }
+    if aa > 0 || blur_sides & .Interior {
+        num_indices_per_point += 6;
+    }
+
+    num_indices : u32;
+    if closed {
+        num_indices = xx points.count * num_indices_per_point;
+    } else {
+        num_indices = xx (points.count - 1) * num_indices_per_point;
+    }
+
+    indices := PushIndices(draw_list, xx num_indices);
+    indices_index := 0;
+
+    num_vertices_per_point : u32;
+    if has_middle_part {
+        num_vertices_per_point += 2;
+    } else {
+        num_vertices_per_point += 1;
+    }
+    if aa > 0 || blur_sides & .Exterior {
+        num_vertices_per_point += 1;
+    }
+    if aa > 0 || blur_sides & .Interior {
+        num_vertices_per_point += 1;
+    }
+
+    num_vertices := cast(u32, points.count) * num_vertices_per_point;
+    ReserveVertices(draw_list, num_vertices);
+
+    half_inner_thickness := (thickness - max(blur_size, aa)) * 0.5;
+
+    i0 : u32 = xx (points.count - 1);
+    i1 : u32 = 0;
+    i2 : u32 = 1;
+    while i1 < xx points.count {
+        defer {
+            i0 = i1;
+            i1 += 1;
+            i2 = (i2 + 1) % cast(u32, points.count);
+        }
+
+        #if #exists(__Tracy) {
+            __Tracy.ZoneScoped("Iteration");
+        }
+
+        color := inline get_color(i1, get_color_data);
+        color_alpha0 := SetAlpha(color, 0);
+
+        p1 := points[i1];
+
+        n : Vec2f = ---;
+        if p1.normal != .{0,0} {
+            n = p1.normal;
+        } else if !closed && (i1 == 0 || i1 == points.count - 1) {
+            p2 := ifx i1 == 0 then points[1] else points[points.count - 2];
+
+            n = PerpendicularCW(p2.position - p1.position);
+            normalize(*n);
+        } else {
+            #if #exists(__Tracy) {
+                __Tracy.ZoneScoped("Calculate intersection");
+            }
+
+            p0 := points[i0];
+            p2 := points[i2];
+
+            n0 := PerpendicularCW(p1.position - p0.position);
+            normalize(*n0);
+
+            n1 := PerpendicularCW(p2.position - p1.position);
+            normalize(*n1);
+
+            inter, p := LineIntersection(p0.position + n0, p1.position + n0, p1.position + n1, p2.position + n1);
+            if !inter {
+                p = p1.position + (n0 + n1) * 0.5;
+            }
+
+            n = p1.position - p;
+        }
+
+        #if #exists(__Tracy) {
+            __Tracy.ZoneScoped("Push vertices and indices");
+        }
+
+        if has_middle_part {
+            v := PushVertex(draw_list);
+            v.position = points[i1].position + n * half_inner_thickness;
+            v.color = color;
+
+            v = PushVertex(draw_list);
+            v.position = points[i1].position - n * half_inner_thickness;
+            v.color = color;
+
+            if aa > 0 || blur_sides & .Exterior {
+                v = PushVertex(draw_list);
+                v.position = points[i1].position + n * (half_inner_thickness + ifx blur_sides & .Exterior then blur_size else aa);
+                v.color = color_alpha0;
+            }
+
+            if aa > 0 || blur_sides & .Interior {
+                v = PushVertex(draw_list);
+                v.position = points[i1].position - n * (half_inner_thickness + ifx blur_sides & .Interior then blur_size else aa);
+                v.color = color_alpha0;
+            }
+
+            // Indices
+            if i1 < points.count - 1 || closed {
+                i1_middle0  := i1 * num_vertices_per_point;
+                i1_middle1  := i1 * num_vertices_per_point + 1;
+                i1_exterior := i1 * num_vertices_per_point + 2;
+                i1_interior := i1 * num_vertices_per_point + 3;
+
+                i2_middle0  := ifx i1 == points.count - 1 then 0 else i1_middle0  + num_vertices_per_point;
+                i2_middle1  := ifx i1 == points.count - 1 then 1 else i1_middle1  + num_vertices_per_point;
+                i2_exterior := ifx i1 == points.count - 1 then 2 else i1_exterior + num_vertices_per_point;
+                i2_interior := ifx i1 == points.count - 1 then 3 else i1_interior + num_vertices_per_point;
+
+                if aa <= 0 && !(blur_sides & .Exterior) {
+                    i1_interior = i1_exterior;
+                    i2_interior = i2_exterior;
+                }
+
+                // Middle
+                indices[indices_index] = first + i1_middle0;
+                indices_index += 1;
+
+                indices[indices_index] = first + i2_middle0;
+                indices_index += 1;
+
+                indices[indices_index] = first + i1_middle1;
+                indices_index += 1;
+
+                indices[indices_index] = first + i1_middle1;
+                indices_index += 1;
+
+                indices[indices_index] = first + i2_middle0;
+                indices_index += 1;
+
+                indices[indices_index] = first + i2_middle1;
+                indices_index += 1;
+
+                if aa > 0 || blur_sides & .Exterior {
+                    indices[indices_index] = first + i1_exterior;
+                    indices_index += 1;
+
+                    indices[indices_index] = first + i2_exterior;
+                    indices_index += 1;
+
+                    indices[indices_index] = first + i1_middle0;
+                    indices_index += 1;
+
+                    indices[indices_index] = first + i1_middle0;
+                    indices_index += 1;
+
+                    indices[indices_index] = first + i2_exterior;
+                    indices_index += 1;
+
+                    indices[indices_index] = first + i2_middle0;
+                    indices_index += 1;
+                }
+
+                if aa > 0 || blur_sides & .Interior {
+                    indices[indices_index] = first + i1_interior;
+                    indices_index += 1;
+
+                    indices[indices_index] = first + i2_interior;
+                    indices_index += 1;
+
+                    indices[indices_index] = first + i1_middle1;
+                    indices_index += 1;
+
+                    indices[indices_index] = first + i1_middle1;
+                    indices_index += 1;
+
+                    indices[indices_index] = first + i2_interior;
+                    indices_index += 1;
+
+                    indices[indices_index] = first + i2_middle1;
+                    indices_index += 1;
+                }
+            }
+        } else {
+            v := PushVertex(draw_list);
+            v.position = points[i1].position;
+            v.color = color;
+
+            if aa > 0 || blur_sides & .Exterior {
+                v = PushVertex(draw_list);
+                v.position = points[i1].position + n * ifx blur_sides & .Exterior then blur_size else aa;
+                v.color = color_alpha0;
+            }
+
+            if aa > 0 || blur_sides & .Interior {
+                v = PushVertex(draw_list);
+                v.position = points[i1].position - n * ifx blur_sides & .Interior then blur_size else aa;
+                v.color = color_alpha0;
+            }
+
+            // Indices
+            if i1 < points.count - 1 || closed {
+                i1_middle   := i1 * num_vertices_per_point;
+                i1_exterior := i1 * num_vertices_per_point + 1;
+                i1_interior := i1 * num_vertices_per_point + 2;
+
+                i2_middle   := ifx i1 == points.count - 1 then 0 else i1_middle   + num_vertices_per_point;
+                i2_exterior := ifx i1 == points.count - 1 then 1 else i1_exterior + num_vertices_per_point;
+                i2_interior := ifx i1 == points.count - 1 then 2 else i1_interior + num_vertices_per_point;
+
+                if aa <= 0 && !(blur_sides & .Exterior) {
+                    i1_interior = i1_exterior;
+                    i2_interior = i2_exterior;
+                }
+
+                if aa > 0 || blur_sides & .Exterior {
+                    indices[indices_index] = first + i1_exterior;
+                    indices_index += 1;
+
+                    indices[indices_index] = first + i2_exterior;
+                    indices_index += 1;
+
+                    indices[indices_index] = first + i1_middle;
+                    indices_index += 1;
+
+                    indices[indices_index] = first + i1_middle;
+                    indices_index += 1;
+
+                    indices[indices_index] = first + i2_exterior;
+                    indices_index += 1;
+
+                    indices[indices_index] = first + i2_middle;
+                    indices_index += 1;
+                }
+
+                if aa > 0 || blur_sides & .Interior {
+                    indices[indices_index] = first + i1_interior;
+                    indices_index += 1;
+
+                    indices[indices_index] = first + i2_interior;
+                    indices_index += 1;
+
+                    indices[indices_index] = first + i1_middle;
+                    indices_index += 1;
+
+                    indices[indices_index] = first + i1_middle;
+                    indices_index += 1;
+
+                    indices[indices_index] = first + i2_interior;
+                    indices_index += 1;
+
+                    indices[indices_index] = first + i2_middle;
+                    indices_index += 1;
+                }
+            }
+        }
+    }
+} @Profile
+
+DrawConvexPolygon :: inline (
+    draw_list : *DrawList,
+    points : []PathPoint,
+    color : RGBA8,
+    blur_size := 0.0
+) #no_abc {
+    if (color & 0xff) == 0 {
+        return;
+    }
+
+    DrawConvexPolygon(
+        draw_list,
+        points,
+        (index, data) => cast(*RGBA8, data).*, *color,
+        (index, data) => Vec2f.{}, null,
+        blur_size
+    );
+}
+
+DrawConvexPolygon :: (
+    draw_list : *DrawList,
+    points : []PathPoint,
+    $get_color : (index : int, data : *void) -> RGBA8,
+    get_color_data : *void,
+    $get_tex_coords : (index : int, data : *void) -> Vec2f,
+    get_tex_coords_data : *void,
+    blur_size := 0.0
+) #no_abc {
+    if points.count < 3 {
+        return;
+    }
+
+    first_inner := GetCurrentIndex(draw_list);
+    first_outer := first_inner + 1;
+
+    blur_size = max(blur_size, draw_list.anti_alias_margin, 0.0);
+
+    num_indices := cast(u32, (points.count - 2) * 3);
+    if blur_size > 0 {
+        num_indices += cast(u32, points.count * 6);
+    }
+
+    indices := PushIndices(draw_list, num_indices);
+    indices_index := 0;
+    for i : 2..cast(u32, points.count - 1) {
+        indices[indices_index] = first_inner;
+        indices_index += 1;
+
+        indices[indices_index] = first_inner + ((i - 1) << 1);
+        indices_index += 1;
+
+        indices[indices_index] = first_inner + (i << 1);
+        indices_index += 1;
+    }
+
+    num_vertices := points.count;
+    if blur_size > 0 {
+        num_vertices += points.count;
+    }
+
+    ReserveVertices(draw_list, num_vertices);
+
+    i0 : u32 = xx (points.count - 1);
+    i1 : u32 = 0;
+    i2 : u32 = 1;
+    while i1 < points.count {
+        defer {
+            i0 = i1;
+            i1 += 1;
+            i2 = (i2 + 1) % cast(u32, points.count);
+        }
+
+        color := inline get_color(i1, get_color_data);
+        color_alpha0 := SetAlpha(color, 0);
+
+        tex_coords := inline get_tex_coords(i1, get_tex_coords_data);
+
+        p1 := points[i1];
+
+        n : Vec2f = ---;
+        if p1.normal != .{0,0} {
+            n = p1.normal;
+        } else {
+            p0 := points[i0];
+            p2 := points[i2];
+
+            n0 := PerpendicularCW(p1.position - p0.position);
+            normalize(*n0);
+
+            n1 := PerpendicularCW(p2.position - p1.position);
+            normalize(*n1);
+
+            inter, p := LineIntersection(p0.position + n0, p1.position + n0, p1.position + n1, p2.position + n1);
+            if !inter {
+                p = p1.position + (n0 + n1) * 0.5;
+            }
+
+            n = p1.position - p;
+        }
+
+        n *= blur_size * 0.5;
+
+        // Inner
+        v := PushVertex(draw_list);
+        v.position = points[i1].position - n;
+        v.color = color;
+        v.tex_coords = tex_coords;
+
+        if blur_size > 0 {
+            // Outer
+            v = PushVertex(draw_list);
+            v.position = points[i1].position + n;
+            v.color = color_alpha0;
+            v.tex_coords = tex_coords;
+
+            // Blur indices
+            indices[indices_index] = first_inner + (i1 << 1);
+            indices_index += 1;
+
+            indices[indices_index] = first_inner + (i0 << 1);
+            indices_index += 1;
+
+            indices[indices_index] = first_outer + (i0 << 1);
+            indices_index += 1;
+
+            indices[indices_index] = first_outer + (i0 << 1);
+            indices_index += 1;
+
+            indices[indices_index] = first_outer + (i1 << 1);
+            indices_index += 1;
+
+            indices[indices_index] = first_inner + (i1 << 1);
+            indices_index += 1;
+        }
+    }
+} @Profile
+
+TriangleSides :: enum_flags {
+    P0P1;
+    P1P2;
+    P2P0;
+
+    All :: P0P1 | P1P2 | P2P0;
+}
+
+DrawTriangle :: inline (
+    draw_list : *DrawList,
+    p0 : Vec2f,
+    p1 : Vec2f,
+    p2 : Vec2f,
+    color : RGBA8,
+    // A blur of 1.0 can be used for anti-aliasing
+    // For blur to work the points need to be in counter clockwise order
+    blur_size := 1.0,
+    blur_sides := TriangleSides.All
+) {
+    DrawTriangle(draw_list, p0, p1, p2, color, color, color, blur_size, blur_sides);
+}
+
+DrawTriangle :: (
+    draw_list : *DrawList,
+    p0 : Vec2f,
+    p1 : Vec2f,
+    p2 : Vec2f,
+    c0 : RGBA8,
+    c1 : RGBA8,
+    c2 : RGBA8,
+    // A blur of 1.0 can be used for anti-aliasing
+    // For blur to work the points need to be in counter clockwise order
+    blur_size := 1.0,
+    blur_sides := TriangleSides.All
+) {
+    if (c0 & 0xff) == 0 && (c1 & 0xff) == 0 && (c2 & 0xff) == 0 {
+        return;
+    }
+
+    color0_alpha0 := SetAlpha(c0, 0);
+    color1_alpha0 := SetAlpha(c1, 0);
+    color2_alpha0 := SetAlpha(c2, 0);
+
+    num_indices : u32 = 3;
+    if blur_sides & .P0P1 {
+        num_indices += 6;
+    }
+    if blur_sides & .P1P2 {
+        num_indices += 6;
+    }
+    if blur_sides & .P2P0 {
+        num_indices += 6;
+    }
+
+    num_vertices : u32 = 3;
+    has_p0_blur := (blur_sides & .P0P1) != 0 || (blur_sides & .P2P0) != 0;
+    has_p1_blur := (blur_sides & .P0P1) != 0 || (blur_sides & .P1P2) != 0;
+    has_p2_blur := (blur_sides & .P1P2) != 0 || (blur_sides & .P2P0) != 0;
+    if has_p0_blur {
+        num_vertices += 1;
+    }
+    if has_p1_blur {
+        num_vertices += 1;
+    }
+    if has_p2_blur {
+        num_vertices += 1;
+    }
+
+    first := GetCurrentIndex(draw_list);
+    indices := PushIndices(draw_list, num_indices);
+    indices_index := 0;
+
+    ReserveVertices(draw_list, num_vertices);
+
+    v := PushVertex(draw_list);
+    v.position = p0;
+    v.color = c0;
+
+    v = PushVertex(draw_list);
+    v.position = p1;
+    v.color = c1;
+
+    v = PushVertex(draw_list);
+    v.position = p2;
+    v.color = c2;
+
+    if has_p0_blur {
+        a := p1 - p0;
+        a = .{-a.y, a.x};
+        normalize(*a);
+
+        b := p2 - p0;
+        b = .{b.y, -b.x};
+        normalize(*b);
+
+        inter, p := LineIntersection(
+            p0 + a * blur_size, p1 + a * blur_size,
+            p0 + b * blur_size, p2 + b * blur_size
+        );
+
+        if !inter {
+            p = p0 + a * blur_size;
+        }
+
+        v = PushVertex(draw_list);
+        v.position = p;
+        v.color = color0_alpha0;
+    }
+
+    if has_p1_blur {
+        a := p0 - p1;
+        a = .{-a.y, a.x};
+        normalize(*a);
+
+        b := p2 - p1;
+        b = .{b.y, -b.x};
+        normalize(*b);
+
+        inter, p := LineIntersection(
+            p1 - a * blur_size, p0 - a * blur_size,
+            p1 - b * blur_size, p2 - b * blur_size
+        );
+
+        if !inter {
+            p = p1 - a * blur_size;
+        }
+
+        v = PushVertex(draw_list);
+        v.position = p;
+        v.color = color1_alpha0;
+    }
+
+    if has_p2_blur {
+        a := p1 - p2;
+        a = .{-a.y, a.x};
+        normalize(*a);
+
+        b := p0 - p2;
+        b = .{b.y, -b.x};
+        normalize(*b);
+
+        inter, p := LineIntersection(
+            p2 - a * blur_size, p1 - a * blur_size,
+            p2 - b * blur_size, p0 - b * blur_size
+        );
+
+        if !inter {
+            p = p2 - a * blur_size;
+        }
+
+        v = PushVertex(draw_list);
+        v.position = p;
+        v.color = color2_alpha0;
+    }
+
+    indices[indices_index] = first;
+    indices_index += 1;
+
+    indices[indices_index] = first + 1;
+    indices_index += 1;
+
+    indices[indices_index] = first + 2;
+    indices_index += 1;
+
+    if blur_sides & .P0P1 {
+        indices[indices_index] = first;
+        indices_index += 1;
+
+        indices[indices_index] = first + 3;
+        indices_index += 1;
+
+        indices[indices_index] = first + 4;
+        indices_index += 1;
+
+        indices[indices_index] = first;
+        indices_index += 1;
+
+        indices[indices_index] = first + 4;
+        indices_index += 1;
+
+        indices[indices_index] = first + 1;
+        indices_index += 1;
+    }
+
+    if blur_sides & .P1P2 {
+        indices[indices_index] = first + 1;
+        indices_index += 1;
+
+        indices[indices_index] = first + 4;
+        indices_index += 1;
+
+        indices[indices_index] = first + 5;
+        indices_index += 1;
+
+        indices[indices_index] = first + 1;
+        indices_index += 1;
+
+        indices[indices_index] = first + 5;
+        indices_index += 1;
+
+        indices[indices_index] = first + 2;
+        indices_index += 1;
+    }
+
+    if blur_sides & .P2P0 {
+        indices[indices_index] = first + 2;
+        indices_index += 1;
+
+        indices[indices_index] = first + 5;
+        indices_index += 1;
+
+        indices[indices_index] = first + 3;
+        indices_index += 1;
+
+        indices[indices_index] = first + 2;
+        indices_index += 1;
+
+        indices[indices_index] = first + 3;
+        indices_index += 1;
+
+        indices[indices_index] = first;
+        indices_index += 1;
+    }
+} @Profile
+
+PathPoint :: struct {
+    position : Vec2f;
+    normal : Vec2f;
+}
+
+PathCalcNormals :: (points : []PathPoint, closed : bool) {
+    i0, i1 : u32;
+    if closed {
+        i0 = 0;
+        i1 = 1;
+    } else {
+        i0 = xx (points.count - 1);
+    }
+
+    while i1 < points.count {
+        defer {
+            i0 = i1;
+            i1 += 1;
+        }
+
+        p0 := points[i0].position;
+        p1 := points[i1].position;
+        d := Normalize(p1 - p0);
+        d = PerpendicularCW(d);
+
+        if !closed && i1 == points.count - 1 {
+            points[i1].normal.x = d;
+        }
+    }
+} @Profile
+
+PathPushRoundedRect :: (points : *[..]PathPoint, bounds : Vec4f, corner_radiuses : Vec4f) {
+    half_size := (bounds.zw - bounds.xy) * 0.5;
+    max_radius := min(half_size.x, half_size.y);
+
+    top_left := bounds.xy;
+    top_left.x += min(corner_radiuses.x, max_radius);
+    top_left.y += min(corner_radiuses.x, max_radius);
+
+    top_right := Vec2f.{bounds.z, bounds.y};
+    top_right.x -= min(corner_radiuses.y, max_radius);
+    top_right.y += min(corner_radiuses.y, max_radius);
+
+    bottom_left := Vec2f.{bounds.x, bounds.w};
+    bottom_left.x += min(corner_radiuses.z, max_radius);
+    bottom_left.y -= min(corner_radiuses.z, max_radius);
+
+    bottom_right := bounds.zw;
+    bottom_right.x -= min(corner_radiuses.w, max_radius);
+    bottom_right.y -= min(corner_radiuses.w, max_radius);
+
+    PathPushArc(points, bottom_left,  min(corner_radiuses.z, max_radius), PI, PI * 0.5);
+    PathPushArc(points, bottom_right, min(corner_radiuses.w, max_radius), -PI * 0.5, PI * 0.5);
+    PathPushArc(points, top_right,    min(corner_radiuses.y, max_radius), 0, PI * 0.5);
+    PathPushArc(points, top_left,     min(corner_radiuses.x, max_radius), PI * 0.5, PI * 0.5);
+} @Profile
+
+PathPushArc :: (points : *[..]PathPoint, center : Vec2f, radius : float, start_angle : float, angle : float, num_segments := 0) {
+    Half_Circle_Points_Count :: 50;
+    Half_Circle_Points :: #run () -> [Half_Circle_Points_Count + 1]Vec2f {
+        result : [Half_Circle_Points_Count + 1]Vec2f = ---;
+
+        for i : 0..Half_Circle_Points_Count {
+            theta := i / cast(float, Half_Circle_Points_Count) * PI * 0.5;
+            result[i] = Vec2f.{cos(theta), sin(theta)};
+        }
+
+        return result;
+    }();
+
+    SamplePointsArray :: (angle : float) -> Vec2f {
+        while angle > 2 * PI {
+            angle -= 2 * PI;
+        }
+        while angle < 0 {
+            angle += 2 * PI;
+        }
+
+        theta := angle;
+        if angle >= PI * 1.5 {
+            theta -= PI * 1.5;
+        } else if angle >= PI {
+            theta -= PI;
+        } else if angle >= PI * 0.5 {
+            theta -= PI * 0.5;
+        }
+
+        f0 := Half_Circle_Points_Count * theta / (PI * 0.5);
+        i0 := cast(int, f0);
+        i1 := i0 + 1;
+        p0 := Half_Circle_Points[i0];
+        p1 := Half_Circle_Points[i1];
+        t := f0 - i0;
+
+        p := lerp(p0, p1, t);
+        if angle >= PI * 0.5 {
+            p = .{-p.y, p.x};
+        }
+        if angle >= PI {
+            p = .{-p.y, p.x};
+        }
+        if angle >= PI * 1.5 {
+            p = .{-p.y, p.x};
+        }
+
+        return normalize(p);
+    }
+
+    if angle < 0 {
+        start_angle -= angle;
+        angle = -angle;
+    }
+
+    while start_angle > 2 * PI {
+        start_angle -= 2 * PI;
+    }
+    while start_angle < 0 {
+        start_angle += 2 * PI;
+    }
+
+    angle = min(angle, PI * 2);
+
+    if radius < 0.5 {
+        array_add(points, .{position=center});
+        return;
+    }
+
+    if num_segments == 0 {
+        num_quadrants := angle / (PI * 0.5);
+        num_segments = xx max(radius * num_quadrants * 0.25, num_quadrants * 4, 2);
+    }
+
+    connected := angle == PI * 2;
+    iterations := ifx connected then num_segments - 1 else num_segments;
+
+    if num_segments <= Half_Circle_Points.count {
+        for i : 0..iterations {
+            theta := i / cast(float, num_segments) * angle;
+            p := SamplePointsArray(-start_angle - theta);
+            array_add(points, .{position=center + p * radius, normal=p});
+        }
+    } else {
+        for i : 0..iterations {
+            theta := i / cast(float, num_segments) * angle;
+            p := Vec2f.{cos(-start_angle - theta), sin(-start_angle - theta)};
+            array_add(points, .{position=center + p * radius, normal=p});
+        }
+    }
 } @Profile

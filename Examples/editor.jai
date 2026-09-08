@@ -235,6 +235,8 @@ EditorFrame :: () {
             minimize_node.flags |= .NoPaddedClip;
             OMG.SetCornerRadius(minimize_node, Btn_Size * 0.5);
             OMG.SetPadding(minimize_node, 5, 5);
+            OMG.SetInnerShadowOpacity(minimize_node, 0.15);
+            OMG.SetInnerShadowBlur(minimize_node, 4);
             if minimize {
                 SDL_MinimizeWindow(g_window);
             }
@@ -243,6 +245,8 @@ EditorFrame :: () {
             maximize_node.flags |= .NoPaddedClip;
             OMG.SetCornerRadius(maximize_node, Btn_Size * 0.5);
             OMG.SetPadding(maximize_node, 5, 5);
+            OMG.SetInnerShadowOpacity(maximize_node, 0.15);
+            OMG.SetInnerShadowBlur(maximize_node, 4);
             if maximize {
                 flags := SDL_GetWindowFlags(g_window);
                 if flags & SDL_WINDOW_MAXIMIZED {
@@ -256,6 +260,8 @@ EditorFrame :: () {
             close_node.flags |= .NoPaddedClip;
             OMG.SetCornerRadius(close_node, Btn_Size * 0.5);
             OMG.SetPadding(close_node, 5, 5);
+            OMG.SetInnerShadowOpacity(close_node, 0.15);
+            OMG.SetInnerShadowBlur(close_node, 4);
             if close {
                 g_quit = true;
             }
@@ -265,14 +271,13 @@ EditorFrame :: () {
             OMG.SetBackgroundColor(minimize_icon, OMG.ChooseTextColor(base_background_color));
             OMG.SetDraw(minimize_icon, (draw_list : *OMG.DrawList, node : *OMG.Node) {
                 center := (node.rect.xy + node.rect.zw) * 0.5;
+                center.x = ceil(center.x);
+                center.y = ceil(center.y);
                 length := node.size.x * 0.7;
+                start := center + OMG.Vec2f.{-floor(length * 0.5), 0.5};
+                end := center + OMG.Vec2f.{floor(length * 0.5), 0.5};
 
-                OMG.DrawBox(draw_list, .{
-                    position=center,
-                    size=.{length, 1},
-                    border_color=node.background_color,
-                    border_size=1,
-                });
+                OMG.DrawLine(draw_list, start, end, 1, node.background_color);
             });
 
             maximize_icon := OMG.GetNode(maximize_node);
@@ -283,15 +288,17 @@ EditorFrame :: () {
                 center := (node.rect.xy + node.rect.zw) * 0.5;
                 rect := OMG.Vec4f.{xy=center - size * 0.5, zw=center + size * 0.5};
 
-                p0 := OMG.Vec2f.{size.x * 0.3, 0};
-                p1 := OMG.Vec2f.{size.x, 0};
-                p2 := OMG.Vec2f.{size.x, size.y - size.y * 0.3};
+                Size :: 0.6;
+
+                p0 := OMG.Vec2f.{size.x, 0};
+                p1 := OMG.Vec2f.{size.x * Size, 0};
+                p2 := OMG.Vec2f.{size.x, size.y - size.y * Size};
 
                 OMG.DrawTriangle(draw_list, rect.xy + p0, rect.xy + p1, rect.xy + p2, node.background_color);
 
-                p0 = OMG.Vec2f.{0, size.y * 0.3};
+                p0 = OMG.Vec2f.{0, size.y * Size};
                 p1 = OMG.Vec2f.{0, size.y};
-                p2 = OMG.Vec2f.{size.x - size.x * 0.3, size.y};
+                p2 = OMG.Vec2f.{size.x - size.x * Size, size.y};
 
                 OMG.DrawTriangle(draw_list, rect.xy + p0, rect.xy + p1, rect.xy + p2, node.background_color);
             });
@@ -301,12 +308,14 @@ EditorFrame :: () {
             OMG.SetBackgroundColor(close_icon, OMG.ChooseTextColor(base_background_color));
             OMG.SetDraw(close_icon, (draw_list : *OMG.DrawList, node : *OMG.Node) {
                 center := (node.rect.xy + node.rect.zw) * 0.5;
+                dir := normalize(node.rect.zw - node.rect.xy);
                 length := node.size.x;
 
-                a := OMG.Rotate(OMG.Box(1, length), PI * 0.25);
-                b := OMG.Rotate(OMG.Box(1, length), -PI * 0.25);
-                shape := OMG.Union(a, b);
-                OMG.DrawShape(draw_list, shape, center, node.background_color);
+                OMG.DrawLine(draw_list, center - dir * length * 0.5, center + dir * length * 0.5, 1, node.background_color, node.background_color);
+
+                dir = .{dir.y, -dir.x};
+
+                OMG.DrawLine(draw_list, center - dir * length * 0.5, center + dir * length * 0.5, 1, node.background_color, node.background_color);
             });
         }
 
@@ -322,12 +331,12 @@ EditorFrame :: () {
             OMG.Text(content_browser, "\t\tDraw: % ms", context.omg.draw_time_last_frame * 1000);
             OMG.Text(content_browser, "\t\tRemaining: % ms", (context.omg.total_time_last_frame - context.omg.layout_time_last_frame - context.omg.draw_time_last_frame) * 1000);
             OMG.Text(content_browser, "\tUser: % ms", g_user_time * 1000);
-            OMG.Text(content_browser, "GPU: % ms", OMG_GL.GetLastFrameGPUTime() * 1000);
-            OMG.Text(content_browser, "GPU buffers: % MiB", OMG_GL.GetLastFrameMemoryUsage() / (1024.0 * 1024.0));
+            OMG.Text(content_browser, "GPU: % ms", g_gpu_time * 1000);
 
             password_field := OMG.GetNode(content_browser, "password_field");
             {
                 OMG.SetSize(password_field, OMG.SizeFill(0.3), OMG.SizeFit());
+                OMG.SetMinWidth(password_field, 300);
                 OMG.SetLayout(password_field, .LeftToRight);
                 OMG.SetChildAlign(password_field, 0, 0.5);
                 OMG.SetChildGap(password_field, 6, 6);
@@ -346,6 +355,7 @@ EditorFrame :: () {
             fields := OMG.GetNode(content_browser);
             {
                 OMG.SetSize(fields, OMG.SizeFill(0.3), OMG.SizeFit());
+                OMG.SetMinWidth(fields, 300);
                 OMG.SetLayout(fields, .TopToBottom);
                 OMG.SetChildGap(fields, 0, 10);
 

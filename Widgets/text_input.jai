@@ -566,10 +566,7 @@ DrawTextInputText :: (draw_list : *DrawList, node : *Node) {
             node.rect.xy,
             node.text_size,
             node.text,
-            node.text_color,
-            node.outer_shadow_color,
-            node.outer_shadow_offset,
-            node.outer_shadow_blur
+            node.text_color
         );
 
         return;
@@ -577,36 +574,10 @@ DrawTextInputText :: (draw_list : *DrawList, node : *Node) {
 
     style := GetUserData(node.parent, TextInputStyle);
 
-    sdf_range := node.font.sdf_range * node.text_size;
-
-    selection_box_index := ifx node.parent.state_flags & .Active && input.selection != 0
-        then DrawBox(draw_list, .{size=.{FLOAT32_INFINITY, FLOAT32_INFINITY}, background_color=0xffffffff})
-        else -1;
-
-    selection_position := node.rect.xy;
     cursor_position := node.rect.xy;
+    selection_position := node.rect.xy;
     iter := IterText(node);
     for iter {
-        glyph_position := node.rect.xy + iter.pen + it.hori_bearing * iter.font_size;
-        glyph_position += it.size * iter.font_size * 0.5;
-
-        bounds := Vec4f.{
-            xy=glyph_position - it.texture_size * iter.font_size * 0.5,
-            zw=glyph_position + it.texture_size * iter.font_size * 0.5,
-        };
-
-        DrawGlyph(draw_list, .{
-                bounds=bounds,
-                uv_bounds=it.uv_rect,
-                sdf_range=.{sdf_range, -sdf_range},
-                color=node.text_color,
-                outer_shadow_color=node.outer_shadow_color,
-                outer_shadow_offset=node.outer_shadow_offset,
-                outer_shadow_blur=node.outer_shadow_blur,
-            },
-            node.font.texture
-        );
-
         if it_index == input.cursor {
             cursor_position += Vec2f.{iter.pen.x, iter.pen.y - iter.font.ascent * iter.font_size};
         }
@@ -614,7 +585,6 @@ DrawTextInputText :: (draw_list : *DrawList, node : *Node) {
             selection_position += Vec2f.{iter.pen.x, iter.pen.y - iter.font.ascent * iter.font_size};
         }
     }
-
     if input.cursor == input.buffer.count {
         cursor_position += Vec2f.{iter.pen.x, iter.pen.y - iter.font.ascent * iter.font_size};
     }
@@ -625,19 +595,9 @@ DrawTextInputText :: (draw_list : *DrawList, node : *Node) {
     cursor_position.x = ceil(cursor_position.x);
     cursor_position.y = ceil(cursor_position.y);
 
-    // Draw cursor
-    if node.parent.state_flags & .Active && (fmod_cycling(input.cursor_blink_time, 1) < 0.5 || input.cursor_blink_time > 5) {
-        cursor_size := Vec2f.{1, node.rect.w - node.rect.y};
-
-        DrawBox(draw_list, .{
-            size=cursor_size,
-            position=cursor_position + cursor_size * 0.5,
-            background_color=node.text_color,
-        });
-    }
-
-    // Draw selection
-    if selection_box_index >= 0 {
+    // We used to push the box drawing before rendering the text so we don't
+    // iterate twice, but with the new vertex renderer we can't do that :/
+    if node.parent.state_flags & .Active && input.selection != 0 {
         selection_size := Vec2f.{abs(cursor_position.x - selection_position.x), node.rect.w - node.rect.y};
         selection_size.x = ceil(selection_size.x);
         selection_size.y = ceil(selection_size.y);
@@ -646,26 +606,49 @@ DrawTextInputText :: (draw_list : *DrawList, node : *Node) {
         selection_position.x = floor(selection_position.x);
         selection_position.y = floor(selection_position.y);
 
-        box := *draw_list.boxes[selection_box_index];
-        box.size = selection_size;
-        box.position = selection_position + selection_size * 0.5;
-        box.corner_radiuses = style.selection.corner_radiuses;
-        box.background_color = style.selection.background_color;
-        box.background_color2 = style.selection.background_color2;
-        box.background_gradient_offset = style.selection.background_gradient_offset;
-        box.background_gradient_vector = style.selection.background_gradient_vector;
-        box.border_color = style.selection.border_color;
-        box.border_color2 = style.selection.border_color2;
-        box.border_gradient_offset = style.selection.border_gradient_offset;
-        box.border_gradient_vector = style.selection.border_gradient_vector;
-        box.border_size = style.selection.border_size;
-        box.border_inset = style.selection.border_inset;
-        box.outer_shadow_color = style.selection.outer_shadow_color;
-        box.outer_shadow_offset = style.selection.outer_shadow_offset;
-        box.outer_shadow_blur = style.selection.outer_shadow_blur;
-        box.inner_shadow_color = style.selection.inner_shadow_color;
-        box.inner_shadow_offset = style.selection.inner_shadow_offset;
-        box.inner_shadow_blur = style.selection.inner_shadow_blur;
+        DrawBox(draw_list, .{
+            bounds=.{xy=selection_position, zw=selection_position + selection_size},
+            corner_radiuses=style.selection.corner_radiuses,
+            background_color=style.selection.background_color,
+            border_color=style.selection.border_color,
+            border_size=style.selection.border_size,
+            border_inset=style.selection.border_inset,
+            outer_shadow_color=style.selection.outer_shadow_color,
+            outer_shadow_offset=style.selection.outer_shadow_offset,
+            outer_shadow_blur=style.selection.outer_shadow_blur,
+            inner_shadow_color=style.selection.inner_shadow_color,
+            inner_shadow_blur=style.selection.inner_shadow_blur,
+        });
+    }
+
+    prev_texture := SetTexture(draw_list, node.font.texture, has_white_px=true);
+
+    sdf_range := node.font.sdf_range * node.text_size;
+
+    iter = IterText(node);
+    for iter {
+        glyph_position := node.rect.xy + iter.pen + it.hori_bearing * iter.font_size;
+        glyph_position += it.size * iter.font_size * 0.5;
+
+        bounds := Vec4f.{
+            xy=glyph_position - it.texture_size * iter.font_size * 0.5,
+            zw=glyph_position + it.texture_size * iter.font_size * 0.5,
+        };
+
+        DrawSDFGlyph(draw_list, bounds, node.text_color, it.uv_rect, sdf_range);
+    }
+
+    SetTexture(draw_list, prev_texture);
+
+    // Draw cursor
+    if node.parent.state_flags & .Active && (fmod_cycling(input.cursor_blink_time, 1) < 0.5 || input.cursor_blink_time > 5) {
+        start := cursor_position;
+        start.x += 0.5;
+
+        end := cursor_position + Vec2f.{0, node.size.y};
+        end.x += 0.5;
+
+        DrawLine(draw_list, start, end, 1, node.text_color);
     }
 }
 

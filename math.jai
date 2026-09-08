@@ -173,10 +173,26 @@ fract :: inline (x : float) -> float {
     return x - floor(x);
 }
 
-InflateBounds :: inline (bounds : Vec4f, amount : Vec4f) -> Vec4f {
+MoveRect :: inline (rect : Vec4f, amount : Vec2f) -> Vec4f {
     return .{
-        xy=bounds.xy - amount.xy,
-        zw=bounds.zw + amount.zw,
+        xy=rect.xy + amount,
+        zw=rect.zw + amount,
+    };
+}
+
+InflateRect :: inline (rect : Vec4f, amount : float) -> Vec4f {
+    return .{
+        rect.x - amount,
+        rect.y - amount,
+        rect.z + amount,
+        rect.w + amount,
+    };
+}
+
+InflateRect :: inline (rect : Vec4f, amount : Vec4f) -> Vec4f {
+    return .{
+        xy=rect.xy - amount.xy,
+        zw=rect.zw + amount.zw,
     };
 }
 
@@ -360,6 +376,10 @@ PerpendicularCW :: inline (v : Vec2f) -> Vec2f {
     return .{v.y, -v.x};
 }
 
+PerpendicularCCW :: inline (v : Vec2f) -> Vec2f {
+    return .{-v.y, v.x};
+}
+
 Rotate :: inline (v : Vec2f, angle : float) -> Vec2f {
     ct := cos(angle);
     st := sin(angle);
@@ -422,3 +442,23 @@ InverseLerp :: inline (a : float, b : float, t : float) -> float {
     return (t - a) / (b - a);
 }
 
+LineIntersection :: (a_p0 : Vec2f, a_p1 : Vec2f, b_p0 : Vec2f, b_p1 : Vec2f) -> bool, Vec2f {
+    ax := a_p1.x - a_p0.x;
+    ay := a_p1.y - a_p0.y;
+    bx := b_p1.x - b_p0.x;
+    by := b_p1.y - b_p0.y;
+
+    denom := ax * by - ay * bx;
+
+    if abs(denom) < 0.000001 {
+        return false, .{};
+    }
+
+    dx := b_p0.x - a_p0.x;
+    dy := b_p0.y - a_p0.y;
+
+    t := (dx * by - dy * bx) / denom;
+    u := (dx * ay - dy * ax) / denom;
+
+    return true, a_p0 + t * Vec2f.{ax, ay};
+}

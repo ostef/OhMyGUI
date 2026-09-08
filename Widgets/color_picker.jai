@@ -62,6 +62,13 @@ ColorPickerData :: struct {
     picking_color : bool;
 }
 
+g_pick_icon_image : TextureHandle;
+
+LoadPickIconImage :: () {
+    g_pick_icon_image = LoadImageFromFileContents("eyedropper", Eyedropper_Contents);
+    assert(g_pick_icon_image != 0, "Could not load pick icon");
+}
+
 GetHSVWheelGeometricData :: (style : *HSVTriangleWheelStyle, rect : Vec4f, hsv : HSV) -> struct {
     center : Vec2f;
     inner_radius : float;
@@ -103,19 +110,28 @@ HSVTriangleWheel :: (parent : *Node, using data : *ColorPickerData, style : *HSV
         }
 
         using _ := data.*;
-        using _ := GetHSVWheelGeometricData(style, InflateBounds(node.rect, ToVec4f(node.padding) * -1), hsv);
+        using _ := GetHSVWheelGeometricData(style, InflateRect(node.rect, ToVec4f(node.padding) * -1), hsv);
 
-        wheel_shape := Onion(Circle(outer_radius - style.wheel_thickness * 0.5), style.wheel_thickness * 0.5 + style.border_size);
-        triangle_shape := Inflate(Triangle(hue_point - center, white_point - center, black_point - center), style.border_size);
+        p0 := hue_point - center;
+        p0 += normalize(p0) * (style.border_size + 1);
+        p0 += center;
 
-        DrawShape(draw_list, .{
-            shape=Union(wheel_shape, triangle_shape, 1),
-            position=center,
-            background_color=style.border_color,
-            outer_shadow_color=style.outer_shadow_color,
-            outer_shadow_offset=style.outer_shadow_offset,
-            outer_shadow_blur=style.outer_shadow_blur,
-        });
+        p1 := black_point - center;
+        p1 += normalize(p1) * (style.border_size + 1);
+        p1 += center;
+
+        p2 := white_point - center;
+        p2 += normalize(p2) * (style.border_size + 1);
+        p2 += center;
+
+        DrawTriangle(draw_list, p0 + style.outer_shadow_offset, p1 + style.outer_shadow_offset, p2 + style.outer_shadow_offset, style.outer_shadow_color, blur_size=1 + style.outer_shadow_blur);
+        DrawTriangle(draw_list, p0, p1, p2, style.border_color);
+
+        circle_thickness := outer_radius - inner_radius + 2 * style.border_size;
+        circle_radius := (outer_radius + inner_radius) * 0.5;
+
+        DrawCircleOutline(draw_list, center + style.outer_shadow_offset, circle_radius, style.outer_shadow_color, circle_thickness, blur_size = 1 + style.outer_shadow_blur);
+        DrawCircleOutline(draw_list, center, circle_radius, style.border_color, circle_thickness);
     }
 
     modified := false;
@@ -186,18 +202,17 @@ SaturationValueTriangle :: (parent : *Node, using data : *ColorPickerData, style
         using _ := data.*;
         using _ := GetHSVWheelGeometricData(style, node.rect, hsv);
 
-        DrawTriangle(draw_list, .{
-            p0=hue_point, p1=white_point, p2=black_point,
-            c0=ColorU32(HSVToRGB(.{hsv.hue, 1, 1}), 1), c1=0xffffffff, c2=0x000000ff,
-        });
+        DrawTriangle(draw_list,
+            p0=hue_point, p1=black_point, p2=white_point,
+            c0=ColorU32(HSVToRGB(.{hsv.hue, 1, 1}), 1), c1=0x000000ff, c2=0xffffffff,
+        );
 
         cursor := lerp(hue_point, white_point, 1 - hsv.saturation);
         cursor = lerp(cursor, black_point, 1 - hsv.value);
         cursor_style := style.triangle_cursor.states[GetState(node)];
 
         DrawBox(draw_list, .{
-            position=cursor,
-            size=Vec2f.{1,1} * (cursor_style.radius * 2),
+            bounds=.{xy=cursor - Vec2f.{cursor_style.radius, cursor_style.radius}, zw=cursor + Vec2f.{cursor_style.radius, cursor_style.radius}},
             corner_radiuses=Vec4f.{1,1,1,1} * cursor_style.radius,
             background_color=ColorU32(HSVToRGB(hsv), 1),
             border_color=cursor_style.border_color,
@@ -282,38 +297,15 @@ HueWheel :: (parent : *Node, using data : *ColorPickerData, style : *HSVTriangle
         using _ := data.*;
         using _ := GetHSVWheelGeometricData(style, node.rect, hsv);
 
-        Resolution :: 100;
-        theta := PI * 2 / Resolution;
-        cost := cos(theta);
-        sint := sin(theta);
-        p := Vec2f.{1,0};
-
-        for i : 0..Resolution - 1 {
-            hue0 := i / cast(float, Resolution) * 360;
-            hue1 := hue0 + ToDegs(theta);
-            c0 := ColorU32(HSVToRGB(.{hue0, 1, 1}), 1);
-            c1 := ColorU32(HSVToRGB(.{hue1, 1, 1}), 1);
-
-            p0 := center + inner_radius * p;
-            p1 := center + outer_radius * p;
-
-            p = .{
-                p.x * cost - p.y * sint,
-                p.x * sint + p.y * cost,
-            };
-
-            p2 := center + outer_radius * p;
-            p3 := center + inner_radius * p;
-
-            DrawTriangle(draw_list, .{
-                p0=p0, p1=p1, p2=p2,
-                c0=c0, c1=c0, c2=c1,
-            });
-            DrawTriangle(draw_list, .{
-                p0=p0, p1=p2, p2=p3,
-                c0=c0, c1=c1, c2=c1,
-            });
+        GetColor :: (index : int, data : *void) -> RGBA8 {
+            points := cast(*[]PathPoint, data);
+            hue := 360 - index / cast(float, points.count) * 360;
+            return ColorU32(HSVToRGB(.{hue, 1, 1}), 1);
         }
+
+        PathPushArc(*draw_list.path, center, (inner_radius + outer_radius) * 0.5, 0, 2 * PI);
+        DrawPolygonLine(draw_list, draw_list.path, true, outer_radius - inner_radius, GetColor, *draw_list.path);
+        array_reset_keeping_memory(*draw_list.path);
 
         // Draw cursor ring
         angle := ToRads(hsv.hue);
@@ -321,8 +313,7 @@ HueWheel :: (parent : *Node, using data : *ColorPickerData, style : *HSVTriangle
         cursor_style := style.wheel_cursor.states[GetState(node)];
 
         DrawBox(draw_list, .{
-            position=cursor,
-            size=Vec2f.{1,1} * (cursor_style.radius * 2),
+            bounds=.{xy=cursor - Vec2f.{cursor_style.radius, cursor_style.radius}, zw=cursor + Vec2f.{cursor_style.radius, cursor_style.radius}},
             corner_radiuses=Vec4f.{1,1,1,1} * cursor_style.radius,
             background_color=ColorU32(HSVToRGB(.{hsv.hue, 1, 1}), 1),
             border_color=cursor_style.border_color,
@@ -374,22 +365,15 @@ ColoredSlider :: (parent : *Node, value : *float, min : float, max : float, step
             then Axis.Y else Axis.X;
         cross := GetCrossAxis(axis);
 
-        a := ifx axis == .X then node.rect.xy else Vec2f.{node.rect.x, node.rect.w};
-        b := ifx axis == .X then Vec2f.{node.rect.z, node.rect.y} else node.rect.xy;
+        a := ifx axis == .X then Vec2f.{node.rect.z, node.rect.y} else node.rect.xy;
+        b := ifx axis == .X then node.rect.xy else Vec2f.{node.rect.x, node.rect.w};
 
         c := ifx axis == .X then Vec2f.{node.size.x,0} else Vec2f.{0,-node.size.y};
-        c = a + Rotate(c, PI / 3);
+        c = b + Rotate(c, PI / 3);
 
-        DrawShape(draw_list, .{
-            shape=Triangle(a, b, c),
-            background_color=node.background_color,
-            border_color=node.border_color,
-            border_size=node.border_size,
-            border_inset=node.border_inset,
-            outer_shadow_color=node.outer_shadow_color,
-            outer_shadow_offset=node.outer_shadow_offset,
-            outer_shadow_blur=node.outer_shadow_blur,
-        });
+        // @Todo: triangle border
+        DrawTriangle(draw_list, a + node.outer_shadow_offset, b + node.outer_shadow_offset, c + node.outer_shadow_offset, node.outer_shadow_color, blur_size=node.outer_shadow_blur + 1);
+        DrawTriangle(draw_list, a, b, c, node.background_color);
 
         a = ifx axis == .X then Vec2f.{node.rect.x, node.rect.w} else node.rect.zw;
         b = ifx axis == .X then node.rect.zw else Vec2f.{node.rect.z, node.rect.y};
@@ -397,16 +381,8 @@ ColoredSlider :: (parent : *Node, value : *float, min : float, max : float, step
         c = ifx axis == .X then Vec2f.{node.size.x,0} else Vec2f.{0,-node.size.y};
         c = a + Rotate(c, -PI / 3);
 
-        DrawShape(draw_list, .{
-            shape=Triangle(a, b, c),
-            background_color=node.background_color,
-            border_color=node.border_color,
-            border_size=node.border_size,
-            border_inset=node.border_inset,
-            outer_shadow_color=node.outer_shadow_color,
-            outer_shadow_offset=node.outer_shadow_offset,
-            outer_shadow_blur=node.outer_shadow_blur,
-        });
+        DrawTriangle(draw_list, a + node.outer_shadow_offset, b + node.outer_shadow_offset, c + node.outer_shadow_offset, node.outer_shadow_color, blur_size=node.outer_shadow_blur + 1);
+        DrawTriangle(draw_list, a, b, c, node.background_color);
     }
 
     DrawBackground :: (draw_list : *DrawList, node : *Node) {
@@ -454,35 +430,35 @@ ColoredSlider :: (parent : *Node, value : *float, min : float, max : float, step
                 p2[axis] = t1;
                 p2[cross] = node.rect.xy[cross];
 
-                DrawTriangle(draw_list, .{p0=p0, p1=p1, p2=p2, c0=c0, c1=c0, c2=c1});
+                DrawTriangle(draw_list, p0=p0, p1=p1, p2=p2, c0=c0, c1=c0, c2=c1, blur_sides=0);
 
                 p1 = p2;
 
                 p2[axis] = t1;
                 p2[cross] = node.rect.zw[cross];
 
-                DrawTriangle(draw_list, .{p0=p0, p1=p1, p2=p2, c0=c0, c1=c1, c2=c1});
+                DrawTriangle(draw_list, p0=p0, p1=p1, p2=p2, c0=c0, c1=c1, c2=c1, blur_sides=0);
             }
         } else {
-            // We do not use gradients because gradients use smoothstep instead of linear interpolation
-
             c0 := start_color;
             c1 := ifx axis == .X then start_color else end_color;
             c2 := end_color;
 
-            DrawTriangle(draw_list, .{
+            DrawTriangle(draw_list,
                 p0=.{node.rect.x, node.rect.w}, p1=.{node.rect.x, node.rect.y}, p2=.{node.rect.z, node.rect.y},
                 c0=c0, c1=c1, c2=c2,
-            });
+                blur_sides=0
+            );
 
             c0 = start_color;
             c1 = end_color;
             c2 = ifx axis == .X then end_color else start_color;
 
-            DrawTriangle(draw_list, .{
+            DrawTriangle(draw_list,
                 p0=.{node.rect.x, node.rect.w}, p1=.{node.rect.z, node.rect.y}, p2=.{node.rect.z, node.rect.w},
                 c0=c0, c1=c1, c2=c2,
-            });
+                blur_sides=0
+            );
         }
 
         PopClipBox(draw_list);
@@ -509,10 +485,8 @@ ColorPreviewStyle :: struct {
 ColorPreview :: (parent : *Node, color : RGBA8, style : *ColorPreviewStyle, location := #caller_location) -> *Node {
     Draw :: (draw_list : *DrawList, node : *Node) {
         DrawBox(draw_list, .{
-            size=node.size,
-            position=(node.rect.xy + node.rect.zw) * 0.5,
+            bounds=node.rect,
             corner_radiuses=node.corner_radiuses,
-            background_color=0xffffffff,
             outer_shadow_color=node.outer_shadow_color,
             outer_shadow_offset=node.outer_shadow_offset,
             outer_shadow_blur=node.outer_shadow_blur,
@@ -525,23 +499,22 @@ ColorPreview :: (parent : *Node, color : RGBA8, style : *ColorPreviewStyle, loca
             PopClipBox(draw_list);
         }
 
+        left := Vec4f.{xy=node.rect.xy, z=floor(node.rect.x + node.size.x * 0.5), w=node.rect.w};
         DrawBox(draw_list, .{
-            size=.{node.size.x * 0.5, node.size.y},
-            position=(node.rect.xy + node.rect.zw) * 0.5 - .{node.size.x * 0.25, 0},
+            bounds=left,
             corner_radiuses=.{node.corner_radiuses.x,0,node.corner_radiuses.z,0},
             background_color=SetAlpha(node.background_color, 1),
         });
 
+        right := Vec4f.{x=left.z, y=left.y, zw=node.rect.zw};
         DrawBox(draw_list, .{
-            size=.{node.size.x * 0.5 + 1, node.size.y},
-            position=(node.rect.xy + node.rect.zw) * 0.5 + .{node.size.x * 0.25 - 1, 0},
+            bounds=right,
             corner_radiuses=.{0,node.corner_radiuses.y,0,node.corner_radiuses.w},
             background_color=node.background_color,
         });
 
         DrawBox(draw_list, .{
-            size=node.size,
-            position=(node.rect.xy + node.rect.zw) * 0.5,
+            bounds=node.rect,
             corner_radiuses=node.corner_radiuses,
             border_color=node.border_color,
             border_size=node.border_size,
@@ -580,41 +553,6 @@ ColorPreview :: (parent : *Node, color : RGBA8, style : *ColorPreviewStyle, loca
 }
 
 PickColorButton :: (parent : *Node, color : *Vec4f, previous_color : Vec4f, data : *ColorPickerData, location := #caller_location) -> *Node {
-    DrawPickColorIcon :: (draw_list : *DrawList, position : Vec2f, size : float, color : RGBA8) {
-        width := size * 0.17;
-        height := size - width;
-
-        shaft := Union(
-            Box(width, height, width * 0.5),
-            Move(Circle(width * 0.2), 0, height * 0.5 + width * 0.2),
-            size * 0.01
-        );
-
-        outline_thickness := size * 0.03;
-
-        handle_size := height * 0.35;
-        handle := Union(
-            Move(Box(width + 2 * outline_thickness, handle_size, width * 0.5, width * 0.5, 0, 0), 0, -height * 0.5 + handle_size * 0.5),
-            Move(Box((width + 2 * outline_thickness) * 1.4, width * 0.5, size * 0.03), 0, -height * 0.5 + handle_size)
-        );
-
-        shaft = Rotate(shaft, PI * 0.25);
-        handle = Rotate(handle, PI * 0.25);
-
-        shaft_outline := Onion(shaft, outline_thickness * 0.5);
-        ink := Inter(shaft, Move(Box(size, size * 0.5), 0, size * 0.4));
-        shape := Union(Union(shaft_outline, ink), handle);
-
-        DrawShape(draw_list, shape, position, color);
-    }
-
-    DrawPickColorIcon :: (draw_list : *DrawList, node : *Node) {
-        size := min(node.size.x, node.size.y);
-        size = sqrt(2 * size * size);
-
-        DrawPickColorIcon(draw_list, (node.rect.xy + node.rect.zw) * 0.5, size, node.text_color);
-    }
-
     clicked, pick_button := Toggle(parent, SizePx(32), SizePx(32), *data.picking_color, location=location);
     pick_button.flags |= .NoPaddedClip;
     pick_button.padding = .{7,7,7,7};
@@ -647,12 +585,16 @@ PickColorButton :: (parent : *Node, color : *Vec4f, previous_color : Vec4f, data
 
     btn_style := GetStyle("button", ButtonStyle);
 
+    if !g_pick_icon_image {
+        LoadPickIconImage();
+    }
+
     pick_icon := GetNode(pick_button);
-    SetSize(pick_icon, SizeFill(), SizeFill());
-    SetDraw(pick_icon, DrawPickColorIcon);
+    SetSize(pick_icon, SizePx(20), SizePx(20));
+    SetImage(pick_icon, g_pick_icon_image);
 
     state := GetState(pick_button);
-    SetTextColor(pick_icon, btn_style.states[state].text.text_color);
+    SetBackgroundColor(pick_icon, 0xffffffff);
 
     return pick_button;
 }

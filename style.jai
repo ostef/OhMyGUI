@@ -48,20 +48,13 @@ BoxStyle :: struct {
 
     corner_radiuses : Vec4f;
     background_color : RGBA8;
-    background_color2 : RGBA8;
-    background_gradient_offset : float;
-    background_gradient_vector : Vec2f;
     border_color : RGBA8;
-    border_color2 : RGBA8;
-    border_gradient_offset : float;
-    border_gradient_vector : Vec2f;
     border_size : float;
     border_inset : float;
     outer_shadow_blur : float;
     outer_shadow_offset : Vec2f;
     outer_shadow_color : RGBA8;
     inner_shadow_blur : float;
-    inner_shadow_offset : Vec2f;
     inner_shadow_color : RGBA8;
 }
 
@@ -77,20 +70,13 @@ Apply :: inline (node : *Node, style : BoxStyle) {
     node.child_gap = style.child_gap;
     node.corner_radiuses = style.corner_radiuses;
     node.background_color = style.background_color;
-    node.background_color2 = style.background_color2;
-    node.background_gradient_offset = style.background_gradient_offset;
-    node.background_gradient_vector = style.background_gradient_vector;
     node.border_color = style.border_color;
-    node.border_color2 = style.border_color2;
-    node.border_gradient_offset = style.border_gradient_offset;
-    node.border_gradient_vector = style.border_gradient_vector;
     node.border_size = style.border_size;
     node.border_inset = style.border_inset;
     node.outer_shadow_blur = style.outer_shadow_blur;
     node.outer_shadow_offset = style.outer_shadow_offset;
     node.outer_shadow_color = style.outer_shadow_color;
     node.inner_shadow_blur = style.inner_shadow_blur;
-    node.inner_shadow_offset = style.inner_shadow_offset;
     node.inner_shadow_color = style.inner_shadow_color;
 }
 
@@ -98,15 +84,11 @@ TextStyle :: struct {
     font : *Font;
     text_size : float;
     text_color : RGBA8;
-    text_color2 : RGBA8;
-    text_gradient_offset : float;
-    text_gradient_vector : Vec2f;
     text_effects : TextEffects;
     outer_shadow_blur : float;
     outer_shadow_offset : Vec2f;
     outer_shadow_color : RGBA8;
     inner_shadow_blur : float;
-    inner_shadow_offset : Vec2f;
     inner_shadow_color : RGBA8;
 }
 
@@ -114,15 +96,11 @@ Apply :: inline (node : *Node, style : TextStyle) {
     node.font = style.font;
     node.text_size = style.text_size;
     node.text_color = style.text_color;
-    node.text_color2 = style.text_color2;
-    node.text_gradient_offset = style.text_gradient_offset;
-    node.text_gradient_vector = style.text_gradient_vector;
     node.text_effects = style.text_effects;
     node.outer_shadow_blur = style.outer_shadow_blur;
     node.outer_shadow_offset = style.outer_shadow_offset;
     node.outer_shadow_color = style.outer_shadow_color;
     node.inner_shadow_blur = style.inner_shadow_blur;
-    node.inner_shadow_offset = style.inner_shadow_offset;
     node.inner_shadow_color = style.inner_shadow_color;
 }
 
@@ -165,6 +143,8 @@ g_system_cursors : [SystemCursor.Count]PlatformCursorHandle;
 
 #scope_export
 
+Eyedropper_Contents :: #run ReadCompileTimeFile("eyedropper-cursor.png");
+
 InitSystemCursors :: () {
     g_system_cursors[SystemCursor.Arrow] = PlatformCreateSystemCursor(.Arrow);
     g_system_cursors[SystemCursor.IBeam] = PlatformCreateSystemCursor(.IBeam);
@@ -179,7 +159,6 @@ InitSystemCursors :: () {
     g_system_cursors[SystemCursor.Forbidden] = PlatformCreateSystemCursor(.Forbidden);
     g_system_cursors[SystemCursor.Hand] = PlatformCreateSystemCursor(.Hand);
 
-    Eyedropper_Contents :: #run ReadCompileTimeFile("eyedropper-cursor.png");
     g_system_cursors[SystemCursor.EyeDropper] = CreateCursorFromFileContents(Eyedropper_Contents, 0, 1);
 
     SetCursor(g_system_cursors[SystemCursor.Arrow]);
@@ -538,7 +517,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         normal.background.border_size = 1;
         normal.background.border_color = MakeTone(button_base_background_color, 0.3);
         normal.background.inner_shadow_blur = 5;
-        normal.background.inner_shadow_color = SetAlpha(Darken(button_base_background_color, 0.2), 0.7);
+        normal.background.inner_shadow_color = SetAlpha(Darken(button_base_background_color, 0.2), 0.4);
         normal.fill.corner_radiuses = .{3,3,3,3};
         normal.handle.corner_radiuses = .{3,3,3,3};
         normal.text = theme.text;
@@ -562,7 +541,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         normal.background.border_size = 1;
         normal.background.border_color = MakeTone(button_base_background_color, 0.3);
         normal.background.inner_shadow_blur = 5;
-        normal.background.inner_shadow_color = SetAlpha(Darken(button_base_background_color, 0.2), 0.7);
+        normal.background.inner_shadow_color = SetAlpha(Darken(button_base_background_color, 0.2), 0.4);
         normal.fill.corner_radiuses = .{3,3,3,3};
         normal.handle.corner_radiuses = .{3,3,3,3};
         normal.text = theme.text;
@@ -626,7 +605,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         normal.background.border_size = 1;
         normal.background.border_color = MakeTone(button_base_background_color, 0.3);
         normal.background.inner_shadow_blur = 5;
-        normal.background.inner_shadow_color = SetAlpha(Darken(button_base_background_color, 0.2), 0.7);
+        normal.background.inner_shadow_color = SetAlpha(Darken(button_base_background_color, 0.2), 0.4);
         normal.text.font = theme.text.font;
         normal.text.text_size = theme.text.text_size;
 
@@ -754,7 +733,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         border_color = MakeTone(base_background_color, 0.3);
         border_size = 1;
 
-        outer_shadow_color = ColorU32(0,0,0,0.5);
+        outer_shadow_color = ColorU32(0,0,0,0.25);
         outer_shadow_offset = .{3,3};
         outer_shadow_blur = 5;
     }
@@ -779,7 +758,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         background.border_color = MakeTone(base_background_color, 0.3);
         background.border_size = 1;
 
-        background.outer_shadow_color = ColorU32(0,0,0,0.5);
+        background.outer_shadow_color = ColorU32(0,0,0,0.25);
         background.outer_shadow_offset = .{6,6};
         background.outer_shadow_blur = 5;
 
@@ -813,11 +792,11 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
 
         wheel.border_color = MakeTone(0xffffffff, 0.3);
         wheel.outer_shadow_offset = .{wheel.border_size * 0.5, wheel.border_size * 0.5};
-        wheel.outer_shadow_color = ColorU32(0,0,0,0.5);
+        wheel.outer_shadow_color = ColorU32(0,0,0,0.25);
         wheel.outer_shadow_blur = 5;
 
         wheel.wheel_cursor.normal.border_color = wheel.border_color;
-        wheel.wheel_cursor.normal.outer_shadow_color = ColorU32(0,0,0,0.5);
+        wheel.wheel_cursor.normal.outer_shadow_color = ColorU32(0,0,0,0.25);
         wheel.wheel_cursor.normal.outer_shadow_blur = 2;
 
         wheel.wheel_cursor.focused = wheel.wheel_cursor.normal;
@@ -829,7 +808,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
 
         wheel.triangle_cursor.normal.radius = 6;
         wheel.triangle_cursor.normal.border_color = wheel.border_color;
-        wheel.triangle_cursor.normal.outer_shadow_color = ColorU32(0,0,0,0.5);
+        wheel.triangle_cursor.normal.outer_shadow_color = ColorU32(0,0,0,0.25);
         wheel.triangle_cursor.normal.outer_shadow_blur = 2;
 
         wheel.triangle_cursor.focused = wheel.triangle_cursor.normal;
@@ -864,7 +843,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         slider_base.normal.handle.background_color = wheel.border_color;
         // slider_base.normal.handle.border_color = MakeTone(button_base_background_color, 0.3);
         // slider_base.normal.handle.border_size = 1;
-        slider_base.normal.handle.outer_shadow_color = ColorU32(0,0,0,0.5);
+        slider_base.normal.handle.outer_shadow_color = ColorU32(0,0,0,0.25);
         slider_base.normal.handle.outer_shadow_blur = 2;
 
         slider_base.focused = slider_base.normal;
@@ -919,7 +898,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         preview.corner_radiuses = .{5,5,5,5};
         preview.border_size = 1;
         preview.border_color = wheel.border_color;
-        preview.outer_shadow_color = ColorU32(0,0,0,0.5);
+        preview.outer_shadow_color = ColorU32(0,0,0,0.25);
         preview.outer_shadow_blur = 2;
         preview.opacity_checkerboard_white = opacity_checkerboard_white;
         preview.opacity_checkerboard_black = opacity_checkerboard_black;
@@ -970,7 +949,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         background.border_color = MakeTone(base_background_color, 0.3);
         background.border_size = 1;
 
-        background.outer_shadow_color = ColorU32(0,0,0,0.5);
+        background.outer_shadow_color = ColorU32(0,0,0,0.25);
         background.outer_shadow_offset = .{3,3};
         background.outer_shadow_blur = 5;
 
@@ -1090,7 +1069,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         split_hint.background_color = SetAlpha(base_accent_color, 0.5);
         split_hint.corner_radiuses = .{6,6,6,6};
         split_hint.outer_shadow_blur = 4;
-        split_hint.outer_shadow_color = ColorU32(0,0,0,0.2);
+        split_hint.outer_shadow_color = ColorU32(0,0,0,0.15);
     }
     SetStyle(theme, "dock_space", theme.dock_space);
 }

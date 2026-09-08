@@ -20,12 +20,14 @@ OMG_GL :: #import "OhMyGUI/GL";
 
 g_quit := false;
 g_window : *SDL_Window;
-g_frame_in_flight : int;
-g_frame_syncs : [2]GLsync;
 g_time : float;
 g_delta_time : float;
+g_gpu_time : float;
 g_user_time : float;
 g_slow_down : bool;
+
+g_current_timestamp_query : int;
+g_timestamp_queries : [2][2]GLuint;
 
 main :: () {
     #if Enable_Memory_Debugger {
@@ -55,10 +57,21 @@ main :: () {
     OMG.Init(OMG_SDL.GetPlatformFuncs(), OMG_GL.GetRendererFuncs());
     defer OMG.Terminate();
 
-    if !OMG_GL.Init() {
-        exit(1);
-    }
+    OMG_GL.Init();
     defer OMG_GL.Terminate();
+
+    glGenQueries(xx (g_timestamp_queries.count * 2), xx g_timestamp_queries.data);
+    defer glDeleteQueries(xx (g_timestamp_queries.count * 2), xx g_timestamp_queries.data);
+
+    // Make first query result not cause an error
+    for queries, query_backbuffer_index : g_timestamp_queries {
+        for queries {
+            glQueryCounter(it, GL_TIMESTAMP);
+
+            name := tprint("Query 'Frame Time %, Backbuffer %'", ifx it_index == 0 then "Start" else "End", query_backbuffer_index);
+            glObjectLabel(GL_QUERY, it, xx name.count, name.data);
+        }
+    }
 
     program_start := current_time_monotonic();
     g_delta_time = 1 / 60.0;
@@ -106,15 +119,6 @@ main :: () {
         }
         OMG.Render();
 
-        if g_frame_syncs[g_frame_in_flight] {
-            Second :: 1000 * 1000 * 1000;
-            wait := glClientWaitSync(g_frame_syncs[g_frame_in_flight], GL_SYNC_FLUSH_COMMANDS_BIT, 2 * Second);
-            assert(wait != GL_TIMEOUT_EXPIRED, "GPU timeout");
-            assert(wait != GL_WAIT_FAILED, "glClientWaitSync failed");
-
-            glDeleteSync(g_frame_syncs[g_frame_in_flight]);
-        }
-
         w, h : s32;
         SDL_GetWindowSize(g_window, *w, *h);
 
@@ -122,11 +126,24 @@ main :: () {
         glClearColor(0,0,0,1);
         glClear(GL_COLOR_BUFFER_BIT);
 
+        last_query_index := g_current_timestamp_query - (g_timestamp_queries.count - 1);
+        if last_query_index < 0 {
+            last_query_index += g_timestamp_queries.count;
+        }
+
+        start_time, end_time : s64;
+        glGetQueryObjecti64v(g_timestamp_queries[last_query_index][0], GL_QUERY_RESULT, *start_time);
+        glGetQueryObjecti64v(g_timestamp_queries[last_query_index][1], GL_QUERY_RESULT, *end_time);
+        elapsed := end_time - start_time;
+        g_gpu_time = cast(float, elapsed / 1_000_000_000.0);
+
+        glQueryCounter(g_timestamp_queries[g_current_timestamp_query][0], GL_TIMESTAMP);
+
         OMG_GL.Render(xx w, xx h);
 
-        g_frame_syncs[g_frame_in_flight] = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+        glQueryCounter(g_timestamp_queries[g_current_timestamp_query][1], GL_TIMESTAMP);
 
-        g_frame_in_flight = (g_frame_in_flight + 1) % 2;
+        g_current_timestamp_query = (g_current_timestamp_query + 1) % g_timestamp_queries.count;
 
         SDL_GL_SwapWindow(g_window);
 

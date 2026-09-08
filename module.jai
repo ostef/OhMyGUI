@@ -10,7 +10,6 @@ using,only(.["for_expansion"]) HT;
 #load "color.jai";
 #load "unicode.jai";
 #load "input.jai";
-#load "sdf.jai";
 #load "draw.jai";
 #load "text.jai";
 #load "node.jai";
@@ -28,6 +27,7 @@ Context :: struct {
 
     platform_funcs : PlatformFunctions;
     renderer_funcs : RendererFunctions;
+    default_draw_node : type_of(Node.draw) = DrawNodeDefault;
 
     debug_mode := false;
 
@@ -655,8 +655,7 @@ Render :: () {
         if omg.mouse_hovered_node {
             node := omg.mouse_hovered_node;
             DrawBox(*node.window.draw_list, .{
-                size=node.size,
-                position=(node.rect.xy + node.rect.zw) * 0.5,
+                bounds=node.rect,
                 border_color=ColorU32(1, 0, 0, 1),
                 border_size=2,
                 border_inset=-4
@@ -666,8 +665,7 @@ Render :: () {
         if omg.mouse_focused_node {
             node := omg.mouse_focused_node;
             DrawBox(*node.window.draw_list, .{
-                size=node.size,
-                position=(node.rect.xy + node.rect.zw) * 0.5,
+                bounds=node.rect,
                 border_color=ColorU32(0, 1, 0, 1),
                 border_size=2,
                 border_inset=-2
@@ -681,12 +679,18 @@ Render :: () {
     omg.total_time_last_frame += xx to_float64_seconds(total_end - total_start);
 } @Profile
 
-LoadImage :: (filename : string) -> TextureHandle, width : u32, height : u32 {
+LoadImageFromFile :: (filename : string) -> TextureHandle, width : u32, height : u32 {
     contents, ok := read_entire_file(filename);
     if !ok {
         return 0, 0, 0;
     }
 
+    handle, width, height := LoadImageFromFileContents(filename, contents);
+
+    return handle, width, height;
+} @Profile
+
+LoadImageFromFileContents :: (filename : string, contents : string) -> TextureHandle, width : u32, height : u32 {
     w, h : s32;
     stbi_set_flip_vertically_on_load(0);
     data := stbi_load_from_memory(contents.data, xx contents.count, *w, *h, null, 4);

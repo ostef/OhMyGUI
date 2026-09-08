@@ -244,7 +244,7 @@ ArrowDirection :: enum {
 }
 
 DrawArrow :: (draw_list : *DrawList, node : *Node, rotation : float) {
-    if (node.background_color & 0xff) == 0 {
+    if (node.background_color & 0xff) == 0 && (node.outer_shadow_color & 0xff) == 0 {
         return;
     }
 
@@ -252,30 +252,15 @@ DrawArrow :: (draw_list : *DrawList, node : *Node, rotation : float) {
     half_w := node.size.x * 0.5;
     half_h := node.size.y * 0.5;
 
-    p0 := Rotate(Vec2f.{-half_w, -half_h}, rotation);
-    p1 := Rotate(Vec2f.{half_w, -half_h}, rotation);
+    p0 := Rotate(Vec2f.{half_w, -half_h}, rotation);
+    p1 := Rotate(Vec2f.{-half_w, -half_h}, rotation);
     p2 := Rotate(Vec2f.{0, half_h}, rotation);
+    p0 += center;
+    p1 += center;
+    p2 += center;
 
-    DrawShape(draw_list, .{
-        shape=Triangle(p0, p1, p2),
-        position=center,
-        background_color=node.background_color,
-        background_color2=node.background_color2,
-        background_gradient_vector=node.background_gradient_vector,
-        background_gradient_offset=node.background_gradient_offset,
-        border_color=node.border_color,
-        border_color2=node.border_color2,
-        border_gradient_vector=node.border_gradient_vector,
-        border_gradient_offset=node.border_gradient_offset,
-        border_size=node.border_size,
-        border_inset=node.border_inset,
-        outer_shadow_color=node.outer_shadow_color,
-        outer_shadow_offset=node.outer_shadow_offset,
-        outer_shadow_blur=node.outer_shadow_blur,
-        inner_shadow_color=node.inner_shadow_color,
-        inner_shadow_offset=node.inner_shadow_offset,
-        inner_shadow_blur=node.inner_shadow_blur,
-    });
+    DrawTriangle(draw_list, p0 + node.outer_shadow_offset, p1 + node.outer_shadow_offset, p2 + node.outer_shadow_offset, node.outer_shadow_color, node.outer_shadow_blur + 1);
+    DrawTriangle(draw_list, p0, p1, p2, node.background_color);
 }
 
 Arrow :: (parent : *Node, width : Size1D, height : Size1D, direction : ArrowDirection, style : BoxStyle, location := #caller_location) -> *Node {
