@@ -594,7 +594,7 @@ PickColorButton :: (parent : *Node, color : *Vec4f, previous_color : Vec4f, data
     SetImage(pick_icon, g_pick_icon_image);
 
     state := GetState(pick_button);
-    SetBackgroundColor(pick_icon, btn_style.states[state].text.text_color);
+    SetBackgroundColor(pick_icon, 0xffffffff);
 
     return pick_button;
 }
