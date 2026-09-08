@@ -334,7 +334,7 @@ Render :: (viewport_w : u32, viewport_h : u32) {
     }
 }
 
-SendDrawCommands :: (draw_list : *VtxDrawList, viewport_w : u32, viewport_h : u32) {
+SendDrawCommands :: (draw_list : *DrawList, viewport_w : u32, viewport_h : u32) {
     current_texture : GLuint = 0;
 
     glUseProgram(g_shader.handle);

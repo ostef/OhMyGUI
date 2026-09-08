@@ -105,7 +105,7 @@ Node :: struct {
     last_used_on_frame : u64;
     z_index : s32 = -1; // Used when the parent wants to sort children such as popups
 
-    draw : (*VtxDrawList, *Node); // Initialized to the context's default drawing function
+    draw : (*DrawList, *Node); // Initialized to the context's default drawing function
     hit_test : (*Node, point : Vec2f) -> bool = DefaultHitTest;
     user_data : *NodeUserData;
 

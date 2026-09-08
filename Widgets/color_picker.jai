@@ -98,7 +98,7 @@ GetHSVWheelGeometricData :: (style : *HSVTriangleWheelStyle, rect : Vec4f, hsv :
 }
 
 HSVTriangleWheel :: (parent : *Node, using data : *ColorPickerData, style : *HSVTriangleWheelStyle, location := #caller_location) -> bool, *Node {
-    Draw :: (draw_list : *VtxDrawList, node : *Node) {
+    Draw :: (draw_list : *DrawList, node : *Node) {
         data := GetUserData(node, *ColorPickerData);
         if !data {
             return;
@@ -184,7 +184,7 @@ SaturationValueTriangle :: (parent : *Node, using data : *ColorPickerData, style
             || IsInsideCircle(point, cursor, cursor_style.radius);
     }
 
-    Draw :: (draw_list : *VtxDrawList, node : *Node) {
+    Draw :: (draw_list : *DrawList, node : *Node) {
         if !node.parent {
             return;
         }
@@ -279,7 +279,7 @@ HueWheel :: (parent : *Node, using data : *ColorPickerData, style : *HSVTriangle
             || IsInsideCircle(point, cursor, cursor_style.radius);
     }
 
-    Draw :: (draw_list : *VtxDrawList, node : *Node) {
+    Draw :: (draw_list : *DrawList, node : *Node) {
         if !node.parent {
             return;
         }
@@ -356,7 +356,7 @@ ColoredSliderData :: struct {
 }
 
 ColoredSlider :: (parent : *Node, value : *float, min : float, max : float, step : float, style : *SliderStyle, dynamic_color : bool, location := #caller_location) -> bool, slider : *Node, background : *Node, handle : *Node {
-    DrawTriangularCursor :: (draw_list : *VtxDrawList, node : *Node) {
+    DrawTriangularCursor :: (draw_list : *DrawList, node : *Node) {
         if !node.parent {
             return;
         }
@@ -385,7 +385,7 @@ ColoredSlider :: (parent : *Node, value : *float, min : float, max : float, step
         DrawTriangle(draw_list, a, b, c, node.background_color);
     }
 
-    DrawBackground :: (draw_list : *VtxDrawList, node : *Node) {
+    DrawBackground :: (draw_list : *DrawList, node : *Node) {
         if !node.parent {
             return;
         }
@@ -483,7 +483,7 @@ ColorPreviewStyle :: struct {
 }
 
 ColorPreview :: (parent : *Node, color : RGBA8, style : *ColorPreviewStyle, location := #caller_location) -> *Node {
-    Draw :: (draw_list : *VtxDrawList, node : *Node) {
+    Draw :: (draw_list : *DrawList, node : *Node) {
         DrawBox(draw_list, .{
             bounds=node.rect,
             corner_radiuses=node.corner_radiuses,

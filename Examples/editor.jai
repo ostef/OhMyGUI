@@ -263,7 +263,7 @@ EditorFrame :: () {
             minimize_icon := OMG.GetNode(minimize_node);
             OMG.SetSize(minimize_icon, OMG.SizeFill(), OMG.SizeFill());
             OMG.SetBackgroundColor(minimize_icon, OMG.ChooseTextColor(base_background_color));
-            OMG.SetDraw(minimize_icon, (draw_list : *OMG.VtxDrawList, node : *OMG.Node) {
+            OMG.SetDraw(minimize_icon, (draw_list : *OMG.DrawList, node : *OMG.Node) {
                 center := (node.rect.xy + node.rect.zw) * 0.5;
                 center.x = ceil(center.x);
                 center.y = ceil(center.y);
@@ -277,7 +277,7 @@ EditorFrame :: () {
             maximize_icon := OMG.GetNode(maximize_node);
             OMG.SetSize(maximize_icon, OMG.SizeFill(), OMG.SizeFill());
             OMG.SetBackgroundColor(maximize_icon, OMG.ChooseTextColor(base_background_color));
-            OMG.SetDraw(maximize_icon, (draw_list : *OMG.VtxDrawList, node : *OMG.Node) {
+            OMG.SetDraw(maximize_icon, (draw_list : *OMG.DrawList, node : *OMG.Node) {
                 size := OMG.Vec2f.{1,1} * sqrt(0.5 * node.size.x * node.size.x);
                 center := (node.rect.xy + node.rect.zw) * 0.5;
                 rect := OMG.Vec4f.{xy=center - size * 0.5, zw=center + size * 0.5};
@@ -298,7 +298,7 @@ EditorFrame :: () {
             close_icon := OMG.GetNode(close_node);
             OMG.SetSize(close_icon, OMG.SizeFill(), OMG.SizeFill());
             OMG.SetBackgroundColor(close_icon, OMG.ChooseTextColor(base_background_color));
-            OMG.SetDraw(close_icon, (draw_list : *OMG.VtxDrawList, node : *OMG.Node) {
+            OMG.SetDraw(close_icon, (draw_list : *OMG.DrawList, node : *OMG.Node) {
                 center := (node.rect.xy + node.rect.zw) * 0.5;
                 dir := normalize(node.rect.zw - node.rect.xy);
                 length := node.size.x;

@@ -553,7 +553,7 @@ SetColors :: (using style : *TextInputStyle, base_background_color : RGBA8, acce
     active.background.border_color = accent_color;
 }
 
-DrawTextInputText :: (draw_list : *VtxDrawList, node : *Node) {
+DrawTextInputText :: (draw_list : *DrawList, node : *Node) {
     if !node.font || (node.text_color & 0xff) == 0 {
         return;
     }

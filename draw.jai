@@ -5,7 +5,7 @@ ClipBox :: struct {
     corner_radiuses : Vec4f;
 }
 
-VtxDrawCall :: struct {
+DrawCall :: struct {
     Texture :: struct {
         handle : TextureHandle;
         has_white_px : bool;
@@ -25,8 +25,8 @@ Vertex :: struct {
     clip_box_index : s32;
 }
 
-VtxDrawList :: struct {
-    draw_calls : [..]VtxDrawCall;
+DrawList :: struct {
+    draw_calls : [..]DrawCall;
     clip_boxes : [..]ClipBox;
     clip_box_stack : [..]s32;
     vertices : [..]Vertex;
@@ -38,7 +38,7 @@ VtxDrawList :: struct {
     gpu_buffer_indices_offset : u32;
 }
 
-InitDrawList :: (draw_list : *VtxDrawList) {
+InitDrawList :: (draw_list : *DrawList) {
     draw_list.draw_calls.allocator = context.allocator;
     draw_list.clip_boxes.allocator = context.allocator;
     draw_list.clip_box_stack.allocator = context.allocator;
@@ -47,7 +47,7 @@ InitDrawList :: (draw_list : *VtxDrawList) {
     draw_list.path.allocator = context.allocator;
 }
 
-DestroyDrawList :: (draw_list : *VtxDrawList) {
+DestroyDrawList :: (draw_list : *DrawList) {
     array_reset(*draw_list.draw_calls);
     array_reset(*draw_list.clip_boxes);
     array_reset(*draw_list.clip_box_stack);
@@ -57,7 +57,7 @@ DestroyDrawList :: (draw_list : *VtxDrawList) {
     draw_list.* = .{};
 }
 
-ClearDrawList :: (draw_list : *VtxDrawList) {
+ClearDrawList :: (draw_list : *DrawList) {
     array_reset_keeping_memory(*draw_list.draw_calls);
     array_reset_keeping_memory(*draw_list.clip_boxes);
     array_reset_keeping_memory(*draw_list.clip_box_stack);
@@ -70,14 +70,14 @@ ClearDrawList :: (draw_list : *VtxDrawList) {
     draw_list.gpu_buffer_indices_offset = 0;
 }
 
-GetCurrentDrawCall :: (draw_list : *VtxDrawList) -> *VtxDrawCall {
+GetCurrentDrawCall :: (draw_list : *DrawList) -> *DrawCall {
     if draw_list.draw_calls.count <= 0 {
         return null;
     }
     return *draw_list.draw_calls[draw_list.draw_calls.count - 1];
 }
 
-GetCurrentClipBoxIndex :: (draw_list : *VtxDrawList) -> s32 {
+GetCurrentClipBoxIndex :: (draw_list : *DrawList) -> s32 {
     if draw_list.clip_box_stack.count <= 0 {
         return -1;
     }
@@ -127,7 +127,7 @@ ClipBoxAgainstBox :: (a : ClipBox, b : ClipBox) -> ClipBox {
     return .{bounds=clipped_bounds, corner_radiuses=new_corner_radiuses};
 } @Profile
 
-ReserveVertices :: (draw_list : *VtxDrawList, count : int) {
+ReserveVertices :: (draw_list : *DrawList, count : int) {
     if draw_list.vertices.count + count <= draw_list.vertices.allocated {
         return;
     }
@@ -135,17 +135,17 @@ ReserveVertices :: (draw_list : *VtxDrawList, count : int) {
     array_reserve(*draw_list.vertices, draw_list.vertices.count + count);
 }
 
-PushVertex :: inline (draw_list : *VtxDrawList) -> *Vertex {
+PushVertex :: inline (draw_list : *DrawList) -> *Vertex {
     vertex := array_add(*draw_list.vertices);
     vertex.clip_box_index = GetCurrentClipBoxIndex(draw_list);
     return vertex;
 }
 
-GetCurrentIndex :: inline (draw_list : *VtxDrawList) -> u32 {
+GetCurrentIndex :: inline (draw_list : *DrawList) -> u32 {
     return xx draw_list.vertices.count;
 }
 
-PushIndex :: inline (draw_list : *VtxDrawList, value : u32) {
+PushIndex :: inline (draw_list : *DrawList, value : u32) {
     draw_call := GetCurrentDrawCall(draw_list);
     if !draw_call {
         draw_call = array_add(*draw_list.draw_calls);
@@ -156,7 +156,7 @@ PushIndex :: inline (draw_list : *VtxDrawList, value : u32) {
     array_add(*draw_list.indices, value);
 }
 
-PushIndices :: (draw_list : *VtxDrawList, count : u32) -> []u32 {
+PushIndices :: (draw_list : *DrawList, count : u32) -> []u32 {
     draw_call := GetCurrentDrawCall(draw_list);
     if !draw_call {
         draw_call = array_add(*draw_list.draw_calls);
@@ -174,7 +174,7 @@ PushIndices :: (draw_list : *VtxDrawList, count : u32) -> []u32 {
     return .{data=data, count=count};
 }
 
-PushClipBox :: (draw_list : *VtxDrawList, bounds : Vec4f, corner_radiuses : Vec4f = .{}) {
+PushClipBox :: (draw_list : *DrawList, bounds : Vec4f, corner_radiuses : Vec4f = .{}) {
     box := array_add(*draw_list.clip_boxes);
     box.bounds = bounds;
     box.corner_radiuses = corner_radiuses;
@@ -188,11 +188,11 @@ PushClipBox :: (draw_list : *VtxDrawList, bounds : Vec4f, corner_radiuses : Vec4
     array_add(*draw_list.clip_box_stack, xx (draw_list.clip_boxes.count - 1));
 }
 
-PopClipBox :: (draw_list : *VtxDrawList) {
+PopClipBox :: (draw_list : *DrawList) {
     pop(*draw_list.clip_box_stack);
 }
 
-IsClipped :: (draw_list : *VtxDrawList, bounds : Vec4f) -> bool {
+IsClipped :: (draw_list : *DrawList, bounds : Vec4f) -> bool {
     index := GetCurrentClipBoxIndex(draw_list);
     if index < 0 {
         return false;
@@ -202,8 +202,8 @@ IsClipped :: (draw_list : *VtxDrawList, bounds : Vec4f) -> bool {
     return clipped.x > clipped.z || clipped.y > clipped.w;
 }
 
-PushDrawCall :: (draw_list : *VtxDrawList) -> *VtxDrawCall {
-    new : *VtxDrawCall;
+PushDrawCall :: (draw_list : *DrawList) -> *DrawCall {
+    new : *DrawCall;
     if draw_list.draw_calls.count > 0 {
         current := GetCurrentDrawCall(draw_list).*;
         new = array_add(*draw_list.draw_calls);
@@ -218,11 +218,11 @@ PushDrawCall :: (draw_list : *VtxDrawList) -> *VtxDrawCall {
     return new;
 }
 
-SetTexture :: (draw_list : *VtxDrawList, texture : TextureHandle, has_white_px : bool = false) -> previous : VtxDrawCall.Texture {
+SetTexture :: (draw_list : *DrawList, texture : TextureHandle, has_white_px : bool = false) -> previous : DrawCall.Texture {
     return SetTexture(draw_list, .{texture, has_white_px});
 }
 
-SetTexture :: (draw_list : *VtxDrawList, texture : VtxDrawCall.Texture) -> previous : VtxDrawCall.Texture {
+SetTexture :: (draw_list : *DrawList, texture : DrawCall.Texture) -> previous : DrawCall.Texture {
     draw_call := GetCurrentDrawCall(draw_list);
     previous := ifx draw_call then draw_call.texture;
 
@@ -244,7 +244,7 @@ SetTexture :: (draw_list : *VtxDrawList, texture : VtxDrawCall.Texture) -> previ
 }
 
 DrawRect :: (
-    draw_list : *VtxDrawList,
+    draw_list : *DrawList,
     bounds : Vec4f,
     color : RGBA8,
     corner_radiuses : Vec4f = .{0,0,0,0},
@@ -290,7 +290,7 @@ DrawRect :: (
 } @Profile
 
 DrawRectOutline :: inline (
-    draw_list : *VtxDrawList,
+    draw_list : *DrawList,
     bounds : Vec4f,
     color : RGBA8,
     thickness : float,
@@ -303,7 +303,7 @@ DrawRectOutline :: inline (
 }
 
 DrawRectOutline :: (
-    draw_list : *VtxDrawList,
+    draw_list : *DrawList,
     bounds : Vec4f,
     color_top_left : RGBA8,
     color_top_right : RGBA8,
@@ -347,7 +347,7 @@ BoxDrawing :: struct {
     clip_box_index : s32;
 }
 
-DrawBox :: inline (draw_list : *VtxDrawList, box : BoxDrawing, texture : TextureHandle = 0) {
+DrawBox :: inline (draw_list : *DrawList, box : BoxDrawing, texture : TextureHandle = 0) {
     // Outer shadow
     DrawRect(
         draw_list,
@@ -396,7 +396,7 @@ DrawBox :: inline (draw_list : *VtxDrawList, box : BoxDrawing, texture : Texture
 } @Profile
 
 DrawCircle :: (
-    draw_list : *VtxDrawList,
+    draw_list : *DrawList,
     center : Vec2f,
     radius : float,
     color : RGBA8,
@@ -416,7 +416,7 @@ DrawCircle :: (
 } @Profile
 
 DrawCircleOutline :: (
-    draw_list : *VtxDrawList,
+    draw_list : *DrawList,
     center : Vec2f,
     radius : float,
     color : RGBA8,
@@ -438,7 +438,7 @@ DrawCircleOutline :: (
 } @Profile
 
 DrawLine :: inline (
-    draw_list : *VtxDrawList,
+    draw_list : *DrawList,
     start : Vec2f,
     end : Vec2f,
     thickness : float,
@@ -449,7 +449,7 @@ DrawLine :: inline (
 }
 
 DrawLine :: (
-    draw_list : *VtxDrawList,
+    draw_list : *DrawList,
     start : Vec2f,
     end : Vec2f,
     thickness : float,
@@ -483,7 +483,7 @@ DrawLine :: (
 } @Profile
 
 DrawSDFGlyph :: (
-    draw_list : *VtxDrawList,
+    draw_list : *DrawList,
     bounds : Vec4f,
     color : RGBA8,
     uv_bounds : Vec4f,
@@ -494,7 +494,7 @@ DrawSDFGlyph :: (
 }
 
 DrawSDFGlyph :: (
-    draw_list : *VtxDrawList,
+    draw_list : *DrawList,
     bounds : Vec4f,
     color_top_left : RGBA8,
     color_top_right : RGBA8,
@@ -557,7 +557,7 @@ DrawSDFGlyph :: (
 }
 
 DrawText :: inline (
-    draw_list : *VtxDrawList,
+    draw_list : *DrawList,
     font : *Font,
     position : Vec2f,
     size : float,
@@ -578,7 +578,7 @@ DrawText :: inline (
 }
 
 DrawWrappedText :: (
-    draw_list : *VtxDrawList,
+    draw_list : *DrawList,
     font : *Font,
     position : Vec2f,
     size : float,
@@ -647,7 +647,7 @@ DrawWrappedText :: (
     }
 } @Profile
 
-DrawNodeDefault :: (draw_list : *VtxDrawList, node : *Node) {
+DrawNodeDefault :: (draw_list : *DrawList, node : *Node) {
     DrawBox(draw_list, .{
         bounds=node.rect,
         uv_bounds=node.image_uv_bounds,
@@ -685,7 +685,7 @@ DrawNodeDefault :: (draw_list : *VtxDrawList, node : *Node) {
     }
 } @Profile
 
-DrawNodes :: (draw_list : *VtxDrawList, node : *Node) {
+DrawNodes :: (draw_list : *DrawList, node : *Node) {
     if IsClipped(draw_list, node.rect) {
         return;
     }
@@ -716,7 +716,7 @@ DrawNodes :: (draw_list : *VtxDrawList, node : *Node) {
     }
 } @Profile
 
-DrawCheckerboard :: (draw_list : *VtxDrawList, rect : Vec4f, checker_size : float, white : RGBA8, black : RGBA8) {
+DrawCheckerboard :: (draw_list : *DrawList, rect : Vec4f, checker_size : float, white : RGBA8, black : RGBA8) {
     if (white & 0xff) == 0 && (black & 0xff) == 0 {
         return;
     }
@@ -744,7 +744,7 @@ DrawCheckerboard :: (draw_list : *VtxDrawList, rect : Vec4f, checker_size : floa
 } @Profile
 
 DrawPolygonLine :: inline (
-    draw_list : *VtxDrawList,
+    draw_list : *DrawList,
     points : []PathPoint,
     closed : bool,
     thickness : float,
@@ -773,7 +773,7 @@ LineSides :: enum_flags {
 }
 
 DrawPolygonLine :: (
-    draw_list : *VtxDrawList,
+    draw_list : *DrawList,
     points : []PathPoint,
     closed : bool,
     thickness : float,
@@ -1052,7 +1052,7 @@ DrawPolygonLine :: (
 } @Profile
 
 DrawConvexPolygon :: inline (
-    draw_list : *VtxDrawList,
+    draw_list : *DrawList,
     points : []PathPoint,
     color : RGBA8,
     blur_size := 1.0
@@ -1071,7 +1071,7 @@ DrawConvexPolygon :: inline (
 }
 
 DrawConvexPolygon :: (
-    draw_list : *VtxDrawList,
+    draw_list : *DrawList,
     points : []PathPoint,
     $get_color : (index : int, data : *void) -> RGBA8,
     get_color_data : *void,
@@ -1165,7 +1165,7 @@ TriangleSides :: enum_flags {
 }
 
 DrawTriangle :: inline (
-    draw_list : *VtxDrawList,
+    draw_list : *DrawList,
     p0 : Vec2f,
     p1 : Vec2f,
     p2 : Vec2f,
@@ -1179,7 +1179,7 @@ DrawTriangle :: inline (
 }
 
 DrawTriangle :: (
-    draw_list : *VtxDrawList,
+    draw_list : *DrawList,
     p0 : Vec2f,
     p1 : Vec2f,
     p2 : Vec2f,

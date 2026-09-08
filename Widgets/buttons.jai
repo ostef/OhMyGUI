@@ -178,7 +178,7 @@ SetColors :: (using style : *CheckboxStyle, base_background_color : RGBA8, check
     active.checkmark.background_color = checkmark_color;
 }
 
-DrawCheckmark :: (draw_list : *VtxDrawList, node : *Node) {
+DrawCheckmark :: (draw_list : *DrawList, node : *Node) {
     checkbox_style := GetUserData(node.parent, CheckboxStyle);
     if !checkbox_style {
         return;

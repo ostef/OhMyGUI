@@ -243,7 +243,7 @@ ArrowDirection :: enum {
     Right;
 }
 
-DrawArrow :: (draw_list : *VtxDrawList, node : *Node, rotation : float) {
+DrawArrow :: (draw_list : *DrawList, node : *Node, rotation : float) {
     if (node.background_color & 0xff) == 0 && (node.outer_shadow_color & 0xff) == 0 {
         return;
     }

@@ -10,7 +10,7 @@ using,only(.["for_expansion"]) HT;
 #load "color.jai";
 #load "unicode.jai";
 #load "input.jai";
-#load "vertex_draw.jai";
+#load "draw.jai";
 #load "text.jai";
 #load "node.jai";
 #load "style.jai";
@@ -225,7 +225,7 @@ Window :: struct {
 
     root_node : *Node;
     popup_root_node : *Node;
-    draw_list : VtxDrawList;
+    draw_list : DrawList;
 }
 
 // for_expansion
