@@ -897,9 +897,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
 
         preview.corner_radiuses = .{5,5,5,5};
         preview.border_size = 1;
-        preview.border_color = wheel.border_color;
-        preview.outer_shadow_color = ColorU32(0,0,0,0.25);
-        preview.outer_shadow_blur = 2;
+        preview.border_color = MakeTone(button_base_background_color, 0.3);
         preview.opacity_checkerboard_white = opacity_checkerboard_white;
         preview.opacity_checkerboard_black = opacity_checkerboard_black;
     }
