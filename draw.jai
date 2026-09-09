@@ -1530,30 +1530,36 @@ PathCalcNormals :: (points : []PathPoint, closed : bool) {
 PathPushRoundedRect :: (points : *[..]PathPoint, bounds : Vec4f, corner_radiuses : Vec4f) {
     half_size := (bounds.zw - bounds.xy) * 0.5;
     max_radius := min(half_size.x, half_size.y);
+    radiuses := Vec4f.{
+        min(corner_radiuses.x, max_radius),
+        min(corner_radiuses.y, max_radius),
+        min(corner_radiuses.z, max_radius),
+        min(corner_radiuses.w, max_radius),
+    };
 
     top_left := bounds.xy;
-    top_left.x += min(corner_radiuses.x, max_radius);
-    top_left.y += min(corner_radiuses.x, max_radius);
+    top_left.x += radiuses.x;
+    top_left.y += radiuses.x;
 
     top_right := Vec2f.{bounds.z, bounds.y};
-    top_right.x -= min(corner_radiuses.y, max_radius);
-    top_right.y += min(corner_radiuses.y, max_radius);
+    top_right.x -= radiuses.y;
+    top_right.y += radiuses.y;
 
     bottom_left := Vec2f.{bounds.x, bounds.w};
-    bottom_left.x += min(corner_radiuses.z, max_radius);
-    bottom_left.y -= min(corner_radiuses.z, max_radius);
+    bottom_left.x += radiuses.z;
+    bottom_left.y -= radiuses.z;
 
     bottom_right := bounds.zw;
-    bottom_right.x -= min(corner_radiuses.w, max_radius);
-    bottom_right.y -= min(corner_radiuses.w, max_radius);
+    bottom_right.x -= radiuses.w;
+    bottom_right.y -= radiuses.w;
 
-    PathPushArc(points, bottom_left,  min(corner_radiuses.z, max_radius), PI, PI * 0.5);
-    PathPushArc(points, bottom_right, min(corner_radiuses.w, max_radius), -PI * 0.5, PI * 0.5);
-    PathPushArc(points, top_right,    min(corner_radiuses.y, max_radius), 0, PI * 0.5);
-    PathPushArc(points, top_left,     min(corner_radiuses.x, max_radius), PI * 0.5, PI * 0.5);
+    PathPushArc(points, bottom_left,  radiuses.z,        PI, PI * 0.5, use_table=radiuses.z < 200);
+    PathPushArc(points, bottom_right, radiuses.w, -PI * 0.5, PI * 0.5, use_table=radiuses.w < 200);
+    PathPushArc(points, top_right,    radiuses.y,         0, PI * 0.5, use_table=radiuses.y < 200);
+    PathPushArc(points, top_left,     radiuses.x,  PI * 0.5, PI * 0.5, use_table=radiuses.x < 200);
 } @Profile
 
-PathPushArc :: (points : *[..]PathPoint, center : Vec2f, radius : float, start_angle : float, angle : float, num_segments := 0) {
+SampleCosSinTable :: (angle : float) -> Vec2f {
     Half_Circle_Points_Count :: 50;
     Half_Circle_Points :: #run () -> [Half_Circle_Points_Count + 1]Vec2f {
         result : [Half_Circle_Points_Count + 1]Vec2f = ---;
@@ -1566,44 +1572,44 @@ PathPushArc :: (points : *[..]PathPoint, center : Vec2f, radius : float, start_a
         return result;
     }();
 
-    SamplePointsArray :: (angle : float) -> Vec2f {
-        while angle > 2 * PI {
-            angle -= 2 * PI;
-        }
-        while angle < 0 {
-            angle += 2 * PI;
-        }
-
-        theta := angle;
-        if angle >= PI * 1.5 {
-            theta -= PI * 1.5;
-        } else if angle >= PI {
-            theta -= PI;
-        } else if angle >= PI * 0.5 {
-            theta -= PI * 0.5;
-        }
-
-        f0 := Half_Circle_Points_Count * theta / (PI * 0.5);
-        i0 := cast(int, f0);
-        i1 := i0 + 1;
-        p0 := Half_Circle_Points[i0];
-        p1 := Half_Circle_Points[i1];
-        t := f0 - i0;
-
-        p := lerp(p0, p1, t);
-        if angle >= PI * 0.5 {
-            p = .{-p.y, p.x};
-        }
-        if angle >= PI {
-            p = .{-p.y, p.x};
-        }
-        if angle >= PI * 1.5 {
-            p = .{-p.y, p.x};
-        }
-
-        return normalize(p);
+    while angle > 2 * PI {
+        angle -= 2 * PI;
+    }
+    while angle < 0 {
+        angle += 2 * PI;
     }
 
+    theta := angle;
+    if angle >= PI * 1.5 {
+        theta -= PI * 1.5;
+    } else if angle >= PI {
+        theta -= PI;
+    } else if angle >= PI * 0.5 {
+        theta -= PI * 0.5;
+    }
+
+    f0 := Half_Circle_Points_Count * theta / (PI * 0.5);
+    i0 := cast(int, f0);
+    i1 := i0 + 1;
+    p0 := Half_Circle_Points[i0];
+    p1 := Half_Circle_Points[i1];
+    t := f0 - i0;
+
+    p := lerp(p0, p1, t);
+    if angle >= PI * 0.5 {
+        p = .{-p.y, p.x};
+    }
+    if angle >= PI {
+        p = .{-p.y, p.x};
+    }
+    if angle >= PI * 1.5 {
+        p = .{-p.y, p.x};
+    }
+
+    return normalize(p);
+}
+
+PathPushArc :: (points : *[..]PathPoint, center : Vec2f, radius : float, start_angle : float, angle : float, num_segments := 0, use_table := true) {
     if angle < 0 {
         start_angle -= angle;
         angle = -angle;
@@ -1631,10 +1637,10 @@ PathPushArc :: (points : *[..]PathPoint, center : Vec2f, radius : float, start_a
     connected := angle == PI * 2;
     iterations := ifx connected then num_segments - 1 else num_segments;
 
-    if num_segments <= Half_Circle_Points.count {
+    if use_table {
         for i : 0..iterations {
             theta := i / cast(float, num_segments) * angle;
-            p := SamplePointsArray(-start_angle - theta);
+            p := SampleCosSinTable(-start_angle - theta);
             array_add(points, .{position=center + p * radius, normal=p});
         }
     } else {
