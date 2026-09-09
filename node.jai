@@ -159,8 +159,8 @@ Node :: struct {
         image : TextureHandle;
         image_uv_bounds : Vec4f;
         corner_radiuses : Vec4f;
-        background_color : RGBA8;
-        border_color : RGBA8;
+        background_colors : BoxColors;
+        border_colors : BoxColors;
         border_size : float;
         border_inset : float;
         outer_shadow_blur : float;
@@ -784,15 +784,69 @@ SetCornerRadiuses :: inline (node : *Node, radiuses : Vec4f) {
 }
 
 SetBackgroundColor :: inline (node : *Node, r : float, g : float, b : float, a : float) {
-    node.background_color = ColorU32(r, g, b, a);
+    for * node.background_colors.corners {
+        it.* = ColorU32(r, g, b, a);
+    }
 }
 
 SetBackgroundColor :: inline (node : *Node, color : Vec4f) {
-    node.background_color = ColorU32(color);
+    for * node.background_colors.corners {
+        it.* = ColorU32(color);
+    }
 }
 
 SetBackgroundColor :: inline (node : *Node, color : RGBA8) {
-    node.background_color = color;
+    for * node.background_colors.corners {
+        it.* = color;
+    }
+}
+
+SetBackgroundColors :: inline (node : *Node, top_left : RGBA8, top_right : RGBA8, bottom_left : RGBA8, bottom_right : RGBA8) {
+    node.background_colors.top_left = top_left;
+    node.background_colors.top_right = top_right;
+    node.background_colors.bottom_left = bottom_left;
+    node.background_colors.bottom_right = bottom_right;
+}
+
+SetBackgroundColors :: inline (node : *Node, colors : BoxColors) {
+    node.background_colors = colors;
+}
+
+SetBorderColor :: inline (node : *Node, r : float, g : float, b : float, a : float) {
+    for * node.border_colors.corners {
+        it.* = ColorU32(r, g, b, a);
+    }
+}
+
+SetBorderColor :: inline (node : *Node, color : Vec4f) {
+    for * node.border_colors.corners {
+        it.* = ColorU32(color);
+    }
+}
+
+SetBorderColor :: inline (node : *Node, color : RGBA8) {
+    for * node.border_colors.corners {
+        it.* = color;
+    }
+}
+
+SetBorderColors :: inline (node : *Node, top_left : RGBA8, top_right : RGBA8, bottom_left : RGBA8, bottom_right : RGBA8) {
+    node.border_colors.top_left = top_left;
+    node.border_colors.top_right = top_right;
+    node.border_colors.bottom_left = bottom_left;
+    node.border_colors.bottom_right = bottom_right;
+}
+
+SetBorderColors :: inline (node : *Node, colors : BoxColors) {
+    node.border_colors = colors;
+}
+
+SetBorderSize :: inline (node : *Node, size : float) {
+    node.border_size = size;
+}
+
+SetBorderInset :: inline (node : *Node, inset : float) {
+    node.border_inset = inset;
 }
 
 SetTextColor :: inline (node : *Node, r : float, g : float, b : float, a : float) {
@@ -805,26 +859,6 @@ SetTextColor :: inline (node : *Node, color : Vec4f) {
 
 SetTextColor :: inline (node : *Node, color : RGBA8) {
     node.text_color = color;
-}
-
-SetBorderColor :: inline (node : *Node, r : float, g : float, b : float, a : float) {
-    node.border_color = ColorU32(r, g, b, a);
-}
-
-SetBorderColor :: inline (node : *Node, color : Vec4f) {
-    node.border_color = ColorU32(color);
-}
-
-SetBorderColor :: inline (node : *Node, color : RGBA8) {
-    node.border_color = color;
-}
-
-SetBorderSize :: inline (node : *Node, size : float) {
-    node.border_size = size;
-}
-
-SetBorderInset :: inline (node : *Node, inset : float) {
-    node.border_inset = inset;
 }
 
 SetOuterShadowOffset :: inline (node : *Node, x : float, y : float) {

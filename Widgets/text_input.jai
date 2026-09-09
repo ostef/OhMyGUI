@@ -542,15 +542,15 @@ SetColors :: (using style : *TextInputStyle, base_background_color : RGBA8, acce
     hot.text.text_color = text_color;
     active.text.text_color = text_color;
 
-    cursor.background_color = text_color;
-    selection.background_color = accent_color;
+    SetColors(*cursor.background_colors, text_color);
+    SetColors(*selection.background_colors, accent_color);
 
-    normal.background.background_color = base_background_color;
-    focused.background.background_color = Whiten(base_background_color, 0.05);
-    hot.background.background_color = Darken(base_background_color, 0.05);
-    active.background.background_color = Whiten(base_background_color, 0.1);
+    SetColors(*normal.background.background_colors, base_background_color);
+    SetColors(*focused.background.background_colors, Whiten(base_background_color, 0.05));
+    SetColors(*hot.background.background_colors, Darken(base_background_color, 0.05));
+    SetColors(*active.background.background_colors, Whiten(base_background_color, 0.1));
 
-    active.background.border_color = accent_color;
+    SetColors(*active.background.border_colors, accent_color);
 }
 
 DrawTextInputText :: (draw_list : *DrawList, node : *Node) {
@@ -609,8 +609,8 @@ DrawTextInputText :: (draw_list : *DrawList, node : *Node) {
         DrawBox(draw_list, .{
             bounds=.{xy=selection_position, zw=selection_position + selection_size},
             corner_radiuses=style.selection.corner_radiuses,
-            background_color=style.selection.background_color,
-            border_color=style.selection.border_color,
+            background_colors=style.selection.background_colors,
+            border_colors=style.selection.border_colors,
             border_size=style.selection.border_size,
             border_inset=style.selection.border_inset,
             outer_shadow_color=style.selection.outer_shadow_color,
@@ -783,7 +783,7 @@ NumberInput :: (
 
         increase, increase_node := Button(increase_decrease, SizePx(style.increase_decrease_buttons_width), SizeFill(), *style.increase_button);
         increase_node.flags |= .NoPaddedClip;
-        Arrow(increase_node, SizeFill(), SizeFill(), .Up, .{background_color=style.increase_button.states[GetState(increase_node)].text.text_color});
+        Arrow(increase_node, SizeFill(), SizeFill(), .Up, style.increase_button.states[GetState(increase_node)].text.text_color);
 
         if increase {
             multiplier : T = xx ifx GetModState() == .Shift then 10 else 1;
@@ -793,7 +793,7 @@ NumberInput :: (
 
         decrease, decrease_node := Button(increase_decrease, SizePx(style.increase_decrease_buttons_width), SizeFill(), *style.decrease_button);
         decrease_node.flags |= .NoPaddedClip;
-        Arrow(decrease_node, SizeFill(), SizeFill(), .Down, .{background_color=style.decrease_button.states[GetState(decrease_node)].text.text_color});
+        Arrow(decrease_node, SizeFill(), SizeFill(), .Down, style.decrease_button.states[GetState(decrease_node)].text.text_color);
 
         if decrease {
             multiplier : T = xx ifx GetModState() == .Shift then 10 else 1;

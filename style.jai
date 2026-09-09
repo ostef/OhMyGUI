@@ -34,12 +34,47 @@ GetStyle :: (theme : *Theme, name : string, $T : Type) -> *T {
     return xx any.value_pointer;
 }
 
-// @Todo: use this
-Gradient :: struct {
-    color1 : RGBA8;
-    color2 : RGBA8;
-    offset : float;
-    vector : Vec2f;
+BoxColors :: struct {
+    top_left : RGBA8;
+    top_right : RGBA8;
+    bottom_left : RGBA8;
+    bottom_right : RGBA8;
+
+    #overlay(top_left)
+    corners : [4]RGBA8;
+}
+
+MakeBoxColors :: inline (color : RGBA8) -> BoxColors {
+    return .{color, color, color, color};
+}
+
+SetColors :: inline (colors : *BoxColors, color : RGBA8) {
+    colors.corners[0] = color;
+    colors.corners[1] = color;
+    colors.corners[2] = color;
+    colors.corners[3] = color;
+}
+
+GetColor :: inline (colors : BoxColors, x : float, y : float) -> RGBA8 {
+    x = clamp(x, 0, 1);
+    y = clamp(y, 0, 1);
+
+    a := MixColors(colors.top_left, colors.top_right, x);
+    b := MixColors(colors.bottom_left, colors.bottom_right, x);
+    return MixColors(a, b, y);
+}
+
+SetAlpha :: inline (colors : *BoxColors, alpha : float) {
+    colors.* = SetAlpha(colors.*, alpha);
+}
+
+SetAlpha :: inline (colors : BoxColors, alpha : float) -> BoxColors {
+    return .{
+        SetAlpha(colors.corners[0], alpha),
+        SetAlpha(colors.corners[1], alpha),
+        SetAlpha(colors.corners[2], alpha),
+        SetAlpha(colors.corners[3], alpha),
+    };
 }
 
 BoxStyle :: struct {
@@ -47,8 +82,8 @@ BoxStyle :: struct {
     child_gap : Vec2b;
 
     corner_radiuses : Vec4f;
-    background_color : RGBA8;
-    border_color : RGBA8;
+    background_colors : BoxColors;
+    border_colors : BoxColors;
     border_size : float;
     border_inset : float;
     outer_shadow_blur : float;
@@ -59,18 +94,18 @@ BoxStyle :: struct {
 }
 
 SetColors :: (using style : *StateStyle(BoxStyle), base_background_color : RGBA8) {
-    normal.background_color = base_background_color;
-    focused.background_color = Whiten(base_background_color, 0.05);
-    hot.background_color = Darken(base_background_color, 0.05);
-    active.background_color = Whiten(base_background_color, 0.1);
+    SetColors(*normal.background_color, base_background_color);
+    SetColors(*focused.background_color, Whiten(base_background_color, 0.05));
+    SetColors(*hot.background_color, Darken(base_background_color, 0.05));
+    SetColors(*active.background_color, Whiten(base_background_color, 0.1));
 }
 
 Apply :: inline (node : *Node, style : BoxStyle) {
     node.padding = style.padding;
     node.child_gap = style.child_gap;
     node.corner_radiuses = style.corner_radiuses;
-    node.background_color = style.background_color;
-    node.border_color = style.border_color;
+    node.background_colors = style.background_colors;
+    node.border_colors = style.border_colors;
     node.border_size = style.border_size;
     node.border_inset = style.border_inset;
     node.outer_shadow_blur = style.outer_shadow_blur;
@@ -421,7 +456,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
     {
         using theme.base;
 
-        background_color = base_background_color;
+        SetColors(*background_colors, base_background_color);
     }
     SetStyle(theme, "base", theme.base);
 
@@ -500,9 +535,9 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
 
         using theme.toggle;
 
-        active.background.background_color = normal.background.background_color;
+        active.background.background_colors = normal.background.background_colors;
         active.background.border_size = 2;
-        active.background.border_color = base_accent_color;
+        SetColors(*active.background.border_colors, base_accent_color);
     }
     SetStyle(theme, "toggle", theme.toggle);
 
@@ -515,7 +550,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         normal.background.corner_radiuses = .{5,5,5,5};
         normal.background.padding = .{3,3,3,3};
         normal.background.border_size = 1;
-        normal.background.border_color = MakeTone(button_base_background_color, 0.3);
+        SetColors(*normal.background.border_colors, MakeTone(button_base_background_color, 0.3));
         normal.background.inner_shadow_blur = 5;
         normal.background.inner_shadow_color = SetAlpha(Darken(button_base_background_color, 0.2), 0.4);
         normal.fill.corner_radiuses = .{3,3,3,3};
@@ -539,7 +574,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         normal.background.corner_radiuses = .{5,5,5,5};
         normal.background.padding = .{3,3,3,3};
         normal.background.border_size = 1;
-        normal.background.border_color = MakeTone(button_base_background_color, 0.3);
+        SetColors(*normal.background.border_colors, MakeTone(button_base_background_color, 0.3));
         normal.background.inner_shadow_blur = 5;
         normal.background.inner_shadow_color = SetAlpha(Darken(button_base_background_color, 0.2), 0.4);
         normal.fill.corner_radiuses = .{3,3,3,3};
@@ -590,20 +625,20 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
 
         SetColors(*theme.scrollbar, MakeTone(base_background_color, 0.05), MakeTone(base_background_color, 0.5));
 
-        active.handle.background_color = Whiten(base_accent_color, 0.1);
+        SetColors(*active.handle.background_colors, Whiten(base_accent_color, 0.1));
     }
     SetStyle(theme, "scrollbar", theme.scrollbar);
 
     {
         using theme.text_input;
 
-        cursor.background_color = ChooseTextColor(base_background_color);
+        SetColors(*cursor.background_colors, ChooseTextColor(base_background_color));
 
         normal.background.corner_radiuses = .{6,6,6,6};
         normal.background.padding = .{10,6,10,6};
         normal.background.child_gap = .{4,4};
         normal.background.border_size = 1;
-        normal.background.border_color = MakeTone(button_base_background_color, 0.3);
+        SetColors(*normal.background.border_colors, MakeTone(button_base_background_color, 0.3));
         normal.background.inner_shadow_blur = 5;
         normal.background.inner_shadow_color = SetAlpha(Darken(button_base_background_color, 0.2), 0.4);
         normal.text.font = theme.text.font;
@@ -618,9 +653,10 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         active.background.border_size = 2;
 
         SetColors(*theme.text_input, button_base_background_color, base_accent_color);
+        theme.text_input.normal.background.background_colors.bottom_right = ColorU32(1,0,0,1);
 
         SetAlpha(*disabled.text.text_color, 0.5);
-        SetAlpha(*disabled.background.background_color, 0.5);
+        SetAlpha(*disabled.background.background_colors, 0.5);
     }
     SetStyle(theme, "text_input", theme.text_input);
 
@@ -656,7 +692,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
 
         normal.background.corner_radiuses = .{4,4,4,4};
         normal.background.padding = .{2,2,2,2};
-        normal.background.border_color = MakeTone(button_base_background_color, 0.3);
+        SetColors(*normal.background.border_colors, MakeTone(button_base_background_color, 0.3));
         normal.background.border_size = 1;
         normal.checkmark.rounding = 1;
 
@@ -667,7 +703,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
 
         SetColors(*theme.checkbox, button_base_background_color, base_accent_color);
 
-        SetAlpha(*disabled.background.background_color, 0.5);
+        SetAlpha(*disabled.background.background_colors, 0.5);
         SetAlpha(*disabled.checkmark.background_color, 0.5);
     }
     SetStyle(theme, "checkbox", theme.checkbox);
@@ -678,7 +714,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         normal.background.corner_radiuses = .{1,1,1,1};
         normal.active_mark.corner_radiuses = .{1,1,1,1};
         normal.background.padding = .{2,2,2,2};
-        normal.background.border_color = MakeTone(button_base_background_color, 0.3);
+        SetColors(*normal.background.border_colors, MakeTone(button_base_background_color, 0.3));
         normal.background.border_size = 1;
 
         focused = normal;
@@ -688,8 +724,8 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
 
         SetColors(*theme.radio_button, button_base_background_color, base_accent_color);
 
-        SetAlpha(*disabled.background.background_color, 0.5);
-        SetAlpha(*disabled.active_mark.background_color, 0.5);
+        SetAlpha(*disabled.background.background_colors, 0.5);
+        SetAlpha(*disabled.active_mark.background_colors, 0.5);
     }
     SetStyle(theme, "radio_button", theme.radio_button);
 
@@ -697,7 +733,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         using theme.menu_bar;
 
         child_gap = .{3,3};
-        background_color = base_background_color;
+        SetColors(*background_colors, base_background_color);
     }
     SetStyle(theme, "menu_bar", theme.menu_bar);
 
@@ -716,7 +752,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         disabled = normal;
 
         SetColors(*theme.menu_item, Darken(button_base_background_color, 0.1), ChooseTextColor(base_background_color));
-        normal.background.background_color = 0;
+        SetColors(*normal.background.background_colors, 0);
 
         SetAlpha(*disabled.text.text_color, 0.5);
     }
@@ -729,8 +765,8 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         corner_radiuses = .{3,3,3,3};
         padding = .{2,2,2,2};
 
-        background_color = base_background_color;
-        border_color = MakeTone(base_background_color, 0.3);
+        SetColors(*background_colors, base_background_color);
+        SetColors(*border_colors, MakeTone(base_background_color, 0.3));
         border_size = 1;
 
         outer_shadow_color = ColorU32(0,0,0,0.25);
@@ -742,7 +778,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
     {
         using theme.separator;
 
-        background_color = ColorU32(0.5, 0.5, 0.5, 1);
+        SetColors(*background_colors, ColorU32(0.5, 0.5, 0.5, 1));
     }
     SetStyle(theme, "separator", theme.separator);
 
@@ -754,8 +790,8 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
 
         background.corner_radiuses = .{6,6,6,6};
 
-        background.background_color = base_background_color;
-        background.border_color = MakeTone(base_background_color, 0.3);
+        SetColors(*background.background_colors, base_background_color);
+        SetColors(*background.border_colors, MakeTone(base_background_color, 0.3));
         background.border_size = 1;
 
         background.outer_shadow_color = ColorU32(0,0,0,0.25);
@@ -771,8 +807,8 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
             normal.text.font = theme.text.font;
             normal.text.text_size = theme.text.text_size;
 
-            normal.background.background_color = MakeTone(base_background_color, 0.1);
-            normal.text.text_color = ChooseTextColor(normal.background.background_color);
+            SetColors(*normal.background.background_colors, MakeTone(base_background_color, 0.1));
+            normal.text.text_color = ChooseTextColor(normal.background.background_colors.top_left);
 
             focused = normal;
             hot = normal;
@@ -795,7 +831,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         wheel.outer_shadow_color = ColorU32(0,0,0,0.25);
         wheel.outer_shadow_blur = 5;
 
-        wheel.wheel_cursor.normal.border_color = wheel.border_color;
+        SetColors(*wheel.wheel_cursor.normal.border_colors, wheel.border_color);
         wheel.wheel_cursor.normal.outer_shadow_color = ColorU32(0,0,0,0.25);
         wheel.wheel_cursor.normal.outer_shadow_blur = 2;
 
@@ -807,7 +843,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         wheel.wheel_cursor.active = wheel.wheel_cursor.hot;
 
         wheel.triangle_cursor.normal.radius = 6;
-        wheel.triangle_cursor.normal.border_color = wheel.border_color;
+        SetColors(*wheel.triangle_cursor.normal.border_colors, wheel.border_color);
         wheel.triangle_cursor.normal.outer_shadow_color = ColorU32(0,0,0,0.25);
         wheel.triangle_cursor.normal.outer_shadow_blur = 2;
 
@@ -834,13 +870,13 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         slider_base.normal.background.corner_radiuses = .{4,4,4,4};
         slider_base.normal.background.border_size = 1;
         slider_base.normal.background.border_inset = -1;
-        slider_base.normal.background.border_color = MakeTone(base_background_color, 0.3);
+        SetColors(*slider_base.normal.background.border_colors, MakeTone(base_background_color, 0.3));
 
         // slider_base.normal.handle.background_color = 0;
         // slider_base.normal.handle.corner_radiuses = .{3,3,3,3};
         // slider_base.normal.handle.border_color = wheel.border_color;
         // slider_base.normal.handle.border_size = 2;
-        slider_base.normal.handle.background_color = wheel.border_color;
+        SetColors(*slider_base.normal.handle.background_colors, wheel.border_color);
         // slider_base.normal.handle.border_color = MakeTone(button_base_background_color, 0.3);
         // slider_base.normal.handle.border_size = 1;
         slider_base.normal.handle.outer_shadow_color = ColorU32(0,0,0,0.25);
@@ -897,7 +933,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
 
         preview.corner_radiuses = .{5,5,5,5};
         preview.border_size = 1;
-        preview.border_color = MakeTone(button_base_background_color, 0.3);
+        SetColors(*preview.border_colors, MakeTone(button_base_background_color, 0.3));
         preview.opacity_checkerboard_white = opacity_checkerboard_white;
         preview.opacity_checkerboard_black = opacity_checkerboard_black;
     }
@@ -926,7 +962,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
 
         for * button.states {
             it.background.border_size = 1;
-            it.background.border_color = MakeTone(button_base_background_color, 0.3);
+            SetColors(*it.background.border_colors, MakeTone(button_base_background_color, 0.3));
         }
 
         popup.corner_radiuses.xy = .{};
@@ -943,8 +979,8 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         background.corner_radiuses = .{3,3,3,3};
         background.padding = .{6,6,6,6};
 
-        background.background_color = base_background_color;
-        background.border_color = MakeTone(base_background_color, 0.3);
+        SetColors(*background.background_colors, base_background_color);
+        SetColors(*background.border_colors, MakeTone(base_background_color, 0.3));
         background.border_size = 1;
 
         background.outer_shadow_color = ColorU32(0,0,0,0.25);
@@ -961,9 +997,9 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
 
         padding = .{1,1,1,1};
         corner_radiuses = .{4,4,4,4};
-        border_color = MakeTone(base_background_color, 0.5);
+        SetColors(*border_colors, MakeTone(base_background_color, 0.5));
         border_size = 1;
-        vertical_inner_border_color = MakeTone(base_background_color, 0.5);
+        SetColors(*vertical_inner_border_colors, MakeTone(base_background_color, 0.5));
         vertical_inner_border_size = 3;
 
         header_sort_icon_size = 10;
@@ -974,16 +1010,16 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
 
         header_row.cell_padding = .{8,8,8,8};
         header_row.cell_child_align = .{0, 0.5};
-        header_row.background_color = MakeTone(base_background_color, 0.05);
-        header_row.alternate_background_color = MakeTone(base_background_color, 0.05);
+        SetColors(*header_row.background_colors, MakeTone(base_background_color, 0.05));
+        SetColors(*header_row.alternate_background_colors, MakeTone(base_background_color, 0.05));
         header_row.height = header_line_height + header_row.cell_padding.y + header_row.cell_padding.w;
         header_row.border_color = MakeTone(base_background_color, 0.5);
         header_row.border_size = 1;
 
         rows.cell_padding = .{8,8,8,8};
         rows.cell_child_align = .{0, 0.5};
-        rows.background_color = MakeTone(base_background_color, 0.1);
-        rows.alternate_background_color = MakeTone(base_background_color, 0.2);
+        SetColors(*rows.background_colors, MakeTone(base_background_color, 0.1));
+        SetColors(*rows.alternate_background_colors, MakeTone(base_background_color, 0.2));
 
         rows.height = header_row.height;
     }
@@ -994,12 +1030,12 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
 
         height = 6;
 
-        background.background_color = MakeTone(base_background_color, 0.1);
-        background.border_color = MakeTone(base_background_color, 0.4);
+        SetColors(*background.background_colors, MakeTone(base_background_color, 0.1));
+        SetColors(*background.border_colors, MakeTone(base_background_color, 0.4));
         background.border_size = 1;
         background.corner_radiuses = Vec4f.{1,1,1,1} * height * 0.5;
 
-        fill.background_color = base_accent_color;
+        SetColors(*fill.background_colors, base_accent_color);
         fill.corner_radiuses = Vec4f.{1,1,1,1} * height * 0.5;
     }
     SetStyle(theme, "progress_bar", theme.progress_bar);
@@ -1013,9 +1049,9 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
             it.background.child_gap = .{8,0};
         }
 
-        tree_item.focused.background.background_color = base_accent_color;
-        tree_item.hot.background.background_color = Darken(base_accent_color, 0.1);
-        tree_item.active.background.background_color = Darken(base_accent_color, 0.1);
+        SetColors(*tree_item.focused.background.background_colors, base_accent_color);
+        SetColors(*tree_item.hot.background.background_colors, Darken(base_accent_color, 0.1));
+        SetColors(*tree_item.active.background.background_colors, Darken(base_accent_color, 0.1));
 
         triangle_size = 8;
 
@@ -1028,7 +1064,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
 
         child_gap = .{2,0};
         padding = .{6,6,6,0};
-        background_color = base_background_color;
+        SetColors(*background_colors, base_background_color);
     }
     SetStyle(theme, "tab_bar", theme.tab_bar);
 
@@ -1049,22 +1085,22 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         tab_bar = theme.tab_bar;
         tab = theme.tab;
 
-        resize_handle.focused.background_color = MakeTone(base_background_color, 0.1);
-        resize_handle.hot.background_color = MakeTone(base_background_color, 0.1);
-        resize_handle.active.background_color = Whiten(base_accent_color, 0.1);
+        SetColors(*resize_handle.focused.background_colors, MakeTone(base_background_color, 0.1));
+        SetColors(*resize_handle.hot.background_colors, MakeTone(base_background_color, 0.1));
+        SetColors(*resize_handle.active.background_colors, Whiten(base_accent_color, 0.1));
 
         for * resize_handle.states {
             it.corner_radiuses = Vec4f.{1,1,1,1} * resize_handle_size * 0.5;
         }
 
-        background.background_color = base_background_color;
+        SetColors(*background.background_colors, base_background_color);
 
-        target_split.background_color = SetAlpha(base_accent_color, 0.5);
+        SetColors(*target_split.background_colors, SetAlpha(base_accent_color, 0.5));
 
-        split_hint.border_color = ColorU32(0.7,0.7,0.7,1);
+        SetColors(*split_hint.border_colors, ColorU32(0.7,0.7,0.7,1));
         split_hint.border_size = 1;
         split_hint.border_inset = 2;
-        split_hint.background_color = SetAlpha(base_accent_color, 0.5);
+        SetColors(*split_hint.background_colors, SetAlpha(base_accent_color, 0.5));
         split_hint.corner_radiuses = .{6,6,6,6};
         split_hint.outer_shadow_blur = 4;
         split_hint.outer_shadow_color = ColorU32(0,0,0,0.15);

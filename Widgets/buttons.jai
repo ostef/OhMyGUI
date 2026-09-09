@@ -43,10 +43,10 @@ SetColors :: (style : *ButtonStyle, base_background_color : RGBA8) {
 }
 
 SetColors :: (using style : *ButtonStyle, base_background_color : RGBA8, text_color : RGBA8) {
-    normal.background.background_color = base_background_color;
-    focused.background.background_color = Whiten(base_background_color, 0.05);
-    hot.background.background_color = Darken(base_background_color, 0.05);
-    active.background.background_color = Whiten(base_background_color, 0.1);
+    SetColors(*normal.background.background_colors, base_background_color);
+    SetColors(*focused.background.background_colors, Whiten(base_background_color, 0.05));
+    SetColors(*hot.background.background_colors, Darken(base_background_color, 0.05));
+    SetColors(*active.background.background_colors, Whiten(base_background_color, 0.1));
 
     normal.text.text_color = text_color;
     focused.text.text_color = text_color;
@@ -153,7 +153,7 @@ CheckmarkStyle :: struct {
 }
 
 Apply :: inline (node : *Node, style : CheckmarkStyle) {
-    node.background_color = style.background_color;
+    SetColors(*node.background_colors, style.background_color);
     node.outer_shadow_blur = style.outer_shadow_blur;
     node.outer_shadow_offset = style.outer_shadow_offset;
     node.outer_shadow_color = style.outer_shadow_color;
@@ -167,10 +167,10 @@ CheckboxStateStyle :: struct {
 CheckboxStyle :: StateStyle(CheckboxStateStyle);
 
 SetColors :: (using style : *CheckboxStyle, base_background_color : RGBA8, checkmark_color : RGBA8) {
-    normal.background.background_color = base_background_color;
-    focused.background.background_color = Whiten(base_background_color, 0.05);
-    hot.background.background_color = Darken(base_background_color, 0.05);
-    active.background.background_color = Whiten(base_background_color, 0.1);
+    SetColors(*normal.background.background_colors, base_background_color);
+    SetColors(*focused.background.background_colors, Whiten(base_background_color, 0.05));
+    SetColors(*hot.background.background_colors, Darken(base_background_color, 0.05));
+    SetColors(*active.background.background_colors, Whiten(base_background_color, 0.1));
 
     normal.checkmark.background_color = checkmark_color;
     focused.checkmark.background_color = checkmark_color;
@@ -184,11 +184,7 @@ DrawCheckmark :: (draw_list : *DrawList, node : *Node) {
         return;
     }
 
-    has_background := (node.background_color & 0xff) > 0;
-    has_border := (node.border_color & 0xff) > 0 && node.border_size > 0;
-    has_shadow := (node.outer_shadow_color & 0xff) > 0;
-
-    if !has_background && !has_border && !has_shadow {
+    if (node.background_colors.top_left & 0xff) == 0 {
         return;
     }
 
@@ -228,7 +224,7 @@ DrawCheckmark :: (draw_list : *DrawList, node : *Node) {
     array_add(*draw_list.path, .{position=p1});
     array_add(*draw_list.path, .{position=p2, normal=PerpendicularCW(n1)});
 
-    DrawPolygonLine(draw_list, draw_list.path, false, thickness, node.background_color);
+    DrawPolygonLine(draw_list, draw_list.path, false, thickness, node.background_colors.top_left);
 
     array_reset_keeping_memory(*draw_list.path);
 }
@@ -270,15 +266,15 @@ RadioButtonStateStyle :: struct {
 RadioButtonStyle :: StateStyle(RadioButtonStateStyle);
 
 SetColors :: (using style : *RadioButtonStyle, base_background_color : RGBA8, active_mark_color : RGBA8) {
-    normal.background.background_color = base_background_color;
-    focused.background.background_color = Whiten(base_background_color, 0.05);
-    hot.background.background_color = Darken(base_background_color, 0.05);
-    active.background.background_color = Whiten(base_background_color, 0.1);
+    SetColors(*normal.background.background_colors, base_background_color);
+    SetColors(*focused.background.background_colors, Whiten(base_background_color, 0.05));
+    SetColors(*hot.background.background_colors, Darken(base_background_color, 0.05));
+    SetColors(*active.background.background_colors, Whiten(base_background_color, 0.1));
 
-    normal.active_mark.background_color = active_mark_color;
-    focused.active_mark.background_color = active_mark_color;
-    hot.active_mark.background_color = active_mark_color;
-    active.active_mark.background_color = active_mark_color;
+    SetColors(*normal.active_mark.background_colors, active_mark_color);
+    SetColors(*focused.active_mark.background_colors, active_mark_color);
+    SetColors(*hot.active_mark.background_colors, active_mark_color);
+    SetColors(*active.active_mark.background_colors, active_mark_color);
 }
 
 RadioButton :: (parent : *Node, value : *$T, for_value : T, size := 20.0, style : *RadioButtonStyle = null, location := #caller_location) -> clicked : bool, *Node {

@@ -656,7 +656,7 @@ Render :: () {
             node := omg.mouse_hovered_node;
             DrawBox(*node.window.draw_list, .{
                 bounds=node.rect,
-                border_color=ColorU32(1, 0, 0, 1),
+                border_colors=MakeBoxColors(ColorU32(1, 0, 0, 1)),
                 border_size=2,
                 border_inset=-4
             });
@@ -666,7 +666,7 @@ Render :: () {
             node := omg.mouse_focused_node;
             DrawBox(*node.window.draw_list, .{
                 bounds=node.rect,
-                border_color=ColorU32(0, 1, 0, 1),
+                border_colors=MakeBoxColors(ColorU32(0, 1, 0, 1)),
                 border_size=2,
                 border_inset=-2
             });

@@ -15,7 +15,7 @@ HSVTriangleWheelStyle :: struct {
 
     CursorStateStyle :: struct {
         radius := 10.0;
-        border_color : RGBA8;
+        border_colors : BoxColors;
         border_size := 2.0;
         outer_shadow_color : RGBA8;
         outer_shadow_blur : float;
@@ -214,8 +214,8 @@ SaturationValueTriangle :: (parent : *Node, using data : *ColorPickerData, style
         DrawBox(draw_list, .{
             bounds=.{xy=cursor - Vec2f.{cursor_style.radius, cursor_style.radius}, zw=cursor + Vec2f.{cursor_style.radius, cursor_style.radius}},
             corner_radiuses=Vec4f.{1,1,1,1} * cursor_style.radius,
-            background_color=ColorU32(HSVToRGB(hsv), 1),
-            border_color=cursor_style.border_color,
+            background_colors=MakeBoxColors(ColorU32(HSVToRGB(hsv), 1)),
+            border_colors=cursor_style.border_colors,
             border_size=cursor_style.border_size,
             outer_shadow_color=cursor_style.outer_shadow_color,
             outer_shadow_offset=cursor_style.outer_shadow_offset,
@@ -315,8 +315,8 @@ HueWheel :: (parent : *Node, using data : *ColorPickerData, style : *HSVTriangle
         DrawBox(draw_list, .{
             bounds=.{xy=cursor - Vec2f.{cursor_style.radius, cursor_style.radius}, zw=cursor + Vec2f.{cursor_style.radius, cursor_style.radius}},
             corner_radiuses=Vec4f.{1,1,1,1} * cursor_style.radius,
-            background_color=ColorU32(HSVToRGB(.{hsv.hue, 1, 1}), 1),
-            border_color=cursor_style.border_color,
+            background_colors=MakeBoxColors(ColorU32(HSVToRGB(.{hsv.hue, 1, 1}), 1)),
+            border_colors=cursor_style.border_colors,
             border_size=cursor_style.border_size,
             outer_shadow_color=cursor_style.outer_shadow_color,
             outer_shadow_offset=cursor_style.outer_shadow_offset,
@@ -373,7 +373,7 @@ ColoredSlider :: (parent : *Node, value : *float, min : float, max : float, step
 
         // @Todo: triangle border
         DrawTriangle(draw_list, a + node.outer_shadow_offset, b + node.outer_shadow_offset, c + node.outer_shadow_offset, node.outer_shadow_color, blur_size=node.outer_shadow_blur + 1);
-        DrawTriangle(draw_list, a, b, c, node.background_color);
+        DrawTriangle(draw_list, a, b, c, node.background_colors.top_left);
 
         a = ifx axis == .X then Vec2f.{node.rect.x, node.rect.w} else node.rect.zw;
         b = ifx axis == .X then node.rect.zw else Vec2f.{node.rect.z, node.rect.y};
@@ -382,7 +382,7 @@ ColoredSlider :: (parent : *Node, value : *float, min : float, max : float, step
         c = a + Rotate(c, -PI / 3);
 
         DrawTriangle(draw_list, a + node.outer_shadow_offset, b + node.outer_shadow_offset, c + node.outer_shadow_offset, node.outer_shadow_color, blur_size=node.outer_shadow_blur + 1);
-        DrawTriangle(draw_list, a, b, c, node.background_color);
+        DrawTriangle(draw_list, a, b, c, node.background_colors.top_left);
     }
 
     DrawBackground :: (draw_list : *DrawList, node : *Node) {
@@ -503,20 +503,20 @@ ColorPreview :: (parent : *Node, color : RGBA8, style : *ColorPreviewStyle, loca
         DrawBox(draw_list, .{
             bounds=left,
             corner_radiuses=.{node.corner_radiuses.x,0,node.corner_radiuses.z,0},
-            background_color=SetAlpha(node.background_color, 1),
+            background_colors=MakeBoxColors(SetAlpha(node.background_colors.top_left, 1)),
         });
 
         right := Vec4f.{x=left.z, y=left.y, zw=node.rect.zw};
         DrawBox(draw_list, .{
             bounds=right,
             corner_radiuses=.{0,node.corner_radiuses.y,0,node.corner_radiuses.w},
-            background_color=node.background_color,
+            background_colors=node.background_colors,
         });
 
         DrawBox(draw_list, .{
             bounds=node.rect,
             corner_radiuses=node.corner_radiuses,
-            border_color=node.border_color,
+            border_colors=node.border_colors,
             border_size=node.border_size,
             border_inset=node.border_inset,
         });

@@ -244,7 +244,7 @@ ArrowDirection :: enum {
 }
 
 DrawArrow :: (draw_list : *DrawList, node : *Node, rotation : float) {
-    if (node.background_color & 0xff) == 0 && (node.outer_shadow_color & 0xff) == 0 {
+    if (node.background_colors.top_left & 0xff) == 0 {
         return;
     }
 
@@ -259,11 +259,10 @@ DrawArrow :: (draw_list : *DrawList, node : *Node, rotation : float) {
     p1 += center;
     p2 += center;
 
-    DrawTriangle(draw_list, p0 + node.outer_shadow_offset, p1 + node.outer_shadow_offset, p2 + node.outer_shadow_offset, node.outer_shadow_color, node.outer_shadow_blur + 1);
-    DrawTriangle(draw_list, p0, p1, p2, node.background_color);
+    DrawTriangle(draw_list, p0, p1, p2, node.background_colors.top_left);
 }
 
-Arrow :: (parent : *Node, width : Size1D, height : Size1D, direction : ArrowDirection, style : BoxStyle, location := #caller_location) -> *Node {
+Arrow :: (parent : *Node, width : Size1D, height : Size1D, direction : ArrowDirection, color : RGBA8, location := #caller_location) -> *Node {
     node := GetNode(parent, location);
     SetSize(node, width, height);
     if #complete direction == {
@@ -276,7 +275,7 @@ Arrow :: (parent : *Node, width : Size1D, height : Size1D, direction : ArrowDire
     case .Right;
         SetDraw(node, #bake_arguments DrawArrow(rotation=PI * 0.75));
     }
-    Apply(node, style);
+    SetBackgroundColor(node, color);
 
     return node;
 }

@@ -130,7 +130,7 @@ EditorFrame :: () {
         OMG.SetGlobalTextSize(theme, max(text.text_size + 2, 5));
     }
 
-    base_background_color := OMG.GetStyle("base", OMG.BoxStyle).background_color;
+    base_background_color := OMG.GetStyle("base", OMG.BoxStyle).background_colors.top_left;
 
     window := OMG.GetWindow(g_window);
 
@@ -277,7 +277,7 @@ EditorFrame :: () {
                 start := center + OMG.Vec2f.{-floor(length * 0.5), 0.5};
                 end := center + OMG.Vec2f.{floor(length * 0.5), 0.5};
 
-                OMG.DrawLine(draw_list, start, end, 1, node.background_color);
+                OMG.DrawLine(draw_list, start, end, 1, node.background_colors.top_left);
             });
 
             maximize_icon := OMG.GetNode(maximize_node);
@@ -294,13 +294,13 @@ EditorFrame :: () {
                 p1 := OMG.Vec2f.{size.x * Size, 0};
                 p2 := OMG.Vec2f.{size.x, size.y - size.y * Size};
 
-                OMG.DrawTriangle(draw_list, rect.xy + p0, rect.xy + p1, rect.xy + p2, node.background_color);
+                OMG.DrawTriangle(draw_list, rect.xy + p0, rect.xy + p1, rect.xy + p2, node.background_colors.top_left);
 
                 p0 = OMG.Vec2f.{0, size.y * Size};
                 p1 = OMG.Vec2f.{0, size.y};
                 p2 = OMG.Vec2f.{size.x - size.x * Size, size.y};
 
-                OMG.DrawTriangle(draw_list, rect.xy + p0, rect.xy + p1, rect.xy + p2, node.background_color);
+                OMG.DrawTriangle(draw_list, rect.xy + p0, rect.xy + p1, rect.xy + p2, node.background_colors.top_left);
             });
 
             close_icon := OMG.GetNode(close_node);
@@ -310,12 +310,13 @@ EditorFrame :: () {
                 center := (node.rect.xy + node.rect.zw) * 0.5;
                 dir := normalize(node.rect.zw - node.rect.xy);
                 length := node.size.x;
+                color := node.background_colors.top_left;
 
-                OMG.DrawLine(draw_list, center - dir * length * 0.5, center + dir * length * 0.5, 1, node.background_color, node.background_color);
+                OMG.DrawLine(draw_list, center - dir * length * 0.5, center + dir * length * 0.5, 1, color, color);
 
                 dir = .{dir.y, -dir.x};
 
-                OMG.DrawLine(draw_list, center - dir * length * 0.5, center + dir * length * 0.5, 1, node.background_color, node.background_color);
+                OMG.DrawLine(draw_list, center - dir * length * 0.5, center + dir * length * 0.5, 1, color, color);
             });
         }
 

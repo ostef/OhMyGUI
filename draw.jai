@@ -244,10 +244,24 @@ SetTexture :: (draw_list : *DrawList, texture : DrawCall.Texture) -> previous : 
     return previous;
 }
 
-DrawRect :: (
+DrawRect :: inline (
     draw_list : *DrawList,
     bounds : Vec4f,
     color : RGBA8,
+    corner_radiuses : Vec4f = .{0,0,0,0},
+    uv_bounds : Vec4f = .{0,0,0,0},
+    blur_size := 0.0
+) {
+    DrawRect(draw_list, bounds, color, color, color, color, corner_radiuses, uv_bounds, blur_size);
+}
+
+DrawRect :: (
+    draw_list : *DrawList,
+    bounds : Vec4f,
+    color_top_left : RGBA8,
+    color_top_right : RGBA8,
+    color_bottom_left : RGBA8,
+    color_bottom_right : RGBA8,
     corner_radiuses : Vec4f = .{0,0,0,0},
     uv_bounds : Vec4f = .{0,0,0,0},
     blur_size := 0.0
@@ -256,11 +270,36 @@ DrawRect :: (
         return;
     }
 
-    if (color & 0xff) == 0 {
+    if (color_top_left & 0xff) == 0
+    || (color_top_right & 0xff) == 0
+    || (color_bottom_left & 0xff) == 0
+    || (color_bottom_right & 0xff) == 0 {
         return;
     }
 
     PathPushRoundedRect(*draw_list.path, bounds, corner_radiuses);
+
+    get_color_data : struct {
+        points : []PathPoint;
+        bounds : Vec4f;
+        colors : BoxColors;
+    } = .{
+        points=draw_list.path,
+        bounds=bounds,
+        colors.top_left=color_top_left,
+        colors.top_right=color_top_right,
+        colors.bottom_left=color_bottom_left,
+        colors.bottom_right=color_bottom_right,
+    };
+
+    GetColor :: (index : int, data : *void) -> RGBA8 {
+        using _ := cast(*type_of(get_color_data), data);
+
+        point := points[index];
+        tx := InverseLerp(bounds.x, bounds.z, point.position.x);
+        ty := InverseLerp(bounds.y, bounds.w, point.position.y);
+        return GetColor(colors, tx, ty);
+    }
 
     get_tex_coords_data : struct {
         points : []PathPoint;
@@ -284,7 +323,7 @@ DrawRect :: (
     DrawConvexPolygon(
         draw_list,
         draw_list.path,
-        (index, data) => cast(*RGBA8, data).*, *color,
+        GetColor, *get_color_data,
         GetTexCoords, *get_tex_coords_data,
         blur_size
     );
@@ -329,7 +368,30 @@ DrawRectOutline :: (
     }
 
     PathPushRoundedRect(*draw_list.path, bounds, corner_radiuses);
-    DrawPolygonLine(draw_list, draw_list.path, true, thickness, color_top_left, blur_size, blur_sides);
+
+    get_color_data : struct {
+        points : []PathPoint;
+        bounds : Vec4f;
+        colors : BoxColors;
+    } = .{
+        points=draw_list.path,
+        bounds=bounds,
+        colors.top_left=color_top_left,
+        colors.top_right=color_top_right,
+        colors.bottom_left=color_bottom_left,
+        colors.bottom_right=color_bottom_right,
+    };
+
+    GetColor :: (index : int, data : *void) -> RGBA8 {
+        using _ := cast(*type_of(get_color_data), data);
+
+        point := points[index];
+        tx := InverseLerp(bounds.x, bounds.z, point.position.x);
+        ty := InverseLerp(bounds.y, bounds.w, point.position.y);
+        return GetColor(colors, tx, ty);
+    }
+
+    DrawPolygonLine(draw_list, draw_list.path, true, thickness, GetColor, *get_color_data, blur_size, blur_sides);
     array_reset_keeping_memory(*draw_list.path);
 } @Profile
 
@@ -337,8 +399,8 @@ BoxDrawing :: struct {
     bounds : Vec4f;
     uv_bounds : Vec4f;
     corner_radiuses : Vec4f;
-    background_color : RGBA8;
-    border_color : RGBA8;
+    background_colors : BoxColors;
+    border_colors : BoxColors;
     border_size : float;
     border_inset : float;
     outer_shadow_color : RGBA8;
@@ -366,7 +428,10 @@ DrawBox :: inline (draw_list : *DrawList, box : BoxDrawing, texture : TextureHan
     DrawRect(
         draw_list,
         box.bounds,
-        box.background_color,
+        box.background_colors.top_left,
+        box.background_colors.top_right,
+        box.background_colors.bottom_left,
+        box.background_colors.bottom_right,
         box.corner_radiuses,
         box.uv_bounds
     );
@@ -390,7 +455,10 @@ DrawBox :: inline (draw_list : *DrawList, box : BoxDrawing, texture : TextureHan
     DrawRectOutline(
         draw_list,
         InflateRect(box.bounds, border_inset),
-        box.border_color,
+        box.border_colors.top_left,
+        box.border_colors.top_right,
+        box.border_colors.bottom_left,
+        box.border_colors.bottom_right,
         box.border_size,
         box.corner_radiuses,
         box.uv_bounds
@@ -654,8 +722,8 @@ DrawNodeDefault :: (draw_list : *DrawList, node : *Node) {
         bounds=node.rect,
         uv_bounds=node.image_uv_bounds,
         corner_radiuses=node.corner_radiuses,
-        background_color=node.background_color,
-        border_color=node.border_color,
+        background_colors=node.background_colors,
+        border_colors=node.border_colors,
         border_size=node.border_size,
         border_inset=node.border_inset,
         outer_shadow_color=node.outer_shadow_color,

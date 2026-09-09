@@ -4,10 +4,10 @@ TableStyle :: struct {
     corner_radiuses : Vec4f;
     padding : Vec4b;
 
-    border_color : RGBA8;
+    border_colors : BoxColors;
     border_size : float;
 
-    vertical_inner_border_color : RGBA8;
+    vertical_inner_border_colors : BoxColors;
     vertical_inner_border_size : float;
 
     rows : TableRowStyle;
@@ -25,8 +25,8 @@ TableRowStyle :: struct {
     cell_padding : Vec4b;
     cell_child_align : Vec2f;
 
-    background_color : RGBA8;
-    alternate_background_color : RGBA8;
+    background_colors : BoxColors;
+    alternate_background_colors : BoxColors;
     inner_shadow_blur : float;
     inner_shadow_color : RGBA8;
 }
@@ -36,9 +36,9 @@ Apply :: inline (node : *Node, style : TableRowStyle, alternate : bool) {
     node.child_align = style.cell_child_align;
 
     if alternate {
-        node.background_color = style.alternate_background_color;
+        node.background_colors = style.alternate_background_colors;
     } else {
-        node.background_color = style.background_color;
+        node.background_colors = style.background_colors;
     }
 
     node.inner_shadow_blur = style.inner_shadow_blur;
@@ -173,7 +173,7 @@ Table :: (parent : *Node, flags : TableFlags = 0, style : *TableStyle = null, lo
         SetLayout(table, .LeftToRight);
 
         SetCornerRadiuses(table, style.corner_radiuses);
-        SetBorderColor(table, style.border_color);
+        SetBorderColors(table, style.border_colors);
         SetBorderSize(table, style.border_size);
         SetPadding(table, style.padding);
 
@@ -216,7 +216,7 @@ TableAddColumn :: (table : *Node, label : string, str_id : string, initial_size 
     if !first && style.vertical_inner_border_size > 0 {
         border = GetNode(data.content, tprint("%.border_before", str_id));
         SetSize(border, SizePx(xx style.vertical_inner_border_size), SizeFill());
-        SetBackgroundColor(border, style.vertical_inner_border_color);
+        SetBackgroundColors(border, style.vertical_inner_border_colors);
     }
 
     column, is_new := GetNode(data.content, str_id);
@@ -368,7 +368,7 @@ TableHeadersRow :: (table : *Node) {
                     }
 
                     arrow_dir := ifx sort_dir == .Ascending then ArrowDirection.Up else .Down;
-                    Arrow(sort_indicator, SizePx(style.header_sort_icon_size), SizePx(style.header_sort_icon_size), arrow_dir, .{background_color=style.header_text.text_color});
+                    Arrow(sort_indicator, SizePx(style.header_sort_icon_size), SizePx(style.header_sort_icon_size), arrow_dir, style.header_text.text_color);
                 }
             }
         }

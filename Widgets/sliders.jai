@@ -14,20 +14,20 @@ SliderStyle :: struct {
 }
 
 SetColors :: (using style : *SliderStyle, base_background_color : RGBA8, base_fill_color : RGBA8, base_handle_color : RGBA8) {
-    normal.background.background_color = base_background_color;
-    focused.background.background_color = base_background_color;
-    hot.background.background_color = base_background_color;
-    active.background.background_color = base_background_color;
+    SetColors(*normal.background.background_colors, base_background_color);
+    SetColors(*focused.background.background_colors, base_background_color);
+    SetColors(*hot.background.background_colors, base_background_color);
+    SetColors(*active.background.background_colors, base_background_color);
 
-    normal.fill.background_color = base_fill_color;
-    focused.fill.background_color = base_fill_color;
-    hot.fill.background_color = base_fill_color;
-    active.fill.background_color = base_fill_color;
+    SetColors(*normal.fill.background_colors, base_fill_color);
+    SetColors(*focused.fill.background_colors, base_fill_color);
+    SetColors(*hot.fill.background_colors, base_fill_color);
+    SetColors(*active.fill.background_colors, base_fill_color);
 
-    normal.handle.background_color = base_handle_color;
-    focused.handle.background_color = Whiten(base_handle_color, 0.05);
-    hot.handle.background_color = Darken(base_handle_color, 0.05);
-    active.handle.background_color = Whiten(base_handle_color, 0.1);
+    SetColors(*normal.handle.background_colors, base_handle_color);
+    SetColors(*focused.handle.background_colors, Whiten(base_handle_color, 0.05));
+    SetColors(*hot.handle.background_colors, Darken(base_handle_color, 0.05));
+    SetColors(*active.handle.background_colors, Whiten(base_handle_color, 0.1));
 }
 
 SliderFlags :: enum_flags {
@@ -236,15 +236,15 @@ ScrollbarStyle :: struct {
 }
 
 SetColors :: (using style : *ScrollbarStyle, base_background_color : RGBA8, base_handle_color : RGBA8) {
-    normal.background.background_color = base_background_color;
-    focused.background.background_color = base_background_color;
-    hot.background.background_color = base_background_color;
-    active.background.background_color = base_background_color;
+    SetColors(*normal.background.background_colors, base_background_color);
+    SetColors(*focused.background.background_colors, base_background_color);
+    SetColors(*hot.background.background_colors, base_background_color);
+    SetColors(*active.background.background_colors, base_background_color);
 
-    normal.handle.background_color = base_handle_color;
-    focused.handle.background_color = Whiten(base_handle_color, 0.05);
-    hot.handle.background_color = Darken(base_handle_color, 0.05);
-    active.handle.background_color = Whiten(base_handle_color, 0.1);
+    SetColors(*normal.handle.background_colors, base_handle_color);
+    SetColors(*focused.handle.background_colors, Whiten(base_handle_color, 0.05));
+    SetColors(*hot.handle.background_colors, Darken(base_handle_color, 0.05));
+    SetColors(*active.handle.background_colors, Whiten(base_handle_color, 0.1));
 }
 
 Scrollbar :: (parent : *Node, target : *Node, axis : Axis, style : *ScrollbarStyle = null, location := #caller_location) -> background : *Node, handle : *Node {
