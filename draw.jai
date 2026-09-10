@@ -277,6 +277,155 @@ DrawRect :: (
         return;
     }
 
+    half_size := (bounds.zw - bounds.xy) * 0.5;
+    max_radius := min(half_size.x, half_size.y);
+
+    // We don't use path + DrawConvexPolygon here because this produces geometry
+    // that does not work well with gradients
+    radiuses := Vec4f.{
+        min(corner_radiuses.x, max_radius),
+        min(corner_radiuses.y, max_radius),
+        min(corner_radiuses.z, max_radius),
+        min(corner_radiuses.w, max_radius),
+    };
+
+    top_left := bounds.xy;
+    top_left.x += radiuses.x;
+    top_left.y += radiuses.x;
+
+    top_right := Vec2f.{bounds.z, bounds.y};
+    top_right.x -= radiuses.y;
+    top_right.y += radiuses.y;
+
+    bottom_left := Vec2f.{bounds.x, bounds.w};
+    bottom_left.x += radiuses.z;
+    bottom_left.y -= radiuses.z;
+
+    bottom_right := bounds.zw;
+    bottom_right.x -= radiuses.w;
+    bottom_right.y -= radiuses.w;
+
+    inner_bounds := Vec4f.{
+        max(top_left.x, bottom_left.x),
+        max(top_left.y, top_right.y),
+        min(top_right.x, bottom_right.x),
+        min(bottom_left.y, bottom_right.y),
+    };
+
+    GetColorByPosition :: (position : Vec2f) -> RGBA8 #expand {
+        tx := InverseLerp(`bounds.x, `bounds.z, position.x);
+        ty := InverseLerp(`bounds.y, `bounds.w, position.y);
+        tx = clamp(tx, 0, 1);
+        ty = clamp(ty, 0, 1);
+
+        a := MixColors(`color_top_left, `color_top_right, tx);
+        b := MixColors(`color_bottom_left, `color_bottom_right, tx);
+
+        return MixColors(a, b, ty);
+    }
+
+    i_inner_tr := GetCurrentIndex(draw_list);
+    v := PushVertex(draw_list);
+    v.position = .{inner_bounds.z, inner_bounds.y};
+    v.color = GetColorByPosition(v.position);
+
+    i_inner_tl := GetCurrentIndex(draw_list);
+    v = PushVertex(draw_list);
+    v.position = .{inner_bounds.x, inner_bounds.y};
+    v.color = GetColorByPosition(v.position);
+
+    i_inner_bl := GetCurrentIndex(draw_list);
+    v = PushVertex(draw_list);
+    v.position = .{inner_bounds.x, inner_bounds.w};
+    v.color = GetColorByPosition(v.position);
+
+    i_inner_br := GetCurrentIndex(draw_list);
+    v = PushVertex(draw_list);
+    v.position = .{inner_bounds.z, inner_bounds.w};
+    v.color = GetColorByPosition(v.position);
+
+    PushIndex(draw_list, i_inner_tr);
+    PushIndex(draw_list, i_inner_tl);
+    PushIndex(draw_list, i_inner_bl);
+
+    PushIndex(draw_list, i_inner_bl);
+    PushIndex(draw_list, i_inner_br);
+    PushIndex(draw_list, i_inner_tr);
+
+    i_top_tl := GetCurrentIndex(draw_list);
+    v = PushVertex(draw_list);
+    v.position = .{inner_bounds.x, bounds.y};
+    v.color = GetColorByPosition(v.position);
+
+    i_top_tr := GetCurrentIndex(draw_list);
+    v = PushVertex(draw_list);
+    v.position = .{inner_bounds.z, bounds.y};
+    v.color = GetColorByPosition(v.position);
+
+    PushIndex(draw_list, i_top_tr);
+    PushIndex(draw_list, i_top_tl);
+    PushIndex(draw_list, i_inner_tl);
+
+    PushIndex(draw_list, i_inner_tl);
+    PushIndex(draw_list, i_inner_tr);
+    PushIndex(draw_list, i_top_tr);
+
+    i_bottom_bl := GetCurrentIndex(draw_list);
+    v = PushVertex(draw_list);
+    v.position = .{inner_bounds.x, bounds.w};
+    v.color = GetColorByPosition(v.position);
+
+    i_bottom_br := GetCurrentIndex(draw_list);
+    v = PushVertex(draw_list);
+    v.position = .{inner_bounds.z, bounds.w};
+    v.color = GetColorByPosition(v.position);
+
+    PushIndex(draw_list, i_bottom_bl);
+    PushIndex(draw_list, i_inner_br);
+    PushIndex(draw_list, i_inner_bl);
+
+    PushIndex(draw_list, i_inner_br);
+    PushIndex(draw_list, i_bottom_bl);
+    PushIndex(draw_list, i_bottom_br);
+
+    i_left_tl := GetCurrentIndex(draw_list);
+    v = PushVertex(draw_list);
+    v.position = .{bounds.x, inner_bounds.y};
+    v.color = GetColorByPosition(v.position);
+
+    i_left_bl := GetCurrentIndex(draw_list);
+    v = PushVertex(draw_list);
+    v.position = .{bounds.x, inner_bounds.w};
+    v.color = GetColorByPosition(v.position);
+
+    PushIndex(draw_list, i_left_bl);
+    PushIndex(draw_list, i_inner_tl);
+    PushIndex(draw_list, i_left_tl);
+
+    PushIndex(draw_list, i_left_bl);
+    PushIndex(draw_list, i_inner_bl);
+    PushIndex(draw_list, i_inner_tl);
+
+    i_right_tr := GetCurrentIndex(draw_list);
+    v = PushVertex(draw_list);
+    v.position = .{bounds.z, inner_bounds.y};
+    v.color = GetColorByPosition(v.position);
+
+    i_right_br := GetCurrentIndex(draw_list);
+    v = PushVertex(draw_list);
+    v.position = .{bounds.z, inner_bounds.w};
+    v.color = GetColorByPosition(v.position);
+
+    PushIndex(draw_list, i_inner_br);
+    PushIndex(draw_list, i_right_tr);
+    PushIndex(draw_list, i_inner_tr);
+
+    PushIndex(draw_list, i_inner_br);
+    PushIndex(draw_list, i_right_br);
+    PushIndex(draw_list, i_right_tr);
+
+    return;
+
     PathPushRoundedRect(*draw_list.path, bounds, corner_radiuses);
 
     get_color_data : struct {
