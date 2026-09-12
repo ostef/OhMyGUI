@@ -654,6 +654,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
 
         SetColors(*theme.text_input, button_base_background_color, base_accent_color);
         theme.text_input.normal.background.background_colors.bottom_right = ColorU32(1,0,0,1);
+        theme.text_input.normal.background.background_colors.bottom_left = ColorU32(1,0,0,1);
 
         SetAlpha(*disabled.text.text_color, 0.5);
         SetAlpha(*disabled.background.background_colors, 0.5);

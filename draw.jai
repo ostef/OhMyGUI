@@ -424,6 +424,42 @@ DrawRect :: (
     PushIndex(draw_list, i_right_br);
     PushIndex(draw_list, i_right_tr);
 
+    DrawSemiCircle :: (position : Vec2f, radius : float, start_angle : float) #expand {
+        i_center := GetCurrentIndex(`draw_list);
+
+        v := PushVertex(draw_list);
+        v.position = position;
+        v.color = GetColorByPosition(v.position);
+
+        for i : 0..50 {
+            angle := start_angle + i / 50.0 * PI * 0.5;
+            p := SampleCosSinTable(-angle);
+
+            v := PushVertex(draw_list);
+            v.position = position + p * radius;
+            v.color = GetColorByPosition(v.position);
+        }
+
+        for i : 1..cast(u32, 48) {
+            PushIndex(draw_list, i_center);
+            PushIndex(draw_list, i_center + i);
+            PushIndex(draw_list, i_center + i + 1);
+        }
+    }
+
+    if radiuses.x > 0 {
+        DrawSemiCircle(top_left, radiuses.x, PI * 0.5);
+    }
+    if radiuses.y > 0 {
+        DrawSemiCircle(top_right, radiuses.y, 0);
+    }
+    if radiuses.z > 0 {
+        DrawSemiCircle(bottom_left, radiuses.z, PI);
+    }
+    if radiuses.w > 0 {
+        DrawSemiCircle(bottom_right, radiuses.w, -PI * 0.5);
+    }
+
     return;
 
     PathPushRoundedRect(*draw_list.path, bounds, corner_radiuses);
@@ -562,14 +598,14 @@ BoxDrawing :: struct {
 
 DrawBox :: inline (draw_list : *DrawList, box : BoxDrawing, texture : TextureHandle = 0) {
     // Outer shadow
-    DrawRect(
-        draw_list,
-        MoveRect(box.bounds, box.outer_shadow_offset),
-        box.outer_shadow_color,
-        box.corner_radiuses,
-        box.uv_bounds,
-        box.outer_shadow_blur,
-    );
+    // DrawRect(
+    //     draw_list,
+    //     MoveRect(box.bounds, box.outer_shadow_offset),
+    //     box.outer_shadow_color,
+    //     box.corner_radiuses,
+    //     box.uv_bounds,
+    //     box.outer_shadow_blur,
+    // );
 
     // Background
     prev_texture := SetTexture(draw_list, texture);
@@ -588,30 +624,30 @@ DrawBox :: inline (draw_list : *DrawList, box : BoxDrawing, texture : TextureHan
     SetTexture(draw_list, prev_texture);
 
     // Inner shadow
-    DrawRectOutline(
-        draw_list,
-        box.bounds,
-        box.inner_shadow_color,
-        0,
-        box.corner_radiuses,
-        box.uv_bounds,
-        box.inner_shadow_blur,
-        .Interior,
-    );
+    // DrawRectOutline(
+    //     draw_list,
+    //     box.bounds,
+    //     box.inner_shadow_color,
+    //     0,
+    //     box.corner_radiuses,
+    //     box.uv_bounds,
+    //     box.inner_shadow_blur,
+    //     .Interior,
+    // );
 
     // Border
-    border_inset := Vec4f.{-1,-1,-1,-1} * (box.border_size * 0.5 + box.border_inset);
-    DrawRectOutline(
-        draw_list,
-        InflateRect(box.bounds, border_inset),
-        box.border_colors.top_left,
-        box.border_colors.top_right,
-        box.border_colors.bottom_left,
-        box.border_colors.bottom_right,
-        box.border_size,
-        box.corner_radiuses,
-        box.uv_bounds
-    );
+    // border_inset := Vec4f.{-1,-1,-1,-1} * (box.border_size * 0.5 + box.border_inset);
+    // DrawRectOutline(
+    //     draw_list,
+    //     InflateRect(box.bounds, border_inset),
+    //     box.border_colors.top_left,
+    //     box.border_colors.top_right,
+    //     box.border_colors.bottom_left,
+    //     box.border_colors.bottom_right,
+    //     box.border_size,
+    //     box.corner_radiuses,
+    //     box.uv_bounds
+    // );
 } @Profile
 
 DrawCircle :: (

@@ -280,6 +280,8 @@ Terminate :: () {
 }
 
 Render :: (viewport_w : u32, viewport_h : u32) {
+    // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
     glEnable(GL_BLEND);
