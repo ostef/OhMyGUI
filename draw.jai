@@ -432,7 +432,7 @@ DrawRect :: (
         v.color = GetColorByPosition(v.position);
 
         for i : 0..50 {
-            angle := start_angle + i / 50.0 * PI * 0.5;
+            angle := start_angle + (i / 50.0) * (PI * 0.5);
             p := SampleCosSinTable(-angle);
 
             v := PushVertex(draw_list);
@@ -440,7 +440,7 @@ DrawRect :: (
             v.color = GetColorByPosition(v.position);
         }
 
-        for i : 1..cast(u32, 48) {
+        for i : 1..cast(u32, 50) {
             PushIndex(draw_list, i_center);
             PushIndex(draw_list, i_center + i);
             PushIndex(draw_list, i_center + i + 1);
