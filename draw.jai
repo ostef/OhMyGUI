@@ -312,6 +312,15 @@ DrawRect :: (
         min(bottom_left.y, bottom_right.y),
     };
 
+    GetTexCoordsByPosition :: (position : Vec2f) -> Vec2f #expand {
+        tx := InverseLerp(`bounds.x, `bounds.z, position.x);
+        ty := InverseLerp(`bounds.y, `bounds.w, position.y);
+        tx = clamp(tx, 0, 1);
+        ty = clamp(ty, 0, 1);
+
+        return .{lerp(uv_bounds.x, uv_bounds.z, tx), lerp(uv_bounds.y, uv_bounds.w, ty)};
+    }
+
     GetColorByPosition :: (position : Vec2f) -> RGBA8 #expand {
         tx := InverseLerp(`bounds.x, `bounds.z, position.x);
         ty := InverseLerp(`bounds.y, `bounds.w, position.y);
@@ -328,21 +337,25 @@ DrawRect :: (
     v := PushVertex(draw_list);
     v.position = .{inner_bounds.z, inner_bounds.y};
     v.color = GetColorByPosition(v.position);
+    v.tex_coords = GetTexCoordsByPosition(v.position);
 
     i_inner_tl := GetCurrentIndex(draw_list);
     v = PushVertex(draw_list);
     v.position = .{inner_bounds.x, inner_bounds.y};
     v.color = GetColorByPosition(v.position);
+    v.tex_coords = GetTexCoordsByPosition(v.position);
 
     i_inner_bl := GetCurrentIndex(draw_list);
     v = PushVertex(draw_list);
     v.position = .{inner_bounds.x, inner_bounds.w};
     v.color = GetColorByPosition(v.position);
+    v.tex_coords = GetTexCoordsByPosition(v.position);
 
     i_inner_br := GetCurrentIndex(draw_list);
     v = PushVertex(draw_list);
     v.position = .{inner_bounds.z, inner_bounds.w};
     v.color = GetColorByPosition(v.position);
+    v.tex_coords = GetTexCoordsByPosition(v.position);
 
     PushIndex(draw_list, i_inner_tr);
     PushIndex(draw_list, i_inner_tl);
@@ -356,11 +369,13 @@ DrawRect :: (
     v = PushVertex(draw_list);
     v.position = .{inner_bounds.x, bounds.y};
     v.color = GetColorByPosition(v.position);
+    v.tex_coords = GetTexCoordsByPosition(v.position);
 
     i_top_tr := GetCurrentIndex(draw_list);
     v = PushVertex(draw_list);
     v.position = .{inner_bounds.z, bounds.y};
     v.color = GetColorByPosition(v.position);
+    v.tex_coords = GetTexCoordsByPosition(v.position);
 
     PushIndex(draw_list, i_top_tr);
     PushIndex(draw_list, i_top_tl);
@@ -374,11 +389,13 @@ DrawRect :: (
     v = PushVertex(draw_list);
     v.position = .{inner_bounds.x, bounds.w};
     v.color = GetColorByPosition(v.position);
+    v.tex_coords = GetTexCoordsByPosition(v.position);
 
     i_bottom_br := GetCurrentIndex(draw_list);
     v = PushVertex(draw_list);
     v.position = .{inner_bounds.z, bounds.w};
     v.color = GetColorByPosition(v.position);
+    v.tex_coords = GetTexCoordsByPosition(v.position);
 
     PushIndex(draw_list, i_bottom_bl);
     PushIndex(draw_list, i_inner_br);
@@ -392,11 +409,13 @@ DrawRect :: (
     v = PushVertex(draw_list);
     v.position = .{bounds.x, inner_bounds.y};
     v.color = GetColorByPosition(v.position);
+    v.tex_coords = GetTexCoordsByPosition(v.position);
 
     i_left_bl := GetCurrentIndex(draw_list);
     v = PushVertex(draw_list);
     v.position = .{bounds.x, inner_bounds.w};
     v.color = GetColorByPosition(v.position);
+    v.tex_coords = GetTexCoordsByPosition(v.position);
 
     PushIndex(draw_list, i_left_bl);
     PushIndex(draw_list, i_inner_tl);
@@ -410,11 +429,13 @@ DrawRect :: (
     v = PushVertex(draw_list);
     v.position = .{bounds.z, inner_bounds.y};
     v.color = GetColorByPosition(v.position);
+    v.tex_coords = GetTexCoordsByPosition(v.position);
 
     i_right_br := GetCurrentIndex(draw_list);
     v = PushVertex(draw_list);
     v.position = .{bounds.z, inner_bounds.w};
     v.color = GetColorByPosition(v.position);
+    v.tex_coords = GetTexCoordsByPosition(v.position);
 
     PushIndex(draw_list, i_inner_br);
     PushIndex(draw_list, i_right_tr);
@@ -430,6 +451,7 @@ DrawRect :: (
         v := PushVertex(draw_list);
         v.position = position;
         v.color = GetColorByPosition(v.position);
+        v.tex_coords = GetTexCoordsByPosition(v.position);
 
         for i : 0..50 {
             angle := start_angle + (i / 50.0) * (PI * 0.5);
@@ -438,6 +460,7 @@ DrawRect :: (
             v := PushVertex(draw_list);
             v.position = position + p * radius;
             v.color = GetColorByPosition(v.position);
+            v.tex_coords = GetTexCoordsByPosition(v.position);
         }
 
         for i : 1..cast(u32, 50) {
