@@ -295,6 +295,8 @@ DrawRect :: (
         return;
     }
 
+    blur_size = max(blur_size, draw_list.anti_alias_margin, 0.0);
+
     half_size := (bounds.zw - bounds.xy) * 0.5;
     max_radius := min(half_size.x, half_size.y);
 
@@ -302,39 +304,52 @@ DrawRect :: (
     // that does not work well with gradients
     // What we do instead is create stacked horizontal strips from top to bottom that follow the rect's outline
     radiuses := Vec4f.{
-        min(corner_radiuses.x, max_radius),
-        min(corner_radiuses.y, max_radius),
-        min(corner_radiuses.z, max_radius),
-        min(corner_radiuses.w, max_radius),
+        max(min(corner_radiuses.x, max_radius), 0),
+        max(min(corner_radiuses.y, max_radius), 0),
+        max(min(corner_radiuses.z, max_radius), 0),
+        max(min(corner_radiuses.w, max_radius), 0),
     };
 
     top_left := bounds.xy;
-    top_left.x += radiuses.x;
-    top_left.y += radiuses.x;
+    top_left.x += radiuses.x + blur_size * 0.5;
+    top_left.y += radiuses.x + blur_size * 0.5;
 
     top_right := Vec2f.{bounds.z, bounds.y};
-    top_right.x -= radiuses.y;
-    top_right.y += radiuses.y;
+    top_right.x -= radiuses.y + blur_size * 0.5;
+    top_right.y += radiuses.y + blur_size * 0.5;
 
     bottom_left := Vec2f.{bounds.x, bounds.w};
-    bottom_left.x += radiuses.z;
-    bottom_left.y -= radiuses.z;
+    bottom_left.x += radiuses.z + blur_size * 0.5;
+    bottom_left.y -= radiuses.z + blur_size * 0.5;
 
     bottom_right := bounds.zw;
-    bottom_right.x -= radiuses.w;
-    bottom_right.y -= radiuses.w;
+    bottom_right.x -= radiuses.w + blur_size * 0.5;
+    bottom_right.y -= radiuses.w + blur_size * 0.5;
 
     PushCornerVertices :: (draw_list : *DrawList, left : Vec2f, right : Vec2f, left_radius : float, right_radius : float, bottom : bool) -> num_segments : int #expand {
         if left_radius <= 0 && right_radius <= 0 {
+            n := Vec2f.{-1, -1};
+            if bottom {
+                n.y = -n.y;
+            }
+
+            v := PushVertex(draw_list, left + n * `blur_size);
+            SetAlpha(*v.color, 0);
+
             PushVertex(draw_list, left);
             PushVertex(draw_list, right);
+
+            n.x = -n.x;
+
+            v = PushVertex(draw_list, right + n * `blur_size);
+            SetAlpha(*v.color, 0);
+
             return 0;
         }
 
-        num_segments : int = xx max(left_radius * 0.25, right_radius * 0.25, 3);
+        num_segments : int = xx max(left_radius * 0.25 + blur_size, right_radius * 0.25 + blur_size, 3);
 
         left_dominant := left_radius > right_radius;
-        top_to_bottom_direction := -(cast(float, bottom) * 2 - 1);
         start_angle : float = ---;
         dominant_angle_sign : float = ---;
         dominant_radius, non_dominant_radius : float = ---;
@@ -358,19 +373,30 @@ DrawRect :: (
         for i : 0..num_segments {
             t := i / cast(float, num_segments);
             angle := start_angle + t * dominant_angle_sign * PI * 0.5;
-            p := SampleCosSinTable(-angle);
+            dominant_p := SampleCosSinTable(-angle);
 
-            dominant_position := dominant_center + p * dominant_radius;
+            dominant_position := dominant_center + dominant_p * dominant_radius;
+            non_dominant_p : Vec2f = ---;
             non_dominant_position : Vec2f = ---;
 
             if non_dominant_radius <= 0 {
-                non_dominant_position = Vec2f.{
+                non_dominant_position = .{
                     non_dominant_center.x,
                     dominant_position.y,
                 };
+
+                if bottom && i == num_segments {
+                    non_dominant_p = .{dominant_angle_sign, 1};
+                } else if !bottom && i == 0 {
+                    non_dominant_p = .{dominant_angle_sign, -1};
+                } else {
+                    non_dominant_p = .{dominant_angle_sign, 0};
+                }
             } else if left_radius == right_radius {
-                non_dominant_position = Vec2f.{
-                    non_dominant_center.x - p.x * non_dominant_radius,
+                non_dominant_p = dominant_p;
+                non_dominant_p.x = -non_dominant_p.x;
+                non_dominant_position = .{
+                    non_dominant_center.x + non_dominant_p.x * non_dominant_radius,
                     dominant_position.y,
                 };
             } else {
@@ -379,21 +405,61 @@ DrawRect :: (
                     else InverseLerp(non_dominant_center.y, bounds.y, dominant_position.y);
                 sin_y = clamp(sin_y, 0, 1);
                 angle := asin(sin_y);
-                cos_x := dominant_angle_sign * SampleCosSinTable(angle).x;
+                non_dominant_p = SampleCosSinTable(angle);
+                non_dominant_p.x *= dominant_angle_sign;
+                if !bottom {
+                    non_dominant_p.y = -non_dominant_p.y;
+                }
 
-                non_dominant_position = Vec2f.{
-                    non_dominant_center.x + cos_x * non_dominant_radius,
+                non_dominant_position = .{
+                    non_dominant_center.x + non_dominant_p.x * non_dominant_radius,
                     dominant_position.y,
                 };
             }
 
             if left_dominant {
+                // Outer
+                v := PushVertex(draw_list, dominant_position + dominant_p * blur_size);
+                SetAlpha(*v.color, 0);
+
+                // Inner
                 PushVertex(draw_list, dominant_position);
                 PushVertex(draw_list, non_dominant_position);
+
+                // Outer
+                v = PushVertex(draw_list, non_dominant_position + non_dominant_p * blur_size);
+                SetAlpha(*v.color, 0);
             } else {
+                // Outer
+                v := PushVertex(draw_list, non_dominant_position + non_dominant_p * blur_size);
+                SetAlpha(*v.color, 0);
+
+                // Inner
                 PushVertex(draw_list, non_dominant_position);
                 PushVertex(draw_list, dominant_position);
+
+                // Outer
+                v = PushVertex(draw_list, dominant_position + dominant_p * blur_size);
+                SetAlpha(*v.color, 0);
             }
+        }
+
+        // Top/bottom blur margins
+        {
+            n := Vec2f.{0, ifx bottom then blur_size + left_radius else -blur_size - left_radius};
+            if left_radius <= 0 {
+                n.x = -blur_size - left_radius;
+            }
+            v := PushVertex(draw_list, left + n);
+            SetAlpha(*v.color, 0);
+
+            n = Vec2f.{0, ifx bottom then blur_size + right_radius else -blur_size - right_radius};
+            if right_radius <= 0 {
+                n.x = blur_size + right_radius;
+            }
+            v = PushVertex(draw_list, right + n);
+            SetAlpha(*v.color, 0);
+
         }
 
         return num_segments;
@@ -401,42 +467,150 @@ DrawRect :: (
 
     first_top_vertex := GetCurrentIndex(draw_list);
     num_top_segments := PushCornerVertices(draw_list, top_left, top_right, radiuses.x, radiuses.y, bottom=false);
+
+    last_top_left_outer_vertex := cast(u32, first_top_vertex + num_top_segments * 4);
+    last_top_left_inner_vertex := last_top_left_outer_vertex + 1;
+    last_top_right_inner_vertex := last_top_left_inner_vertex + 1;
+    last_top_right_outer_vertex := last_top_right_inner_vertex + 1;
+    top_margin_left := last_top_right_outer_vertex + 1;
+    top_margin_right := top_margin_left + 1;
+
     if num_top_segments > 0 {
         for i : 0..cast(u32, num_top_segments - 1) {
-            PushIndex(draw_list, first_top_vertex + i * 2);
-            PushIndex(draw_list, first_top_vertex + i * 2 + 2);
-            PushIndex(draw_list, first_top_vertex + i * 2 + 1);
+            outer_left := first_top_vertex + i * 4;
+            inner_left := outer_left + 1;
+            inner_right := inner_left + 1;
+            outer_right := inner_right + 1;
 
-            PushIndex(draw_list, first_top_vertex + i * 2 + 1);
-            PushIndex(draw_list, first_top_vertex + i * 2 + 2);
-            PushIndex(draw_list, first_top_vertex + i * 2 + 3);
+            PushIndex(draw_list, outer_left);
+            PushIndex(draw_list, outer_left + 4);
+            PushIndex(draw_list, inner_left);
+
+            PushIndex(draw_list, inner_left);
+            PushIndex(draw_list, outer_left + 4);
+            PushIndex(draw_list, inner_left + 4);
+
+            PushIndex(draw_list, inner_left);
+            PushIndex(draw_list, inner_left + 4);
+            PushIndex(draw_list, inner_right);
+
+            PushIndex(draw_list, inner_right);
+            PushIndex(draw_list, inner_left + 4);
+            PushIndex(draw_list, inner_right + 4);
+
+            PushIndex(draw_list, inner_right);
+            PushIndex(draw_list, inner_right + 4);
+            PushIndex(draw_list, outer_right);
+
+            PushIndex(draw_list, outer_right);
+            PushIndex(draw_list, inner_right + 4);
+            PushIndex(draw_list, outer_right + 4);
         }
-    }
 
-    last_top_left_vertex := cast(u32, first_top_vertex + num_top_segments * 2);
-    last_top_right_vertex := cast(u32, first_top_vertex + num_top_segments * 2 + 1);
+        // Top margin
+        PushIndex(draw_list, top_margin_left);
+        PushIndex(draw_list, first_top_vertex + 1);
+        PushIndex(draw_list, top_margin_right);
+
+        PushIndex(draw_list, top_margin_right);
+        PushIndex(draw_list, first_top_vertex + 1);
+        PushIndex(draw_list, first_top_vertex + 2);
+    } else {
+        // Top margin
+        PushIndex(draw_list, first_top_vertex);
+        PushIndex(draw_list, first_top_vertex + 3);
+        PushIndex(draw_list, first_top_vertex + 1);
+
+        PushIndex(draw_list, first_top_vertex + 1);
+        PushIndex(draw_list, first_top_vertex + 3);
+        PushIndex(draw_list, first_top_vertex + 2);
+    }
 
     first_bottom_vertex := GetCurrentIndex(draw_list);
     num_bottom_segments := PushCornerVertices(draw_list, bottom_left, bottom_right, radiuses.z, radiuses.w, bottom=true);
 
-    PushIndex(draw_list, last_top_left_vertex);
-    PushIndex(draw_list, first_bottom_vertex);
-    PushIndex(draw_list, last_top_right_vertex);
+    first_bottom_left_outer_vertex := cast(u32, first_bottom_vertex);
+    first_bottom_left_inner_vertex := first_bottom_left_outer_vertex + 1;
+    first_bottom_right_inner_vertex := first_bottom_left_inner_vertex + 1;
+    first_bottom_right_outer_vertex := first_bottom_right_inner_vertex + 1;
+    last_bottom_left_inner_vertex := cast(u32, first_bottom_vertex + num_bottom_segments * 4) + 1;
+    last_bottom_right_inner_vertex := cast(u32, first_bottom_vertex + num_bottom_segments * 4) + 2;
+    bottom_margin_left := last_bottom_right_inner_vertex + 2;
+    bottom_margin_right := bottom_margin_left + 1;
 
-    PushIndex(draw_list, last_top_right_vertex);
-    PushIndex(draw_list, first_bottom_vertex);
-    PushIndex(draw_list, first_bottom_vertex + 1);
+    PushIndex(draw_list, last_top_left_outer_vertex);
+    PushIndex(draw_list, first_bottom_left_outer_vertex);
+    PushIndex(draw_list, last_top_left_inner_vertex);
+
+    PushIndex(draw_list, last_top_left_inner_vertex);
+    PushIndex(draw_list, first_bottom_left_outer_vertex);
+    PushIndex(draw_list, first_bottom_left_inner_vertex);
+
+    PushIndex(draw_list, last_top_left_inner_vertex);
+    PushIndex(draw_list, first_bottom_left_inner_vertex);
+    PushIndex(draw_list, last_top_right_inner_vertex);
+
+    PushIndex(draw_list, last_top_right_inner_vertex);
+    PushIndex(draw_list, first_bottom_left_inner_vertex);
+    PushIndex(draw_list, first_bottom_right_inner_vertex);
+
+    PushIndex(draw_list, last_top_right_inner_vertex);
+    PushIndex(draw_list, first_bottom_right_inner_vertex);
+    PushIndex(draw_list, last_top_right_outer_vertex);
+
+    PushIndex(draw_list, last_top_right_outer_vertex);
+    PushIndex(draw_list, first_bottom_right_inner_vertex);
+    PushIndex(draw_list, first_bottom_right_outer_vertex);
 
     if num_bottom_segments > 0 {
         for i : 0..cast(u32, num_bottom_segments - 1) {
-            PushIndex(draw_list, first_bottom_vertex + i * 2);
-            PushIndex(draw_list, first_bottom_vertex + i * 2 + 2);
-            PushIndex(draw_list, first_bottom_vertex + i * 2 + 1);
+            outer_left := first_bottom_vertex + i * 4;
+            inner_left := outer_left + 1;
+            inner_right := inner_left + 1;
+            outer_right := inner_right + 1;
 
-            PushIndex(draw_list, first_bottom_vertex + i * 2 + 1);
-            PushIndex(draw_list, first_bottom_vertex + i * 2 + 2);
-            PushIndex(draw_list, first_bottom_vertex + i * 2 + 3);
+            PushIndex(draw_list, outer_left);
+            PushIndex(draw_list, outer_left + 4);
+            PushIndex(draw_list, inner_left);
+
+            PushIndex(draw_list, inner_left);
+            PushIndex(draw_list, outer_left + 4);
+            PushIndex(draw_list, inner_left + 4);
+
+            PushIndex(draw_list, inner_left);
+            PushIndex(draw_list, inner_left + 4);
+            PushIndex(draw_list, inner_right);
+
+            PushIndex(draw_list, inner_right);
+            PushIndex(draw_list, inner_left + 4);
+            PushIndex(draw_list, inner_right + 4);
+
+            PushIndex(draw_list, inner_right);
+            PushIndex(draw_list, inner_right + 4);
+            PushIndex(draw_list, outer_right);
+
+            PushIndex(draw_list, outer_right);
+            PushIndex(draw_list, inner_right + 4);
+            PushIndex(draw_list, outer_right + 4);
         }
+
+        // Bottom margin
+        PushIndex(draw_list, last_bottom_left_inner_vertex);
+        PushIndex(draw_list, bottom_margin_left);
+        PushIndex(draw_list, last_bottom_right_inner_vertex);
+
+        PushIndex(draw_list, last_bottom_right_inner_vertex);
+        PushIndex(draw_list, bottom_margin_left);
+        PushIndex(draw_list, bottom_margin_right);
+    } else {
+        // Bottom margin
+        PushIndex(draw_list, first_bottom_vertex);
+        PushIndex(draw_list, first_bottom_vertex + 3);
+        PushIndex(draw_list, first_bottom_vertex + 1);
+
+        PushIndex(draw_list, first_bottom_vertex + 1);
+        PushIndex(draw_list, first_bottom_vertex + 3);
+        PushIndex(draw_list, first_bottom_vertex + 2);
     }
 }
 
@@ -523,14 +697,14 @@ BoxDrawing :: struct {
 
 DrawBox :: inline (draw_list : *DrawList, box : BoxDrawing, texture : TextureHandle = 0) {
     // Outer shadow
-    // DrawRect(
-    //     draw_list,
-    //     MoveRect(box.bounds, box.outer_shadow_offset),
-    //     box.outer_shadow_color,
-    //     box.corner_radiuses,
-    //     box.uv_bounds,
-    //     box.outer_shadow_blur,
-    // );
+    DrawRect(
+        draw_list,
+        MoveRect(box.bounds, box.outer_shadow_offset),
+        box.outer_shadow_color,
+        box.corner_radiuses,
+        box.uv_bounds,
+        box.outer_shadow_blur,
+    );
 
     // Background
     prev_texture := SetTexture(draw_list, texture);
@@ -549,30 +723,30 @@ DrawBox :: inline (draw_list : *DrawList, box : BoxDrawing, texture : TextureHan
     SetTexture(draw_list, prev_texture);
 
     // Inner shadow
-    // DrawRectOutline(
-    //     draw_list,
-    //     box.bounds,
-    //     box.inner_shadow_color,
-    //     0,
-    //     box.corner_radiuses,
-    //     box.uv_bounds,
-    //     box.inner_shadow_blur,
-    //     .Interior,
-    // );
+    DrawRectOutline(
+        draw_list,
+        box.bounds,
+        box.inner_shadow_color,
+        0,
+        box.corner_radiuses,
+        box.uv_bounds,
+        box.inner_shadow_blur,
+        .Interior,
+    );
 
     // Border
-    // border_inset := Vec4f.{-1,-1,-1,-1} * (box.border_size * 0.5 + box.border_inset);
-    // DrawRectOutline(
-    //     draw_list,
-    //     InflateRect(box.bounds, border_inset),
-    //     box.border_colors.top_left,
-    //     box.border_colors.top_right,
-    //     box.border_colors.bottom_left,
-    //     box.border_colors.bottom_right,
-    //     box.border_size,
-    //     box.corner_radiuses,
-    //     box.uv_bounds
-    // );
+    border_inset := Vec4f.{-1,-1,-1,-1} * (box.border_size * 0.5 + box.border_inset);
+    DrawRectOutline(
+        draw_list,
+        InflateRect(box.bounds, border_inset),
+        box.border_colors.top_left,
+        box.border_colors.top_right,
+        box.border_colors.bottom_left,
+        box.border_colors.bottom_right,
+        box.border_size,
+        box.corner_radiuses,
+        box.uv_bounds
+    );
 } @Profile
 
 DrawCircle :: (
@@ -1641,10 +1815,10 @@ PathPushRoundedRect :: (points : *[..]PathPoint, bounds : Vec4f, corner_radiuses
     half_size := (bounds.zw - bounds.xy) * 0.5;
     max_radius := min(half_size.x, half_size.y);
     radiuses := Vec4f.{
-        min(corner_radiuses.x, max_radius),
-        min(corner_radiuses.y, max_radius),
-        min(corner_radiuses.z, max_radius),
-        min(corner_radiuses.w, max_radius),
+        max(min(corner_radiuses.x, max_radius), 0.0),
+        max(min(corner_radiuses.y, max_radius), 0.0),
+        max(min(corner_radiuses.z, max_radius), 0.0),
+        max(min(corner_radiuses.w, max_radius), 0.0),
     };
 
     top_left := bounds.xy;
