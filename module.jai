@@ -24,6 +24,8 @@ Context :: struct {
     layout_time_last_frame : float;
     draw_time_last_frame : float;
     total_time_last_frame : float;
+    num_vertices_last_frame : int;
+    num_indices_last_frame : int;
 
     platform_funcs : PlatformFunctions;
     renderer_funcs : RendererFunctions;

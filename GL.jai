@@ -280,8 +280,6 @@ Terminate :: () {
 }
 
 Render :: (viewport_w : u32, viewport_h : u32) {
-    // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
     glEnable(GL_BLEND);
@@ -293,6 +291,11 @@ Render :: (viewport_w : u32, viewport_h : u32) {
     clip_boxes : [..]ClipBox;
     vertices : [..]Vertex;
     indices : [..]u32;
+
+    defer {
+        context.omg.num_vertices_last_frame = vertices.count;
+        context.omg.num_indices_last_frame = indices.count;
+    }
 
     for :Windows context.omg {
         it.draw_list.gpu_buffer_clip_boxes_offset = xx clip_boxes.count;

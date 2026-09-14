@@ -338,6 +338,10 @@ EditorFrame :: () {
             OMG.Text(content_browser, "\t\tRemaining: % ms", (context.omg.total_time_last_frame - context.omg.layout_time_last_frame - context.omg.draw_time_last_frame) * 1000);
             OMG.Text(content_browser, "\tUser: % ms", g_user_time * 1000);
             OMG.Text(content_browser, "GPU: % ms", g_gpu_time * 1000);
+            OMG.Text(content_browser, "Num Vertices: % ms", context.omg.num_vertices_last_frame);
+            OMG.Text(content_browser, "Num Indices: % ms", context.omg.num_indices_last_frame);
+
+            OMG.Separator(content_browser);
 
             password_field := OMG.GetNode(content_browser, "password_field");
             {
