@@ -211,6 +211,32 @@ SetContentScrollY :: inline (node : *Node, value : float) {
     node.scroll.y = clamp(value, avail_scroll, 0);
 }
 
+DragBehavior :: (subwindow : *Node, node : *Node, avail_area : Vec4f) -> ButtonResult {
+    interaction := ButtonBehavior(node);
+
+    if node.state_flags & .Focused && IsMouseButtonPressed(.Left) {
+        SetMouseCapture(node);
+        SetMouseFocus(node);
+
+        interaction.pressed = true;
+        interaction.held = true;
+    }
+
+    if interaction.pressed {
+        context.omg.mouse_captured_node_value = .{xy=subwindow.offset};
+    }
+
+    if interaction.held {
+        mouse_delta := GetMousePosition() - context.omg.mouse_captured_at;
+        original_offset := context.omg.mouse_captured_node_value.xy;
+        subwindow.offset = original_offset + mouse_delta;
+
+        subwindow.offset = clamp(subwindow.offset, avail_area.xy, avail_area.zw);
+    }
+
+    return interaction;
+}
+
 ProgressBarStyle :: struct {
     height : float;
     background : BoxStyle;

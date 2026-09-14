@@ -462,3 +462,46 @@ LineIntersection :: (a_p0 : Vec2f, a_p1 : Vec2f, b_p0 : Vec2f, b_p1 : Vec2f) -> 
 
     return true, a_p0 + t * Vec2f.{ax, ay};
 }
+
+BezierQuadratic :: inline (p0 : Vec2f, p1 : Vec2f, p2 : Vec2f, t : float) -> Vec2f {
+    u := 1 - t;
+    w0 := u * u;
+    w1 := 2 * u * t;
+    w2 := t * t;
+
+    return .{
+        w0 * p0.x + w1 * p1.x + w2 * p2.x,
+        w0 * p0.y + w1 * p1.y + w2 * p2.y,
+    };
+}
+
+BezierQuadraticTangent :: inline (p0 : Vec2f, p1 : Vec2f, p2 : Vec2f, t : float) -> Vec2f {
+    return normalize(2 * (1 - t) * (p1 - p0) + 2 * t * (p2 - p1));
+}
+
+BezierQuadraticNormal :: inline (p0 : Vec2f, p1 : Vec2f, p2 : Vec2f, t : float) -> Vec2f {
+    return PerpendicularCW(BezierQuadraticTangent(p0, p1, p2, t));
+}
+
+BezierCubic :: inline (p0 : Vec2f, p1 : Vec2f, p2 : Vec2f, p3 : Vec2f, t : float) -> Vec2f {
+    u := 1 - t;
+    w0 := u * u * u;
+    w1 := 3 * u * u * t;
+    w2 := 3 * u * t * t;
+    w3 := t * t * t;
+
+    return .{
+        w0 * p0.x + w1 * p1.x + w2 * p2.x + w3 * p3.x,
+        w0 * p0.y + w1 * p1.y + w2 * p2.y + w3 * p3.y,
+    };
+}
+
+BezierCubicTangent :: inline (p0 : Vec2f, p1 : Vec2f, p2 : Vec2f, p3 : Vec2f, t : float) -> Vec2f {
+    u := 1 - t;
+
+    return normalize(3 * u * u * (p1 - p0) + 6 * u * t * (p2 - p1) + 3 * t * t * (p3 - p2));
+}
+
+BezierCubicNormal :: inline (p0 : Vec2f, p1 : Vec2f, p2 : Vec2f, p3 : Vec2f, t : float) -> Vec2f {
+    return PerpendicularCW(BezierCubicTangent(p0, p1, p2, p3, t));
+}

@@ -175,15 +175,21 @@ PushIndices :: (draw_list : *DrawList, count : u32) -> []u32 {
     return .{data=data, count=count};
 }
 
-PushClipBox :: (draw_list : *DrawList, bounds : Vec4f, corner_radiuses : Vec4f = .{}) {
+PushDisableClipBox :: inline (draw_list : *DrawList) {
+    array_add(*draw_list.clip_box_stack, -1);
+}
+
+PushClipBox :: (draw_list : *DrawList, bounds : Vec4f, corner_radiuses : Vec4f = .{}, global := false) {
     box := array_add(*draw_list.clip_boxes);
     box.bounds = bounds;
     box.corner_radiuses = corner_radiuses;
 
-    current_index := GetCurrentClipBoxIndex(draw_list);
-    if current_index >= 0 {
-        current := draw_list.clip_boxes[current_index];
-        box.* = ClipBoxAgainstBox(box, current);
+    if !global {
+        current_index := GetCurrentClipBoxIndex(draw_list);
+        if current_index >= 0 {
+            current := draw_list.clip_boxes[current_index];
+            box.* = ClipBoxAgainstBox(box, current);
+        }
     }
 
     array_add(*draw_list.clip_box_stack, xx (draw_list.clip_boxes.count - 1));
@@ -255,6 +261,17 @@ DrawRect :: inline (
     DrawRect(draw_list, bounds, color, color, color, color, corner_radiuses, uv_bounds, blur_size);
 }
 
+DrawRect :: inline (
+    draw_list : *DrawList,
+    bounds : Vec4f,
+    colors : BoxColors,
+    corner_radiuses : Vec4f = .{0,0,0,0},
+    uv_bounds : Vec4f = .{0,0,0,0},
+    blur_size := 0.0
+) {
+    DrawRect(draw_list, bounds, colors.top_left, colors.top_right, colors.bottom_left, colors.bottom_right, corner_radiuses, uv_bounds, blur_size);
+}
+
 DrawRect :: (
     draw_list : *DrawList,
     bounds : Vec4f,
@@ -289,9 +306,9 @@ DrawRect :: (
     }
 
     if (color_top_left & 0xff) == 0
-    || (color_top_right & 0xff) == 0
-    || (color_bottom_left & 0xff) == 0
-    || (color_bottom_right & 0xff) == 0 {
+    && (color_top_right & 0xff) == 0
+    && (color_bottom_left & 0xff) == 0
+    && (color_bottom_right & 0xff) == 0 {
         return;
     }
 
@@ -627,6 +644,19 @@ DrawRectOutline :: inline (
     DrawRectOutline(draw_list, bounds, color, color, color, color, thickness, corner_radiuses, uv_bounds, blur_size, blur_sides);
 }
 
+DrawRectOutline :: inline (
+    draw_list : *DrawList,
+    bounds : Vec4f,
+    colors : BoxColors,
+    thickness : float,
+    corner_radiuses : Vec4f = .{0,0,0,0},
+    uv_bounds : Vec4f = .{0,0,0,0},
+    blur_size := 0.0,
+    blur_sides := LineSides.All
+) {
+    DrawRectOutline(draw_list, bounds, colors.top_left, colors.top_right, colors.bottom_left, colors.bottom_right, thickness, corner_radiuses, uv_bounds, blur_size, blur_sides);
+}
+
 DrawRectOutline :: (
     draw_list : *DrawList,
     bounds : Vec4f,
@@ -645,9 +675,9 @@ DrawRectOutline :: (
     }
 
     if (color_top_left & 0xff) == 0
-    || (color_top_right & 0xff) == 0
-    || (color_bottom_left & 0xff) == 0
-    || (color_bottom_right & 0xff) == 0 {
+    && (color_top_right & 0xff) == 0
+    && (color_bottom_left & 0xff) == 0
+    && (color_bottom_right & 0xff) == 0 {
         return;
     }
 
@@ -712,10 +742,7 @@ DrawBox :: inline (draw_list : *DrawList, box : BoxDrawing, texture : TextureHan
     DrawRect(
         draw_list,
         box.bounds,
-        box.background_colors.top_left,
-        box.background_colors.top_right,
-        box.background_colors.bottom_left,
-        box.background_colors.bottom_right,
+        box.background_colors,
         box.corner_radiuses,
         box.uv_bounds
     );
@@ -739,10 +766,7 @@ DrawBox :: inline (draw_list : *DrawList, box : BoxDrawing, texture : TextureHan
     DrawRectOutline(
         draw_list,
         InflateRect(box.bounds, border_inset),
-        box.border_colors.top_left,
-        box.border_colors.top_right,
-        box.border_colors.bottom_left,
-        box.border_colors.bottom_right,
+        box.border_colors,
         box.border_size,
         box.corner_radiuses,
         box.uv_bounds
@@ -863,9 +887,9 @@ DrawSDFGlyph :: (
     }
 
     if (color_top_left & 0xff) == 0
-    || (color_top_right & 0xff) == 0
-    || (color_bottom_left & 0xff) == 0
-    || (color_bottom_right & 0xff) == 0 {
+    && (color_top_right & 0xff) == 0
+    && (color_bottom_left & 0xff) == 0
+    && (color_bottom_right & 0xff) == 0 {
         return;
     }
 
@@ -1933,5 +1957,42 @@ PathPushArc :: (points : *[..]PathPoint, center : Vec2f, radius : float, start_a
             p := Vec2f.{cos(-start_angle - theta), sin(-start_angle - theta)};
             array_add(points, .{position=center + p * radius, normal=p});
         }
+    }
+} @Profile
+
+PathPushBezierQuadratic :: (path : *[..]PathPoint, p0 : Vec2f, p1 : Vec2f, p2 : Vec2f, num_segments := 0) {
+    if num_segments <= 0 {
+        a := Vec2f.{abs(p0.x - p1.x), abs(p0.y - p1.y)};
+        b := Vec2f.{abs(p1.x - p2.x), abs(p1.y - p2.y)};
+        max_dist := max(a.x, a.y, b.x, b.y);
+
+        num_segments = max(cast(int, max_dist / 5), 5);
+    }
+
+    for i : 0..num_segments {
+        t := i / cast(float, num_segments);
+
+        point := array_add(path);
+        point.position = BezierQuadratic(p0, p1, p2, t);
+        point.normal = BezierQuadraticNormal(p0, p1, p2, t);
+    }
+} @Profile
+
+PathPushBezierCubic :: (path : *[..]PathPoint, p0 : Vec2f, p1 : Vec2f, p2 : Vec2f, p3 : Vec2f, num_segments := 0) {
+    if num_segments <= 0 {
+        a := Vec2f.{abs(p0.x - p1.x), abs(p0.y - p1.y)};
+        b := Vec2f.{abs(p1.x - p2.x), abs(p1.y - p2.y)};
+        c := Vec2f.{abs(p2.x - p3.x), abs(p2.y - p3.y)};
+        max_dist := max(a.x, a.y, b.x, b.y, c.x, c.y);
+
+        num_segments = max(cast(int, max_dist / 5), 5);
+    }
+
+    for i : 0..num_segments {
+        t := i / cast(float, num_segments);
+
+        point := array_add(path);
+        point.position = BezierCubic(p0, p1, p2, p3, t);
+        point.normal = BezierCubicNormal(p0, p1, p2, p3, t);
     }
 } @Profile

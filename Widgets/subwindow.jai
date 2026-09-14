@@ -71,32 +71,6 @@ SubwindowStyle :: struct {
     corner_resize_handle_size := 20.0;
 }
 
-SubwindowMoveBehavior :: (subwindow : *Node, node : *Node, avail_area : Vec4f, title_bar_size : Vec2f) -> ButtonResult {
-    interaction := ButtonBehavior(node);
-
-    if node.state_flags & .Focused && IsMouseButtonPressed(.Left) {
-        SetMouseCapture(node);
-        SetMouseFocus(node);
-
-        interaction.pressed = true;
-        interaction.held = true;
-    }
-
-    if interaction.pressed {
-        context.omg.mouse_captured_node_value = .{xy=subwindow.offset};
-    }
-
-    if interaction.held {
-        mouse_delta := GetMousePosition() - context.omg.mouse_captured_at;
-        original_offset := context.omg.mouse_captured_node_value.xy;
-        subwindow.offset = original_offset + mouse_delta;
-
-        subwindow.offset = clamp(subwindow.offset, avail_area.xy, avail_area.zw - title_bar_size);
-    }
-
-    return interaction;
-}
-
 SubwindowTitleBar :: (subwindow : *Node, parent : *Node, title : string, style : *SubwindowTitleBarStyle) -> *Node {
     node := GetNode(parent, "title_bar");
     {
@@ -362,7 +336,7 @@ Subwindow :: (
                 context.omg.mouse_captured_node_value = .{xy=subwindow.offset};
             }
 
-            interaction := SubwindowMoveBehavior(subwindow, title_bar, avail_area, title_bar_size);
+            interaction := DragBehavior(subwindow, title_bar, .{xy=avail_area.xy, zw=avail_area.zw - title_bar_size});
             if !IsKeyDown(.Shift) && (interaction.held || interaction.released) {
                 hovered_dock_node, is_hovering_split, hovered_split := GetHoveredDockSpaceAndSplit();
                 if hovered_dock_node {
@@ -437,7 +411,7 @@ Subwindow :: (
         content.child_gap = style.background.child_gap;
 
         if subwindow && !(flags & .NoMove) && !(flags & .NoMoveFromBackground) {
-            SubwindowMoveBehavior(subwindow, content, avail_area, title_bar_size);
+            DragBehavior(subwindow, content, .{xy=avail_area.xy, zw=avail_area.zw - title_bar_size});
         }
 
         axes : AxisFlags;
