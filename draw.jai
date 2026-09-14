@@ -266,6 +266,24 @@ DrawRect :: (
     uv_bounds : Vec4f = .{0,0,0,0},
     blur_size := 0.0
 ) {
+    PushVertex :: (draw_list : *DrawList, position : Vec2f) -> *Vertex #expand {
+        tx := InverseLerp(`bounds.x, `bounds.z, position.x);
+        ty := InverseLerp(`bounds.y, `bounds.w, position.y);
+        tx = clamp(tx, 0, 1);
+        ty = clamp(ty, 0, 1);
+
+        v := PushVertex(draw_list);
+        v.position = position;
+
+        a := MixColors(`color_top_left, `color_top_right, tx);
+        b := MixColors(`color_bottom_left, `color_bottom_right, tx);
+
+        v.color = MixColors(a, b, ty);
+        v.tex_coords = .{lerp(uv_bounds.x, uv_bounds.z, tx), lerp(uv_bounds.y, uv_bounds.w, ty)};
+
+        return v;
+    }
+
     if IsClipped(draw_list, bounds) {
         return;
     }
@@ -282,6 +300,7 @@ DrawRect :: (
 
     // We don't use path + DrawConvexPolygon here because this produces geometry
     // that does not work well with gradients
+    // What we do instead is create stacked horizontal strips from top to bottom that follow the rect's outline
     radiuses := Vec4f.{
         min(corner_radiuses.x, max_radius),
         min(corner_radiuses.y, max_radius),
@@ -305,238 +324,115 @@ DrawRect :: (
     bottom_right.x -= radiuses.w;
     bottom_right.y -= radiuses.w;
 
-    inner_bounds := Vec4f.{
-        max(top_left.x, bottom_left.x),
-        max(top_left.y, top_right.y),
-        min(top_right.x, bottom_right.x),
-        min(bottom_left.y, bottom_right.y),
-    };
+    PushCornerVertices :: (draw_list : *DrawList, left : Vec2f, right : Vec2f, left_radius : float, right_radius : float, bottom : bool) -> num_segments : int #expand {
+        if left_radius <= 0 && right_radius <= 0 {
+            PushVertex(draw_list, left);
+            PushVertex(draw_list, right);
+            return 0;
+        }
 
-    GetTexCoordsByPosition :: (position : Vec2f) -> Vec2f #expand {
-        tx := InverseLerp(`bounds.x, `bounds.z, position.x);
-        ty := InverseLerp(`bounds.y, `bounds.w, position.y);
-        tx = clamp(tx, 0, 1);
-        ty = clamp(ty, 0, 1);
+        num_segments : int = xx max(left_radius * 0.25, right_radius * 0.25, 3);
 
-        return .{lerp(uv_bounds.x, uv_bounds.z, tx), lerp(uv_bounds.y, uv_bounds.w, ty)};
-    }
+        left_dominant := left_radius > right_radius;
+        top_to_bottom_direction := -(cast(float, bottom) * 2 - 1);
+        start_angle : float = ---;
+        dominant_angle_sign : float = ---;
+        dominant_radius, non_dominant_radius : float = ---;
+        dominant_center, non_dominant_center : Vec2f = ---;
+        if left_dominant {
+            start_angle = ifx bottom then PI else PI * 0.5;
+            dominant_angle_sign = 1;
+            dominant_radius = left_radius;
+            non_dominant_radius = right_radius;
+            dominant_center = left;
+            non_dominant_center = right;
+        } else {
+            start_angle = ifx bottom then 0.0 else PI * 0.5;
+            dominant_angle_sign = -1;
+            dominant_radius = right_radius;
+            non_dominant_radius = left_radius;
+            dominant_center = right;
+            non_dominant_center = left;
+        }
 
-    GetColorByPosition :: (position : Vec2f) -> RGBA8 #expand {
-        tx := InverseLerp(`bounds.x, `bounds.z, position.x);
-        ty := InverseLerp(`bounds.y, `bounds.w, position.y);
-        tx = clamp(tx, 0, 1);
-        ty = clamp(ty, 0, 1);
-
-        a := MixColors(`color_top_left, `color_top_right, tx);
-        b := MixColors(`color_bottom_left, `color_bottom_right, tx);
-
-        return MixColors(a, b, ty);
-    }
-
-    i_inner_tr := GetCurrentIndex(draw_list);
-    v := PushVertex(draw_list);
-    v.position = .{inner_bounds.z, inner_bounds.y};
-    v.color = GetColorByPosition(v.position);
-    v.tex_coords = GetTexCoordsByPosition(v.position);
-
-    i_inner_tl := GetCurrentIndex(draw_list);
-    v = PushVertex(draw_list);
-    v.position = .{inner_bounds.x, inner_bounds.y};
-    v.color = GetColorByPosition(v.position);
-    v.tex_coords = GetTexCoordsByPosition(v.position);
-
-    i_inner_bl := GetCurrentIndex(draw_list);
-    v = PushVertex(draw_list);
-    v.position = .{inner_bounds.x, inner_bounds.w};
-    v.color = GetColorByPosition(v.position);
-    v.tex_coords = GetTexCoordsByPosition(v.position);
-
-    i_inner_br := GetCurrentIndex(draw_list);
-    v = PushVertex(draw_list);
-    v.position = .{inner_bounds.z, inner_bounds.w};
-    v.color = GetColorByPosition(v.position);
-    v.tex_coords = GetTexCoordsByPosition(v.position);
-
-    PushIndex(draw_list, i_inner_tr);
-    PushIndex(draw_list, i_inner_tl);
-    PushIndex(draw_list, i_inner_bl);
-
-    PushIndex(draw_list, i_inner_bl);
-    PushIndex(draw_list, i_inner_br);
-    PushIndex(draw_list, i_inner_tr);
-
-    i_top_tl := GetCurrentIndex(draw_list);
-    v = PushVertex(draw_list);
-    v.position = .{inner_bounds.x, bounds.y};
-    v.color = GetColorByPosition(v.position);
-    v.tex_coords = GetTexCoordsByPosition(v.position);
-
-    i_top_tr := GetCurrentIndex(draw_list);
-    v = PushVertex(draw_list);
-    v.position = .{inner_bounds.z, bounds.y};
-    v.color = GetColorByPosition(v.position);
-    v.tex_coords = GetTexCoordsByPosition(v.position);
-
-    PushIndex(draw_list, i_top_tr);
-    PushIndex(draw_list, i_top_tl);
-    PushIndex(draw_list, i_inner_tl);
-
-    PushIndex(draw_list, i_inner_tl);
-    PushIndex(draw_list, i_inner_tr);
-    PushIndex(draw_list, i_top_tr);
-
-    i_bottom_bl := GetCurrentIndex(draw_list);
-    v = PushVertex(draw_list);
-    v.position = .{inner_bounds.x, bounds.w};
-    v.color = GetColorByPosition(v.position);
-    v.tex_coords = GetTexCoordsByPosition(v.position);
-
-    i_bottom_br := GetCurrentIndex(draw_list);
-    v = PushVertex(draw_list);
-    v.position = .{inner_bounds.z, bounds.w};
-    v.color = GetColorByPosition(v.position);
-    v.tex_coords = GetTexCoordsByPosition(v.position);
-
-    PushIndex(draw_list, i_bottom_bl);
-    PushIndex(draw_list, i_inner_br);
-    PushIndex(draw_list, i_inner_bl);
-
-    PushIndex(draw_list, i_inner_br);
-    PushIndex(draw_list, i_bottom_bl);
-    PushIndex(draw_list, i_bottom_br);
-
-    i_left_tl := GetCurrentIndex(draw_list);
-    v = PushVertex(draw_list);
-    v.position = .{bounds.x, inner_bounds.y};
-    v.color = GetColorByPosition(v.position);
-    v.tex_coords = GetTexCoordsByPosition(v.position);
-
-    i_left_bl := GetCurrentIndex(draw_list);
-    v = PushVertex(draw_list);
-    v.position = .{bounds.x, inner_bounds.w};
-    v.color = GetColorByPosition(v.position);
-    v.tex_coords = GetTexCoordsByPosition(v.position);
-
-    PushIndex(draw_list, i_left_bl);
-    PushIndex(draw_list, i_inner_tl);
-    PushIndex(draw_list, i_left_tl);
-
-    PushIndex(draw_list, i_left_bl);
-    PushIndex(draw_list, i_inner_bl);
-    PushIndex(draw_list, i_inner_tl);
-
-    i_right_tr := GetCurrentIndex(draw_list);
-    v = PushVertex(draw_list);
-    v.position = .{bounds.z, inner_bounds.y};
-    v.color = GetColorByPosition(v.position);
-    v.tex_coords = GetTexCoordsByPosition(v.position);
-
-    i_right_br := GetCurrentIndex(draw_list);
-    v = PushVertex(draw_list);
-    v.position = .{bounds.z, inner_bounds.w};
-    v.color = GetColorByPosition(v.position);
-    v.tex_coords = GetTexCoordsByPosition(v.position);
-
-    PushIndex(draw_list, i_inner_br);
-    PushIndex(draw_list, i_right_tr);
-    PushIndex(draw_list, i_inner_tr);
-
-    PushIndex(draw_list, i_inner_br);
-    PushIndex(draw_list, i_right_br);
-    PushIndex(draw_list, i_right_tr);
-
-    DrawSemiCircle :: (position : Vec2f, radius : float, start_angle : float) #expand {
-        i_center := GetCurrentIndex(`draw_list);
-
-        v := PushVertex(draw_list);
-        v.position = position;
-        v.color = GetColorByPosition(v.position);
-        v.tex_coords = GetTexCoordsByPosition(v.position);
-
-        for i : 0..50 {
-            angle := start_angle + (i / 50.0) * (PI * 0.5);
+        for i : 0..num_segments {
+            t := i / cast(float, num_segments);
+            angle := start_angle + t * dominant_angle_sign * PI * 0.5;
             p := SampleCosSinTable(-angle);
 
-            v := PushVertex(draw_list);
-            v.position = position + p * radius;
-            v.color = GetColorByPosition(v.position);
-            v.tex_coords = GetTexCoordsByPosition(v.position);
+            dominant_position := dominant_center + p * dominant_radius;
+            non_dominant_position : Vec2f = ---;
+
+            if non_dominant_radius <= 0 {
+                non_dominant_position = Vec2f.{
+                    non_dominant_center.x,
+                    dominant_position.y,
+                };
+            } else {
+                sin_y := ifx bottom
+                    then InverseLerp(non_dominant_center.y, bounds.w, dominant_position.y)
+                    else InverseLerp(non_dominant_center.y, bounds.y, dominant_position.y);
+                sin_y = clamp(sin_y, 0, 1);
+                cos_x := dominant_angle_sign * cos(asin(sin_y));
+
+                non_dominant_position = Vec2f.{
+                    non_dominant_center.x + cos_x * non_dominant_radius,
+                    dominant_position.y,
+                };
+            }
+
+            if left_dominant {
+                PushVertex(draw_list, dominant_position);
+                PushVertex(draw_list, non_dominant_position);
+            } else {
+                PushVertex(draw_list, non_dominant_position);
+                PushVertex(draw_list, dominant_position);
+            }
         }
 
-        for i : 1..cast(u32, 50) {
-            PushIndex(draw_list, i_center);
-            PushIndex(draw_list, i_center + i);
-            PushIndex(draw_list, i_center + i + 1);
+        return num_segments;
+    }
+
+    first_top_vertex := GetCurrentIndex(draw_list);
+    num_top_segments := PushCornerVertices(draw_list, top_left, top_right, radiuses.x, radiuses.y, bottom=false);
+    if num_top_segments > 0 {
+        for i : 0..cast(u32, num_top_segments - 1) {
+            PushIndex(draw_list, first_top_vertex + i * 2);
+            PushIndex(draw_list, first_top_vertex + i * 2 + 2);
+            PushIndex(draw_list, first_top_vertex + i * 2 + 1);
+
+            PushIndex(draw_list, first_top_vertex + i * 2 + 1);
+            PushIndex(draw_list, first_top_vertex + i * 2 + 2);
+            PushIndex(draw_list, first_top_vertex + i * 2 + 3);
         }
     }
 
-    if radiuses.x > 0 {
-        DrawSemiCircle(top_left, radiuses.x, PI * 0.5);
+    last_top_left_vertex := cast(u32, first_top_vertex + num_top_segments * 2);
+    last_top_right_vertex := cast(u32, first_top_vertex + num_top_segments * 2 + 1);
+
+    first_bottom_vertex := GetCurrentIndex(draw_list);
+    num_bottom_segments := PushCornerVertices(draw_list, bottom_left, bottom_right, radiuses.z, radiuses.w, bottom=true);
+
+    PushIndex(draw_list, last_top_left_vertex);
+    PushIndex(draw_list, first_bottom_vertex);
+    PushIndex(draw_list, last_top_right_vertex);
+
+    PushIndex(draw_list, last_top_right_vertex);
+    PushIndex(draw_list, first_bottom_vertex);
+    PushIndex(draw_list, first_bottom_vertex + 1);
+
+    if num_bottom_segments > 0 {
+        for i : 0..cast(u32, num_bottom_segments - 1) {
+            PushIndex(draw_list, first_bottom_vertex + i * 2);
+            PushIndex(draw_list, first_bottom_vertex + i * 2 + 2);
+            PushIndex(draw_list, first_bottom_vertex + i * 2 + 1);
+
+            PushIndex(draw_list, first_bottom_vertex + i * 2 + 1);
+            PushIndex(draw_list, first_bottom_vertex + i * 2 + 2);
+            PushIndex(draw_list, first_bottom_vertex + i * 2 + 3);
+        }
     }
-    if radiuses.y > 0 {
-        DrawSemiCircle(top_right, radiuses.y, 0);
-    }
-    if radiuses.z > 0 {
-        DrawSemiCircle(bottom_left, radiuses.z, PI);
-    }
-    if radiuses.w > 0 {
-        DrawSemiCircle(bottom_right, radiuses.w, -PI * 0.5);
-    }
-
-    return;
-
-    PathPushRoundedRect(*draw_list.path, bounds, corner_radiuses);
-
-    get_color_data : struct {
-        points : []PathPoint;
-        bounds : Vec4f;
-        colors : BoxColors;
-    } = .{
-        points=draw_list.path,
-        bounds=bounds,
-        colors.top_left=color_top_left,
-        colors.top_right=color_top_right,
-        colors.bottom_left=color_bottom_left,
-        colors.bottom_right=color_bottom_right,
-    };
-
-    GetColor :: (index : int, data : *void) -> RGBA8 {
-        using _ := cast(*type_of(get_color_data), data);
-
-        point := points[index];
-        tx := InverseLerp(bounds.x, bounds.z, point.position.x);
-        ty := InverseLerp(bounds.y, bounds.w, point.position.y);
-        return GetColor(colors, tx, ty);
-    }
-
-    get_tex_coords_data : struct {
-        points : []PathPoint;
-        bounds : Vec4f;
-        uv_bounds : Vec4f;
-    } = .{points=draw_list.path, bounds=bounds, uv_bounds=uv_bounds};
-
-    GetTexCoords :: (index : int, data : *void) -> Vec2f {
-        using _ := cast(*type_of(get_tex_coords_data), data);
-
-        point := points[index];
-        tx := InverseLerp(bounds.x, bounds.z, point.position.x);
-        ty := InverseLerp(bounds.y, bounds.w, point.position.y);
-
-        return .{
-            lerp(uv_bounds.x, uv_bounds.z, tx),
-            lerp(uv_bounds.y, uv_bounds.w, ty),
-        };
-    }
-
-    DrawConvexPolygon(
-        draw_list,
-        draw_list.path,
-        GetColor, *get_color_data,
-        GetTexCoords, *get_tex_coords_data,
-        blur_size
-    );
-    array_reset_keeping_memory(*draw_list.path);
-} @Profile
+}
 
 DrawRectOutline :: inline (
     draw_list : *DrawList,

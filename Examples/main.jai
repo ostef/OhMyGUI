@@ -109,7 +109,7 @@ main :: () {
         }
         OMG.NewFrame(g_delta_time);
 
-        // EditorFrame();
+        EditorFrame();
 
         user_end := current_time_monotonic();
         g_user_time = xx to_float64_seconds(user_end - user_start);
@@ -119,16 +119,26 @@ main :: () {
         }
         OMG.Render();
 
-        window := OMG.GetWindow(g_window);
-        OMG.DrawRect(
-            *window.draw_list,
-            .{100, 100, 200, 200},
-            0xffffffff,
-            0xffffffff,
-            0xff0000ff,
-            0xff0000ff,
-            .{10, 20, 15, 0}
-        );
+        // window := OMG.GetWindow(g_window);
+        // OMG.DrawRectOutline(
+        //     *window.draw_list,
+        //     .{100, 100, 200, 200},
+        //     0xff0000ff,
+        //     0xff0000ff,
+        //     0xffffffff,
+        //     0xffffffff,
+        //     5,
+        //     .{10, 20, 15, 5}
+        // );
+        // OMG.DrawRect(
+        //     *window.draw_list,
+        //     .{100, 100, 400, 400},
+        //     0xffffffff,
+        //     0xffffffff,
+        //     0xff0000ff,
+        //     0xff0000ff,
+        //     .{20, 40, 10, 30}
+        // );
 
         w, h : s32;
         SDL_GetWindowSize(g_window, *w, *h);
