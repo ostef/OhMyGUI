@@ -368,12 +368,18 @@ DrawRect :: (
                     non_dominant_center.x,
                     dominant_position.y,
                 };
+            } else if left_radius == right_radius {
+                non_dominant_position = Vec2f.{
+                    non_dominant_center.x - p.x * non_dominant_radius,
+                    dominant_position.y,
+                };
             } else {
                 sin_y := ifx bottom
                     then InverseLerp(non_dominant_center.y, bounds.w, dominant_position.y)
                     else InverseLerp(non_dominant_center.y, bounds.y, dominant_position.y);
                 sin_y = clamp(sin_y, 0, 1);
-                cos_x := dominant_angle_sign * cos(asin(sin_y));
+                angle := asin(sin_y);
+                cos_x := dominant_angle_sign * SampleCosSinTable(angle).x;
 
                 non_dominant_position = Vec2f.{
                     non_dominant_center.x + cos_x * non_dominant_radius,
