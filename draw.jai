@@ -368,7 +368,11 @@ DrawRect :: (
             return 0;
         }
 
-        num_segments : int = xx max(left_radius * 0.25 + blur_size, right_radius * 0.25 + blur_size, 3);
+        num_segments : int = xx max(
+            (left_radius * 0.25 + blur_size) * context.omg.global_polygon_resolution,
+            (right_radius * 0.25 + blur_size) * context.omg.global_polygon_resolution,
+            3
+        );
 
         left_dominant := left_radius > right_radius;
         start_angle : float = ---;
@@ -1961,7 +1965,7 @@ PathPushArc :: (points : *[..]PathPoint, center : Vec2f, radius : float, start_a
 
     if num_segments == 0 {
         num_quadrants := angle / (PI * 0.5);
-        num_segments = xx max(radius * num_quadrants * 0.25, num_quadrants * 4, 2);
+        num_segments = xx max(radius * num_quadrants * 0.25 * context.omg.global_polygon_resolution, num_quadrants * 4, 2);
     }
 
     connected := angle == PI * 2;
@@ -1988,7 +1992,7 @@ PathPushBezierQuadratic :: (path : *[..]PathPoint, p0 : Vec2f, p1 : Vec2f, p2 : 
         b := Vec2f.{abs(p1.x - p2.x), abs(p1.y - p2.y)};
         max_dist := max(a.x, a.y, b.x, b.y);
 
-        num_segments = max(cast(int, max_dist / 5), 5);
+        num_segments = xx max(max_dist / 5 * context.omg.global_polygon_resolution, 5);
     }
 
     for i : 0..num_segments {
@@ -2007,7 +2011,7 @@ PathPushBezierCubic :: (path : *[..]PathPoint, p0 : Vec2f, p1 : Vec2f, p2 : Vec2
         c := Vec2f.{abs(p2.x - p3.x), abs(p2.y - p3.y)};
         max_dist := max(a.x, a.y, b.x, b.y, c.x, c.y);
 
-        num_segments = max(cast(int, max_dist / 5), 5);
+        num_segments = xx max(max_dist / 5 * context.omg.global_polygon_resolution, 5);
     }
 
     for i : 0..num_segments {

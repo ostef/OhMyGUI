@@ -49,6 +49,8 @@ Context :: struct {
     theme : *Theme;
     id_offset_stack : [..]int;
 
+    global_polygon_resolution := 1.0;
+
     mouse_hover_time : float;
     mouse_hovered_node : *Node;
     mouse_focus_time : float;
