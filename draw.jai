@@ -78,7 +78,7 @@ GetCurrentDrawCall :: (draw_list : *DrawList) -> *DrawCall {
     return *draw_list.draw_calls[draw_list.draw_calls.count - 1];
 }
 
-GetCurrentClipBoxIndex :: (draw_list : *DrawList) -> s32 {
+GetCurrentClipBoxIndex :: (draw_list : *DrawList) -> s32 #no_abc {
     if draw_list.clip_box_stack.count <= 0 {
         return -1;
     }
@@ -282,7 +282,7 @@ DrawRect :: (
     corner_radiuses : Vec4f = .{0,0,0,0},
     uv_bounds : Vec4f = .{0,0,0,0},
     blur_size := 0.0
-) {
+) #no_abc {
     PushVertex :: (draw_list : *DrawList, position : Vec2f) -> *Vertex #expand {
         tx := InverseLerp(`bounds.x, `bounds.z, position.x);
         ty := InverseLerp(`bounds.y, `bounds.w, position.y);
