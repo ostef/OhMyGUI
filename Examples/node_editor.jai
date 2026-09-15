@@ -207,7 +207,7 @@ NodeGraphNode :: (parent : *OMG.Node, id : OMG.ID) -> *OMG.Node {
     node, is_new := OMG.GetNode(parent, id);
     if is_new {
         mouse := OMG.GetMousePosition(parent.window);
-        node.offset = mouse - parent.rect.xy;
+        node.offset = mouse - parent.rect.xy - parent.scroll;
     }
 
     OMG.SetBackgroundColor(node, OMG.ColorU32(0.1, 0.1, 0.1, 0.8));
