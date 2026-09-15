@@ -221,7 +221,7 @@ NodeGraphNode :: (parent : *OMG.Node, id : OMG.ID) -> *OMG.Node {
     OMG.SetSize(node, OMG.SizeFit(), OMG.SizeFit());
     OMG.SetPadding(node, 2, 2);
 
-    using _ := OMG.DragBehavior(node, node, .{xy=parent.rect.xy, zw=parent.rect.zw - node.size});
+    using _ := OMG.DragBehavior(node, node);
     if pressed || node.state_flags & .ActiveLastFrame {
         node.state_flags |= .Active;
     }
@@ -440,27 +440,27 @@ NodeGraphPort :: (parent : *OMG.Node, port : *GraphNodePort) -> *OMG.Node {
 }
 
 FindNodePortNode :: (parent : *OMG.Node, port : *GraphNodePort) -> *OMG.Node {
-    node := OMG.FindNode(parent, cast(OMG.ID, port.owning_node));
+    node := OMG.FindPrevFrameNode(parent, cast(OMG.ID, port.owning_node));
     if !node {
         return null;
     }
 
-    body := OMG.FindNode(node, "body");
+    body := OMG.FindPrevFrameNode(node, "body");
     if !body {
         return null;
     }
 
-    ports_container := ifx port.direction == .Input then OMG.FindNode(body, "inputs") else OMG.FindNode(body, "outputs");
+    ports_container := ifx port.direction == .Input then OMG.FindPrevFrameNode(body, "inputs") else OMG.FindPrevFrameNode(body, "outputs");
     if !ports_container {
         return null;
     }
 
-    container := OMG.FindNode(ports_container, cast(OMG.ID, port));
+    container := OMG.FindPrevFrameNode(ports_container, cast(OMG.ID, port));
     if !container {
         return null;
     }
 
-    return OMG.FindNode(container, "knob");
+    return OMG.FindPrevFrameNode(container, "knob");
 }
 
 NodeGraphConnectionData :: struct {
@@ -820,15 +820,15 @@ NodeGraphFrame :: () {
     array_reset_keeping_memory(*g_graph.nodes_to_destroy);
 
     for g_graph.nodes {
-        ShowGraphNode(background, *g_graph, it);
-    }
-
-    for g_graph.nodes {
         for port : it.inputs {
             for other_port : port.connections {
                 NodeGraphConnection(background, port, other_port);
             }
         }
+    }
+
+    for g_graph.nodes {
+        ShowGraphNode(background, *g_graph, it);
     }
 
     menu := OMG.ContextMenu(background);
