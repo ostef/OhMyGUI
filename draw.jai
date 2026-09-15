@@ -1101,6 +1101,10 @@ DrawNodes :: (draw_list : *DrawList, node : *Node) {
         draw_children = node.draw(draw_list, node);
     }
 
+    if !draw_children {
+        return;
+    }
+
     if node.num_children > 0 {
         if !(node.flags & .NoClip) {
             if node.flags & .NoPaddedClip {
