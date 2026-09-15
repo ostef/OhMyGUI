@@ -259,6 +259,8 @@ NodeEditorFrame :: () {
     popups := OMG.GetPopupRoot(window);
 
     background := OMG.GetNode(window);
+    background = OMG.GetNode(background); // Context menu does not work on the root node
+    OMG.SetSize(background, OMG.SizeFill(), OMG.SizeFill());
     OMG.SetBackgroundColor(background, OMG.ColorU32(0.15, 0.15, 0.15, 1));
     OMG.SetInnerShadowColor(background, OMG.ColorU32(0, 0, 0, 0.3));
     OMG.SetInnerShadowSize(background, 50);
