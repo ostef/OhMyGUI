@@ -720,7 +720,7 @@ Canvas :: (parent : *OMG.Node, location := #caller_location) -> *OMG.Node {
         x_offset := fmod_cycling(node.scroll.x, 10);
         y_offset := fmod_cycling(node.scroll.y, 10);
 
-        ix := 0;
+        ix := cast(int, ceil(-node.scroll.x / 10));
         x := node.rect.x + x_offset;
         while x < node.rect.z {
             defer {
@@ -738,7 +738,7 @@ Canvas :: (parent : *OMG.Node, location := #caller_location) -> *OMG.Node {
             OMG.DrawLine(draw_list, .{x + 0.5, y0}, .{x + 0.5, y1}, 1, line_color);
         }
 
-        iy := 0;
+        iy := cast(int, ceil(-node.scroll.y / 10));
         y := node.rect.y + y_offset;
         while y < node.rect.w {
             defer {
