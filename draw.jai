@@ -344,6 +344,10 @@ DrawRect :: (
     bottom_right.y -= radiuses.w + blur_size * 0.5;
 
     PushCornerVertices :: (draw_list : *DrawList, left : Vec2f, right : Vec2f, left_radius : float, right_radius : float, bottom : bool) -> num_segments : int #expand {
+        #if #exists(context._Tracy) {
+            context._Tracy.ZoneScoped("PushCornerVertices");
+        }
+
         if left_radius <= 0 && right_radius <= 0 {
             n := Vec2f.{-1, -1};
             if bottom {
@@ -388,6 +392,10 @@ DrawRect :: (
         }
 
         for i : 0..num_segments {
+            #if #exists(context._Tracy) {
+                context._Tracy.ZoneScoped("Iterate");
+            }
+
             t := i / cast(float, num_segments);
             angle := start_angle + t * dominant_angle_sign * PI * 0.5;
             dominant_p := SampleCosSinTable(-angle);
@@ -432,6 +440,10 @@ DrawRect :: (
                     non_dominant_center.x + non_dominant_p.x * non_dominant_radius,
                     dominant_position.y,
                 };
+            }
+
+            #if #exists(context._Tracy) {
+                context._Tracy.ZoneScoped("Push vertices");
             }
 
             if left_dominant {
@@ -493,45 +505,49 @@ DrawRect :: (
     top_margin_right := top_margin_left + 1;
 
     if num_top_segments > 0 {
+        indices := PushIndices(draw_list, cast(u32, num_top_segments) * 18 + 6);
         for i : 0..cast(u32, num_top_segments - 1) {
             outer_left := first_top_vertex + i * 4;
             inner_left := outer_left + 1;
             inner_right := inner_left + 1;
             outer_right := inner_right + 1;
 
-            PushIndex(draw_list, outer_left);
-            PushIndex(draw_list, outer_left + 4);
-            PushIndex(draw_list, inner_left);
+            indices[0] = outer_left;
+            indices[1] = outer_left + 4;
+            indices[2] = inner_left;
 
-            PushIndex(draw_list, inner_left);
-            PushIndex(draw_list, outer_left + 4);
-            PushIndex(draw_list, inner_left + 4);
+            indices[3] = inner_left;
+            indices[4] = outer_left + 4;
+            indices[5] = inner_left + 4;
 
-            PushIndex(draw_list, inner_left);
-            PushIndex(draw_list, inner_left + 4);
-            PushIndex(draw_list, inner_right);
+            indices[6] = inner_left;
+            indices[7] = inner_left + 4;
+            indices[8] = inner_right;
 
-            PushIndex(draw_list, inner_right);
-            PushIndex(draw_list, inner_left + 4);
-            PushIndex(draw_list, inner_right + 4);
+            indices[9] = inner_right;
+            indices[10] = inner_left + 4;
+            indices[11] = inner_right + 4;
 
-            PushIndex(draw_list, inner_right);
-            PushIndex(draw_list, inner_right + 4);
-            PushIndex(draw_list, outer_right);
+            indices[12] = inner_right;
+            indices[13] = inner_right + 4;
+            indices[14] = outer_right;
 
-            PushIndex(draw_list, outer_right);
-            PushIndex(draw_list, inner_right + 4);
-            PushIndex(draw_list, outer_right + 4);
+            indices[15] = outer_right;
+            indices[16] = inner_right + 4;
+            indices[17] = outer_right + 4;
+
+            indices.data += 18;
+            indices.count -= 18;
         }
 
         // Top margin
-        PushIndex(draw_list, top_margin_left);
-        PushIndex(draw_list, first_top_vertex + 1);
-        PushIndex(draw_list, top_margin_right);
+        indices[0] = top_margin_left;
+        indices[1] = first_top_vertex + 1;
+        indices[2] = top_margin_right;
 
-        PushIndex(draw_list, top_margin_right);
-        PushIndex(draw_list, first_top_vertex + 1);
-        PushIndex(draw_list, first_top_vertex + 2);
+        indices[3] = top_margin_right;
+        indices[4] = first_top_vertex + 1;
+        indices[5] = first_top_vertex + 2;
     } else {
         // Top margin
         PushIndex(draw_list, first_top_vertex);
@@ -555,70 +571,76 @@ DrawRect :: (
     bottom_margin_left := last_bottom_right_inner_vertex + 2;
     bottom_margin_right := bottom_margin_left + 1;
 
-    PushIndex(draw_list, last_top_left_outer_vertex);
-    PushIndex(draw_list, first_bottom_left_outer_vertex);
-    PushIndex(draw_list, last_top_left_inner_vertex);
+    indices := PushIndices(draw_list, 18);
 
-    PushIndex(draw_list, last_top_left_inner_vertex);
-    PushIndex(draw_list, first_bottom_left_outer_vertex);
-    PushIndex(draw_list, first_bottom_left_inner_vertex);
+    indices[0] = last_top_left_outer_vertex;
+    indices[1] = first_bottom_left_outer_vertex;
+    indices[2] = last_top_left_inner_vertex;
 
-    PushIndex(draw_list, last_top_left_inner_vertex);
-    PushIndex(draw_list, first_bottom_left_inner_vertex);
-    PushIndex(draw_list, last_top_right_inner_vertex);
+    indices[3] = last_top_left_inner_vertex;
+    indices[4] = first_bottom_left_outer_vertex;
+    indices[5] = first_bottom_left_inner_vertex;
 
-    PushIndex(draw_list, last_top_right_inner_vertex);
-    PushIndex(draw_list, first_bottom_left_inner_vertex);
-    PushIndex(draw_list, first_bottom_right_inner_vertex);
+    indices[6] = last_top_left_inner_vertex;
+    indices[7] = first_bottom_left_inner_vertex;
+    indices[8] = last_top_right_inner_vertex;
 
-    PushIndex(draw_list, last_top_right_inner_vertex);
-    PushIndex(draw_list, first_bottom_right_inner_vertex);
-    PushIndex(draw_list, last_top_right_outer_vertex);
+    indices[9] = last_top_right_inner_vertex;
+    indices[10] = first_bottom_left_inner_vertex;
+    indices[11] = first_bottom_right_inner_vertex;
 
-    PushIndex(draw_list, last_top_right_outer_vertex);
-    PushIndex(draw_list, first_bottom_right_inner_vertex);
-    PushIndex(draw_list, first_bottom_right_outer_vertex);
+    indices[12] = last_top_right_inner_vertex;
+    indices[13] = first_bottom_right_inner_vertex;
+    indices[14] = last_top_right_outer_vertex;
+
+    indices[15] = last_top_right_outer_vertex;
+    indices[16] = first_bottom_right_inner_vertex;
+    indices[17] = first_bottom_right_outer_vertex;
 
     if num_bottom_segments > 0 {
+        indices := PushIndices(draw_list, cast(u32, num_bottom_segments) * 18 + 6);
         for i : 0..cast(u32, num_bottom_segments - 1) {
             outer_left := first_bottom_vertex + i * 4;
             inner_left := outer_left + 1;
             inner_right := inner_left + 1;
             outer_right := inner_right + 1;
 
-            PushIndex(draw_list, outer_left);
-            PushIndex(draw_list, outer_left + 4);
-            PushIndex(draw_list, inner_left);
+            indices[0] = outer_left;
+            indices[1] = outer_left + 4;
+            indices[2] = inner_left;
 
-            PushIndex(draw_list, inner_left);
-            PushIndex(draw_list, outer_left + 4);
-            PushIndex(draw_list, inner_left + 4);
+            indices[3] = inner_left;
+            indices[4] = outer_left + 4;
+            indices[5] = inner_left + 4;
 
-            PushIndex(draw_list, inner_left);
-            PushIndex(draw_list, inner_left + 4);
-            PushIndex(draw_list, inner_right);
+            indices[6] = inner_left;
+            indices[7] = inner_left + 4;
+            indices[8] = inner_right;
 
-            PushIndex(draw_list, inner_right);
-            PushIndex(draw_list, inner_left + 4);
-            PushIndex(draw_list, inner_right + 4);
+            indices[9] = inner_right;
+            indices[10] = inner_left + 4;
+            indices[11] = inner_right + 4;
 
-            PushIndex(draw_list, inner_right);
-            PushIndex(draw_list, inner_right + 4);
-            PushIndex(draw_list, outer_right);
+            indices[12] = inner_right;
+            indices[13] = inner_right + 4;
+            indices[14] = outer_right;
 
-            PushIndex(draw_list, outer_right);
-            PushIndex(draw_list, inner_right + 4);
-            PushIndex(draw_list, outer_right + 4);
+            indices[15] = outer_right;
+            indices[16] = inner_right + 4;
+            indices[17] = outer_right + 4;
+
+            indices.data += 18;
+            indices.count -= 18;
         }
 
         // Bottom margin
-        PushIndex(draw_list, last_bottom_left_inner_vertex);
-        PushIndex(draw_list, bottom_margin_left);
-        PushIndex(draw_list, last_bottom_right_inner_vertex);
+        indices[0] = last_bottom_left_inner_vertex;
+        indices[1] = bottom_margin_left;
+        indices[2] = last_bottom_right_inner_vertex;
 
-        PushIndex(draw_list, last_bottom_right_inner_vertex);
-        PushIndex(draw_list, bottom_margin_left);
-        PushIndex(draw_list, bottom_margin_right);
+        indices[3] = last_bottom_right_inner_vertex;
+        indices[4] = bottom_margin_left;
+        indices[5] = bottom_margin_right;
     } else {
         // Bottom margin
         PushIndex(draw_list, first_bottom_vertex);
@@ -629,7 +651,7 @@ DrawRect :: (
         PushIndex(draw_list, first_bottom_vertex + 3);
         PushIndex(draw_list, first_bottom_vertex + 2);
     }
-}
+} @Profile
 
 DrawRectOutline :: inline (
     draw_list : *DrawList,
