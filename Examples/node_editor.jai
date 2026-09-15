@@ -565,8 +565,6 @@ ShowGraphNode :: (parent : *OMG.Node, graph : *Graph, graph_node : *GraphNode) {
         if OMG.MenuItem(menu, "Delete") {
             array_add_if_unique(*graph.nodes_to_destroy, graph_node);
         }
-
-        OMG.MenuItem(menu, "Duplicate");
     }
 
     if (node.state_flags & .Active) && OMG.IsKeyPressed(.Delete) {
