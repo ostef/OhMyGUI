@@ -154,13 +154,14 @@ Menu :: (
             BringForward(menu);
 
             menu_data = AddUserData(menu, MenuData, DestroyMenuData);
-            menu_data.parent_menu = parent;
             array_reset_keeping_memory(*menu_data.submenus);
 
             if parent_menu_data {
+                menu_data.parent_menu = parent;
                 array_add(*parent_menu_data.submenus, menu);
                 menu.offset = .{menu_item.rect.z, menu_item.rect.y};
             } else {
+                menu_data.parent_menu = null;
                 menu.offset = .{menu_item.rect.x, menu_item.rect.w};
             }
 
@@ -178,18 +179,20 @@ ContextMenuData :: struct {
 ContextMenu :: (parent : *Node, style : *MenuStyle = null, location := #caller_location) -> *Node {
     EnsureStyle(*style, "menu");
 
-    popup_root := GetPopupRoot(parent.window);
-    menu_id := GetID(GetID(location), popup_root.id);
-
     using _ := AddUserData(parent, ContextMenuData);
 
     button := ButtonBehavior(parent, .Right);
 
+    popup_root := GetPopupRoot(parent.window);
+    prev_frame_menu := FindPrevFrameNode(popup_root, GetID(location));
+    menu_data := ifx prev_frame_menu then GetUserData(prev_frame_menu, MenuData);
+
     should_deactivate := IsKeyPressed(.Escape);
+    should_deactivate |= menu_data != null && menu_data.wants_close;
 
     if button.released {
         opened = true;
-    } else if opened && IsAnyMouseButtonPressed() && !IsInTree(context.omg.mouse_hovered_node, menu_id) {
+    } else if opened && IsAnyMouseButtonPressed() && !IsInTree(context.omg.mouse_hovered_node, prev_frame_menu.id) {
         should_deactivate = true;
     }
 
@@ -199,7 +202,8 @@ ContextMenu :: (parent : *Node, style : *MenuStyle = null, location := #caller_l
 
     menu : *Node;
     if opened {
-        menu = GetPopupNode(parent.window, location);
+        menu = GetNode(popup_root, location);
+        assert(prev_frame_menu == null || menu == prev_frame_menu);
         {
             SetLayout(menu, .TopToBottom);
             SetSize(menu, SizeFit(), SizeFit());
@@ -207,6 +211,9 @@ ContextMenu :: (parent : *Node, style : *MenuStyle = null, location := #caller_l
             SetMaxWidth(menu, 150);
 
             BringForward(menu);
+
+            menu_data = AddUserData(menu, MenuData, DestroyMenuData);
+            array_reset_keeping_memory(*menu_data.submenus);
 
             if button.released {
                 menu.offset = GetMousePosition(menu.window) - menu.parent.rect.xy;
