@@ -49,7 +49,9 @@ Context :: struct {
     theme : *Theme;
     id_offset_stack : [..]int;
 
+    mouse_hover_time : float;
     mouse_hovered_node : *Node;
+    mouse_focus_time : float;
     mouse_focused_node : *Node;
     mouse_capturing_node : *Node;
     mouse_captured_this_frame : bool;
@@ -543,6 +545,8 @@ NewFrame :: (delta_time : float) {
 
     SetCursor(null);
 
+    prev_mouse_hovered_node := omg.mouse_hovered_node;
+    prev_mouse_focused_node := omg.mouse_focused_node;
     omg.mouse_hovered_node = null;
     omg.mouse_focused_node = null;
     omg.scroll_focused_node = null;
@@ -559,6 +563,18 @@ NewFrame :: (delta_time : float) {
         if it.popup_root_node {
             FindMouseFocus(it.popup_root_node);
         }
+    }
+
+    if omg.mouse_hovered_node && prev_mouse_hovered_node == omg.mouse_hovered_node {
+        omg.mouse_hover_time += omg.delta_time;
+    } else {
+        omg.mouse_hover_time = 0;
+    }
+
+    if omg.mouse_focused_node && prev_mouse_focused_node == omg.mouse_focused_node {
+        omg.mouse_focus_time += omg.delta_time;
+    } else {
+        omg.mouse_focus_time = 0;
     }
 
     for :Windows omg {

@@ -161,7 +161,26 @@ Tooltip :: (fmt_str : string, args : ..Any, window : *Window = null) -> *Node {
     }
 
     style := GetStyle("tooltip", TooltipStyle);
+    Text(tooltip, fmt_str, ..args, style=*style.text);
 
+    return tooltip;
+}
+
+FocusTooltip :: (node : *Node, min_focus_time := 0.5) -> *Node {
+    if context.omg.mouse_focused_node == node && context.omg.mouse_focus_time >= min_focus_time {
+        return Tooltip(node.window);
+    }
+
+    return null;
+}
+
+FocusTooltip :: (node : *Node, fmt_str : string, args : ..Any, min_focus_time := 0.5) -> *Node {
+    tooltip := FocusTooltip(node, min_focus_time);
+    if !tooltip {
+        return null;
+    }
+
+    style := GetStyle("tooltip", TooltipStyle);
     Text(tooltip, fmt_str, ..args, style=*style.text);
 
     return tooltip;

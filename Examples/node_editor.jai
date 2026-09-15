@@ -37,7 +37,7 @@ NodeEditorNode :: (parent : *OMG.Node, location := #caller_location) -> *OMG.Nod
     if node.state_flags & .Active {
         OMG.SetBorderColors(node,
             OMG.ColorU32(0.870, 0.718, 0.0435, 1), OMG.ColorU32(0.870, 0.718, 0.0435, 1),
-            OMG.ColorU32(0.870, 0.512, 0.0435, 1), OMG.ColorU32(0.870, 0.360, 0.0435, 1)
+            OMG.ColorU32(0.870, 0.512, 0.0435, 1), OMG.ColorU32(0.870, 0.512, 0.0435, 1)
         );
         OMG.SetBorderSize(node, 2);
         OMG.SetBorderInset(node, -2);
@@ -197,6 +197,8 @@ NodeEditorOutputPort :: (parent : *OMG.Node, name : string, color : OMG.RGBA8, i
 
 BlendSpace1DNode :: (parent : *OMG.Node, location := #caller_location) {
     node := NodeEditorNode(parent, location);
+    OMG.FocusTooltip(node, "Play a 1D blend space");
+
     NodeEditorTitleBar(node, "Blend Space 1D", OMG.ColorU32(0.178, 0.810, 0.399, 1));
 
     body := NodeEditorBody(node);
@@ -208,6 +210,8 @@ BlendSpace1DNode :: (parent : *OMG.Node, location := #caller_location) {
 
 BlendPosesNode :: (parent : *OMG.Node, location := #caller_location) {
     node := NodeEditorNode(parent, location);
+    OMG.FocusTooltip(node, "Blend two poses together");
+
     NodeEditorTitleBar(node, "Blend Poses", OMG.ColorU32(0.772, 0.780, 0.655, 1));
 
     body := NodeEditorBody(node);
