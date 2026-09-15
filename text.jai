@@ -22,7 +22,7 @@ Font :: struct {
 }
 
 FontConfig :: struct {
-    resolution : u32 = 64;
+    resolution : u32 = 32;
     glyph_ranges : []GlyphRange = .[.{0x20, 0x7f}];
     atlas_width : u32 = 1024;
     atlas_height : u32 = 1024;
@@ -69,8 +69,6 @@ LoadDefaultFonts :: () {
         .{0xa0, 0x24f}, // Latin
         .{0x20A0, 0x20CF}, // Currency symbols
     ];
-    config.atlas_width = 2048;
-    config.atlas_height = 2048;
 
     regular := LoadFontFromMemory("__default", Roboto_Regular, config);
     assert(regular != null, "Could not load default regular font");
