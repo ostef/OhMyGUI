@@ -2,7 +2,11 @@ g_pose_empty_icon : OMG.TextureHandle;
 g_pose_filled_icon : OMG.TextureHandle;
 
 NodeEditorNode :: (parent : *OMG.Node, location := #caller_location) -> *OMG.Node {
-    node := OMG.GetNode(parent, location);
+    node, is_new := OMG.GetNode(parent, location);
+    if is_new {
+        node.offset = .{100, 100};
+    }
+
     OMG.SetBackgroundColor(node, OMG.ColorU32(0.1, 0.1, 0.1, 0.8));
     OMG.SetOuterShadowColor(node, OMG.ColorU32(0, 0, 0, 0.5));
     OMG.SetOuterShadowOffset(node, 0, 5);
@@ -43,6 +47,12 @@ NodeEditorNode :: (parent : *OMG.Node, location := #caller_location) -> *OMG.Nod
         OMG.SetBorderInset(node, -2);
     } else {
         OMG.SetBorderColor(node, 0);
+    }
+
+    menu := OMG.ContextMenu(node);
+    if menu {
+        OMG.MenuItem(menu, "Delete");
+        OMG.MenuItem(menu, "Duplicate");
     }
 
     return node;
