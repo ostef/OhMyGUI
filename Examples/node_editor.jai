@@ -22,6 +22,7 @@ GraphNodePort :: struct {
         Output;
     }
 
+    owning_node : *GraphNode;
     name : string;
     description : string;
     direction : Direction;
@@ -41,6 +42,7 @@ CreateNode :: (graph : *Graph) -> *GraphNode {
 
 AddInputPort :: (node : *GraphNode, name : string, type : Type) -> *GraphNodePort {
     port := New(GraphNodePort);
+    port.owning_node = node;
     port.name = name;
     port.direction = .Input;
     port.type = cast(*Type_Info, type);
@@ -51,10 +53,11 @@ AddInputPort :: (node : *GraphNode, name : string, type : Type) -> *GraphNodePor
 
 AddOutputPort :: (node : *GraphNode, name : string, type : Type) -> *GraphNodePort {
     port := New(GraphNodePort);
+    port.owning_node = node;
     port.name = name;
     port.direction = .Output;
     port.type = cast(*Type_Info, type);
-    array_add(*node.inputs, port);
+    array_add(*node.outputs, port);
 
     return port;
 }
@@ -98,6 +101,22 @@ CanPortTypesConnect :: (a : *Type_Info, b : *Type_Info) -> bool {
     }
 }
 
+CanPortsConnect :: (a : *GraphNodePort, b : *GraphNodePort) -> bool {
+    if !a || !b {
+        return false;
+    }
+
+    if a.direction == b.direction {
+        return false;
+    }
+
+    if !CanPortTypesConnect(a.type, b.type) {
+        return false;
+    }
+
+    return true;
+}
+
 Disconnect :: (port : *GraphNodePort, index : int) {
     connected := port.connections[index];
     for connected.connections {
@@ -112,17 +131,17 @@ Disconnect :: (port : *GraphNodePort, index : int) {
 
 Connect :: (a : *GraphNodePort, b : *GraphNodePort) -> bool {
     if !a || !b {
-        return true;
+        return false;
     }
 
     if a.direction == b.direction {
         log_error("Cannot connect % port to % port", a.direction, b.direction);
-        return true;
+        return false;
     }
 
     if !CanPortTypesConnect(a.type, b.type) {
         log_error("Cannot connect port of type % to port of type %", cast(*Type, *a.type).*, cast(*Type, *b.type).*);
-        return true;
+        return false;
     }
 
     if a.direction == .Input && a.connections.count > 0 {
@@ -248,6 +267,10 @@ NodeGraphBody :: (parent : *OMG.Node) -> body : *OMG.Node {
     return body;
 }
 
+NodeGraphPortData :: struct {
+    port : *GraphNodePort;
+}
+
 NodeGraphPort :: (parent : *OMG.Node, port : *GraphNodePort) -> *OMG.Node {
     Draw :: (draw_list : *OMG.DrawList, node : *OMG.Node, $direction : GraphNodePort.Direction) {
         center := (node.rect.xy + node.rect.zw) * 0.5;
@@ -289,6 +312,8 @@ NodeGraphPort :: (parent : *OMG.Node, port : *GraphNodePort) -> *OMG.Node {
     parent = ifx port.direction == .Input then OMG.FindNode(parent, "inputs") else OMG.FindNode(parent, "outputs");
 
     container := OMG.GetNode(parent, cast(OMG.ID, port));
+    data := OMG.AddUserData(container, NodeGraphPortData);
+    data.port = port;
     OMG.SetSize(container, OMG.SizeFill(), OMG.SizeFit());
     OMG.SetMinWidthFit(container);
     OMG.SetChildAlign(container, 0, 0.5);
@@ -308,7 +333,7 @@ NodeGraphPort :: (parent : *OMG.Node, port : *GraphNodePort) -> *OMG.Node {
         OMG.SetLayout(container, .RightToLeft);
     }
 
-    knob := OMG.GetNode(container);
+    knob := OMG.GetNode(container, "knob");
     OMG.SetSize(knob, OMG.SizePx(20), OMG.SizePx(20));
     SetPortStyle(port, knob);
 
@@ -321,7 +346,25 @@ NodeGraphPort :: (parent : *OMG.Node, port : *GraphNodePort) -> *OMG.Node {
     OMG.Text(container, "%", port.name);
 
     using _ := OMG.ButtonBehavior(container);
-    if container.state_flags & (.Focused | .Hot) {
+
+    focused := container.state_flags & (.Focused | .Hot) != 0;
+    dragging_port : *GraphNodePort;
+    if context.omg.mouse_capturing_node != null && context.omg.mouse_capturing_node != container {
+        dragging_port_data := OMG.GetUserData(context.omg.mouse_capturing_node, NodeGraphPortData);
+        if dragging_port_data {
+            dragging_port = dragging_port_data.port;
+        }
+    }
+
+    if OMG.IsHovered(container) && dragging_port && CanPortsConnect(port, dragging_port) {
+        focused = true;
+
+        if OMG.IsMouseButtonReleased(.Left) {
+            Connect(port, dragging_port);
+        }
+    }
+
+    if focused {
         color := knob.background_colors.top_left;
         left_color := ifx port.direction == .Input then OMG.SetAlpha(color, 0.7) else OMG.SetAlpha(color, 0);
         right_color := ifx port.direction == .Input then OMG.SetAlpha(color, 0) else OMG.SetAlpha(color, 0.7);
@@ -333,6 +376,86 @@ NodeGraphPort :: (parent : *OMG.Node, port : *GraphNodePort) -> *OMG.Node {
     knob.state_flags |= container.state_flags;
 
     return container;
+}
+
+FindNodePortNode :: (parent : *OMG.Node, port : *GraphNodePort) -> *OMG.Node {
+    node := OMG.FindNode(parent, cast(OMG.ID, port.owning_node));
+    if !node {
+        return null;
+    }
+
+    body := OMG.FindNode(node, "body");
+    if !body {
+        return null;
+    }
+
+    ports_container := ifx port.direction == .Input then OMG.FindNode(body, "inputs") else OMG.FindNode(body, "outputs");
+    if !ports_container {
+        return null;
+    }
+
+    container := OMG.FindNode(ports_container, cast(OMG.ID, port));
+    if !container {
+        return null;
+    }
+
+    return OMG.FindNode(container, "knob");
+}
+
+NodeGraphConnectionData :: struct {
+    a_node : *OMG.Node;
+    b_node : *OMG.Node;
+}
+
+NodeGraphConnection :: (parent : *OMG.Node, a : *GraphNodePort, b : *GraphNodePort) {
+    assert(a.direction == .Input);
+    assert(b.direction == .Output);
+
+    a_node := FindNodePortNode(parent, a);
+    b_node := FindNodePortNode(parent, b);
+    if !a_node || !b_node {
+        log_error("Could not find nodes for connnection: % %", a_node, b_node);
+        return;
+    }
+
+    id := (cast(u64, a) & 0xffffffff) | (cast(u64, b) << 32);
+    node := OMG.GetNode(parent, id);
+    data := OMG.AddUserData(node, NodeGraphConnectionData);
+    data.a_node = a_node;
+    data.b_node = b_node;
+
+    a_center := (a_node.rect.xy + a_node.rect.zw) * 0.5;
+    b_center := (b_node.rect.xy + b_node.rect.zw) * 0.5;
+    node.offset.x = min(a_center.x, b_center.x);
+    node.offset.y = min(a_center.y, b_center.y);
+    node.desired_size.x = OMG.SizePx(abs(a_center.x - b_center.x));
+    node.desired_size.y = OMG.SizePx(abs(a_center.y - b_center.y));
+
+    OMG.SetBackgroundColor(node, 0xffffffff);
+
+    OMG.SetDraw(node, (draw_list : *OMG.DrawList, node : *OMG.Node) {
+        data := OMG.GetUserData(node, NodeGraphConnectionData);
+        if !data || !data.a_node || !data.b_node {
+            return;
+        }
+
+        OMG.PushDisableClipBox(draw_list);
+
+        p0 := (data.a_node.rect.xy + data.a_node.rect.zw) * 0.5;
+        p3 := (data.b_node.rect.xy + data.b_node.rect.zw) * 0.5;
+        p1 := OMG.Vec2f.{lerp(p0.x, p3.x, 0.6), p0.y};
+        p2 := OMG.Vec2f.{lerp(p3.x, p0.x, 0.6), p3.y};
+
+        // a_node is always an input port
+        p1.x = min(p0.x - 100, p1.x);
+        p2.x = max(p3.x + 100, p2.x);
+
+        OMG.PathPushBezierCubic(*draw_list.path, p0, p1, p2, p3);
+        OMG.DrawPolygonLine(draw_list, draw_list.path, false, 2, node.background_colors.top_left);
+        array_reset_keeping_memory(*draw_list.path);
+
+        OMG.PopClipBox(draw_list);
+    });
 }
 
 ShowGraphNode :: (parent : *OMG.Node, graph_node : *GraphNode) {
@@ -518,6 +641,14 @@ NodeGraphFrame :: () {
 
     for g_graph.nodes {
         ShowGraphNode(popups, it);
+    }
+
+    for g_graph.nodes {
+        for port : it.inputs {
+            for other_port : port.connections {
+                NodeGraphConnection(popups, port, other_port);
+            }
+        }
     }
 
     menu := OMG.ContextMenu(background);
