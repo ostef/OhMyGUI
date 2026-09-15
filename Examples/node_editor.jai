@@ -1,8 +1,11 @@
+g_pose_empty_icon : OMG.TextureHandle;
+g_pose_filled_icon : OMG.TextureHandle;
+
 NodeEditorNode :: (parent : *OMG.Node, location := #caller_location) -> *OMG.Node {
     node := OMG.GetNode(parent, location);
     OMG.SetBackgroundColor(node, OMG.ColorU32(0.1, 0.1, 0.1, 0.8));
-    OMG.SetOuterShadowColor(node, OMG.ColorU32(0, 0, 0, 0.2));
-    OMG.SetOuterShadowOffset(node, 0, 10);
+    OMG.SetOuterShadowColor(node, OMG.ColorU32(0, 0, 0, 0.5));
+    OMG.SetOuterShadowOffset(node, 0, 5);
     OMG.SetOuterShadowBlur(node, 10);
     OMG.SetInnerShadowColor(node, OMG.ColorU32(0, 0, 0, 0.4));
     OMG.SetInnerShadowBlur(node, 20);
@@ -94,12 +97,19 @@ PortDirection :: enum {
     Output;
 }
 
-NodeEditorPort :: (parent : *OMG.Node, name : string, color : OMG.RGBA8, direction : PortDirection) -> *OMG.Node {
+NodeEditorPort :: (parent : *OMG.Node, name : string, color : OMG.RGBA8, image : OMG.TextureHandle, direction : PortDirection) -> *OMG.Node {
     Draw :: (draw_list : *OMG.DrawList, node : *OMG.Node, $direction : PortDirection) {
-        radius := min(node.rect.z - node.rect.x, node.rect.w - node.rect.y) * 0.5;
         center := (node.rect.xy + node.rect.zw) * 0.5;
 
-        OMG.DrawCircleOutline(draw_list, center, radius, node.background_colors.top_left, 2);
+        if node.image {
+            prev_texture := OMG.SetTexture(draw_list, node.image);
+            defer OMG.SetTexture(draw_list, prev_texture);
+
+            OMG.DrawRect(draw_list, node.rect, node.background_colors, uv_bounds=node.image_uv_bounds);
+        } else {
+            radius := 0.5 * min(node.rect.z - node.rect.x, node.rect.w - node.rect.y) * 0.5;
+            OMG.DrawCircleOutline(draw_list, center, radius, node.background_colors.top_left, 2);
+        }
 
         if node.state_flags & .Hot {
             OMG.PushDisableClipBox(draw_list);
@@ -129,8 +139,8 @@ NodeEditorPort :: (parent : *OMG.Node, name : string, color : OMG.RGBA8, directi
     OMG.SetSize(container, OMG.SizeFill(), OMG.SizeFit());
     OMG.SetMinWidthFit(container);
     OMG.SetChildAlign(container, 0, 0.5);
-    OMG.SetPadding(container, 10, 2);
-    OMG.SetChildGap(container, 10, 10);
+    OMG.SetPadding(container, 5, 2);
+    OMG.SetChildGap(container, 5, 0);
     container.flags |= .NoPaddedClip;
 
     if direction == .Input {
@@ -140,8 +150,14 @@ NodeEditorPort :: (parent : *OMG.Node, name : string, color : OMG.RGBA8, directi
     }
 
     port := OMG.GetNode(container);
-    OMG.SetSize(port, OMG.SizePx(10), OMG.SizePx(10));
+    OMG.SetSize(port, OMG.SizePx(20), OMG.SizePx(20));
     OMG.SetBackgroundColor(port, color);
+
+    if image {
+        OMG.SetImage(port, image);
+    } else {
+        OMG.SetImage(port, 0, .{0,0,0,0});
+    }
 
     if direction == .Input {
         OMG.SetDraw(port, #bake_arguments Draw(direction=.Input));
@@ -165,22 +181,53 @@ NodeEditorPort :: (parent : *OMG.Node, name : string, color : OMG.RGBA8, directi
     return container;
 }
 
-NodeEditorInputPort :: (parent : *OMG.Node, name : string, color : OMG.RGBA8) -> *OMG.Node {
+NodeEditorInputPort :: (parent : *OMG.Node, name : string, color : OMG.RGBA8, image : OMG.TextureHandle = 0) -> *OMG.Node {
     inputs := OMG.FindNode(parent, "inputs");
     assert(inputs != null);
 
-    return NodeEditorPort(inputs, name, color, .Input);
+    return NodeEditorPort(inputs, name, color, image, .Input);
 }
 
-NodeEditorOutputPort :: (parent : *OMG.Node, name : string, color : OMG.RGBA8) -> *OMG.Node {
+NodeEditorOutputPort :: (parent : *OMG.Node, name : string, color : OMG.RGBA8, image : OMG.TextureHandle = 0) -> *OMG.Node {
     inputs := OMG.FindNode(parent, "outputs");
     assert(inputs != null);
 
-    return NodeEditorPort(inputs, name, color, .Output);
+    return NodeEditorPort(inputs, name, color, image, .Output);
+}
+
+BlendSpace1DNode :: (parent : *OMG.Node, location := #caller_location) {
+    node := NodeEditorNode(parent, location);
+    NodeEditorTitleBar(node, "Blend Space 1D", OMG.ColorU32(0.178, 0.810, 0.399, 1));
+
+    body := NodeEditorBody(node);
+    NodeEditorInputPort(body, "X", OMG.ColorU32(0.0435, 0.870, 0.209, 1));
+    NodeEditorInputPort(body, "Y", OMG.ColorU32(0.0435, 0.870, 0.209, 1));
+
+    NodeEditorOutputPort(body, "Pose", OMG.ColorU32(1,1,1,1), g_pose_empty_icon);
+}
+
+BlendPosesNode :: (parent : *OMG.Node, location := #caller_location) {
+    node := NodeEditorNode(parent, location);
+    NodeEditorTitleBar(node, "Blend Poses", OMG.ColorU32(0.772, 0.780, 0.655, 1));
+
+    body := NodeEditorBody(node);
+    NodeEditorInputPort(body, "A", OMG.ColorU32(1,1,1,1), g_pose_empty_icon);
+    NodeEditorInputPort(body, "B", OMG.ColorU32(1,1,1,1), g_pose_empty_icon);
+    NodeEditorInputPort(body, "Alpha", OMG.ColorU32(0.0435, 0.870, 0.209, 1));
+
+    NodeEditorOutputPort(body, "Pose", OMG.ColorU32(1,1,1,1), g_pose_empty_icon);
 }
 
 NodeEditorFrame :: () {
+    if !g_pose_empty_icon {
+        g_pose_empty_icon = OMG.LoadImageFromFile("pose_empty_icon.png");
+    }
+    if !g_pose_filled_icon {
+        g_pose_filled_icon = OMG.LoadImageFromFile("pose_filled_icon.png");
+    }
+
     window := OMG.GetWindow(g_window);
+    popups := OMG.GetPopupRoot(window);
 
     background := OMG.GetNode(window);
     OMG.SetBackgroundColor(background, OMG.ColorU32(0.15, 0.15, 0.15, 1));
@@ -258,17 +305,24 @@ NodeEditorFrame :: () {
     OMG.Text(stats, "\tRender: % ms", context.omg.total_time_last_frame * 1000);
     OMG.Text(stats, "\t\tLayout: % ms", context.omg.layout_time_last_frame * 1000);
     OMG.Text(stats, "\t\tDraw: % ms", context.omg.draw_time_last_frame * 1000);
-    OMG.Text(stats, "\t\tRemaining: % ms", (context.omg.total_time_last_frame - context.omg.layout_time_last_frame - context.omg.draw_time_last_frame) * 1000);
+    OMG.Text(stats, "\t\tOther: % ms", (context.omg.total_time_last_frame - context.omg.layout_time_last_frame - context.omg.draw_time_last_frame) * 1000);
     OMG.Text(stats, "GPU: % ms", g_gpu_time * 1000);
     OMG.Text(stats, "Num vertices: %", context.omg.num_vertices_last_frame);
     OMG.Text(stats, "Num indices: %", context.omg.num_indices_last_frame);
 
-    node := NodeEditorNode(OMG.GetPopupRoot(window));
-    NodeEditorTitleBar(node, "Blend Space 1D", OMG.ColorU32(0.178, 0.810, 0.399, 1));
+    BlendSpace1DNode(popups);
+    BlendSpace1DNode(popups);
+    BlendSpace1DNode(popups);
+    BlendSpace1DNode(popups);
+    BlendSpace1DNode(popups);
+    BlendPosesNode(popups);
+    BlendPosesNode(popups);
+    BlendPosesNode(popups);
 
-    body := NodeEditorBody(node);
-    NodeEditorInputPort(body, "X", OMG.ColorU32(0.0435, 0.870, 0.209, 1));
-    NodeEditorInputPort(body, "Y", OMG.ColorU32(0.0435, 0.870, 0.209, 1));
-
-    NodeEditorOutputPort(body, "Pose", OMG.ColorU32(1,1,1,1));
+    menu := OMG.ContextMenu(background);
+    if menu {
+        OMG.MenuItem(menu, "Blend Space 1D");
+        OMG.MenuItem(menu, "Blend Space 2D");
+        OMG.MenuItem(menu, "Animation Clip");
+    }
 }
