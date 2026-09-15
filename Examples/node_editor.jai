@@ -284,6 +284,13 @@ NodeGraphPortData :: struct {
 
 NodeGraphPort :: (parent : *OMG.Node, port : *GraphNodePort) -> *OMG.Node {
     Draw :: (draw_list : *OMG.DrawList, node : *OMG.Node, $direction : GraphNodePort.Direction) {
+        if !node.parent {
+            return;
+        }
+
+        data := OMG.AddUserData(node.parent, NodeGraphPortData);
+        filled := data != null && data.port.connections.count > 0;
+
         center := (node.rect.xy + node.rect.zw) * 0.5;
 
         if node.image {
@@ -293,7 +300,11 @@ NodeGraphPort :: (parent : *OMG.Node, port : *GraphNodePort) -> *OMG.Node {
             OMG.DrawRect(draw_list, node.rect, node.background_colors, uv_bounds=node.image_uv_bounds);
         } else {
             radius := 0.5 * min(node.rect.z - node.rect.x, node.rect.w - node.rect.y) * 0.5;
-            OMG.DrawCircleOutline(draw_list, center, radius, node.background_colors.top_left, 2);
+            if filled {
+                OMG.DrawCircle(draw_list, center, radius, node.background_colors.top_left);
+            } else {
+                OMG.DrawCircleOutline(draw_list, center, radius, node.background_colors.top_left, 2);
+            }
         }
 
         if node.state_flags & .Hot {
@@ -451,7 +462,9 @@ NodeGraphConnection :: (parent : *OMG.Node, a : *GraphNodePort, b : *GraphNodePo
     node.desired_size.x = OMG.SizePx(abs(a_center.x - b_center.x));
     node.desired_size.y = OMG.SizePx(abs(a_center.y - b_center.y));
 
-    OMG.SetBackgroundColor(node, 0xffffffff);
+    a_color := a_node.background_colors.top_left;
+    b_color := b_node.background_colors.top_left;
+    OMG.SetBackgroundColors(node, a_color, b_color, a_color, b_color);
 
     using _ := OMG.ButtonBehavior(node);
 
@@ -502,7 +515,7 @@ NodeGraphConnection :: (parent : *OMG.Node, a : *GraphNodePort, b : *GraphNodePo
 
         thickness := ifx node.state_flags & (.Focused | .Hot) then 4.0 else 2.0;
         OMG.PathPushBezierCubic(*draw_list.path, p0, p1, p2, p3);
-        OMG.DrawPolygonLine(draw_list, draw_list.path, false, thickness, node.background_colors.top_left);
+        OMG.DrawPolygonLine(draw_list, draw_list.path, false, thickness, node.background_colors.top_left, node.background_colors.top_right);
         array_reset_keeping_memory(*draw_list.path);
 
         OMG.PopClipBox(draw_list);
@@ -528,6 +541,7 @@ ShowGraphNode :: (parent : *OMG.Node, graph_node : *GraphNode) {
 }
 
 AnimPose :: struct {}
+AnimAdditivePose :: struct {}
 
 SetPortStyle :: (port : *GraphNodePort, node : *OMG.Node) {
     if port.type.type == {
@@ -549,6 +563,9 @@ SetPortStyle :: (port : *GraphNodePort, node : *OMG.Node) {
     case .STRUCT;
         if port.type == type_info(AnimPose) {
             OMG.SetBackgroundColor(node, OMG.ColorU32(1,1,1,1));
+            OMG.SetImage(node, ifx port.connections.count > 0 then g_pose_filled_icon else g_pose_empty_icon);
+        } else if port.type == type_info(AnimAdditivePose) {
+            OMG.SetBackgroundColor(node, OMG.ColorU32(0.838, 0.107, 0.890, 1));
             OMG.SetImage(node, ifx port.connections.count > 0 then g_pose_filled_icon else g_pose_empty_icon);
         } else if port.type == type_info(Vector2) || port.type == type_info(Vector3) || port.type == type_info(Vector4) {
             OMG.SetBackgroundColor(node, OMG.ColorU32(0.910, 0.813, 0.0819, 1));
@@ -591,6 +608,30 @@ CreateBlendPosesNode :: (graph : *Graph) -> *GraphNode {
     AddInputPort(node, "A", AnimPose);
     AddInputPort(node, "B", AnimPose);
     AddInputPort(node, "Alpha", float);
+    AddOutputPort(node, "Pose", AnimPose);
+
+    return node;
+}
+
+CreateMakeAdditivePoseNode :: (graph : *Graph) -> *GraphNode {
+    node := CreateNode(graph);
+    node.title = "Make Additive";
+    node.description = "Create an additive pose from two poses";
+    node.color = OMG.ColorU32(0.772, 0.780, 0.655, 1);
+    AddInputPort(node, "A", AnimPose);
+    AddInputPort(node, "B", AnimPose);
+    AddOutputPort(node, "Pose", AnimAdditivePose);
+
+    return node;
+}
+
+CreateApplyAdditivePoseNode :: (graph : *Graph) -> *GraphNode {
+    node := CreateNode(graph);
+    node.title = "Apply Additive";
+    node.description = "Apply an additive pose onto another";
+    node.color = OMG.ColorU32(0.772, 0.780, 0.655, 1);
+    AddInputPort(node, "Base", AnimPose);
+    AddInputPort(node, "Additive", AnimAdditivePose);
     AddOutputPort(node, "Pose", AnimPose);
 
     return node;
@@ -712,6 +753,12 @@ NodeGraphFrame :: () {
         }
         if OMG.MenuItem(menu, "Blend Poses") {
             CreateBlendPosesNode(*g_graph);
+        }
+        if OMG.MenuItem(menu, "Make Additive Pose") {
+            CreateMakeAdditivePoseNode(*g_graph);
+        }
+        if OMG.MenuItem(menu, "Apply Additive Pose") {
+            CreateApplyAdditivePoseNode(*g_graph);
         }
     }
 }

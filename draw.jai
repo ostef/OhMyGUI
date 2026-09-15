@@ -1170,6 +1170,43 @@ DrawPolygonLine :: inline (
     );
 }
 
+DrawPolygonLine :: (
+    draw_list : *DrawList,
+    points : []PathPoint,
+    closed : bool,
+    thickness : float,
+    color_start : RGBA8,
+    color_end : RGBA8,
+    blur_size := 0.0,
+    blur_sides := LineSides.All
+) {
+    if (color_start & 0xff) == 0 && (color_end & 0xff) == 0 {
+        return;
+    }
+
+    get_color_data : struct {
+        points : []PathPoint;
+        color_start : RGBA8;
+        color_end : RGBA8;
+    } = .{points, color_start, color_end};
+
+    GetColor :: (index : int, data : *void) -> RGBA8 {
+        using _ := cast(*type_of(get_color_data), data);
+
+        t := index / cast(float, points.count - 1);
+        return MixColors(color_start, color_end, t);
+    }
+
+    DrawPolygonLine(
+        draw_list,
+        points,
+        closed,
+        thickness,
+        GetColor, *get_color_data,
+        blur_size, blur_sides
+    );
+}
+
 LineSides :: enum_flags {
     Interior;
     Exterior;
