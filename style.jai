@@ -429,7 +429,7 @@ DefaultTheme :: struct {
     menu_bar : BoxStyle;
     menu_item : ButtonStyle;
     menu : MenuStyle;
-    separator : BoxStyle;
+    separator : SeparatorStyle;
     subwindow : SubwindowStyle;
     color_picker : ColorPickerStyle;
     color_input : ColorInputStyle;
@@ -777,7 +777,9 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
     {
         using theme.separator;
 
-        SetColors(*background_colors, ColorU32(0.5, 0.5, 0.5, 1));
+        color_start = ColorU32(0.5, 0.5, 0.5, 1);
+        color_end = ColorU32(0.5, 0.5, 0.5, 1);
+        text = theme.text;
     }
     SetStyle(theme, "separator", theme.separator);
 

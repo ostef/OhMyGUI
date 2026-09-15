@@ -85,42 +85,81 @@ ClickableText :: (parent : *Node, fmt_str : string, args : ..Any, style : *Click
     return button.released, button.double_clicked, node;
 }
 
-Separator :: (parent : *Node, space := 25.0, width := 1.0, style : *BoxStyle = null, location := #caller_location) -> *Node {
+SeparatorStyle :: struct {
+    color_start : RGBA8;
+    color_end : RGBA8;
+    thickness := 1.0;
+    spacing := 25.0;
+    padding : Vec4b;
+    text_gap : s8 = 8;
+    text_padding := 12.0;
+    text_offset := 10.0;
+    text_align := 0.0;
+    text : TextStyle;
+}
+
+Separator :: (parent : *Node, style : *SeparatorStyle = null, location := #caller_location) -> *Node {
     if parent.child_layout_mode == .TopToBottom || parent.child_layout_mode == .BottomToTop {
-        return HorizontalSeparator(parent, space, width, style, location);
+        return HorizontalSeparator(parent, style, location);
     } else {
-        return VerticalSeparator(parent, space, width, style, location);
+        return VerticalSeparator(parent, style, location);
     }
 }
 
-HorizontalSeparator :: (parent : *Node, space := 25.0, width := 1.0, style : *BoxStyle = null, location := #caller_location) -> *Node {
+HorizontalSeparator :: (parent : *Node, style : *SeparatorStyle = null, location := #caller_location) -> *Node {
     EnsureStyle(*style, "separator");
 
     node := GetNode(parent, location);
-    SetSize(node, SizeFill(), SizePx(space));
+    SetSize(node, SizeFill(), SizePx(style.spacing));
     SetChildAlign(node, 0.5, 0.5);
     SetPadding(node, style.padding);
 
     separator := GetNode(node);
-    SetSize(separator, SizeFill(), SizePx(width));
-
-    Apply(separator, style);
+    SetSize(separator, SizeFill(), SizePx(style.thickness));
+    SetBackgroundColors(separator, style.color_start, style.color_end, style.color_start, style.color_end);
 
     return node;
 }
 
-VerticalSeparator :: (parent : *Node, space := 25.0, width := 1.0, style : *BoxStyle = null, location := #caller_location) -> *Node {
+HorizontalSeparatorText :: (parent : *Node, fmt_str : string, args : ..Any, style : *SeparatorStyle = null, location := #caller_location) -> *Node {
     EnsureStyle(*style, "separator");
 
     node := GetNode(parent, location);
-    SetSize(node, SizePx(space), SizeFill());
+    SetSize(node, SizeFill(), SizePx(style.spacing));
+    SetChildAlign(node, 0.5, 0.5);
+    SetChildGap(node, style.text_gap, 0);
+    SetPadding(node, style.padding);
+    SetLayout(node, .LeftToRight);
+
+    if style.text_align > 0 || style.text_offset > 0 {
+        separator := GetNode(node);
+        SetSize(separator, SizeFill(clamp(style.text_align, 0, 1)), SizePx(style.thickness));
+        SetMinWidth(separator, style.text_offset);
+        SetBackgroundColors(separator, style.color_start, style.color_end, style.color_start, style.color_end);
+    }
+
+    Text(node, fmt_str, ..args, style=*style.text);
+
+    if style.text_align < 1 {
+        separator := GetNode(node);
+        SetSize(separator, SizeFill(max(1 - style.text_align, 0)), SizePx(style.thickness));
+        SetBackgroundColors(separator, style.color_start, style.color_end, style.color_start, style.color_end);
+    }
+
+    return node;
+}
+
+VerticalSeparator :: (parent : *Node, style : *SeparatorStyle = null, location := #caller_location) -> *Node {
+    EnsureStyle(*style, "separator");
+
+    node := GetNode(parent, location);
+    SetSize(node, SizePx(style.spacing), SizeFill());
     SetChildAlign(node, 0.5, 0.5);
     SetPadding(node, style.padding);
 
     separator := GetNode(node);
-    SetSize(separator, SizePx(width), SizeFill());
-
-    Apply(separator, style);
+    SetSize(separator, SizePx(style.thickness), SizeFill());
+    SetBackgroundColors(separator, style.color_start, style.color_start, style.color_end, style.color_end);
 
     return node;
 }
