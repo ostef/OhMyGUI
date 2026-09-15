@@ -234,7 +234,7 @@ SetContentScrollY :: inline (node : *Node, value : float) {
     node.scroll.y = clamp(value, avail_scroll, 0);
 }
 
-DragBehavior :: (subwindow : *Node, node : *Node, avail_area : Vec4f) -> ButtonResult {
+DragBehavior :: (subwindow : *Node, node : *Node, avail_area := Vec4f.{-FLOAT32_INFINITY,-FLOAT32_INFINITY,FLOAT32_INFINITY,FLOAT32_INFINITY}) -> ButtonResult {
     interaction := ButtonBehavior(node);
 
     if node.state_flags & .Focused && IsMouseButtonPressed(.Left) {
