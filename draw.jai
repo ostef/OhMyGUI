@@ -741,9 +741,9 @@ BoxDrawing :: struct {
     border_inset : float;
     outer_shadow_color : RGBA8;
     outer_shadow_offset : Vec2f;
-    outer_shadow_blur : float;
+    outer_shadow_size : float;
     inner_shadow_color : RGBA8;
-    inner_shadow_blur : float;
+    inner_shadow_size : float;
     clip_box_index : s32;
 }
 
@@ -755,7 +755,7 @@ DrawBox :: inline (draw_list : *DrawList, box : BoxDrawing, texture : TextureHan
         box.outer_shadow_color,
         box.corner_radiuses,
         box.uv_bounds,
-        box.outer_shadow_blur,
+        box.outer_shadow_size,
     );
 
     // Background
@@ -779,7 +779,7 @@ DrawBox :: inline (draw_list : *DrawList, box : BoxDrawing, texture : TextureHan
         0,
         box.corner_radiuses,
         box.uv_bounds,
-        box.inner_shadow_blur,
+        box.inner_shadow_size,
         .Interior,
     );
 
@@ -1058,9 +1058,9 @@ DrawNodeDefault :: (draw_list : *DrawList, node : *Node) {
         border_inset=node.border_inset,
         outer_shadow_color=node.outer_shadow_color,
         outer_shadow_offset=node.outer_shadow_offset,
-        outer_shadow_blur=node.outer_shadow_blur,
+        outer_shadow_size=node.outer_shadow_size,
         inner_shadow_color=node.inner_shadow_color,
-        inner_shadow_blur=node.inner_shadow_blur,
+        inner_shadow_size=node.inner_shadow_size,
     }, texture=node.image);
 
     if node.flags & .WrapText {

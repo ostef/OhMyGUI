@@ -86,10 +86,10 @@ BoxStyle :: struct {
     border_colors : BoxColors;
     border_size : float;
     border_inset : float;
-    outer_shadow_blur : float;
+    outer_shadow_size : float;
     outer_shadow_offset : Vec2f;
     outer_shadow_color : RGBA8;
-    inner_shadow_blur : float;
+    inner_shadow_size : float;
     inner_shadow_color : RGBA8;
 }
 
@@ -108,10 +108,10 @@ Apply :: inline (node : *Node, style : BoxStyle) {
     node.border_colors = style.border_colors;
     node.border_size = style.border_size;
     node.border_inset = style.border_inset;
-    node.outer_shadow_blur = style.outer_shadow_blur;
+    node.outer_shadow_size = style.outer_shadow_size;
     node.outer_shadow_offset = style.outer_shadow_offset;
     node.outer_shadow_color = style.outer_shadow_color;
-    node.inner_shadow_blur = style.inner_shadow_blur;
+    node.inner_shadow_size = style.inner_shadow_size;
     node.inner_shadow_color = style.inner_shadow_color;
 }
 
@@ -120,10 +120,10 @@ TextStyle :: struct {
     text_size : float;
     text_color : RGBA8;
     text_effects : TextEffects;
-    outer_shadow_blur : float;
+    outer_shadow_size : float;
     outer_shadow_offset : Vec2f;
     outer_shadow_color : RGBA8;
-    inner_shadow_blur : float;
+    inner_shadow_size : float;
     inner_shadow_color : RGBA8;
 }
 
@@ -132,10 +132,10 @@ Apply :: inline (node : *Node, style : TextStyle) {
     node.text_size = style.text_size;
     node.text_color = style.text_color;
     node.text_effects = style.text_effects;
-    node.outer_shadow_blur = style.outer_shadow_blur;
+    node.outer_shadow_size = style.outer_shadow_size;
     node.outer_shadow_offset = style.outer_shadow_offset;
     node.outer_shadow_color = style.outer_shadow_color;
-    node.inner_shadow_blur = style.inner_shadow_blur;
+    node.inner_shadow_size = style.inner_shadow_size;
     node.inner_shadow_color = style.inner_shadow_color;
 }
 
@@ -551,7 +551,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         normal.background.padding = .{3,3,3,3};
         normal.background.border_size = 1;
         SetColors(*normal.background.border_colors, MakeTone(button_base_background_color, 0.3));
-        normal.background.inner_shadow_blur = 5;
+        normal.background.inner_shadow_size = 5;
         normal.background.inner_shadow_color = SetAlpha(Darken(button_base_background_color, 0.2), 0.4);
         normal.fill.corner_radiuses = .{3,3,3,3};
         normal.handle.corner_radiuses = .{3,3,3,3};
@@ -575,7 +575,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         normal.background.padding = .{3,3,3,3};
         normal.background.border_size = 1;
         SetColors(*normal.background.border_colors, MakeTone(button_base_background_color, 0.3));
-        normal.background.inner_shadow_blur = 5;
+        normal.background.inner_shadow_size = 5;
         normal.background.inner_shadow_color = SetAlpha(Darken(button_base_background_color, 0.2), 0.4);
         normal.fill.corner_radiuses = .{3,3,3,3};
         normal.handle.corner_radiuses = .{3,3,3,3};
@@ -639,7 +639,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         normal.background.child_gap = .{4,4};
         normal.background.border_size = 1;
         SetColors(*normal.background.border_colors, MakeTone(button_base_background_color, 0.3));
-        normal.background.inner_shadow_blur = 5;
+        normal.background.inner_shadow_size = 5;
         normal.background.inner_shadow_color = SetAlpha(Darken(button_base_background_color, 0.2), 0.4);
         normal.text.font = theme.text.font;
         normal.text.text_size = theme.text.text_size;
@@ -770,7 +770,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
 
         outer_shadow_color = ColorU32(0,0,0,0.25);
         outer_shadow_offset = .{3,3};
-        outer_shadow_blur = 5;
+        outer_shadow_size = 5;
     }
     SetStyle(theme, "menu", theme.menu);
 
@@ -795,7 +795,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
 
         background.outer_shadow_color = ColorU32(0,0,0,0.25);
         background.outer_shadow_offset = .{6,6};
-        background.outer_shadow_blur = 5;
+        background.outer_shadow_size = 5;
 
         {
             using title_bar;
@@ -828,11 +828,11 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         wheel.border_color = MakeTone(0xffffffff, 0.3);
         wheel.outer_shadow_offset = .{wheel.border_size * 0.5, wheel.border_size * 0.5};
         wheel.outer_shadow_color = ColorU32(0,0,0,0.25);
-        wheel.outer_shadow_blur = 5;
+        wheel.outer_shadow_size = 5;
 
         SetColors(*wheel.wheel_cursor.normal.border_colors, wheel.border_color);
         wheel.wheel_cursor.normal.outer_shadow_color = ColorU32(0,0,0,0.25);
-        wheel.wheel_cursor.normal.outer_shadow_blur = 2;
+        wheel.wheel_cursor.normal.outer_shadow_size = 2;
 
         wheel.wheel_cursor.focused = wheel.wheel_cursor.normal;
 
@@ -844,7 +844,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         wheel.triangle_cursor.normal.radius = 6;
         SetColors(*wheel.triangle_cursor.normal.border_colors, wheel.border_color);
         wheel.triangle_cursor.normal.outer_shadow_color = ColorU32(0,0,0,0.25);
-        wheel.triangle_cursor.normal.outer_shadow_blur = 2;
+        wheel.triangle_cursor.normal.outer_shadow_size = 2;
 
         wheel.triangle_cursor.focused = wheel.triangle_cursor.normal;
 
@@ -879,7 +879,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         // slider_base.normal.handle.border_color = MakeTone(button_base_background_color, 0.3);
         // slider_base.normal.handle.border_size = 1;
         slider_base.normal.handle.outer_shadow_color = ColorU32(0,0,0,0.25);
-        slider_base.normal.handle.outer_shadow_blur = 2;
+        slider_base.normal.handle.outer_shadow_size = 2;
 
         slider_base.focused = slider_base.normal;
         slider_base.hot = slider_base.focused;
@@ -984,7 +984,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
 
         background.outer_shadow_color = ColorU32(0,0,0,0.25);
         background.outer_shadow_offset = .{3,3};
-        background.outer_shadow_blur = 5;
+        background.outer_shadow_size = 5;
 
         text = theme.text;
         text.text_size = Round(text.text_size * 0.9);
@@ -1101,7 +1101,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         split_hint.border_inset = 2;
         SetColors(*split_hint.background_colors, SetAlpha(base_accent_color, 0.5));
         split_hint.corner_radiuses = .{6,6,6,6};
-        split_hint.outer_shadow_blur = 4;
+        split_hint.outer_shadow_size = 4;
         split_hint.outer_shadow_color = ColorU32(0,0,0,0.15);
     }
     SetStyle(theme, "dock_space", theme.dock_space);

@@ -236,7 +236,7 @@ EditorFrame :: () {
             OMG.SetCornerRadius(minimize_node, Btn_Size * 0.5);
             OMG.SetPadding(minimize_node, 5, 5);
             OMG.SetInnerShadowOpacity(minimize_node, 0.15);
-            OMG.SetInnerShadowBlur(minimize_node, 4);
+            OMG.SetInnerShadowSize(minimize_node, 4);
             if minimize {
                 SDL_MinimizeWindow(g_window);
             }
@@ -246,7 +246,7 @@ EditorFrame :: () {
             OMG.SetCornerRadius(maximize_node, Btn_Size * 0.5);
             OMG.SetPadding(maximize_node, 5, 5);
             OMG.SetInnerShadowOpacity(maximize_node, 0.15);
-            OMG.SetInnerShadowBlur(maximize_node, 4);
+            OMG.SetInnerShadowSize(maximize_node, 4);
             if maximize {
                 flags := SDL_GetWindowFlags(g_window);
                 if flags & SDL_WINDOW_MAXIMIZED {
@@ -261,7 +261,7 @@ EditorFrame :: () {
             OMG.SetCornerRadius(close_node, Btn_Size * 0.5);
             OMG.SetPadding(close_node, 5, 5);
             OMG.SetInnerShadowOpacity(close_node, 0.15);
-            OMG.SetInnerShadowBlur(close_node, 4);
+            OMG.SetInnerShadowSize(close_node, 4);
             if close {
                 g_quit = true;
             }

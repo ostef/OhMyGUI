@@ -27,7 +27,7 @@ TableRowStyle :: struct {
 
     background_colors : BoxColors;
     alternate_background_colors : BoxColors;
-    inner_shadow_blur : float;
+    inner_shadow_size : float;
     inner_shadow_color : RGBA8;
 }
 
@@ -41,7 +41,7 @@ Apply :: inline (node : *Node, style : TableRowStyle, alternate : bool) {
         node.background_colors = style.background_colors;
     }
 
-    node.inner_shadow_blur = style.inner_shadow_blur;
+    node.inner_shadow_size = style.inner_shadow_size;
     node.inner_shadow_color = style.inner_shadow_color;
 }
 

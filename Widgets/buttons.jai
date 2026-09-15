@@ -147,14 +147,14 @@ CheckmarkStyle :: struct {
     angle := PI * 0.17;
 
     background_color : RGBA8;
-    outer_shadow_blur : float;
+    outer_shadow_size : float;
     outer_shadow_offset : Vec2f;
     outer_shadow_color : RGBA8;
 }
 
 Apply :: inline (node : *Node, style : CheckmarkStyle) {
     SetColors(*node.background_colors, style.background_color);
-    node.outer_shadow_blur = style.outer_shadow_blur;
+    node.outer_shadow_size = style.outer_shadow_size;
     node.outer_shadow_offset = style.outer_shadow_offset;
     node.outer_shadow_color = style.outer_shadow_color;
 }
@@ -215,7 +215,7 @@ DrawCheckmark :: (draw_list : *DrawList, node : *Node) {
         array_add(*draw_list.path, .{position=p1 + node.outer_shadow_offset});
         array_add(*draw_list.path, .{position=p2 + node.outer_shadow_offset, normal=PerpendicularCW(n1)});
 
-        DrawPolygonLine(draw_list, draw_list.path, false, thickness, node.outer_shadow_color, blur_size=1 + node.outer_shadow_blur);
+        DrawPolygonLine(draw_list, draw_list.path, false, thickness, node.outer_shadow_color, blur_size=1 + node.outer_shadow_size);
 
         array_reset_keeping_memory(*draw_list.path);
     }

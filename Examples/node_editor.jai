@@ -6,9 +6,9 @@ NodeEditorNode :: (parent : *OMG.Node, location := #caller_location) -> *OMG.Nod
     OMG.SetBackgroundColor(node, OMG.ColorU32(0.1, 0.1, 0.1, 0.8));
     OMG.SetOuterShadowColor(node, OMG.ColorU32(0, 0, 0, 0.5));
     OMG.SetOuterShadowOffset(node, 0, 5);
-    OMG.SetOuterShadowBlur(node, 10);
+    OMG.SetOuterShadowSize(node, 10);
     OMG.SetInnerShadowColor(node, OMG.ColorU32(0, 0, 0, 0.4));
-    OMG.SetInnerShadowBlur(node, 6); // @Todo @Fix: blurring larger than corner radius produces intersecting triangles
+    OMG.SetInnerShadowSize(node, 6); // @Todo @Fix: larger than corner radius produces intersecting triangles
     OMG.SetCornerRadius(node, 6);
     OMG.SetLayout(node, .TopToBottom);
     OMG.SetSize(node, OMG.SizeFit(), OMG.SizeFit());
@@ -54,7 +54,7 @@ NodeEditorTitleBar :: (parent : *OMG.Node, title : string, color : OMG.RGBA8) ->
     OMG.SetBorderColors(node, OMG.ColorU32(1, 1, 1, 0.6), OMG.ColorU32(1, 1, 1, 0.6), 0, 0);
     OMG.SetBorderSize(node, 1);
     OMG.SetInnerShadowColor(node, OMG.SetAlpha(color, 0.6));
-    OMG.SetInnerShadowBlur(node, 5);
+    OMG.SetInnerShadowSize(node, 5);
     OMG.SetSize(node, OMG.SizeFill(), OMG.SizeFit());
     OMG.SetMinWidthFit(node);
     OMG.SetMinWidth(node, 100);
@@ -251,7 +251,7 @@ NodeEditorFrame :: () {
     background := OMG.GetNode(window);
     OMG.SetBackgroundColor(background, OMG.ColorU32(0.15, 0.15, 0.15, 1));
     OMG.SetInnerShadowColor(background, OMG.ColorU32(0, 0, 0, 0.3));
-    OMG.SetInnerShadowBlur(background, 50);
+    OMG.SetInnerShadowSize(background, 50);
     OMG.SetTextColor(background, OMG.ColorU32(0.2, 0.2, 0.2, 1));
 
     OMG.SetDraw(background, (draw_list : *OMG.DrawList, node : *OMG.Node) {

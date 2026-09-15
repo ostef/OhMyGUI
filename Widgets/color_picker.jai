@@ -10,7 +10,7 @@ HSVTriangleWheelStyle :: struct {
     border_size := 2.0;
     border_color : RGBA8;
     outer_shadow_color : RGBA8;
-    outer_shadow_blur : float;
+    outer_shadow_size : float;
     outer_shadow_offset : Vec2f;
 
     CursorStateStyle :: struct {
@@ -18,7 +18,7 @@ HSVTriangleWheelStyle :: struct {
         border_colors : BoxColors;
         border_size := 2.0;
         outer_shadow_color : RGBA8;
-        outer_shadow_blur : float;
+        outer_shadow_size : float;
         outer_shadow_offset : Vec2f;
     }
 
@@ -124,13 +124,13 @@ HSVTriangleWheel :: (parent : *Node, using data : *ColorPickerData, style : *HSV
         p2 += normalize(p2) * (style.border_size + 1);
         p2 += center;
 
-        DrawTriangle(draw_list, p0 + style.outer_shadow_offset, p1 + style.outer_shadow_offset, p2 + style.outer_shadow_offset, style.outer_shadow_color, blur_size=1 + style.outer_shadow_blur);
+        DrawTriangle(draw_list, p0 + style.outer_shadow_offset, p1 + style.outer_shadow_offset, p2 + style.outer_shadow_offset, style.outer_shadow_color, blur_size=1 + style.outer_shadow_size);
         DrawTriangle(draw_list, p0, p1, p2, style.border_color);
 
         circle_thickness := outer_radius - inner_radius + 2 * style.border_size;
         circle_radius := (outer_radius + inner_radius) * 0.5;
 
-        DrawCircleOutline(draw_list, center + style.outer_shadow_offset, circle_radius, style.outer_shadow_color, circle_thickness, blur_size = 1 + style.outer_shadow_blur);
+        DrawCircleOutline(draw_list, center + style.outer_shadow_offset, circle_radius, style.outer_shadow_color, circle_thickness, blur_size = 1 + style.outer_shadow_size);
         DrawCircleOutline(draw_list, center, circle_radius, style.border_color, circle_thickness);
     }
 
@@ -219,7 +219,7 @@ SaturationValueTriangle :: (parent : *Node, using data : *ColorPickerData, style
             border_size=cursor_style.border_size,
             outer_shadow_color=cursor_style.outer_shadow_color,
             outer_shadow_offset=cursor_style.outer_shadow_offset,
-            outer_shadow_blur=cursor_style.outer_shadow_blur,
+            outer_shadow_size=cursor_style.outer_shadow_size,
         });
     }
 
@@ -320,7 +320,7 @@ HueWheel :: (parent : *Node, using data : *ColorPickerData, style : *HSVTriangle
             border_size=cursor_style.border_size,
             outer_shadow_color=cursor_style.outer_shadow_color,
             outer_shadow_offset=cursor_style.outer_shadow_offset,
-            outer_shadow_blur=cursor_style.outer_shadow_blur,
+            outer_shadow_size=cursor_style.outer_shadow_size,
         });
     }
 
@@ -372,7 +372,7 @@ ColoredSlider :: (parent : *Node, value : *float, min : float, max : float, step
         c = b + Rotate(c, PI / 3);
 
         // @Todo: triangle border
-        DrawTriangle(draw_list, a + node.outer_shadow_offset, b + node.outer_shadow_offset, c + node.outer_shadow_offset, node.outer_shadow_color, blur_size=node.outer_shadow_blur + 1);
+        DrawTriangle(draw_list, a + node.outer_shadow_offset, b + node.outer_shadow_offset, c + node.outer_shadow_offset, node.outer_shadow_color, blur_size=node.outer_shadow_size + 1);
         DrawTriangle(draw_list, a, b, c, node.background_colors.top_left);
 
         a = ifx axis == .X then Vec2f.{node.rect.x, node.rect.w} else node.rect.zw;
@@ -381,7 +381,7 @@ ColoredSlider :: (parent : *Node, value : *float, min : float, max : float, step
         c = ifx axis == .X then Vec2f.{node.size.x,0} else Vec2f.{0,-node.size.y};
         c = a + Rotate(c, -PI / 3);
 
-        DrawTriangle(draw_list, a + node.outer_shadow_offset, b + node.outer_shadow_offset, c + node.outer_shadow_offset, node.outer_shadow_color, blur_size=node.outer_shadow_blur + 1);
+        DrawTriangle(draw_list, a + node.outer_shadow_offset, b + node.outer_shadow_offset, c + node.outer_shadow_offset, node.outer_shadow_color, blur_size=node.outer_shadow_size + 1);
         DrawTriangle(draw_list, a, b, c, node.background_colors.top_left);
     }
 
@@ -489,7 +489,7 @@ ColorPreview :: (parent : *Node, color : RGBA8, style : *ColorPreviewStyle, loca
             corner_radiuses=node.corner_radiuses,
             outer_shadow_color=node.outer_shadow_color,
             outer_shadow_offset=node.outer_shadow_offset,
-            outer_shadow_blur=node.outer_shadow_blur,
+            outer_shadow_size=node.outer_shadow_size,
         });
 
         style := GetUserData(node, ColorPreviewStyle);

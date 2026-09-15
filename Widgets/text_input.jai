@@ -615,9 +615,9 @@ DrawTextInputText :: (draw_list : *DrawList, node : *Node) {
             border_inset=style.selection.border_inset,
             outer_shadow_color=style.selection.outer_shadow_color,
             outer_shadow_offset=style.selection.outer_shadow_offset,
-            outer_shadow_blur=style.selection.outer_shadow_blur,
+            outer_shadow_size=style.selection.outer_shadow_size,
             inner_shadow_color=style.selection.inner_shadow_color,
-            inner_shadow_blur=style.selection.inner_shadow_blur,
+            inner_shadow_size=style.selection.inner_shadow_size,
         });
     }
 
