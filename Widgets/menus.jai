@@ -149,26 +149,34 @@ Menu :: (
     return menu, menu_item;
 }
 
+ContextMenuData :: struct {
+    opened : bool;
+}
+
 ContextMenu :: (parent : *Node, style : *MenuStyle = null, location := #caller_location) -> *Node {
     EnsureStyle(*style, "menu");
 
     popup_root := GetPopupRoot(parent.window);
     menu_id := GetID(GetID(location), popup_root.id);
 
-    should_deactivate := IsKeyPressed(.Escape);
-    if parent.state_flags & .ActiveLastFrame && !(parent.state_flags & .Focused) && IsAnyMouseButtonPressed() {
-        if !IsInTree(context.omg.mouse_hovered_node, menu_id) {
-            should_deactivate = true;
-        }
-    }
+    using _ := AddUserData(parent, ContextMenuData);
 
     button := ButtonBehavior(parent, .Right);
-    if !should_deactivate && (button.released || parent.state_flags & .ActiveLastFrame) {
-        parent.state_flags |= .Active;
+
+    should_deactivate := IsKeyPressed(.Escape);
+
+    if button.released {
+        opened = true;
+    } else if opened && IsAnyMouseButtonPressed() && !IsInTree(context.omg.mouse_hovered_node, menu_id) {
+        should_deactivate = true;
+    }
+
+    if should_deactivate {
+        opened = false;
     }
 
     menu : *Node;
-    if parent.state_flags & .Active {
+    if opened {
         menu = GetPopupNode(parent.window, location);
         {
             SetLayout(menu, .TopToBottom);
