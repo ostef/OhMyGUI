@@ -5,6 +5,7 @@ g_graph : Graph;
 
 Graph :: struct {
     nodes : [..]*GraphNode;
+    nodes_to_destroy : [..]*GraphNode;
 }
 
 GraphNode :: struct {
@@ -38,6 +39,35 @@ CreateNode :: (graph : *Graph) -> *GraphNode {
     array_add(*graph.nodes, node);
 
     return node;
+}
+
+DestroyNode :: (graph : *Graph, node : *GraphNode) {
+    for port : node.inputs {
+        while port.connections {
+            Disconnect(port, 0);
+        }
+
+        free(port);
+    }
+    array_reset(*node.inputs);
+
+    for port : node.outputs {
+        while port.connections {
+            Disconnect(port, 0);
+        }
+
+        free(port);
+    }
+    array_reset(*node.outputs);
+
+    for graph.nodes {
+        if it == node {
+            remove it;
+            break;
+        }
+    }
+
+    free(node);
 }
 
 AddInputPort :: (node : *GraphNode, name : string, type : Type) -> *GraphNodePort {
@@ -220,12 +250,6 @@ NodeGraphNode :: (parent : *OMG.Node, id : OMG.ID) -> *OMG.Node {
         OMG.SetBorderInset(node, -2);
     } else {
         OMG.SetBorderColor(node, 0);
-    }
-
-    menu := OMG.ContextMenu(node);
-    if menu {
-        OMG.MenuItem(menu, "Delete");
-        OMG.MenuItem(menu, "Duplicate");
     }
 
     return node;
@@ -530,10 +554,23 @@ NodeGraphConnection :: (parent : *OMG.Node, a : *GraphNodePort, b : *GraphNodePo
     });
 }
 
-ShowGraphNode :: (parent : *OMG.Node, graph_node : *GraphNode) {
+ShowGraphNode :: (parent : *OMG.Node, graph : *Graph, graph_node : *GraphNode) {
     node := NodeGraphNode(parent, cast(OMG.ID, graph_node));
     if graph_node.description {
         OMG.FocusTooltip(node, "%", graph_node.description);
+    }
+
+    menu := OMG.ContextMenu(node);
+    if menu {
+        if OMG.MenuItem(menu, "Delete") {
+            array_add_if_unique(*graph.nodes_to_destroy, graph_node);
+        }
+
+        OMG.MenuItem(menu, "Duplicate");
+    }
+
+    if (node.state_flags & .Active) && OMG.IsKeyPressed(.Delete) {
+        array_add_if_unique(*graph.nodes_to_destroy, graph_node);
     }
 
     NodeGraphTitleBar(node, graph_node.title, graph_node.color);
@@ -779,8 +816,13 @@ NodeGraphFrame :: () {
     OMG.Text(stats, "Num vertices: %", context.omg.num_vertices_last_frame);
     OMG.Text(stats, "Num indices: %", context.omg.num_indices_last_frame);
 
+    for g_graph.nodes_to_destroy {
+        DestroyNode(*g_graph, it);
+    }
+    array_reset_keeping_memory(*g_graph.nodes_to_destroy);
+
     for g_graph.nodes {
-        ShowGraphNode(background, it);
+        ShowGraphNode(background, *g_graph, it);
     }
 
     for g_graph.nodes {
