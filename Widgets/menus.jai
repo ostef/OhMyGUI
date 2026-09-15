@@ -38,11 +38,16 @@ MenuItem :: (parent : *Node, text : string, selected := false, style : *ButtonSt
         Apply(node, style.states[state].background);
         Apply(text_node, style.states[state].text);
 
+        if button.released {
+            CloseMenu(parent);
+        }
+
         return button.released, node;
     }
 }
 
 MenuData :: struct {
+    wants_close : bool;
     parent_menu : *Node;
     submenus : [..]*Node;
 }
@@ -50,6 +55,16 @@ MenuData :: struct {
 DestroyMenuData :: (node : *Node, data : *void) {
     using _ := cast(*MenuData, data);
     array_reset(*submenus);
+}
+
+CloseMenu :: (node : *Node) {
+    data := GetUserData(node, MenuData);
+    while data {
+        data.wants_close = true;
+
+        node = data.parent_menu;
+        data = ifx node then GetUserData(node, MenuData);
+    }
 }
 
 MenuStyle :: struct {
@@ -94,8 +109,15 @@ Menu :: (
         text_node := GetNode(menu_item, "text");
         SetText(text_node, text);
 
+        button := ButtonBehavior(menu_item);
+        if button.released || menu_item.state_flags & .ActiveLastFrame {
+            menu_item.state_flags |= .Active;
+        }
+
         // Deactivate the menu if we pressed outside the hierarchy of the menu or any submenus
         should_deactivate := IsKeyPressed(.Escape);
+        should_deactivate |= menu_data != null && menu_data.wants_close;
+
         if prev_frame_menu && menu_item.state_flags & .ActiveLastFrame && !(menu_item.state_flags & .Focused) && IsAnyMouseButtonPressed() {
             is_in_menu := IsInTree(context.omg.mouse_hovered_node, prev_frame_menu);
 
@@ -111,9 +133,8 @@ Menu :: (
             should_deactivate = !is_in_menu;
         }
 
-        button := ButtonBehavior(menu_item);
-        if !should_deactivate && (button.released || menu_item.state_flags & .ActiveLastFrame) {
-            menu_item.state_flags |= .Active;
+        if should_deactivate {
+            menu_item.state_flags &= ~.Active;
         }
 
         state := GetState(menu_item);
@@ -133,6 +154,7 @@ Menu :: (
             BringForward(menu);
 
             menu_data = AddUserData(menu, MenuData, DestroyMenuData);
+            menu_data.parent_menu = parent;
             array_reset_keeping_memory(*menu_data.submenus);
 
             if parent_menu_data {
