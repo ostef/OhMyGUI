@@ -167,6 +167,10 @@ Tooltip :: (fmt_str : string, args : ..Any, window : *Window = null) -> *Node {
 }
 
 FocusTooltip :: (node : *Node, min_focus_time := 0.5) -> *Node {
+    if IsAnyMouseButtonDown() {
+        return null;
+    }
+
     if context.omg.mouse_focused_node == node && context.omg.mouse_focus_time >= min_focus_time {
         return Tooltip(node.window);
     }
