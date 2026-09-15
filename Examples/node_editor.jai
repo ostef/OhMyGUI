@@ -8,7 +8,7 @@ NodeEditorNode :: (parent : *OMG.Node, location := #caller_location) -> *OMG.Nod
     OMG.SetOuterShadowOffset(node, 0, 5);
     OMG.SetOuterShadowBlur(node, 10);
     OMG.SetInnerShadowColor(node, OMG.ColorU32(0, 0, 0, 0.4));
-    OMG.SetInnerShadowBlur(node, 20);
+    OMG.SetInnerShadowBlur(node, 6); // @Todo @Fix: blurring larger than corner radius produces intersecting triangles
     OMG.SetCornerRadius(node, 6);
     OMG.SetLayout(node, .TopToBottom);
     OMG.SetSize(node, OMG.SizeFit(), OMG.SizeFit());
