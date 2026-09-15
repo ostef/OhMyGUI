@@ -111,7 +111,7 @@ main :: () {
         OMG.NewFrame(g_delta_time);
 
         // EditorFrame();
-        NodeEditorFrame();
+        NodeGraphFrame();
 
         user_end := current_time_monotonic();
         g_user_time = xx to_float64_seconds(user_end - user_start);
