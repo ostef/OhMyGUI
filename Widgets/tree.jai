@@ -43,9 +43,15 @@ TreeNode :: (parent : *Node, text : string, flags : TreeNodeFlags = 0, style : *
             if flags & .Leaf {
                 SetDraw(icon, null);
             } else {
-                SetDraw(icon, (draw_list, node) => {
+                SetDraw(icon, (draw_list : *DrawList, node : *Node) -> bool {
+                    if IsClipped(draw_list, node.rect) {
+                        return false;
+                    }
+
                     rotation := ifx !(node.parent.parent.state_flags & .Active) then -PI * 0.5 else 0.0;
                     DrawArrow(draw_list, node, rotation);
+
+                    return true;
                 });
             }
 

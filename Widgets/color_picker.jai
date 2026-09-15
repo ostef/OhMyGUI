@@ -98,15 +98,19 @@ GetHSVWheelGeometricData :: (style : *HSVTriangleWheelStyle, rect : Vec4f, hsv :
 }
 
 HSVTriangleWheel :: (parent : *Node, using data : *ColorPickerData, style : *HSVTriangleWheelStyle, location := #caller_location) -> bool, *Node {
-    Draw :: (draw_list : *DrawList, node : *Node) {
+    Draw :: (draw_list : *DrawList, node : *Node) -> bool {
+        if IsClipped(draw_list, node.rect) {
+            return false;
+        }
+
         data := GetUserData(node, *ColorPickerData);
         if !data {
-            return;
+            return true;
         }
 
         style := GetUserData(node, HSVTriangleWheelStyle);
         if !style {
-            return;
+            return true;
         }
 
         using _ := data.*;
@@ -132,6 +136,8 @@ HSVTriangleWheel :: (parent : *Node, using data : *ColorPickerData, style : *HSV
 
         DrawCircleOutline(draw_list, center + style.outer_shadow_offset, circle_radius, style.outer_shadow_color, circle_thickness, blur_size = 1 + style.outer_shadow_size);
         DrawCircleOutline(draw_list, center, circle_radius, style.border_color, circle_thickness);
+
+        return true;
     }
 
     modified := false;
@@ -184,19 +190,23 @@ SaturationValueTriangle :: (parent : *Node, using data : *ColorPickerData, style
             || IsInsideCircle(point, cursor, cursor_style.radius);
     }
 
-    Draw :: (draw_list : *DrawList, node : *Node) {
+    Draw :: (draw_list : *DrawList, node : *Node) -> bool {
+        if IsClipped(draw_list, node.rect) {
+            return false;
+        }
+
         if !node.parent {
-            return;
+            return true;
         }
 
         data := GetUserData(node.parent, *ColorPickerData);
         if !data {
-            return;
+            return true;
         }
 
         style := GetUserData(node.parent, HSVTriangleWheelStyle);
         if !style {
-            return;
+            return true;
         }
 
         using _ := data.*;
@@ -221,6 +231,8 @@ SaturationValueTriangle :: (parent : *Node, using data : *ColorPickerData, style
             outer_shadow_offset=cursor_style.outer_shadow_offset,
             outer_shadow_size=cursor_style.outer_shadow_size,
         });
+
+        return true;
     }
 
     node := GetNode(parent, location);
@@ -279,19 +291,23 @@ HueWheel :: (parent : *Node, using data : *ColorPickerData, style : *HSVTriangle
             || IsInsideCircle(point, cursor, cursor_style.radius);
     }
 
-    Draw :: (draw_list : *DrawList, node : *Node) {
+    Draw :: (draw_list : *DrawList, node : *Node) -> bool {
+        if IsClipped(draw_list, node.rect) {
+            return false;
+        }
+
         if !node.parent {
-            return;
+            return true;
         }
 
         data := GetUserData(node.parent, *ColorPickerData);
         if !data {
-            return;
+            return true;
         }
 
         style := GetUserData(node.parent, HSVTriangleWheelStyle);
         if !style {
-            return;
+            return true;
         }
 
         using _ := data.*;
@@ -322,6 +338,8 @@ HueWheel :: (parent : *Node, using data : *ColorPickerData, style : *HSVTriangle
             outer_shadow_offset=cursor_style.outer_shadow_offset,
             outer_shadow_size=cursor_style.outer_shadow_size,
         });
+
+        return true;
     }
 
     node := GetNode(parent);
@@ -356,9 +374,13 @@ ColoredSliderData :: struct {
 }
 
 ColoredSlider :: (parent : *Node, value : *float, min : float, max : float, step : float, style : *SliderStyle, dynamic_color : bool, location := #caller_location) -> bool, slider : *Node, background : *Node, handle : *Node {
-    DrawTriangularCursor :: (draw_list : *DrawList, node : *Node) {
+    DrawTriangularCursor :: (draw_list : *DrawList, node : *Node) -> bool {
+        if IsClipped(draw_list, node.rect) {
+            return false;
+        }
+
         if !node.parent {
-            return;
+            return true;
         }
 
         axis := ifx node.parent.desired_size.x.kind == .FitChildren
@@ -383,16 +405,22 @@ ColoredSlider :: (parent : *Node, value : *float, min : float, max : float, step
 
         DrawTriangle(draw_list, a + node.outer_shadow_offset, b + node.outer_shadow_offset, c + node.outer_shadow_offset, node.outer_shadow_color, blur_size=node.outer_shadow_size + 1);
         DrawTriangle(draw_list, a, b, c, node.background_colors.top_left);
+
+        return true;
     }
 
-    DrawBackground :: (draw_list : *DrawList, node : *Node) {
+    DrawBackground :: (draw_list : *DrawList, node : *Node) -> bool {
+        if IsClipped(draw_list, node.rect) {
+            return false;
+        }
+
         if !node.parent {
-            return;
+            return true;
         }
 
         using data := GetUserData(node.parent, ColoredSliderData);
         if !data {
-            return;
+            return true;
         }
 
         axis := ifx node.parent.desired_size.x.kind == .FitChildren
@@ -464,6 +492,8 @@ ColoredSlider :: (parent : *Node, value : *float, min : float, max : float, step
         PopClipBox(draw_list);
 
         DrawNodeDefault(draw_list, node);
+
+        return true;
     }
 
     modified, slider, background, handle := Slider(parent, value, min, max, step, style=style, location=location);
@@ -483,7 +513,11 @@ ColorPreviewStyle :: struct {
 }
 
 ColorPreview :: (parent : *Node, color : RGBA8, style : *ColorPreviewStyle, location := #caller_location) -> *Node {
-    Draw :: (draw_list : *DrawList, node : *Node) {
+    Draw :: (draw_list : *DrawList, node : *Node) -> bool {
+        if IsClipped(draw_list, node.rect) {
+            return false;
+        }
+
         DrawBox(draw_list, .{
             bounds=node.rect,
             corner_radiuses=node.corner_radiuses,
@@ -520,6 +554,8 @@ ColorPreview :: (parent : *Node, color : RGBA8, style : *ColorPreviewStyle, loca
             border_size=node.border_size,
             border_inset=node.border_inset,
         });
+
+        return true;
     }
 
     node := GetNode(parent, location=location);

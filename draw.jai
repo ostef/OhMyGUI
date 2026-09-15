@@ -1051,7 +1051,11 @@ DrawWrappedText :: (
     }
 } @Profile
 
-DrawNodeDefault :: (draw_list : *DrawList, node : *Node) {
+DrawNodeDefault :: (draw_list : *DrawList, node : *Node) -> bool {
+    if IsClipped(draw_list, node.rect) {
+        return false;
+    }
+
     DrawBox(draw_list, .{
         bounds=node.rect,
         uv_bounds=node.image_uv_bounds,
@@ -1087,15 +1091,14 @@ DrawNodeDefault :: (draw_list : *DrawList, node : *Node) {
             node.text_effects
         );
     }
+
+    return true;
 } @Profile
 
 DrawNodes :: (draw_list : *DrawList, node : *Node) {
-    if IsClipped(draw_list, node.rect) {
-        return;
-    }
-
+    draw_children := true;
     if node.draw {
-        node.draw(draw_list, node);
+        draw_children = node.draw(draw_list, node);
     }
 
     if node.num_children > 0 {

@@ -283,9 +283,13 @@ NodeGraphPortData :: struct {
 }
 
 NodeGraphPort :: (parent : *OMG.Node, port : *GraphNodePort) -> *OMG.Node {
-    Draw :: (draw_list : *OMG.DrawList, node : *OMG.Node, $direction : GraphNodePort.Direction) {
+    Draw :: (draw_list : *OMG.DrawList, node : *OMG.Node, $direction : GraphNodePort.Direction) -> bool {
+        if OMG.IsClipped(draw_list, node.rect) {
+            return false;
+        }
+
         if !node.parent {
-            return;
+            return true;
         }
 
         data := OMG.AddUserData(node.parent, NodeGraphPortData);
@@ -329,6 +333,8 @@ NodeGraphPort :: (parent : *OMG.Node, port : *GraphNodePort) -> *OMG.Node {
 
             OMG.PopClipBox(draw_list);
         }
+
+        return true;
     }
 
     parent = ifx port.direction == .Input then OMG.FindNode(parent, "inputs") else OMG.FindNode(parent, "outputs");
@@ -496,10 +502,10 @@ NodeGraphConnection :: (parent : *OMG.Node, a : *GraphNodePort, b : *GraphNodePo
         return length(mouse - closest_point) < 4;
     });
 
-    OMG.SetDraw(node, (draw_list : *OMG.DrawList, node : *OMG.Node) {
+    OMG.SetDraw(node, (draw_list : *OMG.DrawList, node : *OMG.Node) -> bool {
         data := OMG.GetUserData(node, NodeGraphConnectionData);
         if !data || !data.a_node || !data.b_node {
-            return;
+            return true;
         }
 
         OMG.PushDisableClipBox(draw_list);
@@ -519,6 +525,8 @@ NodeGraphConnection :: (parent : *OMG.Node, a : *GraphNodePort, b : *GraphNodePo
         array_reset_keeping_memory(*draw_list.path);
 
         OMG.PopClipBox(draw_list);
+
+        return true;
     });
 }
 
@@ -637,32 +645,48 @@ CreateApplyAdditivePoseNode :: (graph : *Graph) -> *GraphNode {
     return node;
 }
 
-NodeGraphFrame :: () {
-    if !g_pose_empty_icon {
-        g_pose_empty_icon = OMG.LoadImageFromFile("pose_empty_icon.png");
+Canvas :: (parent : *OMG.Node, location := #caller_location) -> *OMG.Node {
+    node := OMG.GetNode(parent, location);
+    OMG.SetLayout(node, .None);
+    OMG.SetSize(node, OMG.SizeFill(), OMG.SizeFill());
+    OMG.SetBackgroundColor(node, OMG.ColorU32(0.15, 0.15, 0.15, 1));
+    OMG.SetInnerShadowColor(node, OMG.ColorU32(0, 0, 0, 0.3));
+    OMG.SetInnerShadowSize(node, 50);
+    OMG.SetTextColor(node, OMG.ColorU32(0.2, 0.2, 0.2, 1));
+
+    using _ := OMG.ButtonBehavior(node);
+
+    if node.state_flags & .Focused && OMG.IsMouseButtonPressed(.Left) {
+        OMG.SetMouseCapture(node);
+        OMG.SetMouseFocus(node);
+
+        pressed = true;
+        held = true;
     }
-    if !g_pose_filled_icon {
-        g_pose_filled_icon = OMG.LoadImageFromFile("pose_filled_icon.png");
+
+    if pressed {
+        context.omg.mouse_captured_node_value = .{xy=node.scroll};
     }
 
-    window := OMG.GetWindow(g_window);
-    popups := OMG.GetPopupRoot(window);
+    if held {
+        mouse_delta := OMG.GetMousePosition() - context.omg.mouse_captured_at;
+        original_offset := context.omg.mouse_captured_node_value.xy;
+        node.scroll = original_offset + mouse_delta;
+    }
 
-    background := OMG.GetNode(window);
-    background = OMG.GetNode(background); // Context menu does not work on the root node
-    OMG.SetSize(background, OMG.SizeFill(), OMG.SizeFill());
-    OMG.SetBackgroundColor(background, OMG.ColorU32(0.15, 0.15, 0.15, 1));
-    OMG.SetInnerShadowColor(background, OMG.ColorU32(0, 0, 0, 0.3));
-    OMG.SetInnerShadowSize(background, 50);
-    OMG.SetTextColor(background, OMG.ColorU32(0.2, 0.2, 0.2, 1));
+    OMG.SetDraw(node, (draw_list : *OMG.DrawList, node : *OMG.Node) -> bool {
+        if OMG.IsClipped(draw_list, node.rect) {
+            return false;
+        }
 
-    OMG.SetDraw(background, (draw_list : *OMG.DrawList, node : *OMG.Node) {
         OMG.DrawNodeDefault(draw_list, node);
 
         line_color := node.text_color;
+        x_offset := fmod_cycling(node.scroll.x, 10);
+        y_offset := fmod_cycling(node.scroll.y, 10);
 
         ix := 0;
-        x := node.rect.x;
+        x := node.rect.x + x_offset;
         while x < node.rect.z {
             defer {
                 x += 10;
@@ -680,7 +704,7 @@ NodeGraphFrame :: () {
         }
 
         iy := 0;
-        y := node.rect.y;
+        y := node.rect.y + y_offset;
         while y < node.rect.w {
             defer {
                 y += 10;
@@ -699,7 +723,10 @@ NodeGraphFrame :: () {
 
         line_color = OMG.Darken(line_color, 0.2);
 
-        x = node.rect.x;
+        x_offset = fmod_cycling(node.scroll.x, 100);
+        y_offset = fmod_cycling(node.scroll.y, 100);
+
+        x = node.rect.x + x_offset;
         while x < node.rect.z {
             defer x += 100;
 
@@ -707,15 +734,36 @@ NodeGraphFrame :: () {
 
         }
 
-        y = node.rect.y;
+        y = node.rect.y + y_offset;
         while y < node.rect.w {
             defer y += 100;
 
             OMG.DrawLine(draw_list, .{node.rect.x, y + 0.5}, .{node.rect.z, y + 0.5}, 1, line_color);
         }
+
+        return true;
     });
 
-    stats := OMG.GetNode(background);
+    return node;
+}
+
+NodeGraphFrame :: () {
+    if !g_pose_empty_icon {
+        g_pose_empty_icon = OMG.LoadImageFromFile("pose_empty_icon.png");
+    }
+    if !g_pose_filled_icon {
+        g_pose_filled_icon = OMG.LoadImageFromFile("pose_filled_icon.png");
+    }
+
+    window := OMG.GetWindow(g_window);
+    popups := OMG.GetPopupRoot(window);
+
+    root := OMG.GetNode(window);
+    OMG.SetLayout(root, .None);
+
+    background := Canvas(root);
+
+    stats := OMG.GetNode(root);
     OMG.SetLayout(stats, .TopToBottom);
     OMG.SetPadding(stats, 20, 20);
 
@@ -732,13 +780,13 @@ NodeGraphFrame :: () {
     OMG.Text(stats, "Num indices: %", context.omg.num_indices_last_frame);
 
     for g_graph.nodes {
-        ShowGraphNode(popups, it);
+        ShowGraphNode(background, it);
     }
 
     for g_graph.nodes {
         for port : it.inputs {
             for other_port : port.connections {
-                NodeGraphConnection(popups, port, other_port);
+                NodeGraphConnection(background, port, other_port);
             }
         }
     }

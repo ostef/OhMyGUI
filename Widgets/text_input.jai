@@ -553,9 +553,13 @@ SetColors :: (using style : *TextInputStyle, base_background_color : RGBA8, acce
     SetColors(*active.background.border_colors, accent_color);
 }
 
-DrawTextInputText :: (draw_list : *DrawList, node : *Node) {
+DrawTextInputText :: (draw_list : *DrawList, node : *Node) -> bool {
+    if IsClipped(draw_list, node.rect) {
+        return false;
+    }
+
     if !node.font || (node.text_color & 0xff) == 0 {
-        return;
+        return true;
     }
 
     input := GetUserData(node.parent, TextInputData);
@@ -569,7 +573,7 @@ DrawTextInputText :: (draw_list : *DrawList, node : *Node) {
             node.text_color
         );
 
-        return;
+        return true;
     }
 
     style := GetUserData(node.parent, TextInputStyle);
@@ -650,6 +654,8 @@ DrawTextInputText :: (draw_list : *DrawList, node : *Node) {
 
         DrawLine(draw_list, start, end, 1, node.text_color);
     }
+
+    return true;
 }
 
 TextInputFlags :: enum_flags {

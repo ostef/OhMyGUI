@@ -8,17 +8,20 @@ ButtonResult :: struct {
 ButtonBehavior :: (node : *Node, mouse_button := MouseButton.Left) -> ButtonResult {
     node.flags |= .Focusable;
 
+    active_from_button := false;
     if (IsMouseButtonReleased(mouse_button) || IsMouseButtonDown(mouse_button)) && context.omg.mouse_capturing_node == node {
         SetMouseCapture(node);
         SetMouseFocus(node);
+        active_from_button = true;
         node.state_flags |= .Hot;
     } else if node.state_flags & .Focused && IsMouseButtonPressed(mouse_button) {
         SetMouseCapture(node);
+        active_from_button = true;
         node.state_flags |= .Hot;
     }
 
     result : ButtonResult;
-    if node.state_flags & .Hot {
+    if active_from_button {
         result.held = true;
         result.pressed = IsHovered(node) && IsMouseButtonPressed(mouse_button);
         result.double_clicked = IsHovered(node) && IsMouseButtonDoubleClicked(mouse_button);
@@ -176,14 +179,18 @@ SetColors :: (using style : *CheckboxStyle, base_background_color : RGBA8, check
     active.checkmark.background_color = checkmark_color;
 }
 
-DrawCheckmark :: (draw_list : *DrawList, node : *Node) {
+DrawCheckmark :: (draw_list : *DrawList, node : *Node) -> bool {
+    if IsClipped(draw_list, node.rect) {
+        return false;
+    }
+
     checkbox_style := GetUserData(node.parent, CheckboxStyle);
     if !checkbox_style {
-        return;
+        return true;
     }
 
     if (node.background_colors.top_left & 0xff) == 0 {
-        return;
+        return true;
     }
 
     position := Vec2f.{(node.rect.x + node.rect.z) * 0.5, node.rect.w};
@@ -225,6 +232,8 @@ DrawCheckmark :: (draw_list : *DrawList, node : *Node) {
     DrawPolygonLine(draw_list, draw_list.path, false, thickness, node.background_colors.top_left);
 
     array_reset_keeping_memory(*draw_list.path);
+
+    return true;
 }
 
 Checkbox :: (parent : *Node, value : *bool, size := 20.0, style : *CheckboxStyle = null, location := #caller_location) -> modified : bool, *Node {

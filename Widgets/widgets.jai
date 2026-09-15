@@ -292,9 +292,13 @@ ArrowDirection :: enum {
     Right;
 }
 
-DrawArrow :: (draw_list : *DrawList, node : *Node, rotation : float) {
+DrawArrow :: (draw_list : *DrawList, node : *Node, rotation : float) -> bool {
+    if IsClipped(draw_list, node.rect) {
+        return false;
+    }
+
     if (node.background_colors.top_left & 0xff) == 0 {
-        return;
+        return true;
     }
 
     center := (node.rect.xy + node.rect.zw) * 0.5;
@@ -309,6 +313,8 @@ DrawArrow :: (draw_list : *DrawList, node : *Node, rotation : float) {
     p2 += center;
 
     DrawTriangle(draw_list, p0, p1, p2, node.background_colors.top_left);
+
+    return true;
 }
 
 Arrow :: (parent : *Node, width : Size1D, height : Size1D, direction : ArrowDirection, color : RGBA8, location := #caller_location) -> *Node {
