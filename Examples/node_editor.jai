@@ -117,6 +117,17 @@ CanPortsConnect :: (a : *GraphNodePort, b : *GraphNodePort) -> bool {
     return true;
 }
 
+Disconnect :: (port : *GraphNodePort, other : *GraphNodePort) -> bool {
+    for port.connections {
+        if it == other {
+            Disconnect(port, it_index);
+            return true;
+        }
+    }
+
+    return false;
+}
+
 Disconnect :: (port : *GraphNodePort, index : int) {
     connected := port.connections[index];
     for connected.connections {
@@ -347,6 +358,15 @@ NodeGraphPort :: (parent : *OMG.Node, port : *GraphNodePort) -> *OMG.Node {
 
     using _ := OMG.ButtonBehavior(container);
 
+    menu := OMG.ContextMenu(container);
+    if menu {
+        if OMG.MenuItem(menu, "Disconnect") {
+            while port.connections.count > 0 {
+                Disconnect(port, 0);
+            }
+        }
+    }
+
     focused := container.state_flags & (.Focused | .Hot) != 0;
     dragging_port : *GraphNodePort;
     if context.omg.mouse_capturing_node != null && context.omg.mouse_capturing_node != container {
@@ -433,6 +453,36 @@ NodeGraphConnection :: (parent : *OMG.Node, a : *GraphNodePort, b : *GraphNodePo
 
     OMG.SetBackgroundColor(node, 0xffffffff);
 
+    using _ := OMG.ButtonBehavior(node);
+
+    menu := OMG.ContextMenu(node);
+    if menu {
+        if OMG.MenuItem(menu, "Disconnect") {
+            Disconnect(a, b);
+        }
+    }
+
+    OMG.SetHitTest(node, (node : *OMG.Node, point : OMG.Vec2f) -> bool {
+        data := OMG.GetUserData(node, NodeGraphConnectionData);
+        if !data || !data.a_node || !data.b_node {
+            return false;
+        }
+
+        p0 := (data.a_node.rect.xy + data.a_node.rect.zw) * 0.5;
+        p3 := (data.b_node.rect.xy + data.b_node.rect.zw) * 0.5;
+        p1 := OMG.Vec2f.{lerp(p0.x, p3.x, 0.6), p0.y};
+        p2 := OMG.Vec2f.{lerp(p3.x, p0.x, 0.6), p3.y};
+
+        // a_node is always an input port
+        p1.x = min(p0.x - 100, p1.x);
+        p2.x = max(p3.x + 100, p2.x);
+
+        mouse := OMG.GetMousePosition(node.window);
+        closest_point := OMG.ClosestPointOnBezierCubic(p0, p1, p2, p3, mouse);
+
+        return length(mouse - closest_point) < 4;
+    });
+
     OMG.SetDraw(node, (draw_list : *OMG.DrawList, node : *OMG.Node) {
         data := OMG.GetUserData(node, NodeGraphConnectionData);
         if !data || !data.a_node || !data.b_node {
@@ -450,8 +500,9 @@ NodeGraphConnection :: (parent : *OMG.Node, a : *GraphNodePort, b : *GraphNodePo
         p1.x = min(p0.x - 100, p1.x);
         p2.x = max(p3.x + 100, p2.x);
 
+        thickness := ifx node.state_flags & (.Focused | .Hot) then 4.0 else 2.0;
         OMG.PathPushBezierCubic(*draw_list.path, p0, p1, p2, p3);
-        OMG.DrawPolygonLine(draw_list, draw_list.path, false, 2, node.background_colors.top_left);
+        OMG.DrawPolygonLine(draw_list, draw_list.path, false, thickness, node.background_colors.top_left);
         array_reset_keeping_memory(*draw_list.path);
 
         OMG.PopClipBox(draw_list);

@@ -442,6 +442,22 @@ InverseLerp :: inline (a : float, b : float, t : float) -> float {
     return (t - a) / (b - a);
 }
 
+ClosestPointOnLine :: (p0 : Vec2f, p1 : Vec2f, point : Vec2f) -> Vec2f {
+    p0_point := point - p0;
+    dir := p1 - p0;
+    d := dot(p0_point, dir);
+    if d < 0 {
+        return p0;
+    }
+
+    sq_length := dot(dir, dir);
+    if d > sq_length {
+        return p1;
+    }
+
+    return p0 + dir * d / sq_length;
+}
+
 LineIntersection :: (a_p0 : Vec2f, a_p1 : Vec2f, b_p0 : Vec2f, b_p1 : Vec2f) -> bool, Vec2f {
     ax := a_p1.x - a_p0.x;
     ay := a_p1.y - a_p0.y;
@@ -483,6 +499,34 @@ BezierQuadraticNormal :: inline (p0 : Vec2f, p1 : Vec2f, p2 : Vec2f, t : float) 
     return PerpendicularCW(BezierQuadraticTangent(p0, p1, p2, t));
 }
 
+ClosestPointOnBezierQuadratic :: (p0 : Vec2f, p1 : Vec2f, p2 : Vec2f, point : Vec2f, num_segments := 0) -> Vec2f {
+    if num_segments <= 0 {
+        a := Vec2f.{abs(p0.x - p1.x), abs(p0.y - p1.y)};
+        b := Vec2f.{abs(p1.x - p2.x), abs(p1.y - p2.y)};
+        max_dist := max(a.x, a.y, b.x, b.y);
+
+        num_segments = xx max(max_dist / 5 * context.omg.global_polygon_resolution, 5);
+    }
+
+    current_p := p0;
+    closest_point := p0;
+    closest_sq_dist := FLOAT32_INFINITY;
+    for i : 1..num_segments {
+        t := i / cast(float, num_segments);
+        next_p := BezierQuadratic(p0, p1, p2, t);
+        point_on_line := ClosestPointOnLine(current_p, next_p, point);
+        current_p = next_p;
+
+        sq_dist := length_squared(point - point_on_line);
+        if sq_dist < closest_sq_dist {
+            closest_point = point_on_line;
+            closest_sq_dist = sq_dist;
+        }
+    }
+
+    return closest_point;
+}
+
 BezierCubic :: inline (p0 : Vec2f, p1 : Vec2f, p2 : Vec2f, p3 : Vec2f, t : float) -> Vec2f {
     u := 1 - t;
     w0 := u * u * u;
@@ -504,4 +548,33 @@ BezierCubicTangent :: inline (p0 : Vec2f, p1 : Vec2f, p2 : Vec2f, p3 : Vec2f, t 
 
 BezierCubicNormal :: inline (p0 : Vec2f, p1 : Vec2f, p2 : Vec2f, p3 : Vec2f, t : float) -> Vec2f {
     return PerpendicularCW(BezierCubicTangent(p0, p1, p2, p3, t));
+}
+
+ClosestPointOnBezierCubic :: (p0 : Vec2f, p1 : Vec2f, p2 : Vec2f, p3 : Vec2f, point : Vec2f, num_segments := 0) -> Vec2f {
+    if num_segments <= 0 {
+        a := Vec2f.{abs(p0.x - p1.x), abs(p0.y - p1.y)};
+        b := Vec2f.{abs(p1.x - p2.x), abs(p1.y - p2.y)};
+        c := Vec2f.{abs(p2.x - p3.x), abs(p2.y - p3.y)};
+        max_dist := max(a.x, a.y, b.x, b.y, c.x, c.y);
+
+        num_segments = xx max(max_dist / 5 * context.omg.global_polygon_resolution, 5);
+    }
+
+    current_p := p0;
+    closest_point := p0;
+    closest_sq_dist := FLOAT32_INFINITY;
+    for i : 1..num_segments {
+        t := i / cast(float, num_segments);
+        next_p := BezierCubic(p0, p1, p2, p3, t);
+        point_on_line := ClosestPointOnLine(current_p, next_p, point);
+        current_p = next_p;
+
+        sq_dist := length_squared(point - point_on_line);
+        if sq_dist < closest_sq_dist {
+            closest_point = point_on_line;
+            closest_sq_dist = sq_dist;
+        }
+    }
+
+    return closest_point;
 }
