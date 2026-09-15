@@ -11,11 +11,9 @@ ButtonBehavior :: (node : *Node, mouse_button := MouseButton.Left) -> ButtonResu
     if (IsMouseButtonReleased(mouse_button) || IsMouseButtonDown(mouse_button)) && context.omg.mouse_capturing_node == node {
         SetMouseCapture(node);
         SetMouseFocus(node);
+        node.state_flags |= .Hot;
     } else if node.state_flags & .Focused && IsMouseButtonPressed(mouse_button) {
         SetMouseCapture(node);
-    }
-
-    if context.omg.mouse_capturing_node == node {
         node.state_flags |= .Hot;
     }
 
