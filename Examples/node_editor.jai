@@ -146,7 +146,8 @@ Connect :: (a : *GraphNodePort, b : *GraphNodePort) -> bool {
 NodeGraphNode :: (parent : *OMG.Node, id : OMG.ID) -> *OMG.Node {
     node, is_new := OMG.GetNode(parent, id);
     if is_new {
-        node.offset = .{100, 100};
+        mouse := OMG.GetMousePosition(parent.window);
+        node.offset = mouse - parent.rect.xy;
     }
 
     OMG.SetBackgroundColor(node, OMG.ColorU32(0.1, 0.1, 0.1, 0.8));
