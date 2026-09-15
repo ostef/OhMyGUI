@@ -73,19 +73,22 @@ NodeEditorTitleBar :: (parent : *OMG.Node, title : string, color : OMG.RGBA8) ->
 NodeEditorBody :: (parent : *OMG.Node) -> body : *OMG.Node {
     body := OMG.GetNode(parent, "body");
     OMG.SetLayout(body, .LeftToRight);
-    OMG.SetSize(body, OMG.SizeFit(), OMG.SizeFit());
+    OMG.SetSize(body, OMG.SizeFill(), OMG.SizeFit());
+    OMG.SetMinWidthFit(body);
 
     inputs := OMG.GetNode(body, "inputs");
     OMG.SetLayout(inputs, .TopToBottom);
-    OMG.SetSize(inputs, OMG.SizeFit(), OMG.SizeFit());
+    OMG.SetSize(inputs, OMG.SizeFill(), OMG.SizeFit());
     OMG.SetMinWidth(inputs, 60);
+    OMG.SetMinWidthFit(inputs);
     OMG.SetPadding(inputs, 6, 6);
     OMG.SetChildGap(inputs, 4, 4);
 
     outputs := OMG.GetNode(body, "outputs");
     OMG.SetLayout(outputs, .TopToBottom);
-    OMG.SetSize(outputs, OMG.SizeFit(), OMG.SizeFit());
+    OMG.SetSize(outputs, OMG.SizeFill(), OMG.SizeFit());
     OMG.SetMinWidth(outputs, 60);
+    OMG.SetMinWidthFit(outputs);
     OMG.SetPadding(outputs, 6, 6);
     OMG.SetChildGap(outputs, 4, 4);
 
@@ -195,11 +198,23 @@ NodeEditorOutputPort :: (parent : *OMG.Node, name : string, color : OMG.RGBA8, i
     return NodeEditorPort(inputs, name, color, image, .Output);
 }
 
-BlendSpace1DNode :: (parent : *OMG.Node, location := #caller_location) {
+AnimationPlayerNode :: (parent : *OMG.Node, location := #caller_location) {
     node := NodeEditorNode(parent, location);
-    OMG.FocusTooltip(node, "Play a 1D blend space");
+    OMG.FocusTooltip(node, "Play an animation clip");
 
-    NodeEditorTitleBar(node, "Blend Space 1D", OMG.ColorU32(0.178, 0.810, 0.399, 1));
+    NodeEditorTitleBar(node, "Animation player", OMG.ColorU32(0.178, 0.810, 0.399, 1));
+
+    body := NodeEditorBody(node);
+    NodeEditorInputPort(body, "Speed", OMG.ColorU32(0.0435, 0.870, 0.209, 1));
+
+    NodeEditorOutputPort(body, "Pose", OMG.ColorU32(1,1,1,1), g_pose_empty_icon);
+}
+
+BlendSpacePlayerNode :: (parent : *OMG.Node, location := #caller_location) {
+    node := NodeEditorNode(parent, location);
+    OMG.FocusTooltip(node, "Play a blend space");
+
+    NodeEditorTitleBar(node, "Blend Space Player", OMG.ColorU32(0.178, 0.810, 0.399, 1));
 
     body := NodeEditorBody(node);
     NodeEditorInputPort(body, "X", OMG.ColorU32(0.0435, 0.870, 0.209, 1));
@@ -314,11 +329,11 @@ NodeEditorFrame :: () {
     OMG.Text(stats, "Num vertices: %", context.omg.num_vertices_last_frame);
     OMG.Text(stats, "Num indices: %", context.omg.num_indices_last_frame);
 
-    BlendSpace1DNode(popups);
-    BlendSpace1DNode(popups);
-    BlendSpace1DNode(popups);
-    BlendSpace1DNode(popups);
-    BlendSpace1DNode(popups);
+    BlendSpacePlayerNode(popups);
+    BlendSpacePlayerNode(popups);
+    BlendSpacePlayerNode(popups);
+    AnimationPlayerNode(popups);
+    AnimationPlayerNode(popups);
     BlendPosesNode(popups);
     BlendPosesNode(popups);
     BlendPosesNode(popups);
