@@ -527,6 +527,22 @@ ClosestPointOnBezierQuadratic :: (p0 : Vec2f, p1 : Vec2f, p2 : Vec2f, point : Ve
     return closest_point;
 }
 
+// https://iquilezles.org/articles/bezierbbox/
+BezierQuadraticBounds :: (p0 : Vec2f, p1 : Vec2f, p2 : Vec2f) -> Vec4f {
+    min_ := min(p0, p2);
+    max_ := max(p0, p2);
+
+    if p1.x < min_.x || p1.y < min_.y || p1.x > max_x || p1.y > max_.y {
+        t := clamp((p0 - p1)/(p0 - 2 * p1 + p2), .{0, 0}, .{1, 1});
+        u := 1 - t;
+        q := u * u * p0 + 2 * u * t * p1 + t * t * p2;
+        min_ = min(min_, q);
+        max_ = max(max_, q);
+    }
+
+    return .{xy=min_, zw=max_};
+}
+
 BezierCubic :: inline (p0 : Vec2f, p1 : Vec2f, p2 : Vec2f, p3 : Vec2f, t : float) -> Vec2f {
     u := 1 - t;
     w0 := u * u * u;
@@ -577,4 +593,86 @@ ClosestPointOnBezierCubic :: (p0 : Vec2f, p1 : Vec2f, p2 : Vec2f, p3 : Vec2f, po
     }
 
     return closest_point;
+}
+
+// https://iquilezles.org/articles/bezierbbox/
+BezierCubicBounds :: (p0 : Vec2f, p1 : Vec2f, p2 : Vec2f, p3 : Vec2f) -> Vec4f {
+    min_ := min(p0, p3);
+    max_ := max(p0, p3);
+
+    d := p0;
+    c := -p0 + p1;
+    b :=  p0 - 2 * p1 + p2;
+    a := -p0 + 3 * p1 - 3 * p2 + p3;
+
+    h := b * b - a * c;
+    i := ifx h.x > 0 then 0 else 1;
+
+    if h.x > 0 {
+        h.x = sqrt(h.x);
+
+        t := (-b.x - h.x) / a.x;
+        if t > 0 && t < 1 {
+            t2 := t * t;
+            t3 := t * t2;
+            u := 1 - t;
+            u2 := u * u;
+            u3 := u * u2;
+
+            q := u3 * p0.x + 3 * u2 * t * p1.x + 3 * u * t2 * p2.x + t3 * p3.x;
+
+            min_.x = min(min_.x, q);
+            max_.x = max(max_.x, q);
+        }
+
+        t = (-b.x + h.x) / a.x;
+
+        if t > 0 && t < 1 {
+            t2 := t * t;
+            t3 := t * t2;
+            u := 1 - t;
+            u2 := u * u;
+            u3 := u * u2;
+
+            q := u3 * p0.x + 3 * u2 * t * p1.x + 3 * u * t2 * p2.x + t3 * p3.x;
+
+            min_.x = min(min_.x, q);
+            max_.x = max(max_.x, q);
+        }
+    }
+
+    if h.y > 0 {
+        h.y = sqrt(h.y);
+
+        t := (-b.y - h.y) / a.y;
+        if t > 0 && t < 1 {
+            t2 := t * t;
+            t3 := t * t2;
+            u := 1 - t;
+            u2 := u * u;
+            u3 := u * u2;
+
+            q := u3 * p0.y + 3 * u2 * t * p1.y + 3 * u * t2 * p2.y + t3 * p3.y;
+
+            min_.y = min(min_.y, q);
+            max_.y = max(max_.y, q);
+        }
+
+        t = (-b.y + h.y) / a.y;
+
+        if t > 0 && t < 1 {
+            t2 := t * t;
+            t3 := t * t2;
+            u := 1 - t;
+            u2 := u * u;
+            u3 := u * u2;
+
+            q := u3 * p0.y + 3 * u2 * t * p1.y + 3 * u * t2 * p2.y + t3 * p3.y;
+
+            min_.y = min(min_.y, q);
+            max_.y = max(max_.y, q);
+        }
+    }
+
+    return .{xy=min_, zw=max_};
 }
