@@ -784,7 +784,7 @@ Canvas :: (parent : *OMG.Node, location := #caller_location) -> *OMG.Node {
     return node;
 }
 
-NodeGraphFrame :: () {
+ShowNodeGraphWindow :: () {
     if !g_pose_empty_icon {
         g_pose_empty_icon = OMG.LoadImageFromFile("pose_empty_icon.png");
     }
