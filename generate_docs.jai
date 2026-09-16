@@ -14,6 +14,7 @@ Documentation :: struct {
     raw_comment : string;
     brief : string;
     description : string;
+    returns : string;
     see : [..]string;
 }
 
@@ -100,7 +101,7 @@ GetFollowingComment :: (decl : *Code_Declaration) -> string {
     return line_str;
 }
 
-GetLeadingComment :: (decl : *Code_Declaration) -> string {
+GetLeadingComment :: (node : *Code_Node) -> string, indentation : int {
     EndsWith :: (str : string, with : string, offset_from_end : int) -> bool {
         if str.count - offset_from_end < with.count {
             return false;
@@ -113,26 +114,26 @@ GetLeadingComment :: (decl : *Code_Declaration) -> string {
         return _s == with;
     }
 
-    if !decl.enclosing_load {
-        return "";
+    if !node.enclosing_load {
+        return "", 0;
     }
 
-    loc := make_location(decl);
+    loc := make_location(node);
     file := LoadFile(loc.fully_pathed_filename);
     if !file {
-        return "";
+        return "", 0;
     }
 
     if loc.line_number < 1 || loc.line_number > file.line_offsets.count {
-        return "";
+        return "", 0;
     }
 
     line_index := loc.line_number - 1;
     if line_index < 0 {
-        return "";
+        return "", 0;
     }
 
-    byte_offset := file.line_offsets[line_index] - 1 + loc.character_number - 1;
+    byte_offset := file.line_offsets[line_index] - 2;
 
     comment_start_offset, comment_end_offset := -1;
     comment_level := -1;
@@ -152,34 +153,39 @@ GetLeadingComment :: (decl : *Code_Declaration) -> string {
 
             comment_level += 1;
             byte_offset -= 2;
-        } else if comment_level < 0 && !is_space(file.contents[byte_offset]) {
-            return "";
+        } else if comment_level < 0 && (file.contents[byte_offset] == "\n" || !is_space(file.contents[byte_offset])) {
+            return "", 0;
         } else {
             byte_offset -= 1;
         }
     }
 
     if comment_start_offset >= 0 && comment_end_offset >= 0 {
+        i := comment_start_offset;
+        while i > 0 && file.contents[i - 1] != #char "\n" {
+            i -= 1;
+        }
+
         comment_str := string.{
             data=file.contents.data + comment_start_offset,
             count=comment_end_offset - comment_start_offset + 1,
         };
 
         if begins_with(comment_str, "/**") || begins_with(comment_str, "///") {
-            return comment_str;
+            return comment_str, comment_start_offset - i;
         }
     }
 
-    return "";
+    return "", 0;
 }
 
-AddDocumentation :: (decl : *Code_Declaration, raw_comment : string) {
+AddDocumentation :: (decl : *Code_Declaration, raw_comment : string, indentation : int) {
     doc := find_or_add(*g_doc_entries, decl);
     doc.raw_comment = raw_comment;
-    ParseDocumentation(doc);
+    ParseDocumentation(doc, indentation);
 }
 
-ParseDocumentation :: (doc : *Documentation) {
+ParseDocumentation :: (doc : *Documentation, indentation : int) {
     str := doc.raw_comment;
     if begins_with(str, "///>") {
         str = advance(str, "///>".count);
@@ -198,8 +204,18 @@ ParseDocumentation :: (doc : *Documentation) {
 
     lines := split(str, "\n");
     for lines {
-
         s := it;
+
+        for i : 0..indentation - 1 {
+            if s.count <= 0 {
+                break;
+            }
+
+            if is_space(s[0]) {
+                s = advance(s);
+            }
+        }
+
         if begins_with(s, " *") {
             s = advance(s, " *".count);
         }
@@ -210,6 +226,11 @@ ParseDocumentation :: (doc : *Documentation) {
             s = trim(s);
 
             doc.brief = s;
+        } else if begins_with(s, "@returns ") {
+            s = advance(s, "@returns ".count);
+            s = trim(s);
+
+            doc.returns = s;
         } else if begins_with(s, "@see ") {
             s = advance(s, "@see ".count);
             s = trim(s);
@@ -244,35 +265,50 @@ HandleCompilerMessage :: (msg : *Message) {
                 continue;
             }
 
-            leading_comment := GetLeadingComment(decl);
+            leading_comment, indentation := GetLeadingComment(decl);
             if leading_comment {
-                AddDocumentation(decl, leading_comment);
+                AddDocumentation(decl, leading_comment, indentation);
             }
 
             if !decl.expression {
                 continue;
             }
 
+            HandleMember :: (node : *Code_Node) {
+                original_node := node;
+
+                if node.kind == .USING {
+                    node = cast(*Code_Using, node).expression;
+                }
+
+                if node.kind != .DECLARATION {
+                    return;
+                }
+
+                member_decl := cast(*Code_Declaration, node);
+
+                following_comment := GetFollowingComment(member_decl);
+                if following_comment {
+                    AddDocumentation(member_decl, following_comment, 0);
+                    return;
+                }
+
+                leading_comment, indentation := GetLeadingComment(original_node);
+                if leading_comment {
+                    AddDocumentation(member_decl, leading_comment, indentation);
+                    return;
+                }
+            }
+
             if decl.expression.kind == {
             case .STRUCT;
                 struct_node := cast(*Code_Struct, decl.expression);
                 for struct_node.block.members {
-                    if it.kind != .DECLARATION {
-                        continue;
-                    }
+                    HandleMember(it);
+                }
 
-                    member_decl := cast(*Code_Declaration, it);
-                    following_comment := GetFollowingComment(member_decl);
-                    if following_comment {
-                        AddDocumentation(member_decl, following_comment);
-                        continue;
-                    }
-
-                    leading_comment := GetLeadingComment(member_decl);
-                    if leading_comment {
-                        AddDocumentation(member_decl, leading_comment);
-                        continue;
-                    }
+                for struct_node.block.statements {
+                    HandleMember(it);
                 }
             }
         }
@@ -308,6 +344,9 @@ HandleCompilerMessage :: (msg : *Message) {
         if doc.description {
             print("%\n", doc.description);
         }
+        if doc.returns {
+            print("  Returns %\n", doc.returns);
+        }
 
         if doc.see.count > 0 {
             print("See:\n");
@@ -318,4 +357,6 @@ HandleCompilerMessage :: (msg : *Message) {
 
         print("\n");
     }
+
+    print("% entries\n", g_doc_entries.count);
 }

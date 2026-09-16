@@ -3,21 +3,13 @@
 ID :: u64;
 
 NodeFlags :: enum_flags u32 {
-    // In certain situations, the text of the node should be taken into account instead
-    // of the children (e.g. fit sizing)
-    TextNode;
-    // Wrap the text when it goes outside the node width
-    WrapText;
-    // Capture mouse focus when hovered if no other foreground node has captured it
-    Focusable;
-    // Capture scroll focus when hovered if no other foreground node has captured it
-    Scrollable;
-    // Before laying out nodes, sort the children based on z_index
-    SortChildren;
-    // Don't clip nodes when drawing children nodes
-    NoClip;
-    // Don't pad the clip box
-    NoPaddedClip;
+    TextNode;     ///> Take the text value of the node into account instead of the children (e.g. for fit sizing)
+    WrapText;     ///> Wrap the text when it goes outside the node width
+    Focusable;    ///> Capture mouse focus when hovered if no other foreground node has captured it
+    Scrollable;   ///> Capture scroll focus when hovered if no other foreground node has captured it
+    SortChildren; ///> Before laying out nodes, sort the children based on z_index
+    NoClip;       ///> Don't clip nodes when drawing children nodes
+    NoPaddedClip; ///> Don't pad the clip box
 }
 
 TextEffects :: enum_flags u8 {
@@ -150,7 +142,12 @@ Node :: struct {
 
     tree_last_frame : type_of(tree);
 
-    /// Computed during the layout phase at the end of the frame. Before then it refers to the results of the previous frame.
+    /**
+     * @brief Layout data
+     *
+     * Computed during the layout phase at the end of the frame.
+     * Before then it refers to the layout results of the previous frame.
+     */
     using layout : struct {
         size : Vec2f;
         children_size : Vec2f;
@@ -159,7 +156,9 @@ Node :: struct {
         clipped_rect : Vec4f;
     };
 
-    /// User controlled properties that affect the layout, reset each frame except for scroll and offset
+    /**
+     * User controlled properties that affect the layout, reset each frame except for scroll and offset
+     */
     using properties : struct {
         font : *Font;
         text : string;
@@ -182,7 +181,9 @@ Node :: struct {
         child_layout_mode := LayoutMode.LeftToRight;
     };
 
-    /// Styling properties, reset each frame. These do not affect the hit-test or layout results and are purely visual.
+    /**
+     * Styling properties, reset each frame. These do not affect the hit-test or layout results and are purely visual.
+     */
     using styling : struct {
         image : TextureHandle;
         image_uv_bounds : Vec4f;
@@ -204,7 +205,9 @@ Node :: struct {
     interacting_mouse_buttons : NodeInteractingMouseButtons; //> The mouse button(s) that is interacting with the node in the current and last frames.
 }
 
-// for_expansion
+/**
+ * Iterate over a node's children.
+ */
 Children :: (node : *Node, body : Code, flags : For_Flags) #expand {
     #if flags & .REVERSE {
         `it := node.last_child;
@@ -227,7 +230,9 @@ Children :: (node : *Node, body : Code, flags : For_Flags) #expand {
     }
 }
 
-// for_expansion
+/**
+ * Iterate over a node's previous frame children.
+ */
 PrevFrameChildren :: (node : *Node, body : Code, flags : For_Flags) #expand {
     #if flags & .REVERSE {
         `it := node.tree_last_frame.last_child;
@@ -264,6 +269,9 @@ IsHovered :: (node : *Node) -> bool {
     return node.hit_test(node, mouse);
 }
 
+/**
+ * @returns true if `node` is a descendant of `of`, false otherwise.
+ */
 IsInTree :: (node : *Node, of : *Node) -> bool {
     curr := node;
     while curr {
@@ -277,6 +285,9 @@ IsInTree :: (node : *Node, of : *Node) -> bool {
     return false;
 }
 
+/**
+ * @returns true if `node` is a descendant of `of`, false otherwise.
+ */
 IsInTree :: (node : *Node, of : ID) -> bool {
     curr := node;
     while curr {
@@ -290,7 +301,9 @@ IsInTree :: (node : *Node, of : ID) -> bool {
     return false;
 }
 
-// for_expansion
+/**
+ * Iterate over a node's attached user data.
+ */
 UserData :: (node : *Node, body : Code, flags : For_Flags) #expand {
     `it := node.user_data;
     `it_index := 0;
