@@ -301,6 +301,10 @@ DrawRect :: (
         return v;
     }
 
+    if bounds.z <= bounds.x || bounds.w <= bounds.y {
+        return;
+    }
+
     if IsClipped(draw_list, bounds) {
         return;
     }
