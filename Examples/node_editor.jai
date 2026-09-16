@@ -236,7 +236,7 @@ NodeGraphNode :: (parent : *OMG.Node, id : OMG.ID) -> *OMG.Node {
     }
 
     should_deactivate := OMG.IsKeyPressed(.Escape);
-    should_deactivate |= OMG.IsAnyMouseButtonPressed() && !OMG.IsInTree(context.omg.mouse_hovered_node, node);
+    should_deactivate |= !OMG.IsCapturingMouse(node) && OMG.IsAnyMouseButtonPressed() && !OMG.IsInTree(context.omg.mouse_hovered_node, node);
     if should_deactivate {
         node.state_flags &= ~.Active;
     }
