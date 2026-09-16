@@ -31,8 +31,6 @@ Context :: struct {
     renderer_funcs : RendererFunctions;
     default_draw_node : type_of(Node.draw) = DrawNodeDefault;
 
-    debug_mode := false;
-
     general_purpose_allocator : Allocator;
 
     mouse_wheel_multiplier := 10.0;
@@ -673,28 +671,6 @@ Render :: () {
             FreeNode(it, free_children=false);
         } else {
             it.tree_last_frame = it.tree;
-        }
-    }
-
-    if omg.debug_mode {
-        if omg.mouse_hovered_node {
-            node := omg.mouse_hovered_node;
-            DrawBox(*node.window.draw_list, .{
-                bounds=node.rect,
-                border_colors=MakeBoxColors(ColorU32(1, 0, 0, 1)),
-                border_size=2,
-                border_inset=-4
-            });
-        }
-
-        if omg.mouse_focused_node {
-            node := omg.mouse_focused_node;
-            DrawBox(*node.window.draw_list, .{
-                bounds=node.rect,
-                border_colors=MakeBoxColors(ColorU32(0, 1, 0, 1)),
-                border_size=2,
-                border_inset=-2
-            });
         }
     }
 

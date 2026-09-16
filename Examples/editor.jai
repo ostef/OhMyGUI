@@ -215,8 +215,6 @@ EditorFrame :: () {
                 g_wants_switch_theme = true;
             }
 
-            OMG.Toggle(title_menu_bar, "Debug Mode", *context.omg.debug_mode, style=OMG.GetStyle("menu_item", OMG.ButtonStyle));
-
             OMG.Toggle(title_menu_bar, "Slow Mode", *g_slow_down, style=OMG.GetStyle("menu_item", OMG.ButtonStyle));
 
             help_menu := OMG.Menu(title_menu_bar, "Help");
