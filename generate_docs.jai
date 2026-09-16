@@ -3,6 +3,7 @@
 #import "File";
 #import "String";
 #import "Hash_Table";
+#import "Sort";
 
 LoadedFile :: struct {
     filename : string;
@@ -246,6 +247,74 @@ ParseDocumentation :: (doc : *Documentation, indentation : int) {
     }
 }
 
+HandleDeclaration :: (decl : *Code_Declaration) {
+    leading_comment, indentation := GetLeadingComment(decl);
+    if leading_comment {
+        AddDocumentation(decl, leading_comment, indentation);
+    }
+
+    if !decl.expression {
+        return;
+    }
+
+    HandleMember :: (node : *Code_Node) {
+        original_node := node;
+
+        if node.kind == .USING {
+            node = cast(*Code_Using, node).expression;
+        }
+
+        if node.kind != .DECLARATION {
+            return;
+        }
+
+        member_decl := cast(*Code_Declaration, node);
+        if member_decl.flags & .IS_CONSTANT && member_decl.expression {
+            if member_decl.expression.kind == {
+            case .PROCEDURE_HEADER; #through;
+            case .ENUM; #through;
+            case .STRUCT;
+                HandleDeclaration(member_decl);
+                return;
+            }
+        }
+
+        following_comment := GetFollowingComment(member_decl);
+        if following_comment {
+            AddDocumentation(member_decl, following_comment, 0);
+            return;
+        }
+
+        leading_comment, indentation := GetLeadingComment(original_node);
+        if leading_comment {
+            AddDocumentation(member_decl, leading_comment, indentation);
+            return;
+        }
+    }
+
+    if decl.expression.kind == {
+    case .STRUCT;
+        struct_node := cast(*Code_Struct, decl.expression);
+        for struct_node.block.members {
+            HandleMember(it);
+        }
+
+        for struct_node.block.statements {
+            HandleMember(it);
+        }
+
+    case .ENUM;
+        enum_node := cast(*Code_Enum, decl.expression);
+        for enum_node.block.members {
+            HandleMember(it);
+        }
+
+        for enum_node.block.statements {
+            HandleMember(it);
+        }
+    }
+}
+
 HandleCompilerMessage :: (msg : *Message) {
     if msg.kind == {
     case .TYPECHECKED;
@@ -259,68 +328,11 @@ HandleCompilerMessage :: (msg : *Message) {
                 continue;
             }
 
-            loc := make_location(decl);
-
             if decl.enclosing_load && decl.enclosing_load.enclosing_import && decl.enclosing_load.enclosing_import.module_type != .MAIN_PROGRAM {
                 continue;
             }
 
-            leading_comment, indentation := GetLeadingComment(decl);
-            if leading_comment {
-                AddDocumentation(decl, leading_comment, indentation);
-            }
-
-            if !decl.expression {
-                continue;
-            }
-
-            HandleMember :: (node : *Code_Node) {
-                original_node := node;
-
-                if node.kind == .USING {
-                    node = cast(*Code_Using, node).expression;
-                }
-
-                if node.kind != .DECLARATION {
-                    return;
-                }
-
-                member_decl := cast(*Code_Declaration, node);
-
-                following_comment := GetFollowingComment(member_decl);
-                if following_comment {
-                    AddDocumentation(member_decl, following_comment, 0);
-                    return;
-                }
-
-                leading_comment, indentation := GetLeadingComment(original_node);
-                if leading_comment {
-                    AddDocumentation(member_decl, leading_comment, indentation);
-                    return;
-                }
-            }
-
-            if decl.expression.kind == {
-            case .STRUCT;
-                struct_node := cast(*Code_Struct, decl.expression);
-                for struct_node.block.members {
-                    HandleMember(it);
-                }
-
-                for struct_node.block.statements {
-                    HandleMember(it);
-                }
-
-            case .ENUM;
-                enum_node := cast(*Code_Enum, decl.expression);
-                for enum_node.block.members {
-                    HandleMember(it);
-                }
-
-                for enum_node.block.statements {
-                    HandleMember(it);
-                }
-            }
+            HandleDeclaration(decl);
         }
     }
 }
@@ -346,7 +358,21 @@ HandleCompilerMessage :: (msg : *Message) {
 
     compiler_end_intercept(w);
 
-    for doc, decl : g_doc_entries {
+    Entry :: struct {
+        decl : *Code_Declaration;
+        doc : *Documentation;
+    }
+
+    entries : [..]Entry;
+    for * doc, decl : g_doc_entries {
+        array_add(*entries, .{decl, doc});
+    }
+
+    quick_sort(entries, (a, b) => compare_strings(a.decl.name, b.decl.name));
+
+    for it : entries {
+        using it;
+
         print("%:\n", decl.name);
         if doc.brief {
             print("Brief: %\n", doc.brief);
@@ -368,5 +394,5 @@ HandleCompilerMessage :: (msg : *Message) {
         print("\n");
     }
 
-    print("% entries\n", g_doc_entries.count);
+    print("% entries\n", entries.count);
 }
