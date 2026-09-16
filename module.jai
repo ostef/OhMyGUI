@@ -717,5 +717,5 @@ ReadCompileTimeFile :: (filename : string, location := #caller_location) -> stri
         compiler_report(sprint("Could not read file '%'", absolute_filename), loc=location);
     }
 
-    return contents;
+    return xx add_global_data(xx contents, .READ_ONLY);
 }
