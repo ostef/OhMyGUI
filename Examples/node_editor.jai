@@ -484,12 +484,23 @@ NodeGraphConnection :: (parent : *OMG.Node, a : *GraphNodePort, b : *GraphNodePo
     data.a_node = a_node;
     data.b_node = b_node;
 
-    a_center := (a_node.rect.xy + a_node.rect.zw) * 0.5;
-    b_center := (b_node.rect.xy + b_node.rect.zw) * 0.5;
-    node.offset.x = min(a_center.x, b_center.x);
-    node.offset.y = min(a_center.y, b_center.y);
-    node.desired_size.x = OMG.SizePx(abs(a_center.x - b_center.x));
-    node.desired_size.y = OMG.SizePx(abs(a_center.y - b_center.y));
+    p0 := (a_node.rect.xy + a_node.rect.zw) * 0.5;;
+    p3 := (b_node.rect.xy + b_node.rect.zw) * 0.5;;
+    p1 := OMG.Vec2f.{lerp(p0.x, p3.x, 0.6), p0.y};
+    p2 := OMG.Vec2f.{lerp(p3.x, p0.x, 0.6), p3.y};
+
+    // a_node is always an input port
+    p1.x = min(p0.x - 100, p1.x);
+    p2.x = max(p3.x + 100, p2.x);
+
+    bounds := OMG.BezierCubicBounds(p0, p1, p2, p3);
+
+    node.offset.x = bounds.x;
+    node.offset.y = bounds.y;
+    node.offset -= parent.rect.xy;
+    node.offset -= parent.scroll;
+    node.desired_size.x = OMG.SizePx(bounds.z - bounds.x);
+    node.desired_size.y = OMG.SizePx(bounds.w - bounds.y);
 
     a_color := a_node.background_colors.top_left;
     b_color := b_node.background_colors.top_left;
@@ -526,12 +537,16 @@ NodeGraphConnection :: (parent : *OMG.Node, a : *GraphNodePort, b : *GraphNodePo
     });
 
     OMG.SetDraw(node, (draw_list : *OMG.DrawList, node : *OMG.Node) -> bool {
+        if OMG.IsClipped(draw_list, node.rect) {
+            return false;
+        }
+
+        OMG.DrawNodeDefault(draw_list, node);
+
         data := OMG.GetUserData(node, NodeGraphConnectionData);
         if !data || !data.a_node || !data.b_node {
             return true;
         }
-
-        OMG.PushDisableClipBox(draw_list);
 
         p0 := (data.a_node.rect.xy + data.a_node.rect.zw) * 0.5;
         p3 := (data.b_node.rect.xy + data.b_node.rect.zw) * 0.5;
@@ -546,8 +561,6 @@ NodeGraphConnection :: (parent : *OMG.Node, a : *GraphNodePort, b : *GraphNodePo
         OMG.PathPushBezierCubic(*draw_list.path, p0, p1, p2, p3);
         OMG.DrawPolygonLine(draw_list, draw_list.path, false, thickness, node.background_colors.top_left, node.background_colors.top_right);
         array_reset_keeping_memory(*draw_list.path);
-
-        OMG.PopClipBox(draw_list);
 
         return true;
     });
@@ -781,63 +794,66 @@ NodeGraphFrame :: () {
         g_pose_filled_icon = OMG.LoadImageFromFile("pose_filled_icon.png");
     }
 
-    window := OMG.GetWindow(g_window);
-    popups := OMG.GetPopupRoot(window);
-
-    root := OMG.GetNode(window);
-    OMG.SetLayout(root, .None);
-
-    background := Canvas(root);
-
-    stats := OMG.GetNode(root);
-    OMG.SetLayout(stats, .TopToBottom);
-    OMG.SetPadding(stats, 20, 20);
-
-    OMG.Text(stats, "% nodes", context.omg.node_pool.count);
-    OMG.Text(stats, "FPS: %", cast(int, 1 / g_delta_time));
-    OMG.Text(stats, "CPU: % ms", (g_user_time + context.omg.total_time_last_frame) * 1000);
-    OMG.Text(stats, "\tUser: % ms", g_user_time * 1000);
-    OMG.Text(stats, "\tRender: % ms", context.omg.total_time_last_frame * 1000);
-    OMG.Text(stats, "\t\tLayout: % ms", context.omg.layout_time_last_frame * 1000);
-    OMG.Text(stats, "\t\tDraw: % ms", context.omg.draw_time_last_frame * 1000);
-    OMG.Text(stats, "\t\tOther: % ms", (context.omg.total_time_last_frame - context.omg.layout_time_last_frame - context.omg.draw_time_last_frame) * 1000);
-    OMG.Text(stats, "GPU: % ms", g_gpu_time * 1000);
-    OMG.Text(stats, "Num vertices: %", context.omg.num_vertices_last_frame);
-    OMG.Text(stats, "Num indices: %", context.omg.num_indices_last_frame);
-
     for g_graph.nodes_to_destroy {
         DestroyNode(*g_graph, it);
     }
     array_reset_keeping_memory(*g_graph.nodes_to_destroy);
 
-    for g_graph.nodes {
-        for port : it.inputs {
-            for other_port : port.connections {
-                NodeGraphConnection(background, port, other_port);
+    window := OMG.GetWindow(g_window);
+
+    subwindow := OMG.Subwindow(window, "Node Graph", "node_graph", .{300, 300});
+    if subwindow {
+        root := OMG.GetNode(subwindow);
+        OMG.SetSize(root, OMG.SizeFill(), OMG.SizeFill());
+        OMG.SetLayout(root, .None);
+
+        background := Canvas(root);
+
+        stats := OMG.GetNode(root);
+        OMG.SetLayout(stats, .TopToBottom);
+        OMG.SetPadding(stats, 20, 20);
+
+        OMG.Text(stats, "% nodes", context.omg.node_pool.count);
+        OMG.Text(stats, "FPS: %", cast(int, 1 / g_delta_time));
+        OMG.Text(stats, "CPU: % ms", (g_user_time + context.omg.total_time_last_frame) * 1000);
+        OMG.Text(stats, "\tUser: % ms", g_user_time * 1000);
+        OMG.Text(stats, "\tRender: % ms", context.omg.total_time_last_frame * 1000);
+        OMG.Text(stats, "\t\tLayout: % ms", context.omg.layout_time_last_frame * 1000);
+        OMG.Text(stats, "\t\tDraw: % ms", context.omg.draw_time_last_frame * 1000);
+        OMG.Text(stats, "\t\tOther: % ms", (context.omg.total_time_last_frame - context.omg.layout_time_last_frame - context.omg.draw_time_last_frame) * 1000);
+        OMG.Text(stats, "GPU: % ms", g_gpu_time * 1000);
+        OMG.Text(stats, "Num vertices: %", context.omg.num_vertices_last_frame);
+        OMG.Text(stats, "Num indices: %", context.omg.num_indices_last_frame);
+
+        for g_graph.nodes {
+            for port : it.inputs {
+                for other_port : port.connections {
+                    NodeGraphConnection(background, port, other_port);
+                }
             }
         }
-    }
 
-    for g_graph.nodes {
-        ShowGraphNode(background, *g_graph, it);
-    }
+        for g_graph.nodes {
+            ShowGraphNode(background, *g_graph, it);
+        }
 
-    menu := OMG.ContextMenu(background);
-    if menu {
-        if OMG.MenuItem(menu, "Blend Space Player") {
-            CreateBlendSpacePlayerNode(*g_graph);
-        }
-        if OMG.MenuItem(menu, "Animation Player") {
-            CreateAnimationPlayerNode(*g_graph);
-        }
-        if OMG.MenuItem(menu, "Blend Poses") {
-            CreateBlendPosesNode(*g_graph);
-        }
-        if OMG.MenuItem(menu, "Make Additive Pose") {
-            CreateMakeAdditivePoseNode(*g_graph);
-        }
-        if OMG.MenuItem(menu, "Apply Additive Pose") {
-            CreateApplyAdditivePoseNode(*g_graph);
+        menu := OMG.ContextMenu(background);
+        if menu {
+            if OMG.MenuItem(menu, "Blend Space Player") {
+                CreateBlendSpacePlayerNode(*g_graph);
+            }
+            if OMG.MenuItem(menu, "Animation Player") {
+                CreateAnimationPlayerNode(*g_graph);
+            }
+            if OMG.MenuItem(menu, "Blend Poses") {
+                CreateBlendPosesNode(*g_graph);
+            }
+            if OMG.MenuItem(menu, "Make Additive Pose") {
+                CreateMakeAdditivePoseNode(*g_graph);
+            }
+            if OMG.MenuItem(menu, "Apply Additive Pose") {
+                CreateApplyAdditivePoseNode(*g_graph);
+            }
         }
     }
 }
