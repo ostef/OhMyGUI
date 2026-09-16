@@ -178,7 +178,7 @@ g_system_cursors : [SystemCursor.Count]PlatformCursorHandle;
 
 #scope_export
 
-Eyedropper_Contents :: #run ReadCompileTimeFile("eyedropper-cursor.png");
+Eyedropper_Contents :: #run EmbedFileContents("eyedropper-cursor.png");
 
 InitSystemCursors :: () {
     g_system_cursors[SystemCursor.Arrow] = PlatformCreateSystemCursor(.Arrow);

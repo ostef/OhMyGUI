@@ -707,7 +707,7 @@ LoadImageFromFileContents :: (filename : string, contents : string) -> TextureHa
     return handle, xx w, xx h;
 } @Profile
 
-ReadCompileTimeFile :: (filename : string, location := #caller_location) -> string {
+EmbedFileContents :: (filename : string, location := #caller_location) -> string {
     #import "File";
     absolute_filename := sprint("%/%", #filepath, filename);
     contents, ok := read_entire_file(absolute_filename);

@@ -59,9 +59,9 @@ GetDefaultFontBold :: inline () -> *Font {
 }
 
 LoadDefaultFonts :: () {
-    Roboto_Regular :: #run ReadCompileTimeFile("Roboto-Regular.ttf");
-    Roboto_Medium :: #run ReadCompileTimeFile("Roboto-Medium.ttf");
-    Roboto_Bold :: #run ReadCompileTimeFile("Roboto-Bold.ttf");
+    Roboto_Regular :: #run EmbedFileContents("Roboto-Regular.ttf");
+    Roboto_Medium :: #run EmbedFileContents("Roboto-Medium.ttf");
+    Roboto_Bold :: #run EmbedFileContents("Roboto-Bold.ttf");
 
     config : FontConfig;
     config.glyph_ranges = .[
