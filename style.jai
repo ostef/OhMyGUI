@@ -94,10 +94,10 @@ BoxStyle :: struct {
 }
 
 SetColors :: (using style : *StateStyle(BoxStyle), base_background_color : RGBA8) {
-    SetColors(*normal.background_color, base_background_color);
-    SetColors(*focused.background_color, Whiten(base_background_color, 0.05));
-    SetColors(*hot.background_color, Darken(base_background_color, 0.05));
-    SetColors(*active.background_color, Whiten(base_background_color, 0.1));
+    SetColors(*normal.background_colors, base_background_color);
+    SetColors(*focused.background_colors, Whiten(base_background_color, 0.05));
+    SetColors(*hot.background_colors, Darken(base_background_color, 0.05));
+    SetColors(*active.background_colors, Whiten(base_background_color, 0.1));
 }
 
 Apply :: inline (node : *Node, style : BoxStyle) {

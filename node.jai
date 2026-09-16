@@ -103,25 +103,41 @@ GetStateLastFrame :: inline (state_flags : NodeStateFlags) -> NodeState {
     return .None;
 }
 
+/**
+ * @brief Base node user data struct
+ *
+ * Base struct used for a node's user data. User data can be added to a node in a linked list. It is destroyed when the node is freed.
+ *
+ * @see AddUserData
+ * @see GetUserData
+ * @see SetUserData
+ */
 NodeUserData :: struct {
-    next : *NodeUserData;
-    destroy : (*Node, *void);
-    id : ID;
+    next : *NodeUserData; ///> Linked list next element.
+    destroy : (*Node, *void); ///> Destroy callback.
+    id : ID; ///> Unique id within the node.
 }
 
+/**
+ * @brief UI element tree node
+ *
+ * Nodes are the core building block of a UI. They contain all the information required to perform
+ * the layout calculations, as well as styling information and attached user data.
+ * Nodes form a tree structure, with each children enclosed and clipped by its parent.
+ */
 Node :: struct {
-    id : ID;
-    local_id : ID;
-    index : Bucket_Locator;
+    id : ID; ///> Global ID (local ID combined with the parent's global ID).
+    local_id : ID; ///> Local ID within the parent, unique within the node's siblings.
+    index : Bucket_Locator; ///> Index in the node_pool Bucket_Array.
 
-    last_used_on_frame : u64;
-    z_index : s32 = -1; // Used when the parent wants to sort children such as popups
+    last_used_on_frame : u64; ///> Keep tracks of when the node was last declared. If a node was not declared in the current frame it is freed.
+    z_index : s32 = -1; ///> Used when the parent wants to sort children.
 
-    draw : (*DrawList, *Node) -> draw_children : bool; // Initialized to the context's default drawing function
-    hit_test : (*Node, point : Vec2f) -> bool = DefaultHitTest;
-    user_data : *NodeUserData;
+    draw : (*DrawList, *Node) -> draw_children : bool; ///> Drawing function for the node. Initialized to the context's default drawing function.
+    hit_test : (*Node, point : Vec2f) -> bool = DefaultHitTest; ///> Hit test function. Change this to perform custom hit test logic.
+    user_data : *NodeUserData; ///> Attached user data.
 
-    window : *Window;
+    window : *Window; ///> UI window the node was declared in.
     parent : *Node;
 
     using tree : struct {
@@ -134,8 +150,8 @@ Node :: struct {
 
     tree_last_frame : type_of(tree);
 
+    /// Computed during the layout phase at the end of the frame. Before then it refers to the results of the previous frame.
     using layout : struct {
-        // Computed during the layout phase at the end of the frame
         size : Vec2f;
         children_size : Vec2f;
         relative_position : Vec2f;
@@ -143,7 +159,7 @@ Node :: struct {
         clipped_rect : Vec4f;
     };
 
-    // User controlled properties mostly related to layout, reset each frame except for scroll and offset
+    /// User controlled properties that affect the layout, reset each frame except for scroll and offset
     using properties : struct {
         font : *Font;
         text : string;
@@ -151,41 +167,41 @@ Node :: struct {
 
         flags : NodeFlags;
 
-        offset : Vec2f; // NOT reset each frame
-        scroll : Vec2f; // NOT reset each frame
-        child_align : Vec2f;
+        offset : Vec2f; ///> Offset relative to the parent, after scroll is applied. Not reset each frame.
+        scroll : Vec2f; ///> Scroll, additional offset applied to children. Not reset each frame.
+        child_align : Vec2f; ///> Child alignment on each axis; 0 means the start of the axis, 1 means the end (depends on the layout direction).
         desired_size := Size2D.{.{kind=.FitChildren}, .{kind=.FitChildren}};
-        min_size := Vec2f.{-FLOAT32_INFINITY, -FLOAT32_INFINITY};
-        max_size := Vec2f.{ FLOAT32_INFINITY,  FLOAT32_INFINITY};
+        min_size := Vec2f.{-FLOAT32_INFINITY, -FLOAT32_INFINITY}; ///> Min size in pixels.
+        max_size := Vec2f.{ FLOAT32_INFINITY,  FLOAT32_INFINITY}; ///> Max size in pixels.
         min_size_fit : enum_flags u8 {
             Width;
             Height;
-        };
-        child_gap : Vec2b;
-        padding : Vec4b;
+        }; ///> Flags describing whether the node should at least fit its child contents.
+        child_gap : Vec2b; ///> Gap between children (at most 127). Currently the value on the cross layout axis is unused, until we have element wrapping.
+        padding : Vec4b; ///> Inner padding applied on the left, top, right and bottom of the node.
         child_layout_mode := LayoutMode.LeftToRight;
     };
 
-    // Styling properties, NOT reset each frame
+    /// Styling properties, reset each frame. These do not affect the hit-test or layout results and are purely visual.
     using styling : struct {
         image : TextureHandle;
         image_uv_bounds : Vec4f;
-        corner_radiuses : Vec4f;
+        corner_radiuses : Vec4f; ///> Radius for the top-left, top-right, bottom-left and bottom-right corners.
         background_colors : BoxColors;
         border_colors : BoxColors;
-        border_size : float;
-        border_inset : float;
+        border_size : float; ///> Thickness of the border. Border is applied *within* the node.
+        border_inset : float; ///> Amount of inset applied to the border, positive means the border will be smaller than the background, negative means it will go outside.
         outer_shadow_size : float;
         outer_shadow_offset : Vec2f;
         outer_shadow_color : RGBA8;
-        inner_shadow_size : float;
+        inner_shadow_size : float; ///> Size of the inner shadow. Warning: currently a size greater than the smallest corner radius will produce visual artifacts (except for a size or min corner radius of 0)
         inner_shadow_color : RGBA8;
         text_color : RGBA8;
         text_effects : TextEffects;
     };
 
-    state_flags : NodeStateFlags;
-    interacting_mouse_buttons : NodeInteractingMouseButtons;
+    state_flags : NodeStateFlags; //> The state combination of the node in the current and last frames.
+    interacting_mouse_buttons : NodeInteractingMouseButtons; //> The mouse button(s) that is interacting with the node in the current and last frames.
 }
 
 // for_expansion
@@ -493,6 +509,7 @@ TouchNode :: (node : *Node) {
     node.offset = offset;
 
     node.tree = .{};
+    node.styling = .{};
 
     if node.parent {
         PushChild(node.parent, node);

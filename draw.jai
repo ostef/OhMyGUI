@@ -1900,11 +1900,11 @@ PathCalcNormals :: (points : []PathPoint, closed : bool) {
 
         p0 := points[i0].position;
         p1 := points[i1].position;
-        d := Normalize(p1 - p0);
+        d := normalize(p1 - p0);
         d = PerpendicularCW(d);
 
         if !closed && i1 == points.count - 1 {
-            points[i1].normal.x = d;
+            points[i1].normal = d;
         }
     }
 } @Profile

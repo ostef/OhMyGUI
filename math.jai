@@ -145,18 +145,6 @@ sign :: inline (v : Vec4f) -> Vec4f {
     return .{sign(v.x), sign(v.y), sign(v.z), sign(v.w)};
 }
 
-abs :: inline (v : Vec2f) -> Vec2f {
-    return .{abs(v.x), abs(v.y)};
-}
-
-abs :: inline (v : Vec3f) -> Vec3f {
-    return .{abs(v.x), abs(v.y), abs(v.z)};
-}
-
-abs :: inline (v : Vec4f) -> Vec4f {
-    return .{abs(v.x), abs(v.y), abs(v.z), abs(v.w)};
-}
-
 clamp :: inline (v : Vec2f, a : Vec2f, b : Vec2f) -> Vec2f {
     return .{clamp(v.x, a.x, b.x), clamp(v.y, a.y, b.y)};
 }
@@ -532,10 +520,17 @@ BezierQuadraticBounds :: (p0 : Vec2f, p1 : Vec2f, p2 : Vec2f) -> Vec4f {
     min_ := min(p0, p2);
     max_ := max(p0, p2);
 
-    if p1.x < min_.x || p1.y < min_.y || p1.x > max_x || p1.y > max_.y {
-        t := clamp((p0 - p1)/(p0 - 2 * p1 + p2), .{0, 0}, .{1, 1});
-        u := 1 - t;
-        q := u * u * p0 + 2 * u * t * p1 + t * t * p2;
+    if p1.x < min_.x || p1.y < min_.y || p1.x > max_.x || p1.y > max_.y {
+        t := clamp((p0 - p1) / (p0 - 2 * p1 + p2), .{0, 0}, .{1, 1});
+        u := Vec2f.{
+            1 - t.x,
+            1 - t.y,
+        };
+        q := Vec2f.{
+            u.x * u.x * p0.x + 2 * u.x * t.x * p1.x + t.x * t.x * p2.x,
+            u.y * u.y * p0.y + 2 * u.y * t.y * p1.y + t.y * t.y * p2.y,
+        };
+
         min_ = min(min_, q);
         max_ = max(max_, q);
     }

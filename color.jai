@@ -10,7 +10,7 @@ operator == :: inline (a : HSV, b : HSV) -> bool {
 
 RGBA8 :: #type,isa u32; // We could make this a struct but then we wouldn't be able to use hex integer literals
 
-SetRGB :: inline (color : *RGBA8, rgb : Vec3f) -> RGBA8 {
+SetRGB :: inline (color : *RGBA8, rgb : Vec3f) {
     color.* = SetRGB(color.*, rgb);
 }
 
