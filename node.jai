@@ -177,7 +177,7 @@ Node :: struct {
             Height;
         }; ///> Flags describing whether the node should at least fit its child contents.
         child_gap : Vec2b; ///> Gap between children (at most 127). Currently the value on the cross layout axis is unused, until we have element wrapping.
-        padding : Vec4b; ///> Inner padding applied on the left, top, right and bottom of the node.
+        padding : Vec4b; ///> Inner padding applied on the left, top, right and bottom of the node (at most 127).
         child_layout_mode := LayoutMode.LeftToRight;
     };
 

@@ -310,6 +310,16 @@ HandleCompilerMessage :: (msg : *Message) {
                 for struct_node.block.statements {
                     HandleMember(it);
                 }
+
+            case .ENUM;
+                enum_node := cast(*Code_Enum, decl.expression);
+                for enum_node.block.members {
+                    HandleMember(it);
+                }
+
+                for enum_node.block.statements {
+                    HandleMember(it);
+                }
             }
         }
     }
