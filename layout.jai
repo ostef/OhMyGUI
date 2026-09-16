@@ -12,12 +12,20 @@ GetCrossAxis :: inline (axis : Axis) -> Axis {
     return ifx axis == .X then .Y else .X;
 }
 
+/**
+ * @brief Layout size description for one axis.
+ *
+ * @see SizePx
+ * @see SizePercent
+ * @see SizeFill
+ * @see SizeFit
+ */
 Size1D :: struct {
     Kind :: enum u8 {
-        Pixels;
-        ParentPercent;
-        FillParent;
-        FitChildren;
+        Pixels;        ///> Size is a fixed pixel value.
+        ParentPercent; ///> Size is a multiple of the parent's size.
+        FillParent;    ///> Size fills the remainder after all siblings have been sized. `value` is normalized between siblings (two siblings at fill{2} is the same then fill{1}).
+        FitChildren;   ///> Size is the sum of the children's size, plus padding and child gap.
     }
 
     kind : Kind;
@@ -40,6 +48,9 @@ SizeFit :: inline () -> Size1D {
     return .{kind=.FitChildren};
 }
 
+/**
+ * @brief Layout size description one the X and Y axes.
+ */
 Size2D :: struct {
     x : Size1D;
     y : Size1D;
@@ -56,12 +67,17 @@ operator*[] :: inline (size : Size2D, axis : Axis) -> *Size1D #no_abc {
     return *size.axes[axis];
 }
 
+/**
+ * @brief Layout mode of a node's children.
+ *
+ * The layout mode only affects the children's position.
+ */
 LayoutMode :: enum u8 {
-    None;
-    LeftToRight;
-    RightToLeft;
-    TopToBottom;
-    BottomToTop;
+    None;        ///> Do not position children.
+    LeftToRight; ///> Position children from left-to-right. Children declared first appear leftmost. Child alignment goes from left to right.
+    RightToLeft; ///> Position children from right-to-left. Children declared first appear rightmost. Child alignment goes from right to left.
+    TopToBottom; ///> Position children from top-to-bottom. Children declared first appear topmost. Child alignment goes from top to bottom.
+    BottomToTop; ///> Position children from bottom-to-top. Children declared first appear bottommost. Child alignment goes from bottom to top.
 }
 
 GetLayoutAxis :: inline (node : *Node) -> Axis {
