@@ -541,8 +541,6 @@ NodeGraphConnection :: (parent : *OMG.Node, a : *GraphNodePort, b : *GraphNodePo
             return false;
         }
 
-        OMG.DrawNodeDefault(draw_list, node);
-
         data := OMG.GetUserData(node, NodeGraphConnectionData);
         if !data || !data.a_node || !data.b_node {
             return true;
