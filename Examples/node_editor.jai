@@ -271,7 +271,6 @@ NodeGraphTitleBar :: (parent : *OMG.Node, title : string, color : OMG.RGBA8) -> 
 
     style := OMG.GetStyle("text", OMG.TextStyle).*;
     style.font = OMG.GetFont("__default_medium");
-    style.text_size = 14;
     OMG.Text(node, "%", title, style=*style);
 
     return node;
