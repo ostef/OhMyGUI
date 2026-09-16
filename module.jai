@@ -555,6 +555,7 @@ NewFrame :: (delta_time : float) {
 
     for * omg.node_pool {
         it.state_flags = (it.state_flags & .CurrentFrame) << (Num_Node_States - 1);
+        it.interacting_mouse_buttons = (it.interacting_mouse_buttons & .CurrentFrame) << 3;
     }
 
     for :Windows omg {

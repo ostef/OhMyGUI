@@ -8,20 +8,29 @@ ButtonResult :: struct {
 ButtonBehavior :: (node : *Node, mouse_button := MouseButton.Left) -> ButtonResult {
     node.flags |= .Focusable;
 
+    button_flags := cast(NodeInteractingMouseButtons, 1 << mouse_button);
+    interacting_buttons_last_frame := (node.interacting_mouse_buttons & .LastFrame) >> 3;
+
+    // When different interactions are possible with different mouse buttons, we need to prevent
+    // interaction with one mouse button from being registered for another mouse button
+    if interacting_buttons_last_frame != 0 && !(interacting_buttons_last_frame & button_flags) {
+        return .{};
+    }
+
     active_from_button := false;
     if (IsMouseButtonReleased(mouse_button) || IsMouseButtonDown(mouse_button)) && context.omg.mouse_capturing_node == node {
         SetMouseCapture(node);
         SetMouseFocus(node);
         active_from_button = true;
-        node.state_flags |= .Hot;
     } else if node.state_flags & .Focused && IsMouseButtonPressed(mouse_button) {
         SetMouseCapture(node);
         active_from_button = true;
-        node.state_flags |= .Hot;
     }
 
     result : ButtonResult;
     if active_from_button {
+        node.interacting_mouse_buttons |= button_flags;
+        node.state_flags |= .Hot;
         result.held = true;
         result.pressed = IsHovered(node) && IsMouseButtonPressed(mouse_button);
         result.double_clicked = IsHovered(node) && IsMouseButtonDoubleClicked(mouse_button);

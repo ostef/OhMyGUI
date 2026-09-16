@@ -49,6 +49,18 @@ NodeStateFlags :: enum_flags u8 {
     LastFrame :: FocusedLastFrame | HotLastFrame | ActiveLastFrame | DisabledLastFrame;
 }
 
+NodeInteractingMouseButtons :: enum_flags u8 {
+    Left   :: 1 << MouseButton.Left;
+    Middle :: 1 << MouseButton.Middle;
+    Right  :: 1 << MouseButton.Right;
+    CurrentFrame :: Left | Middle | Right;
+
+    LeftLastFrame   :: Left   << 3;
+    MiddleLastFrame :: Middle << 3;
+    RightLastFrame  :: Right  << 3;
+    LastFrame :: LeftLastFrame | MiddleLastFrame | RightLastFrame;
+}
+
 GetState :: inline (node : *Node) -> NodeState {
     return GetState(node.state_flags);
 }
@@ -173,6 +185,7 @@ Node :: struct {
     };
 
     state_flags : NodeStateFlags;
+    interacting_mouse_buttons : NodeInteractingMouseButtons;
 }
 
 // for_expansion
