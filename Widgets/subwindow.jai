@@ -117,14 +117,6 @@ SubwindowResizeBehavior :: (subwindow : *Node, handle : *Node, min_size : Vec2f,
 
     button := ButtonBehavior(handle);
 
-    if handle.state_flags & .Focused && IsMouseButtonPressed(.Left) {
-        SetMouseCapture(handle);
-        SetMouseFocus(handle);
-
-        button.pressed = true;
-        button.held = true;
-    }
-
     if button.pressed {
         context.omg.mouse_captured_node_value = WindowToScreen(subwindow.window, subwindow.rect);
     }

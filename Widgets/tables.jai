@@ -255,13 +255,6 @@ TableAddColumn :: (table : *Node, label : string, str_id : string, initial_size 
     if border {
         using _ := ButtonBehavior(border);
 
-        if border.state_flags & .Focused && IsMouseButtonPressed(.Left) {
-            SetMouseCapture(border);
-            SetMouseFocus(border);
-            pressed = true;
-            held = true;
-        }
-
         if pressed {
             context.omg.mouse_captured_node_value = .{};
             context.omg.mouse_captured_node_value.xy = border.rect.xy;

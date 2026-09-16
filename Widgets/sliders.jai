@@ -146,22 +146,13 @@ Slider :: (
             offset_max -= style.handle_size.x;
         }
 
-        if slider.state_flags & .Focused && IsMouseButtonPressed(.Left) {
-            SetMouseCapture(slider);
-            SetMouseFocus(slider);
-            pressed = true;
-            held = true;
-
+        if pressed {
             mouse := GetMousePosition(slider.window)[axis];
             new_offset := mouse - (background.rect.xy[axis] + base_background_padding.x);
             new_value := lerp(fmin, fmax, clamp(new_offset / offset_max, 0, 1));
 
             fvalue = Snap(new_value, fstep);
 
-            interacting = true;
-        }
-
-        if pressed {
             context.omg.mouse_captured_node_value = .{};
             context.omg.mouse_captured_node_value.xy[axis] = InverseLerp(fmin, fmax, fvalue) * offset_max;
 
@@ -279,11 +270,10 @@ Scrollbar :: (parent : *Node, target : *Node, axis : Axis, style : *ScrollbarSty
             scrollable := size - children_size;
             offset_max := background.size[axis] - handle.size[axis];
 
-            // Allow the user to click on the background to interact with the scrollbar
-            background.flags |= .Focusable;
-
             handle_result := ButtonBehavior(handle);
 
+            // Allow the user to click on the background to interact with the scrollbar
+            background.flags |= .Focusable;
             if background.state_flags & .Focused && IsMouseButtonPressed(.Left) {
                 SetMouseCapture(handle);
                 SetMouseFocus(handle);

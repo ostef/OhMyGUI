@@ -691,14 +691,6 @@ Canvas :: (parent : *OMG.Node, location := #caller_location) -> *OMG.Node {
 
     using _ := OMG.ButtonBehavior(node);
 
-    if node.state_flags & .Focused && OMG.IsMouseButtonPressed(.Left) {
-        OMG.SetMouseCapture(node);
-        OMG.SetMouseFocus(node);
-
-        pressed = true;
-        held = true;
-    }
-
     if pressed {
         context.omg.mouse_captured_node_value = .{xy=node.scroll};
     }

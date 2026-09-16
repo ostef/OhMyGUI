@@ -276,14 +276,6 @@ SetContentScrollY :: inline (node : *Node, value : float) {
 DragBehavior :: (subwindow : *Node, node : *Node, avail_area := Vec4f.{-FLOAT32_INFINITY,-FLOAT32_INFINITY,FLOAT32_INFINITY,FLOAT32_INFINITY}) -> ButtonResult {
     interaction := ButtonBehavior(node);
 
-    if node.state_flags & .Focused && IsMouseButtonPressed(.Left) {
-        SetMouseCapture(node);
-        SetMouseFocus(node);
-
-        interaction.pressed = true;
-        interaction.held = true;
-    }
-
     if interaction.pressed {
         context.omg.mouse_captured_node_value = .{xy=subwindow.offset};
     }
