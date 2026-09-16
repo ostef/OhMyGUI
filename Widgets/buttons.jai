@@ -11,14 +11,14 @@ ButtonBehavior :: (node : *Node, mouse_button := MouseButton.Left) -> ButtonResu
     button_flags := cast(NodeInteractingMouseButtons, 1 << mouse_button);
     interacting_buttons_last_frame := (node.interacting_mouse_buttons & .LastFrame) >> 3;
 
-    // When different interactions are possible with different mouse buttons, we need to prevent
-    // interaction with one mouse button from being registered for another mouse button
+    // Prevent interactions with a mouse button while another is happening
+    // (e.g. opening a context menu while panning a canvas)
     if interacting_buttons_last_frame != 0 && !(interacting_buttons_last_frame & button_flags) {
         return .{};
     }
 
     active_from_button := false;
-    if (IsMouseButtonReleased(mouse_button) || IsMouseButtonDown(mouse_button)) && context.omg.mouse_capturing_node == node {
+    if IsCapturingMouse(node) && (IsMouseButtonReleased(mouse_button) || IsMouseButtonDown(mouse_button)) {
         SetMouseCapture(node);
         SetMouseFocus(node);
         active_from_button = true;
@@ -31,10 +31,13 @@ ButtonBehavior :: (node : *Node, mouse_button := MouseButton.Left) -> ButtonResu
     if active_from_button {
         node.interacting_mouse_buttons |= button_flags;
         node.state_flags |= .Hot;
+
+        is_hovered := IsHovered(node);
+        result.pressed = is_hovered && IsMouseButtonPressed(mouse_button);
+        result.double_clicked = is_hovered && IsMouseButtonDoubleClicked(mouse_button);
+        result.released = is_hovered && IsMouseButtonReleased(mouse_button);
+
         result.held = true;
-        result.pressed = IsHovered(node) && IsMouseButtonPressed(mouse_button);
-        result.double_clicked = IsHovered(node) && IsMouseButtonDoubleClicked(mouse_button);
-        result.released = IsHovered(node) && IsMouseButtonReleased(mouse_button);
     }
 
     return result;

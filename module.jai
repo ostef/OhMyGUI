@@ -513,6 +513,10 @@ SetMouseCapture :: inline (node : *Node, node_value : Vec4f) {
     context.omg.mouse_captured_this_frame = true;
 }
 
+IsCapturingMouse :: inline (node : *Node) -> bool {
+    return context.omg.mouse_capturing_node == node;
+}
+
 NewFrame :: (delta_time : float) {
     FindMouseFocus :: (node : *Node) {
         omg := context.omg;

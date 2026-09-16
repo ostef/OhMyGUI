@@ -358,7 +358,7 @@ Subwindow :: (
 
         tab_active, tab := Tab(tab_bar, title, tprint("tab.%", str_id));
 
-        if tab && context.omg.mouse_capturing_node == tab {
+        if tab && IsCapturingMouse(tab) {
             start := context.omg.mouse_captured_at;
             current := GetMousePosition();
 

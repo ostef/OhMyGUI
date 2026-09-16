@@ -890,7 +890,7 @@ TextInput :: (parent : *Node, flags : TextInputFlags = 0, style : *TextInputStyl
             if input_field.state_flags & .Active {
                 cursor_position : Vec2f;
 
-                is_selecting := context.omg.mouse_capturing_node == input_field;
+                is_selecting := IsCapturingMouse(input_field);
                 mouse := GetMousePosition(input_field.window);
 
                 if is_selecting && mouse.x < text_node.rect.x {

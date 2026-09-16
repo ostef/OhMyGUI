@@ -215,7 +215,7 @@ HasCursorControl :: (node : *Node) -> bool {
         return false;
     }
     if node.state_flags & .Active {
-        return context.omg.mouse_capturing_node == node || (node.state_flags & .Focused) != 0;
+        return IsCapturingMouse(node) || (node.state_flags & .Focused) != 0;
     }
 
     return node.state_flags != 0;
