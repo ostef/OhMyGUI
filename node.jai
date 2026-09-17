@@ -3,13 +3,13 @@
 ID :: u64;
 
 NodeFlags :: enum_flags u32 {
-    TextNode;     ///> Take the text value of the node into account instead of the children (e.g. for fit sizing)
-    WrapText;     ///> Wrap the text when it goes outside the node width
-    Focusable;    ///> Capture mouse focus when hovered if no other foreground node has captured it
-    Scrollable;   ///> Capture scroll focus when hovered if no other foreground node has captured it
-    SortChildren; ///> Before laying out nodes, sort the children based on z_index
-    NoClip;       ///> Don't clip nodes when drawing children nodes
-    NoPaddedClip; ///> Don't pad the clip box
+    TextNode;     ///> Take the text value of the node into account instead of the children (e.g. for fit sizing).
+    WrapText;     ///> Wrap the text when it goes outside the node width.
+    Focusable;    ///> Capture mouse focus when hovered if no other foreground node has captured it.
+    Scrollable;   ///> Capture scroll focus when hovered if no other foreground node has captured it.
+    SortChildren; ///> Before laying out nodes, sort the children based on `Node.z_index`.
+    NoClip;       ///> Don't clip nodes when drawing children nodes.
+    NoPaddedClip; ///> Don't pad the clip box.
 }
 
 TextEffects :: enum_flags u8 {
@@ -17,16 +17,29 @@ TextEffects :: enum_flags u8 {
     Strikethrough;
 }
 
+/**
+ * Describes the interaction state of a `Node`.
+ *
+ * @see NodeStateFlags
+ */
 NodeState :: enum u8 {
-    Disabled;
-    Active;
-    Hot;
-    Focused;
-    None;
+    Disabled; ///> Unused for now. Block interactions.
+    Active;   ///> Dependent on the interaction type and what the user does with it but usually means a node is selected.
+    Hot;      ///> Currently being interacted with (e.g. pressed an holding a button).
+    Focused;  ///> Hovered by the mouse and capturing the mouse focus. @see NodeFlags.Focusable
+    None;     ///> Not interacting
 }
 
 Num_Node_States :: #run type_info(NodeState).values.count;
 
+/**
+ * @brief Current and last frame `Node` states
+ *
+ * Describes the combined interaction states of a `Node` (e.g. a `Node` can be `Active` and `Focused` at the same time).
+ * Keeps track of the previous frame's state too.
+ *
+ * @see NodeState
+ */
 NodeStateFlags :: enum_flags u8 {
     Disabled :: 1 << NodeState.Disabled;
     Active   :: 1 << NodeState.Active;
@@ -41,6 +54,15 @@ NodeStateFlags :: enum_flags u8 {
     LastFrame :: FocusedLastFrame | HotLastFrame | ActiveLastFrame | DisabledLastFrame;
 }
 
+/**
+ * @brief Current and last frame mouse interaction
+ *
+ * Describes the mouse buttons interacting with a `Node`. Usually only one value of this enum is set at a time.
+ * Keeps track of the previous frame's state too.
+ *
+ * @see MouseButton
+ * @see MouseButtonFlags
+ */
 NodeInteractingMouseButtons :: enum_flags u8 {
     Left   :: 1 << MouseButton.Left;
     Middle :: 1 << MouseButton.Middle;
@@ -96,18 +118,18 @@ GetStateLastFrame :: inline (state_flags : NodeStateFlags) -> NodeState {
 }
 
 /**
- * @brief Base node user data struct
+ * @brief Base struct for a `Node` user data
  *
- * Base struct used for a node's user data. User data can be added to a node in a linked list. It is destroyed when the node is freed.
+ * Base struct used for a `Node`'s user data. User data can be added to a `Node` in a linked list. It is destroyed when the `Node` is freed.
  *
  * @see AddUserData
  * @see GetUserData
  * @see SetUserData
  */
 NodeUserData :: struct {
-    next : *NodeUserData; ///> Linked list next element.
+    next : *NodeUserData;     ///> Linked list next element.
     destroy : (*Node, *void); ///> Destroy callback.
-    id : ID; ///> Unique id within the node.
+    id : ID;                  ///> Unique id within the node.
 }
 
 /**
@@ -195,14 +217,14 @@ Node :: struct {
         outer_shadow_size : float;
         outer_shadow_offset : Vec2f;
         outer_shadow_color : RGBA8;
-        inner_shadow_size : float; ///> Size of the inner shadow. Warning: currently a size greater than the smallest corner radius will produce visual artifacts (except for a size or min corner radius of 0)
+        inner_shadow_size : float; ///> Size of the inner shadow. Warning: Currently a size greater than the smallest corner radius will produce visual artifacts (except for a size or min corner radius of 0)
         inner_shadow_color : RGBA8;
         text_color : RGBA8;
         text_effects : TextEffects;
     };
 
-    state_flags : NodeStateFlags; //> The state combination of the node in the current and last frames.
-    interacting_mouse_buttons : NodeInteractingMouseButtons; //> The mouse button(s) that is interacting with the node in the current and last frames.
+    state_flags : NodeStateFlags; ///> The state combination of the node in the current and last frames.
+    interacting_mouse_buttons : NodeInteractingMouseButtons; ///> The mouse button(s) that is interacting with the node in the current and last frames.
 }
 
 /**
@@ -577,6 +599,11 @@ FindPrevFrameNode :: (parent : *Node, id : ID) -> *Node {
     return null;
 }
 
+/**
+ * @brief Get a Window's root Node
+ *
+ * Get the root Node of a Window. The root always sets its size to the window's size in pixels.
+ */
 GetNode :: (window : *Window) -> *Node, is_new : bool {
     is_new : bool;
 

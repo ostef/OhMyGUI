@@ -5,25 +5,115 @@
 #import "Hash_Table";
 #import "Sort";
 
-LoadedFile :: struct {
-    filename : string;
-    contents : string;
-    line_offsets : [..]int;
-}
+DocElement :: struct {
+    parent : *DocElement;
 
-Documentation :: struct {
+    node : *Code_Node;
+    full_name : string;
+    name : string;
+    kind : enum {
+        File;
+        Struct;
+        StructMember;
+        Enum;
+        EnumValue;
+        Function;
+    };
+
     raw_comment : string;
     brief : string;
     description : string;
     returns : string;
-    see : [..]string;
+    see_also : [..]string;
 }
 
-g_files : [..]LoadedFile;
-g_doc_entries : Table(*Code_Declaration, Documentation);
+DocFile :: struct {
+    #as using base : DocElement;
+    base.kind = .File;
 
-LoadFile :: (filename : string) -> *LoadedFile {
-    for * g_files {
+    filename : string;
+    short_filename : string;
+    contents : string;
+    line_offsets : [..]int;
+
+    structs : [..]*DocStruct;
+    enums : [..]*DocEnum;
+    functions : [..]*DocFunction;
+}
+
+GetFile :: (doc : *DocElement) -> *DocFile {
+    while doc && doc.kind != .File {
+        doc = doc.parent;
+    }
+
+    return xx doc;
+}
+
+DocStructMember :: struct {
+    #as using base : DocElement;
+    base.kind = .StructMember;
+
+    type : *Type_Info;
+    anonymous_type_documentation : *DocElement;
+}
+
+DocStruct :: struct {
+    #as using base : DocElement;
+    base.kind = .Struct;
+
+    members : [..]DocStructMember;
+    sub_structs : [..]*DocStruct;
+    sub_enums : [..]*DocEnum;
+    sub_functions : [..]*DocFunction;
+}
+
+DocEnumValue :: struct {
+    #as using base : DocElement;
+    base.kind = .EnumValue;
+}
+
+DocEnum :: struct {
+    #as using base : DocElement;
+    base.kind = .Enum;
+
+    values : [..]DocEnumValue;
+}
+
+DocFunction :: struct {
+    #as using base : DocElement;
+    base.kind = .Function;
+}
+
+g_files : [..]*DocFile;
+g_all_docs : Table(*Code_Node, *DocElement);
+g_all_docs_by_name : Table(string, *DocElement);
+
+CreateDoc :: ($T : Type, parent : *DocElement, node : *Code_Node) -> *T {
+    doc := New(T);
+    doc.parent = parent;
+    doc.node = node;
+    table_set(*g_all_docs, node, doc);
+
+    return doc;
+}
+
+SetName :: (doc : *DocElement, name : string) {
+    doc.name = name;
+    if doc.parent && doc.parent.kind != .File {
+        if !doc.parent.full_name {
+            return;
+        }
+
+        doc.full_name = sprint("%.%", doc.parent.full_name, doc.name);
+    } else {
+        doc.full_name = name;
+    }
+
+    table_set(*g_all_docs_by_name, doc.full_name, doc);
+}
+
+LoadFile :: (filename : string) -> *DocFile {
+    for g_files {
         if it.filename == filename {
             return it;
         }
@@ -31,8 +121,22 @@ LoadFile :: (filename : string) -> *LoadedFile {
 
     file_contents, ok := read_entire_file(filename);
     if ok {
-        file := array_add(*g_files);
+        file := New(DocFile);
+        array_add(*g_files, file);
+
         file.filename = filename;
+        file.short_filename = advance(filename, #filepath.count);
+
+        file.name = copy_string(file.short_filename);
+        for i : 0..file.name.count - 1 {
+            if !is_alnum(file.name[i]) {
+                file.name[i] = #char "_";
+            }
+        }
+
+        file.full_name = file.name;
+        table_set(*g_all_docs_by_name, file.full_name, file);
+
         file.contents = file_contents;
 
         byte := 0;
@@ -74,6 +178,32 @@ GetDeclarationRange :: (decl : *Code_Declaration) -> line_start : int, line_end 
     case;
         return decl.l0, decl.l1, decl.c0, decl.c1;
     }
+}
+
+GetNodeText :: (node : *Code_Node) -> string {
+    if !node.enclosing_load {
+        return "";
+    }
+
+    file := LoadFile(node.enclosing_load.fully_pathed_filename);
+    if !file {
+        return "";
+    }
+
+    l0, c0, l1, c1 : int;
+    if node.kind == .DECLARATION {
+        l0, l1, c0, c1 = GetDeclarationRange(xx node);
+    } else {
+        l0 = node.l0;
+        l1 = node.l1;
+        c0 = node.c0;
+        c1 = node.c1;
+    }
+
+    line_start := file.line_offsets[l0 - 1] + c0 - 1;
+    line_end := file.line_offsets[l1 - 1] + c1 - 1;
+
+    return .{data=file.contents.data + line_start, count=line_end - line_start};
 }
 
 GetFollowingComment :: (decl : *Code_Declaration) -> string {
@@ -180,13 +310,7 @@ GetLeadingComment :: (node : *Code_Node) -> string, indentation : int {
     return "", 0;
 }
 
-AddDocumentation :: (decl : *Code_Declaration, raw_comment : string, indentation : int) {
-    doc := find_or_add(*g_doc_entries, decl);
-    doc.raw_comment = raw_comment;
-    ParseDocumentation(doc, indentation);
-}
-
-ParseDocumentation :: (doc : *Documentation, indentation : int) {
+ParseDocumentation :: (doc : *DocElement, indentation : int) {
     str := doc.raw_comment;
     if begins_with(str, "///>") {
         str = advance(str, "///>".count);
@@ -236,7 +360,7 @@ ParseDocumentation :: (doc : *Documentation, indentation : int) {
             s = advance(s, "@see ".count);
             s = trim(s);
 
-            array_add(*doc.see, s);
+            array_add(*doc.see_also, s);
         } else if s.count > 0 {
             if doc.description {
                 doc.description = join(doc.description, s, separator=" ");
@@ -247,72 +371,157 @@ ParseDocumentation :: (doc : *Documentation, indentation : int) {
     }
 }
 
-HandleDeclaration :: (decl : *Code_Declaration) {
-    leading_comment, indentation := GetLeadingComment(decl);
-    if leading_comment {
-        AddDocumentation(decl, leading_comment, indentation);
+HandleStructMember :: (doc : *DocStruct, node : *Code_Node) {
+    original_node := node;
+
+    if node.kind == .USING {
+        node = cast(*Code_Using, node).expression;
     }
 
-    if !decl.expression {
+    if node.kind != .DECLARATION {
         return;
     }
 
-    HandleMember :: (node : *Code_Node) {
-        original_node := node;
-
-        if node.kind == .USING {
-            node = cast(*Code_Using, node).expression;
-        }
-
-        if node.kind != .DECLARATION {
-            return;
-        }
-
-        member_decl := cast(*Code_Declaration, node);
-        if member_decl.flags & .IS_CONSTANT && member_decl.expression {
-            if member_decl.expression.kind == {
-            case .PROCEDURE_HEADER; #through;
-            case .ENUM; #through;
-            case .STRUCT;
-                HandleDeclaration(member_decl);
-                return;
+    member_decl := cast(*Code_Declaration, node);
+    if member_decl.flags & .IS_CONSTANT {
+        sub_doc := HandleDeclaration(member_decl);
+        if sub_doc {
+            if sub_doc.kind == {
+            case .Struct;
+                array_add(*doc.sub_structs, xx sub_doc);
+            case .Enum;
+                array_add(*doc.sub_enums, xx sub_doc);
+            case .Function;
+                array_add(*doc.sub_functions, xx sub_doc);
             }
         }
 
-        following_comment := GetFollowingComment(member_decl);
-        if following_comment {
-            AddDocumentation(member_decl, following_comment, 0);
-            return;
-        }
+        return;
+    }
 
+    member_doc := array_add(*doc.members);
+    member_doc.parent = doc;
+    SetName(member_doc, member_decl.name);
+    member_doc.type = member_decl.type;
+
+    following_comment := GetFollowingComment(member_decl);
+    if following_comment {
+        member_doc.raw_comment = following_comment;
+        ParseDocumentation(member_doc, 0);
+    } else {
         leading_comment, indentation := GetLeadingComment(original_node);
         if leading_comment {
-            AddDocumentation(member_decl, leading_comment, indentation);
-            return;
+            member_doc.raw_comment = leading_comment;
+            ParseDocumentation(member_doc, indentation);
         }
+    }
+
+    // Handle anonymous structs and enums
+    if member_decl.type_inst && member_decl.type_inst.type_valued_expression {
+        if member_decl.type_inst.type_valued_expression.kind == {
+        case .STRUCT;
+            struct_node := cast(*Code_Struct, member_decl.type_inst.type_valued_expression);
+            sub_struct := CreateDoc(DocStruct, doc, struct_node);
+            HandleStruct(sub_struct, struct_node);
+            member_doc.anonymous_type_documentation = sub_struct;
+
+        case .ENUM;
+            enum_node := cast(*Code_Enum, member_decl.type_inst.type_valued_expression);
+            sub_enum := CreateDoc(DocEnum, doc, enum_node);
+            HandleEnum(sub_enum, enum_node);
+            member_doc.anonymous_type_documentation = sub_enum;
+        }
+    }
+}
+
+HandleStruct :: (doc : *DocStruct, struct_node : *Code_Struct) {
+    for struct_node.block.statements {
+        HandleStructMember(doc, it);
+    }
+}
+
+HandleEnum :: (doc : *DocEnum, enum_node : *Code_Enum) {
+    for enum_node.block.members {
+        if it.kind != .DECLARATION {
+            continue;
+        }
+
+        member_decl := cast(*Code_Declaration, it);
+
+        member_doc := array_add(*doc.values);
+        member_doc.parent = doc;
+        SetName(member_doc, member_decl.name);
+
+        following_comment := GetFollowingComment(member_decl);
+        if following_comment {
+            member_doc.raw_comment = following_comment;
+            ParseDocumentation(member_doc, 0);
+        } else {
+            leading_comment, indentation := GetLeadingComment(member_decl);
+            if leading_comment {
+                member_doc.raw_comment = leading_comment;
+                ParseDocumentation(member_doc, indentation);
+            }
+        }
+    }
+}
+
+HandleDeclaration :: (decl : *Code_Declaration) -> *DocElement {
+    if !decl.expression {
+        return null;
+    }
+
+    for decl.name {
+        if !is_alnum(it) {
+            return null;
+        }
+    }
+
+    doc : *DocElement;
+    file := LoadFile(decl.enclosing_load.fully_pathed_filename);
+    if !file {
+        return null;
     }
 
     if decl.expression.kind == {
     case .STRUCT;
-        struct_node := cast(*Code_Struct, decl.expression);
-        for struct_node.block.members {
-            HandleMember(it);
+        doc = CreateDoc(DocStruct, file, decl);
+        if decl.flags & .IS_GLOBAL {
+            array_add(*file.structs, xx doc);
         }
-
-        for struct_node.block.statements {
-            HandleMember(it);
-        }
-
     case .ENUM;
-        enum_node := cast(*Code_Enum, decl.expression);
-        for enum_node.block.members {
-            HandleMember(it);
+        doc = CreateDoc(DocEnum, file, decl);
+        if decl.flags & .IS_GLOBAL {
+            array_add(*file.enums, xx doc);
         }
-
-        for enum_node.block.statements {
-            HandleMember(it);
+    case .PROCEDURE_HEADER;
+        doc = CreateDoc(DocFunction, file, decl);
+        if decl.flags & .IS_GLOBAL {
+            array_add(*file.functions, xx doc);
         }
     }
+
+    if !doc {
+        return null;
+    }
+
+    SetName(doc, decl.name);
+
+    leading_comment, indentation := GetLeadingComment(decl);
+    if leading_comment {
+        doc.raw_comment = leading_comment;
+        ParseDocumentation(doc, indentation);
+    }
+
+    if decl.expression.kind == {
+    case .STRUCT;
+        HandleStruct(xx doc, xx decl.expression);
+
+    case .ENUM;
+        HandleEnum(xx doc, xx decl.expression);
+    }
+
+    return doc;
 }
 
 HandleCompilerMessage :: (msg : *Message) {
@@ -337,6 +546,176 @@ HandleCompilerMessage :: (msg : *Message) {
     }
 }
 
+AppendRef :: (builder : *String_Builder, doc : *DocElement) {
+    AppendPath :: (builder : *String_Builder, doc : *DocElement) {
+        root := doc;
+        while root.parent {
+            root = root.parent;
+        }
+
+        print_to_builder(builder, "/docs/files/file_%#%_%", root.name, to_lower_copy(doc.name), cast(u64, doc));
+    }
+
+    print_to_builder(builder, "[%](", doc.name);
+    AppendPath(builder, doc);
+    print_to_builder(builder, ")");
+}
+
+AppendFileHeader :: (builder : *String_Builder, file : *DocFile) {
+    AppendIndex :: (builder : *String_Builder, file : *DocFile, name : string, docs : []*$T) {
+        if docs.count <= 0 {
+            return;
+        }
+
+        print_to_builder(builder, "%:\n\n", name);
+        print_to_builder(builder, "| Name | Brief Description |\n");
+        print_to_builder(builder, "| - | - |\n");
+
+        for docs {
+            print_to_builder(builder, "| ");
+            AppendRef(builder, it);
+            print_to_builder(builder, " | % |\n", it.brief);
+        }
+
+        print_to_builder(builder, "\n");
+    }
+
+    print_to_builder(builder, "+++\n");
+    print_to_builder(builder, "title = '%'\n", file.short_filename);
+    print_to_builder(builder, "+++\n\n");
+
+    print_to_builder(builder, "## Index\n");
+    AppendIndex(builder, file, "Structs", file.structs);
+    AppendIndex(builder, file, "Enums", file.enums);
+    AppendIndex(builder, file, "Functions", file.functions);
+
+    print_to_builder(builder, "\n");
+}
+
+AppendDocStructMembers :: (builder : *String_Builder, doc : *DocStruct) {
+    print_to_builder(builder, "| Name | Type | Description |\n");
+    print_to_builder(builder, "| - | -: | - |\n");
+
+    has_anon_types := false;
+    for doc.members {
+        desc := ifx it.description then it.description else it.brief;
+        print_to_builder(builder, "| % | % | % |\n", it.name, cast(*Type, *it.type).*, desc);
+
+        if it.anonymous_type_documentation {
+            has_anon_types = true;
+        }
+    }
+
+    if has_anon_types || doc.sub_structs || doc.sub_enums || doc.sub_functions {
+        print_to_builder(builder, "\n**Subtypes:**\n\n");
+        for doc.members {
+            if !it.anonymous_type_documentation {
+                continue;
+            }
+
+            anon_type := it.anonymous_type_documentation;
+            if anon_type.kind == {
+            case .Struct;
+                print_to_builder(builder, "Member ***%*** (struct):\n", it.name);
+                AppendDocStructMembers(builder, xx anon_type);
+            case .Enum;
+                print_to_builder(builder, "Member ***%*** (enum):\n", it.name);
+                AppendDocEnumValues(builder, xx anon_type);
+            }
+        }
+
+        for doc.sub_structs {
+            print_to_builder(builder, "Struct ***%***:\n", it.name);
+            AppendDocStructMembers(builder, it);
+        }
+
+        for doc.sub_enums {
+            print_to_builder(builder, "Enum ***%***:\n", it.name);
+            AppendDocEnumValues(builder, it);
+        }
+    }
+
+    print_to_builder(builder, "\n");
+}
+
+AppendAnchor :: (builder : *String_Builder, doc : *DocElement) {
+    print_to_builder(builder, "{#%_%}", to_lower_copy(doc.full_name), cast(u64, doc));
+}
+
+AppendDocStruct :: (builder : *String_Builder, doc : *DocStruct) {
+    print_to_builder(builder, "### %1 ", doc.full_name);
+    AppendAnchor(builder, doc);
+    print_to_builder(builder, "\n");
+
+    if doc.description {
+        print_to_builder(builder, "%\n", doc.description);
+    } else if doc.brief {
+        print_to_builder(builder, "%\n", doc.brief);
+    }
+
+    print_to_builder(builder, "\n");
+
+    print_to_builder(builder, "Members:\n");
+    AppendDocStructMembers(builder, doc);
+}
+
+AppendDocEnumValues :: (builder : *String_Builder, doc : *DocEnum) {
+    print_to_builder(builder, "| Name | Description |\n");
+    print_to_builder(builder, "| - | - |\n");
+
+    for doc.values {
+        desc := ifx it.description then it.description else it.brief;
+        print_to_builder(builder, "| % | % |\n", it.name, desc);
+    }
+
+    print_to_builder(builder, "\n");
+}
+
+AppendDocEnum :: (builder : *String_Builder, doc : *DocEnum) {
+    print_to_builder(builder, "### %1 ", doc.full_name);
+    AppendAnchor(builder, doc);
+    print_to_builder(builder, "\n");
+
+    if doc.description {
+        print_to_builder(builder, "%\n", doc.description);
+    } else if doc.brief {
+        print_to_builder(builder, "%\n", doc.brief);
+    }
+
+    print_to_builder(builder, "\n");
+
+    print_to_builder(builder, "Values:\n");
+    AppendDocEnumValues(builder, doc);
+}
+
+AppendDocFunction :: (builder : *String_Builder, doc : *DocFunction) {
+    print_to_builder(builder, "### %1 ", doc.full_name);
+    AppendAnchor(builder, doc);
+    print_to_builder(builder, "\n");
+
+    text := GetNodeText(doc.node);
+    print_to_builder(builder, "```jai\n%\n```\n\n", text);
+
+    if doc.description {
+        print_to_builder(builder, "%\n\n", doc.description);
+    } else if doc.brief {
+        print_to_builder(builder, "%\n\n", doc.brief);
+    }
+
+    if doc.returns {
+        print_to_builder(builder, "**Returns:** %\n\n", doc.returns);
+    }
+
+    if doc.see_also.count > 0 {
+        print_to_builder(builder, "See also:\n");
+        for doc.see_also {
+            print_to_builder(builder, "* %\n", it);
+        }
+
+        print_to_builder(builder, "\n");
+    }
+}
+
 #run {
     w := compiler_create_workspace("Docs");
 
@@ -358,41 +737,37 @@ HandleCompilerMessage :: (msg : *Message) {
 
     compiler_end_intercept(w);
 
-    Entry :: struct {
-        decl : *Code_Declaration;
-        doc : *Documentation;
+    builder : String_Builder;
+
+    for g_files {
+        quick_sort(it.structs, (a, b) => compare_strings(a.name, b.name));
+        quick_sort(it.enums, (a, b) => compare_strings(a.name, b.name));
+        quick_sort(it.functions, (a, b) => compare_strings(a.name, b.name));
+
+        AppendFileHeader(*builder, it);
+
+        if it.structs {
+            print_to_builder(*builder, "## Structs\n");
+        }
+        for doc : it.structs {
+            AppendDocStruct(*builder, doc);
+        }
+
+        if it.enums {
+            print_to_builder(*builder, "## Enums\n");
+        }
+        for doc : it.enums {
+            AppendDocEnum(*builder, doc);
+        }
+
+        if it.functions {
+            print_to_builder(*builder, "## Functions\n");
+        }
+        for doc : it.functions {
+            AppendDocFunction(*builder, doc);
+        }
+
+        result := builder_to_string(*builder);
+        write_entire_file(tprint("../OMG-Docs/my-site/content/docs/files/file_%.md", it.name), result);
     }
-
-    entries : [..]Entry;
-    for * doc, decl : g_doc_entries {
-        array_add(*entries, .{decl, doc});
-    }
-
-    quick_sort(entries, (a, b) => compare_strings(a.decl.name, b.decl.name));
-
-    for it : entries {
-        using it;
-
-        print("%:\n", decl.name);
-        if doc.brief {
-            print("Brief: %\n", doc.brief);
-        }
-        if doc.description {
-            print("%\n", doc.description);
-        }
-        if doc.returns {
-            print("  Returns %\n", doc.returns);
-        }
-
-        if doc.see.count > 0 {
-            print("See:\n");
-            for doc.see {
-                print("  %\n", it);
-            }
-        }
-
-        print("\n");
-    }
-
-    print("% entries\n", entries.count);
 }

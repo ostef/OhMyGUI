@@ -49,7 +49,7 @@ SizeFit :: inline () -> Size1D {
 }
 
 /**
- * @brief Layout size description one the X and Y axes.
+ * @brief Layout size description on the X and Y axes.
  */
 Size2D :: struct {
     x : Size1D;

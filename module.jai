@@ -637,6 +637,7 @@ Render :: () {
 
         if it.root_node {
             SetSize(it.root_node, SizePx(xx w), SizePx(xx h));
+            it.root_node.offset = .{};
 
             LayoutNodes(it.root_node);
         }
@@ -645,6 +646,7 @@ Render :: () {
             SetLayout(it.popup_root_node, .None);
             SetChildAlign(it.popup_root_node, 0, 0);
             SetSize(it.popup_root_node, SizePx(xx w), SizePx(xx h));
+            it.popup_root_node.offset = .{};
             it.popup_root_node.flags |= .SortChildren;
 
             LayoutNodes(it.popup_root_node);
