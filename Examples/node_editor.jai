@@ -210,11 +210,15 @@ NodeGraphNode :: (parent : *OMG.Node, id : OMG.ID) -> *OMG.Node {
         node.offset = mouse - parent.rect.xy - parent.scroll;
     }
 
-    OMG.SetBackgroundColor(node, OMG.ColorU32(0.1, 0.1, 0.1, 0.8));
-    OMG.SetOuterShadowColor(node, OMG.ColorU32(0, 0, 0, 0.5));
+    color := OMG.GetStyle("base", OMG.BoxStyle).background_colors.top_left;
+    color = OMG.MakeTone(color, 0.1);
+    color = OMG.SetAlpha(color, 0.8);
+
+    OMG.SetBackgroundColor(node, color);
+    OMG.SetOuterShadowColor(node, OMG.ColorU32(0, 0, 0, 0.4));
     OMG.SetOuterShadowOffset(node, 0, 5);
     OMG.SetOuterShadowSize(node, 10);
-    OMG.SetInnerShadowColor(node, OMG.ColorU32(0, 0, 0, 0.4));
+    OMG.SetInnerShadowColor(node, OMG.ColorU32(0, 0, 0, 0.2));
     OMG.SetInnerShadowSize(node, 6); // @Todo @Fix: larger than corner radius produces intersecting triangles
     OMG.SetCornerRadius(node, 6);
     OMG.SetLayout(node, .TopToBottom);
@@ -271,6 +275,7 @@ NodeGraphTitleBar :: (parent : *OMG.Node, title : string, color : OMG.RGBA8) -> 
 
     style := OMG.GetStyle("text", OMG.TextStyle).*;
     style.font = OMG.GetFont("__default_medium");
+
     OMG.Text(node, "%", title, style=*style);
 
     return node;
@@ -694,10 +699,14 @@ Canvas :: (parent : *OMG.Node, location := #caller_location) -> *OMG.Node {
     node := OMG.GetNode(parent, location);
     OMG.SetLayout(node, .None);
     OMG.SetSize(node, OMG.SizeFill(), OMG.SizeFill());
-    OMG.SetBackgroundColor(node, OMG.ColorU32(0.15, 0.15, 0.15, 1));
-    OMG.SetInnerShadowColor(node, OMG.ColorU32(0, 0, 0, 0.3));
-    OMG.SetInnerShadowSize(node, 50);
-    OMG.SetTextColor(node, OMG.ColorU32(0.2, 0.2, 0.2, 1));
+    OMG.SetInnerShadowColor(node, OMG.ColorU32(0, 0, 0, 0.2));
+    OMG.SetInnerShadowSize(node, 40);
+
+    color := OMG.GetStyle("base", OMG.BoxStyle).background_colors.top_left;
+    color = OMG.MakeTone(color, 0.02);
+
+    OMG.SetBackgroundColor(node, color);
+    OMG.SetTextColor(node, OMG.MakeTone(color, 0.1));
 
     using _ := OMG.ButtonBehavior(node);
 
