@@ -1,10 +1,21 @@
 TextureHandle :: u64;
 
+/**
+ * @brief Rounded clip box.
+ *
+ * Rounded clip box. Clipping is done on the GPU in the fragment shader.
+ */
 ClipBox :: struct {
     bounds : Vec4f;
     corner_radiuses : Vec4f;
 }
 
+/**
+ * @brief Data for a GPU draw call.
+ *
+ * Data for a GPU draw call. Currently a draw call is created when a texture switch happens.
+ * Fonts embed a 1 by 1 white pixel at (0,0), so drawing non textured polygons does not switch the texture.
+ */
 DrawCall :: struct {
     Texture :: struct {
         handle : TextureHandle;
@@ -25,14 +36,19 @@ Vertex :: struct {
     clip_box_index : s32;
 }
 
+/**
+ * @brief List of vertices, indices, clip boxes and GPU draw calls.
+ *
+ * List of vertices, indices, clip boxes and GPU draw calls. Indices must form triangles.
+ */
 DrawList :: struct {
     draw_calls : [..]DrawCall;
     clip_boxes : [..]ClipBox;
-    clip_box_stack : [..]s32;
+    clip_box_stack : [..]s32; ///> Indices into the clip_boxes array. The top of the stack is the current clip box.
     vertices : [..]Vertex;
-    indices : [..]u32;
-    path : [..]PathPoint;
-    anti_alias_margin := 1.0;
+    indices : [..]u32;        ///> List of indices into the vertices array. Must form triangles.
+    path : [..]PathPoint;     ///> Local PathPoint array provided for convenience and performance, recycled for each drawing.
+    anti_alias_margin := 1.0; ///> Margin used for anti-aliasing. Drawings are anti-aliased with additional polygons at the edges of shapes.
 
     gpu_buffer_clip_boxes_offset : u32;
     gpu_buffer_vertices_offset : u32;
@@ -85,6 +101,15 @@ GetCurrentClipBoxIndex :: (draw_list : *DrawList) -> s32 #no_abc {
     return draw_list.clip_box_stack[draw_list.clip_box_stack.count - 1];
 }
 
+/**
+ * @brief Clip a rounded box against another rounded box.
+ *
+ * Clip a rounded box against another rounded box. Tries to keep corners rounded or cut-off where it makes sense.
+ * Because all clip boxes are represented with a simple rounded box, certain clipping situations cannot be represented
+ * accurately, we can provide good results most of the time.
+ *
+ * This is not perfect and can be worked on some more.
+ */
 ClipBoxAgainstBox :: (a : ClipBox, b : ClipBox) -> ClipBox {
     a_corners := Vec2f.[
         .{a.bounds.x, a.bounds.y},
@@ -128,6 +153,9 @@ ClipBoxAgainstBox :: (a : ClipBox, b : ClipBox) -> ClipBox {
     return .{bounds=clipped_bounds, corner_radiuses=new_corner_radiuses};
 } @Profile
 
+/**
+ * @brief Preallocate a number of vertices.
+ */
 ReserveVertices :: (draw_list : *DrawList, count : int) {
     if draw_list.vertices.count + count <= draw_list.vertices.allocated {
         return;
@@ -136,16 +164,32 @@ ReserveVertices :: (draw_list : *DrawList, count : int) {
     array_reserve(*draw_list.vertices, draw_list.vertices.count + count);
 }
 
+/**
+ * @brief Push a new vertex into the DrawList.
+ *
+ * Push a new vertex into the DrawList. Warning: this can invalidate pointers returned by previous calls to
+ * PushVertex. Make sure to reserve enough vertices using ReserveVertices when you need to manipulate multiple consecutive vertices.
+ */
 PushVertex :: inline (draw_list : *DrawList) -> *Vertex {
     vertex := array_add(*draw_list.vertices);
     vertex.clip_box_index = GetCurrentClipBoxIndex(draw_list);
     return vertex;
 }
 
+/**
+ * @brief Get the index of the last pushed vertex.
+ */
 GetCurrentIndex :: inline (draw_list : *DrawList) -> u32 {
     return xx draw_list.vertices.count;
 }
 
+/**
+ * @brief Push a new index.
+ *
+ * Push a new index. Contains additional code that manipulates draw calls, when pushing a lot of indices consider using PushIndices.
+ *
+ * @see PushIndices
+ */
 PushIndex :: inline (draw_list : *DrawList, value : u32) {
     draw_call := GetCurrentDrawCall(draw_list);
     if !draw_call {
@@ -157,6 +201,11 @@ PushIndex :: inline (draw_list : *DrawList, value : u32) {
     array_add(*draw_list.indices, value);
 }
 
+/**
+ * @brief Push one or more indices.
+ *
+ * @returns An array of indices to be modified. Can be invalidated by later calls to PushIndex and PushIndices.
+ */
 PushIndices :: (draw_list : *DrawList, count : u32) -> []u32 {
     draw_call := GetCurrentDrawCall(draw_list);
     if !draw_call {
@@ -175,10 +224,20 @@ PushIndices :: (draw_list : *DrawList, count : u32) -> []u32 {
     return .{data=data, count=count};
 }
 
+/**
+ * @brief Disable clipping.
+ *
+ * Push a new clip box index that disables clipping.
+ */
 PushDisableClipBox :: inline (draw_list : *DrawList) {
     array_add(*draw_list.clip_box_stack, -1);
 }
 
+/**
+ * @brief Push a new clip box.
+ *
+ * @param global If true the new clip box is not clipped against the current clip box and is pushed as-is.
+ */
 PushClipBox :: (draw_list : *DrawList, bounds : Vec4f, corner_radiuses : Vec4f = .{}, global := false) {
     box := array_add(*draw_list.clip_boxes);
     box.bounds = bounds;
@@ -195,10 +254,16 @@ PushClipBox :: (draw_list : *DrawList, bounds : Vec4f, corner_radiuses : Vec4f =
     array_add(*draw_list.clip_box_stack, xx (draw_list.clip_boxes.count - 1));
 }
 
+/**
+ * @brief Pop the current clip box.
+ */
 PopClipBox :: (draw_list : *DrawList) {
     pop(*draw_list.clip_box_stack);
 }
 
+/**
+ * @brief Test if the rectangle is clipped by the current clip box.
+ */
 IsClipped :: (draw_list : *DrawList, bounds : Vec4f) -> bool {
     index := GetCurrentClipBoxIndex(draw_list);
     if index < 0 {
@@ -209,6 +274,13 @@ IsClipped :: (draw_list : *DrawList, bounds : Vec4f) -> bool {
     return clipped.x > clipped.z || clipped.y > clipped.w;
 }
 
+/**
+ * @brief Push a new draw call.
+ *
+ * Push a new draw call. Copies the texture of the previous draw call.
+ *
+ * @returns The new draw call
+ */
 PushDrawCall :: (draw_list : *DrawList) -> *DrawCall {
     new : *DrawCall;
     if draw_list.draw_calls.count > 0 {
@@ -225,10 +297,26 @@ PushDrawCall :: (draw_list : *DrawList) -> *DrawCall {
     return new;
 }
 
+/**
+ * @brief Set the current texture of the DrawList.
+ *
+ * Set the current texture of the DrawList. Pushes a new draw call if the previous texture is different, unless it is null
+ * and the new texture embeds a white pixel at (0,0), or the previous texture embeds a white pixel and the new texture is null.
+ *
+ * @param has_white_px Does the texture have a white pixel at (0,0) ?
+ */
 SetTexture :: (draw_list : *DrawList, texture : TextureHandle, has_white_px : bool = false) -> previous : DrawCall.Texture {
     return SetTexture(draw_list, .{texture, has_white_px});
 }
 
+/**
+ * @brief Set the current texture of the DrawList.
+ *
+ * Set the current texture of the DrawList. Pushes a new draw call if the previous texture is different, unless it is null
+ * and the new texture embeds a white pixel at (0,0), or the previous texture embeds a white pixel and the new texture is null.
+ *
+ * @param has_white_px Does the texture have a white pixel at (0,0) ?
+ */
 SetTexture :: (draw_list : *DrawList, texture : DrawCall.Texture) -> previous : DrawCall.Texture {
     draw_call := GetCurrentDrawCall(draw_list);
     previous := ifx draw_call then draw_call.texture;

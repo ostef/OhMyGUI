@@ -1,11 +1,27 @@
+/**
+ * @brief Base theme struct
+ *
+ * Base theme struct. Simple record of name to Any value.
+ *
+ * @see DefaultTheme
+ * @see Context.theme
+ */
 Theme :: struct {
-    styles : HT.Table(string, Any);
+    styles : HT.Table(string, Any); ///> Record of style name to Any value. Values are not owned by this table.
 }
 
+/**
+ * @brief Set a value in the Theme's styles table
+ */
 SetStyle :: (theme : *Theme, name : string, value : Any) {
     HT.table_set(*theme.styles, name, value);
 }
 
+/**
+ * @brief Ensure the provided style is not null.
+ *
+ * Fetch the style inside the active theme if it's null. Asserts that the result exists and is of the correct type.
+ */
 EnsureStyle :: inline (style : **$T, name : string) {
     if !style.* {
         style.* = GetStyle(name, T);
@@ -13,10 +29,16 @@ EnsureStyle :: inline (style : **$T, name : string) {
     }
 }
 
+/**
+ * @brief Find a style by name in the active Theme.
+ */
 GetStyle :: inline (name : string, $T : Type) -> *T {
     return GetStyle(GetTheme(), name, T);
 }
 
+/**
+ * @brief Find a style by name in the specified Theme.
+ */
 GetStyle :: (theme : *Theme, name : string, $T : Type) -> *T {
     if !theme {
         return null;
@@ -34,6 +56,11 @@ GetStyle :: (theme : *Theme, name : string, $T : Type) -> *T {
     return xx any.value_pointer;
 }
 
+/**
+ * @brief List of colors for a box
+ *
+ * Colors for each corners of a box.
+ */
 BoxColors :: struct {
     top_left : RGBA8;
     top_right : RGBA8;
@@ -48,6 +75,9 @@ MakeBoxColors :: inline (color : RGBA8) -> BoxColors {
     return .{color, color, color, color};
 }
 
+/**
+ * @brief Set the color of all corners of a BoxColors.
+ */
 SetColors :: inline (colors : *BoxColors, color : RGBA8) {
     colors.corners[0] = color;
     colors.corners[1] = color;
@@ -55,6 +85,13 @@ SetColors :: inline (colors : *BoxColors, color : RGBA8) {
     colors.corners[3] = color;
 }
 
+/**
+ * @brief Interpolate corner colors.
+ *
+ * @param x Interpolation factor on the X axis between 0 and 1.
+ * @param y Interpolation factor on the Y axis between 0 and 1.
+ * @returns The interpolated color between all corners of the BoxColors.
+ */
 GetColor :: inline (colors : BoxColors, x : float, y : float) -> RGBA8 {
     x = clamp(x, 0, 1);
     y = clamp(y, 0, 1);
@@ -77,20 +114,25 @@ SetAlpha :: inline (colors : BoxColors, alpha : float) -> BoxColors {
     };
 }
 
+/**
+ * @brief Styling properties for a box.
+ *
+ * Styling properties for a box. Reflects what exists in the Node struct.
+ */
 BoxStyle :: struct {
-    padding : Vec4b;
-    child_gap : Vec2b;
+    padding : Vec4b;   ///> Node padding, this affects layout.
+    child_gap : Vec2b; ///> Node child gap, this affects layout.
 
-    corner_radiuses : Vec4f;
-    background_colors : BoxColors;
-    border_colors : BoxColors;
-    border_size : float;
-    border_inset : float;
+    corner_radiuses : Vec4f;       ///> Radius for the top-left, top-right, bottom-left and bottom-right corners.
+    background_colors : BoxColors; ///> Colors for each corner of the background.
+    border_colors : BoxColors;     ///> Colors for each corner of the border.
+    border_size : float;           ///> Thickness of the border.
+    border_inset : float;          ///> Amount of inset applied to the border, positive means the border will be smaller than the background, negative means it will go outside.
     outer_shadow_size : float;
     outer_shadow_offset : Vec2f;
     outer_shadow_color : RGBA8;
     inner_shadow_size : float;
-    inner_shadow_color : RGBA8;
+    inner_shadow_color : RGBA8;    ///> Size of the inner shadow. Warning: Currently a size greater than the smallest corner radius will produce visual artifacts (except for a size or min corner radius of 0)
 }
 
 SetColors :: (using style : *StateStyle(BoxStyle), base_background_color : RGBA8) {
@@ -100,6 +142,9 @@ SetColors :: (using style : *StateStyle(BoxStyle), base_background_color : RGBA8
     SetColors(*active.background_colors, Whiten(base_background_color, 0.1));
 }
 
+/**
+ * @brief Apply the style onto the Node.
+ */
 Apply :: inline (node : *Node, style : BoxStyle) {
     node.padding = style.padding;
     node.child_gap = style.child_gap;
@@ -115,6 +160,11 @@ Apply :: inline (node : *Node, style : BoxStyle) {
     node.inner_shadow_color = style.inner_shadow_color;
 }
 
+/**
+ * @brief Styling properties for text.
+ *
+ * Styling properties for text. Reflects what exists in the Node struct.
+ */
 TextStyle :: struct {
     font : *Font;
     text_size : float;
@@ -123,10 +173,11 @@ TextStyle :: struct {
     outer_shadow_size : float;
     outer_shadow_offset : Vec2f;
     outer_shadow_color : RGBA8;
-    inner_shadow_size : float;
-    inner_shadow_color : RGBA8;
 }
 
+/**
+ * @brief Apply the style onto the Node.
+ */
 Apply :: inline (node : *Node, style : TextStyle) {
     node.font = style.font;
     node.text_size = style.text_size;
@@ -134,11 +185,11 @@ Apply :: inline (node : *Node, style : TextStyle) {
     node.text_effects = style.text_effects;
     node.outer_shadow_size = style.outer_shadow_size;
     node.outer_shadow_offset = style.outer_shadow_offset;
-    node.outer_shadow_color = style.outer_shadow_color;
-    node.inner_shadow_size = style.inner_shadow_size;
-    node.inner_shadow_color = style.inner_shadow_color;
 }
 
+/**
+ * @brief Styles for each state of a Node.
+ */
 StateStyle :: struct(T : Type) {
     disabled : T;
     active : T;
@@ -150,6 +201,9 @@ StateStyle :: struct(T : Type) {
     states : [Num_Node_States]T;
 }
 
+/**
+ * List of cursors loaded and available by default.
+ */
 SystemCursor :: enum u8 {
     Arrow;
     IBeam;
@@ -168,6 +222,11 @@ SystemCursor :: enum u8 {
     Count;
 }
 
+/**
+ * @brief Set the cursor for the current frame.
+ *
+ * Set the cursor for the current frame. The cursor is reset each frame.
+ */
 SetCursor :: inline (cursor : PlatformCursorHandle) {
     context.omg.cursor_this_frame = cursor;
 }
@@ -210,6 +269,9 @@ GetSystemCursor :: inline (cursor : SystemCursor) -> PlatformCursorHandle {
     return g_system_cursors[cursor];
 }
 
+/**
+ * @brief Should a node be able to affect the cursor icon ?
+ */
 HasCursorControl :: (node : *Node) -> bool {
     if node.state_flags & .Disabled {
         return false;
@@ -221,6 +283,10 @@ HasCursorControl :: (node : *Node) -> bool {
     return node.state_flags != 0;
 }
 
+/**
+ * @param hot_x_01 X offset of the cursor tip between 0 and 1.
+ * @param hot_y_01 Y offset of the cursor tip between 0 and 1.
+ */
 CreateCursorFromFileContents :: (contents : string, hot_x_01 : float, hot_y_01 : float) -> PlatformCursorHandle {
     #import "stb_image";
 
@@ -237,6 +303,10 @@ CreateCursorFromFileContents :: (contents : string, hot_x_01 : float, hot_y_01 :
     return PlatformCreateRGBA8Cursor(data, xx w, xx h, hot_x_01, hot_y_01);
 }
 
+/**
+ * @param hot_x_01 X offset of the cursor tip between 0 and 1.
+ * @param hot_y_01 Y offset of the cursor tip between 0 and 1.
+ */
 CreateCursorFromFile :: (filename : string, hot_x_01 : float, hot_y_01 : float) -> PlatformCursorHandle {
     #import "stb_image";
 
@@ -264,11 +334,6 @@ AnimFunc :: enum u8 {
     BackIn;
     BackOut;
     BackInOut;
-}
-
-AnimParams :: struct {
-    length : float;
-    func : AnimFunc;
 }
 
 Animate :: inline (a : float, b : float, t : float, func : AnimFunc) -> float {
@@ -407,6 +472,9 @@ AnimateStyle :: (a : $T, b : T, t : float, func : AnimFunc) -> T {
     return result;
 }
 
+/**
+ * @brief Struct containing all styles for the default widgets.
+ */
 DefaultTheme :: struct {
     #as theme : Theme;
 
@@ -446,10 +514,18 @@ DefaultTheme :: struct {
 g_default_theme_light : DefaultTheme;
 g_default_theme_dark : DefaultTheme;
 
+/**
+ * @brief Retrieve the default light and dark themes.
+ */
 GetDefaultThemes :: inline () -> light : *Theme, dark : *Theme {
     return *g_default_theme_light, *g_default_theme_dark;
 }
 
+/**
+ * @brief Easy setup of the DefaultTheme.
+ *
+ * Setup a DefaultTheme using a text size, a base color for the background and a base color for accentuation.
+ */
 SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_background_color : RGBA8, base_accent_color : RGBA8) {
     button_base_background_color := MakeTone(base_background_color, 0.25);
 
@@ -1109,6 +1185,12 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
     SetStyle(theme, "dock_space", theme.dock_space);
 }
 
+/**
+ * @brief Set a Theme's global text size.
+ *
+ * Set a Theme's global text size. Iterate over all the styles and scale all text_size fields in TextStyles accordingly.
+ * The function fetches the "text" TextStyle as a base for how much scaling needs to be applied.
+ */
 SetGlobalTextSize :: (theme : *Theme, new_size : float) {
     Recurse :: (value : Any, ratio : float) {
         if value.type == type_info(TextStyle) {

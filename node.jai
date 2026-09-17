@@ -140,16 +140,16 @@ NodeUserData :: struct {
  * Nodes form a tree structure, with each children enclosed and clipped by its parent.
  */
 Node :: struct {
-    id : ID; ///> Global ID (local ID combined with the parent's global ID).
-    local_id : ID; ///> Local ID within the parent, unique within the node's siblings.
+    id : ID;                ///> Global ID (local ID combined with the parent's global ID).
+    local_id : ID;          ///> Local ID within the parent, unique within the node's siblings.
     index : Bucket_Locator; ///> Index in the node_pool Bucket_Array.
 
     last_used_on_frame : u64; ///> Keep tracks of when the node was last declared. If a node was not declared in the current frame it is freed.
-    z_index : s32 = -1; ///> Used when the parent wants to sort children.
+    z_index : s32 = -1;       ///> Used when the parent wants to sort children.
 
-    draw : (*DrawList, *Node) -> draw_children : bool; ///> Drawing function for the node. Initialized to the context's default drawing function.
+    draw : (*DrawList, *Node) -> draw_children : bool;          ///> Drawing function for the node. Initialized to the context's default drawing function.
     hit_test : (*Node, point : Vec2f) -> bool = DefaultHitTest; ///> Hit test function. Change this to perform custom hit test logic.
-    user_data : *NodeUserData; ///> Attached user data.
+    user_data : *NodeUserData;                                  ///> Attached user data.
 
     window : *Window; ///> UI window the node was declared in.
     parent : *Node;
@@ -165,7 +165,7 @@ Node :: struct {
     tree_last_frame : type_of(tree);
 
     /**
-     * @brief Layout data
+     * @brief Layout data.
      *
      * Computed during the layout phase at the end of the frame.
      * Before then it refers to the layout results of the previous frame.
@@ -179,6 +179,8 @@ Node :: struct {
     };
 
     /**
+     * @brief Layout properties.
+     *
      * User controlled properties that affect the layout, reset each frame except for scroll and offset
      */
     using properties : struct {
@@ -188,47 +190,49 @@ Node :: struct {
 
         flags : NodeFlags;
 
-        offset : Vec2f; ///> Offset relative to the parent, after scroll is applied. Not reset each frame.
-        scroll : Vec2f; ///> Scroll, additional offset applied to children. Not reset each frame.
-        child_align : Vec2f; ///> Child alignment on each axis; 0 means the start of the axis, 1 means the end (depends on the layout direction).
+        offset : Vec2f;                                           ///> Offset relative to the parent, after scroll is applied. Not reset each frame.
+        scroll : Vec2f;                                           ///> Scroll, additional offset applied to children. Not reset each frame.
+        child_align : Vec2f;                                      ///> Child alignment on each axis; 0 means the start of the axis, 1 means the end (depends on the layout direction).
         desired_size := Size2D.{.{kind=.FitChildren}, .{kind=.FitChildren}};
         min_size := Vec2f.{-FLOAT32_INFINITY, -FLOAT32_INFINITY}; ///> Min size in pixels.
         max_size := Vec2f.{ FLOAT32_INFINITY,  FLOAT32_INFINITY}; ///> Max size in pixels.
         min_size_fit : enum_flags u8 {
-            Width;
-            Height;
+            Width;  ///> Fit children on the X axis
+            Height; ///> Fit children on the Y axis
         }; ///> Flags describing whether the node should at least fit its child contents.
         child_gap : Vec2b; ///> Gap between children (at most 127). Currently the value on the cross layout axis is unused, until we have element wrapping.
-        padding : Vec4b; ///> Inner padding applied on the left, top, right and bottom of the node (at most 127).
+        padding : Vec4b;   ///> Inner padding applied on the left, top, right and bottom of the node (at most 127).
         child_layout_mode := LayoutMode.LeftToRight;
     };
 
     /**
+     * @brief Styling properties.
+     *
      * Styling properties, reset each frame. These do not affect the hit-test or layout results and are purely visual.
      */
     using styling : struct {
         image : TextureHandle;
         image_uv_bounds : Vec4f;
-        corner_radiuses : Vec4f; ///> Radius for the top-left, top-right, bottom-left and bottom-right corners.
-        background_colors : BoxColors;
-        border_colors : BoxColors;
-        border_size : float; ///> Thickness of the border. Border is applied *within* the node.
-        border_inset : float; ///> Amount of inset applied to the border, positive means the border will be smaller than the background, negative means it will go outside.
+        corner_radiuses : Vec4f;       ///> Radius for the top-left, top-right, bottom-left and bottom-right corners.
+        background_colors : BoxColors; ///> Colors for each corner of the background.
+        border_colors : BoxColors;     ///> Colors for each corner of the border.
+        border_size : float;           ///> Thickness of the border. Border is applied *within* the node.
+        border_inset : float;          ///> Amount of inset applied to the border, positive means the border will be smaller than the background, negative means it will go outside.
         outer_shadow_size : float;
         outer_shadow_offset : Vec2f;
         outer_shadow_color : RGBA8;
-        inner_shadow_size : float; ///> Size of the inner shadow. Warning: Currently a size greater than the smallest corner radius will produce visual artifacts (except for a size or min corner radius of 0)
+        inner_shadow_size : float;     ///> Size of the inner shadow. Warning: Currently a size greater than the smallest corner radius will produce visual artifacts (except for a size or min corner radius of 0)
         inner_shadow_color : RGBA8;
         text_color : RGBA8;
         text_effects : TextEffects;
     };
 
     state_flags : NodeStateFlags; ///> The state combination of the node in the current and last frames.
-    interacting_mouse_buttons : NodeInteractingMouseButtons; ///> The mouse button(s) that is interacting with the node in the current and last frames.
+    interacting_mouse_buttons : NodeInteractingMouseButtons; ///> The mouse button(s) that are interacting with the node in the current and last frames.
 }
 
 /**
- * Iterate over a node's children.
+ * @brief Iterate over a node's children.
  */
 Children :: (node : *Node, body : Code, flags : For_Flags) #expand {
     #if flags & .REVERSE {
@@ -253,7 +257,7 @@ Children :: (node : *Node, body : Code, flags : For_Flags) #expand {
 }
 
 /**
- * Iterate over a node's previous frame children.
+ * @brief Iterate over a node's previous frame children.
  */
 PrevFrameChildren :: (node : *Node, body : Code, flags : For_Flags) #expand {
     #if flags & .REVERSE {
@@ -292,6 +296,8 @@ IsHovered :: (node : *Node) -> bool {
 }
 
 /**
+ * @brief Check if a Node is a descendant of another.
+ *
  * @returns true if `node` is a descendant of `of`, false otherwise.
  */
 IsInTree :: (node : *Node, of : *Node) -> bool {
@@ -308,6 +314,8 @@ IsInTree :: (node : *Node, of : *Node) -> bool {
 }
 
 /**
+ * @brief Check if a Node is a descendant of another.
+ *
  * @returns true if `node` is a descendant of `of`, false otherwise.
  */
 IsInTree :: (node : *Node, of : ID) -> bool {
@@ -324,7 +332,7 @@ IsInTree :: (node : *Node, of : ID) -> bool {
 }
 
 /**
- * Iterate over a node's attached user data.
+ * @brief Iterate over a node's attached user data.
  */
 UserData :: (node : *Node, body : Code, flags : For_Flags) #expand {
     `it := node.user_data;
@@ -600,7 +608,7 @@ FindPrevFrameNode :: (parent : *Node, id : ID) -> *Node {
 }
 
 /**
- * @brief Get a Window's root Node
+ * @brief Get a Window's root Node.
  *
  * Get the root Node of a Window. The root always sets its size to the window's size in pixels.
  */
@@ -624,16 +632,37 @@ GetNode :: (window : *Window) -> *Node, is_new : bool {
     return window.root_node, is_new;
 } @Profile
 
+/**
+ * @brief Get or declare a new Node.
+ *
+ * Get a children Node of `parent` that was declared prior in the frame, or create it if it does not exist.
+ *
+ * @param is_global_id If false, the id is hashed against the parent's, otherwise id and local_id are the same.
+ */
 GetNode :: inline (parent : *Node, location := #caller_location, is_global_id := false) -> *Node, is_new : bool {
     node, is_new := GetNode(parent, GetID(location), is_global_id);
     return node, is_new;
 }
 
+/**
+ * @brief Get or declare a new Node.
+ *
+ * Get a children Node of `parent` that was declared prior in the frame, or create it if it does not exist.
+ *
+ * @param is_global_id If false, the id is hashed against the parent's, otherwise id and local_id are the same.
+ */
 GetNode :: inline (parent : *Node, str_id : string, is_global_id := false) -> *Node, is_new : bool {
     node, is_new := GetNode(parent, GetID(str_id), is_global_id);
     return node, is_new;
 }
 
+/**
+ * @brief Get or declare a new Node.
+ *
+ * Get a children Node of `parent` that was declared prior in the frame, or create it if it does not exist.
+ *
+ * @param is_global_id If false, the id is hashed against the parent's, otherwise id and local_id are the same.
+ */
 GetNode :: (parent : *Node, id : ID, is_global_id := false) -> *Node, is_new : bool {
     assert(id != 0);
     assert(parent != null && parent.last_used_on_frame == context.omg.frame_index);
@@ -665,21 +694,49 @@ GetNode :: (parent : *Node, id : ID, is_global_id := false) -> *Node, is_new : b
     return node, is_new;
 } @Profile
 
+/**
+ * @brief Get or declare a new popup Node in a Window.
+ *
+ * Get or declare a new popup Node in a Window. A Window contains a root Node and a root popup Node for floating nodes.
+ *
+ * @param is_global_id If false, the id is hashed against the parent's, otherwise id and local_id are the same.
+ */
 GetPopupNode :: inline (window : *Window, location := #caller_location, is_global_id := true) -> *Node, is_new : bool {
     node, is_new := GetNode(GetPopupRoot(window), location, is_global_id);
     return node, is_new;
 }
 
+/**
+ * @brief Get or declare a new popup Node in a Window.
+ *
+ * Get or declare a new popup Node in a Window. A Window contains a root Node and a root popup Node for floating nodes.
+ *
+ * @param is_global_id If false, the id is hashed against the parent's, otherwise id and local_id are the same.
+ */
 GetPopupNode :: inline (window : *Window, str_id : string, is_global_id := true) -> *Node, is_new : bool {
     node, is_new := GetNode(GetPopupRoot(window), str_id, is_global_id);
     return node, is_new;
 }
 
+/**
+ * @brief Get or declare a new popup Node in a Window.
+ *
+ * Get or declare a new popup Node in a Window. A Window contains a root Node and a root popup Node for floating nodes.
+ *
+ * @param is_global_id If false, the id is hashed against the parent's, otherwise id and local_id are the same.
+ */
 GetPopupNode :: inline (window : *Window, id : ID, is_global_id := true) -> *Node, is_new : bool {
     node, is_new := GetNode(GetPopupRoot(window), id, is_global_id);
     return node, is_new;
 }
 
+/**
+ * @brief Bing a Node on top of its siblings.
+ *
+ * Bring a Node on top of its siblings, only effective if the parent has the SortChildren flag.
+ *
+ * @see NodeFlags.SortChildren
+ */
 BringForward :: (node : *Node) {
     max : s32;
     for :Children node.parent {

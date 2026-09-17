@@ -1,3 +1,6 @@
+/**
+ * @brief Color as hue, saturation and value.
+ */
 HSV :: struct {
     hue : float;
     saturation : float;
@@ -80,12 +83,19 @@ GetRGBAU8 :: inline (rgba : RGBA8) -> r : u8, g : u8, b : u8, a : u8 {
     return xx r, xx g, xx b, xx a;
 }
 
+/**
+ * @brief Convert a RGB float color to HSV.
+ */
 RGBToHSV :: inline (rgb : Vec3f) -> HSV {
     h, s, v := RGBToHSV(rgb.x, rgb.y, rgb.z);
     return .{h, s, v};
 }
 
-RGBToHSV :: (r : $T, g : T, b: T) -> h : T, s : T, v : T {
+/**
+ * @brief Convert a RGB float color to HSV.
+ */
+RGBToHSV :: (r : $T, g : T, b: T) -> h : T, s : T, v : T
+#modify { return T == float32 || T == float64, "T needs to be a floating point type"; } {
     rgb_min := min(r, g, b);
     rgb_max := max(r, g, b);
 
@@ -122,11 +132,17 @@ RGBToHSV :: (r : $T, g : T, b: T) -> h : T, s : T, v : T {
     return h, s, v;
 }
 
+/**
+ * @brief Convert a HSV color to a RGB float color.
+ */
 HSVToRGB :: inline (hsv : HSV) -> Vec3f {
     r, g, b := HSVToRGB(hsv.hue, hsv.saturation, hsv.value);
     return .{r, g, b};
 }
 
+/**
+ * @brief Convert a HSV color to a RGB float color.
+ */
 HSVToRGB :: (h : $T, s : T, v : T) -> r : T, g : T, b : T {
     h /= 360;
 
@@ -141,10 +157,20 @@ HSVToRGB :: (h : $T, s : T, v : T) -> r : T, g : T, b : T {
     return v * x, v * y, v * z;
 }
 
+/**
+ * @brief Darken a color.
+ *
+ * Reduce the value component of the color. Converts RGB to HSV then back to RGB.
+ */
 Darken :: inline (rgba : RGBA8, amount : float) -> RGBA8 {
     return SetRGB(rgba, Darken(GetRGB(rgba), amount));
 }
 
+/**
+ * @brief Darken a color.
+ *
+ * Reduce the value component of the color. Converts RGB to HSV then back to RGB.
+ */
 Darken :: (rgb : Vec3f, amount : float) -> Vec3f {
     hsv := RGBToHSV(rgb);
     hsv.value = clamp(hsv.value - amount, 0, 1);
@@ -152,10 +178,20 @@ Darken :: (rgb : Vec3f, amount : float) -> Vec3f {
     return HSVToRGB(hsv);
 }
 
+/**
+ * @brief Brighten a color.
+ *
+ * Increase the value component of the color. Converts RGB to HSV then back to RGB.
+ */
 Brighten :: inline (rgba : RGBA8, amount : float) -> RGBA8 {
     return SetRGB(rgba, Brighten(GetRGB(rgba), amount));
 }
 
+/**
+ * @brief Brighten a color.
+ *
+ * Increase the value component of the color. Converts RGB to HSV then back to RGB.
+ */
 Brighten :: (rgb : Vec3f, amount : float) -> Vec3f {
     hsv := RGBToHSV(rgb);
     hsv.value = clamp(hsv.value + amount, 0, 1);
@@ -163,10 +199,20 @@ Brighten :: (rgb : Vec3f, amount : float) -> Vec3f {
     return HSVToRGB(hsv);
 }
 
+/**
+ * @brief Whiten a color.
+ *
+ * Increase the value and decrease the saturation components of the color. Converts RGB to HSV then back to RGB.
+ */
 Whiten :: inline (rgba : RGBA8, amount : float) -> RGBA8 {
     return SetRGB(rgba, Whiten(GetRGB(rgba), amount));
 }
 
+/**
+ * @brief Whiten a color.
+ *
+ * Increase the value and decrease the saturation components of the color. Converts RGB to HSV then back to RGB.
+ */
 Whiten :: (rgb : Vec3f, amount : float) -> Vec3f {
     hsv := RGBToHSV(rgb);
     hsv.saturation = clamp(hsv.saturation - amount, 0, 1);
@@ -175,10 +221,20 @@ Whiten :: (rgb : Vec3f, amount : float) -> Vec3f {
     return HSVToRGB(hsv);
 }
 
+/**
+ * @brief Make a tone from the color.
+ *
+ * Make the color greyer, move the value towards 0.5 and the saturation towards 0. Converts RGB to HSV then back to RGB.
+ */
 MakeTone :: inline (rgba : RGBA8, t : float) -> RGBA8 {
     return SetRGB(rgba, MakeTone(GetRGB(rgba), t));
 }
 
+/**
+ * @brief Make a tone from the color.
+ *
+ * Make the color greyer, move the value towards 0.5 and the saturation towards 0. Converts RGB to HSV then back to RGB.
+ */
 MakeTone :: (rgb : Vec3f, t : float) -> Vec3f {
     t = clamp(t, 0, 1);
 
@@ -286,6 +342,11 @@ ChooseTextColor :: inline (background : RGBA8, dark : RGBA8 = 0x0d0d0dff, light 
     return ifx choose(background) then dark else light;
 }
 
+/**
+ * @brief Mix two colors together.
+ *
+ * Mix two colors together, interpolate each component from a to b by a factor of t.
+ */
 MixColors :: (a : RGBA8, b : RGBA8, t : float) -> RGBA8 {
     inv_t := 1 - t;
 
