@@ -143,7 +143,7 @@ SetColors :: (using style : *StateStyle(BoxStyle), base_background_color : RGBA8
 }
 
 /**
- * @brief Apply the style onto the Node.
+ * @brief Apply the BoxStyle onto the Node.
  */
 Apply :: inline (node : *Node, style : BoxStyle) {
     node.padding = style.padding;
@@ -176,7 +176,7 @@ TextStyle :: struct {
 }
 
 /**
- * @brief Apply the style onto the Node.
+ * @brief Apply the TextStyle onto the Node.
  */
 Apply :: inline (node : *Node, style : TextStyle) {
     node.font = style.font;
