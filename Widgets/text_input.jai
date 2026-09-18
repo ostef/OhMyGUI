@@ -553,6 +553,11 @@ SetColors :: (using style : *TextInputStyle, base_background_color : RGBA8, acce
     SetColors(*active.background.border_colors, accent_color);
 }
 
+/**
+ * @brief Draw the text for a text input.
+ *
+ * Draw the text for a text input with selection and cursor.
+ */
 DrawTextInputText :: (draw_list : *DrawList, node : *Node) -> bool {
     if IsClipped(draw_list, node.rect) {
         return false;
@@ -687,6 +692,9 @@ NumberInputFlags :: enum_flags {
     NoIncreaseDecreaseButtons;
 }
 
+/**
+ * @brief Float text input widget.
+ */
 FloatInput :: (
     parent : *Node,
     value : *$T/.[float32, float64],
@@ -717,6 +725,9 @@ FloatInput :: (
     return submitted, node;
 }
 
+/**
+ * @brief Integer text input widget.
+ */
 IntInput :: (
     parent : *Node,
     value : *$T/.[u8,s8,u16,s16,u32,s32,u64,s64],
@@ -748,6 +759,9 @@ IntInput :: (
     return submitted, node;
 }
 
+/**
+ * @brief Number text input widget.
+ */
 NumberInput :: (
     parent : *Node,
     value : *$T/.[u8,s8,u16,s16,u32,s32,u64,s64,float32,float64],
@@ -840,6 +854,9 @@ NumberInput :: (
     return modified, node;
 }
 
+/**
+ * @brief Single line text input widget.
+ */
 TextInput :: (parent : *Node, flags : TextInputFlags = 0, style : *TextInputStyle = null, location := #caller_location) -> submitted : bool, *Node {
     EnsureStyle(*style, "text_input");
 

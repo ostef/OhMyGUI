@@ -35,6 +35,9 @@ SliderFlags :: enum_flags {
     NoScrollY;
 }
 
+/**
+ * @brief Slider widget using the "knob_slider" style.
+ */
 KnobSlider :: (
     parent : *Node,
     value : *$T,
@@ -51,6 +54,9 @@ KnobSlider :: (
     return ok, slider, background, handle;
 }
 
+/**
+ * @brief Slider widget using the "fill_slider" style.
+ */
 FillSlider :: (
     parent : *Node,
     value : *$T,
@@ -67,6 +73,9 @@ FillSlider :: (
     return ok, slider, background, handle;
 }
 
+/**
+ * @brief Slider widget.
+ */
 Slider :: (
     parent : *Node,
     value : *$T,
@@ -159,7 +168,7 @@ Slider :: (
             interacting = true;
         }
 
-        if held {
+        if down {
             slider.state_flags |= .Active;
 
             new_offset := GetMousePosition()[axis] - context.omg.mouse_captured_at[axis];
@@ -238,6 +247,9 @@ SetColors :: (using style : *ScrollbarStyle, base_background_color : RGBA8, base
     SetColors(*active.handle.background_colors, Whiten(base_handle_color, 0.1));
 }
 
+/**
+ * @brief Scrollbar widget.
+ */
 Scrollbar :: (parent : *Node, target : *Node, axis : Axis, style : *ScrollbarStyle = null, location := #caller_location) -> background : *Node, handle : *Node {
     EnsureStyle(*style, "scrollbar");
 
@@ -278,7 +290,7 @@ Scrollbar :: (parent : *Node, target : *Node, axis : Axis, style : *ScrollbarSty
                 SetMouseCapture(handle);
                 SetMouseFocus(handle);
                 handle_result.pressed = true;
-                handle_result.held = true;
+                handle_result.down = true;
 
                 mouse := GetMousePosition(background.window)[axis];
                 new_offset := mouse - background.rect.xy[axis] - handle.size[axis] * 0.5;
@@ -292,7 +304,7 @@ Scrollbar :: (parent : *Node, target : *Node, axis : Axis, style : *ScrollbarSty
                 context.omg.mouse_captured_node_value.xy[axis] = (target.scroll[axis] / scrollable) * offset_max;
             }
 
-            if handle_result.held {
+            if handle_result.down {
                 handle.state_flags |= .Active;
 
                 new_offset := GetMousePosition()[axis] - context.omg.mouse_captured_at[axis];

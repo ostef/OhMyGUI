@@ -1,3 +1,6 @@
+/**
+ * @brief Horizontal menu bar widget.
+ */
 MenuBar :: (parent : *Node, str_id : string, style : *BoxStyle = null) -> *Node {
     EnsureStyle(*style, "menu_bar");
 
@@ -12,6 +15,9 @@ MenuBar :: (parent : *Node, str_id : string, style : *BoxStyle = null) -> *Node 
     return node;
 }
 
+/**
+ * @brief Button widget used inside menus and menu bars.
+ */
 MenuItem :: (parent : *Node, text : string, selected := false, style : *ButtonStyle = null, location := #caller_location) -> clicked : bool, *Node {
     EnsureStyle(*style, "menu_item");
 
@@ -82,6 +88,9 @@ Apply :: inline (node : *Node, style : MenuStyle) {
     SetMaxHeight(node, style.max_height_px);
 }
 
+/**
+ * @brief Menu item widget that opens a menu.
+ */
 Menu :: (
     parent : *Node,
     text : string,
@@ -176,6 +185,9 @@ ContextMenuData :: struct {
     opened : bool;
 }
 
+/**
+ * @brief Open a menu when right clicking on the Node.
+ */
 ContextMenu :: (parent : *Node, style : *MenuStyle = null, location := #caller_location) -> *Node {
     EnsureStyle(*style, "menu");
 

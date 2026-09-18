@@ -5,6 +5,9 @@ ComboStyle :: struct {
     arrow_size := Vec2f.{10, 6};
 }
 
+/**
+ * @brief Combo box widget for enum values.
+ */
 EnumCombo :: inline (
     parent : *Node,
     value : *$T,
@@ -24,6 +27,9 @@ EnumCombo :: inline (
     return modified, node;
 }
 
+/**
+ * @brief Combo box widget with string values.
+ */
 Combo :: inline (
     parent : *Node,
     selected : *int,
@@ -35,6 +41,9 @@ Combo :: inline (
     return modified, node;
 }
 
+/**
+ * @brief Combo box widget with callback.
+ */
 Combo :: (
     parent : *Node,
     selected : *int,

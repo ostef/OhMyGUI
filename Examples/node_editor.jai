@@ -230,7 +230,7 @@ NodeGraphNode :: (parent : *OMG.Node, id : OMG.ID) -> *OMG.Node {
         node.state_flags |= .Active;
     }
 
-    if held && OMG.GetModState() == .Ctrl {
+    if down && OMG.GetModState() == .Ctrl {
         node.offset.x = OMG.Snap(node.offset.x, 10);
         node.offset.y = OMG.Snap(node.offset.y, 10);
     }
@@ -703,10 +703,10 @@ Canvas :: (parent : *OMG.Node, location := #caller_location) -> *OMG.Node {
     OMG.SetInnerShadowSize(node, 40);
 
     color := OMG.GetStyle("base", OMG.BoxStyle).background_colors.top_left;
-    color = OMG.MakeTone(color, 0.02);
+    color = OMG.MakeTone(color, 0.2);
 
     OMG.SetBackgroundColor(node, color);
-    OMG.SetTextColor(node, OMG.MakeTone(color, 0.1));
+    OMG.SetTextColor(node, OMG.MakeTone(color, 0.3));
 
     using _ := OMG.ButtonBehavior(node);
 
@@ -714,7 +714,7 @@ Canvas :: (parent : *OMG.Node, location := #caller_location) -> *OMG.Node {
         context.omg.mouse_captured_node_value = .{xy=node.scroll};
     }
 
-    if held {
+    if down {
         mouse_delta := OMG.GetMousePosition() - context.omg.mouse_captured_at;
         original_offset := context.omg.mouse_captured_node_value.xy;
         node.scroll = original_offset + mouse_delta;

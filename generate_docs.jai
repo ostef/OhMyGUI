@@ -23,6 +23,7 @@ DocElement :: struct {
     raw_comment : string;
     brief : string;
     description : string;
+    params : [..]string;
     returns : string;
     see_also : [..]string;
 }
@@ -65,6 +66,8 @@ DocStruct :: struct {
     sub_structs : [..]*DocStruct;
     sub_enums : [..]*DocEnum;
     sub_functions : [..]*DocFunction;
+
+    related_functions : [..]*DocFunction;
 }
 
 DocEnumValue :: struct {
@@ -77,6 +80,8 @@ DocEnum :: struct {
     base.kind = .Enum;
 
     values : [..]DocEnumValue;
+
+    related_functions : [..]*DocFunction;
 }
 
 DocFunction :: struct {
@@ -356,6 +361,11 @@ ParseDocumentation :: (doc : *DocElement, indentation : int) {
             s = trim(s);
 
             doc.returns = s;
+        } else if begins_with(s, "@param ") {
+            s = advance(s, "@param ".count);
+            s = trim(s);
+
+            array_add(*doc.params, s);
         } else if begins_with(s, "@see ") {
             s = advance(s, "@see ".count);
             s = trim(s);
@@ -739,6 +749,8 @@ AppendDocFunction :: (builder : *String_Builder, doc : *DocFunction) {
 
     builder : String_Builder;
 
+    make_directory_if_it_does_not_exist("Docs");
+
     for g_files {
         quick_sort(it.structs, (a, b) => compare_strings(a.name, b.name));
         quick_sort(it.enums, (a, b) => compare_strings(a.name, b.name));
@@ -768,6 +780,6 @@ AppendDocFunction :: (builder : *String_Builder, doc : *DocFunction) {
         }
 
         result := builder_to_string(*builder);
-        write_entire_file(tprint("../OMG-Docs/my-site/content/docs/files/file_%.md", it.name), result);
+        write_entire_file(tprint("Docs/file_%.md", it.name), result);
     }
 }

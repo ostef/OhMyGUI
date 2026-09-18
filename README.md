@@ -74,7 +74,7 @@ Button :: (parent : *Node, text : string, style : *ButtonStyle = null, location 
 
 ButtonResult :: struct {
     pressed : bool;
-    held : bool;
+    down : bool;
     released : bool;
 }
 
@@ -94,7 +94,7 @@ ButtonBehavior :: (node : *Node) -> ButtonResult {
 
     result : ButtonResult;
     if node.state_flags & .Hot {
-        result.held = true;
+        result.down = true;
         result.pressed = IsHovered(node) && IsMouseButtonPressed(.Left);
         result.released = IsHovered(node) && IsMouseButtonReleased(.Left);
     }

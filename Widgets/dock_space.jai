@@ -357,7 +357,7 @@ DockSpace :: (parent : *Node, id : ID, dock_node : *DockNode, style : *DockSpace
             resize_handle.desired_size[cross] = SizeFill();
 
             resize := ButtonBehavior(resize_handle);
-            if resize.held {
+            if resize.down {
                 resize_handle.state_flags |= .Active;
 
                 offset := GetMousePosition(node.window)[axis] - node.rect.xy[axis];

@@ -260,7 +260,7 @@ TableAddColumn :: (table : *Node, label : string, str_id : string, initial_size 
             context.omg.mouse_captured_node_value.xy = border.rect.xy;
         }
 
-        if held && prev_column_node {
+        if down && prev_column_node {
             area := prev_column_node.parent.rect;
             new_border_position := GetMousePosition().x - context.omg.mouse_captured_at.x;
             new_border_position += context.omg.mouse_captured_node_value.x;

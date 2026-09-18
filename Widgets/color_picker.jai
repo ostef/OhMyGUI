@@ -244,7 +244,7 @@ SaturationValueTriangle :: (parent : *Node, using data : *ColorPickerData, style
     using _ := GetHSVWheelGeometricData(style, node.rect, hsv);
 
     button := ButtonBehavior(node);
-    if button.held {
+    if button.down {
         mouse := GetMousePosition(node.window);
         mouse = ClampToTriangle(mouse, hue_point, white_point, black_point);
 
@@ -257,7 +257,7 @@ SaturationValueTriangle :: (parent : *Node, using data : *ColorPickerData, style
         hsv.value = v;
     }
 
-    return button.held;
+    return button.down;
 }
 
 HueWheel :: (parent : *Node, using data : *ColorPickerData, style : *HSVTriangleWheelStyle, location := #caller_location) -> bool {
@@ -353,7 +353,7 @@ HueWheel :: (parent : *Node, using data : *ColorPickerData, style : *HSVTriangle
     hue := hsv.hue;
 
     button := ButtonBehavior(node);
-    if button.held {
+    if button.down {
         mouse := GetMousePosition(node.window);
         center_to_mouse := normalize(mouse - center);
         hue := ToDegs(SignedAngle(.{1,0}, center_to_mouse));
@@ -361,7 +361,7 @@ HueWheel :: (parent : *Node, using data : *ColorPickerData, style : *HSVTriangle
         hsv.hue = hue;
     }
 
-    return button.held;
+    return button.down;
 }
 
 ColoredSliderData :: struct {

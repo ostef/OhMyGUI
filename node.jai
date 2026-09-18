@@ -148,7 +148,7 @@ Node :: struct {
     z_index : s32 = -1;       ///> Used when the parent wants to sort children.
 
     draw : (*DrawList, *Node) -> draw_children : bool;          ///> Drawing function for the node. Initialized to the context's default drawing function.
-    hit_test : (*Node, point : Vec2f) -> bool = DefaultHitTest; ///> Hit test function. Change this to perform custom hit test logic.
+    hit_test : (*Node, point : Vec2f) -> bool = DefaultHitTest; ///> Hit test function. Change this to perform custom hit test logic. Clipping test must be performed inside this function manually.
     user_data : *NodeUserData;                                  ///> Attached user data.
 
     window : *Window; ///> UI window the node was declared in.
@@ -221,7 +221,7 @@ Node :: struct {
         outer_shadow_size : float;
         outer_shadow_offset : Vec2f;
         outer_shadow_color : RGBA8;
-        inner_shadow_size : float;     ///> Size of the inner shadow. Warning: Currently a size greater than the smallest corner radius will produce visual artifacts (except for a size or min corner radius of 0)
+        inner_shadow_size : float;     ///> Size of the inner shadow. Warning: Currently a size greater than the smallest corner radius will produce visual artifacts (except for a size or min corner radius of 0).
         inner_shadow_color : RGBA8;
         text_color : RGBA8;
         text_effects : TextEffects;
@@ -533,6 +533,9 @@ GetID :: inline (loc : Source_Code_Location, apply_offset := true) -> ID {
     return id;
 }
 
+/**
+ * @brief Get a node by its global ID.
+ */
 GetNodeByGlobalID :: inline (id : ID) -> *Node {
     _, node := HT.table_find(*context.omg.nodes_by_id, id);
     return node;

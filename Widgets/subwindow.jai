@@ -121,7 +121,7 @@ SubwindowResizeBehavior :: (subwindow : *Node, handle : *Node, min_size : Vec2f,
         context.omg.mouse_captured_node_value = WindowToScreen(subwindow.window, subwindow.rect);
     }
 
-    if button.held {
+    if button.down {
         mouse_delta := GetMousePosition() - context.omg.mouse_captured_at;
         new_rect := ScreenToWindow(subwindow.window, context.omg.mouse_captured_node_value);
         to_modify : struct {x: bool; y: bool; z: bool; w: bool;}
@@ -229,6 +229,9 @@ SubwindowResizeHandles :: (subwindow : *Node, min_size : Vec2f, style : *Subwind
     return title_and_content;
 }
 
+/**
+ * @brief Dockable subwindow widget.
+ */
 Subwindow :: (
     window : *Window,
     title : string,
@@ -329,7 +332,7 @@ Subwindow :: (
             }
 
             interaction := DragBehavior(subwindow, title_bar, .{xy=avail_area.xy, zw=avail_area.zw - title_bar_size});
-            if !IsKeyDown(.Shift) && (interaction.held || interaction.released) {
+            if !IsKeyDown(.Shift) && (interaction.down || interaction.released) {
                 hovered_dock_node, is_hovering_split, hovered_split := GetHoveredDockSpaceAndSplit();
                 if hovered_dock_node {
                     hovered_dock_node.show_split_hints = true;

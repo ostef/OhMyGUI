@@ -1,10 +1,18 @@
+/**
+ * @brief Button interaction result.
+ */
 ButtonResult :: struct {
-    pressed : bool;
-    double_clicked : bool;
-    held : bool;
-    released : bool;
+    down : bool;           ///> Was the mouse button down while the node was focused?
+    pressed : bool;        ///> Was the mouse button pressed while the node was focused and hovered?
+    double_clicked : bool; ///> Was the mouse button double clicked while the node was focused and hovered?
+    released : bool;       ///> Was the mouse button released while the node was focused and hovered?
 }
 
+/**
+ * @brief Perform button interaction logic for a Node.
+ *
+ * Perform button interaction logic for a Node if the node is not being interacted with by another mouse button.
+ */
 ButtonBehavior :: (node : *Node, mouse_button := MouseButton.Left) -> ButtonResult {
     node.flags |= .Focusable;
 
@@ -37,12 +45,15 @@ ButtonBehavior :: (node : *Node, mouse_button := MouseButton.Left) -> ButtonResu
         result.double_clicked = is_hovered && IsMouseButtonDoubleClicked(mouse_button);
         result.released = is_hovered && IsMouseButtonReleased(mouse_button);
 
-        result.held = true;
+        result.down = true;
     }
 
     return result;
 }
 
+/**
+ * @brief Button style for one state (background, text and cursor).
+ */
 ButtonStateStyle :: struct {
     background : BoxStyle;
     text : TextStyle;
@@ -51,10 +62,18 @@ ButtonStateStyle :: struct {
 
 ButtonStyle :: StateStyle(ButtonStateStyle);
 
+/**
+ * @brief Set all ButtonStyle's state colors using a base background color.
+ *
+ * Set all ButtonStyle's state colors using a base background color. Text color is chosen based on the background.
+ */
 SetColors :: (style : *ButtonStyle, base_background_color : RGBA8) {
     SetColors(style, base_background_color, ChooseTextColor(base_background_color));
 }
 
+/**
+ * @brief Set all ButtonStyle's state colors using a base background color and text color.
+ */
 SetColors :: (using style : *ButtonStyle, base_background_color : RGBA8, text_color : RGBA8) {
     SetColors(*normal.background.background_colors, base_background_color);
     SetColors(*focused.background.background_colors, Whiten(base_background_color, 0.05));
@@ -67,6 +86,9 @@ SetColors :: (using style : *ButtonStyle, base_background_color : RGBA8, text_co
     active.text.text_color = text_color;
 }
 
+/**
+ * @brief Empty button widget.
+ */
 Button :: (parent : *Node, width : Size1D, height : Size1D, style : *ButtonStyle = null, location := #caller_location) -> clicked : bool, *Node {
     EnsureStyle(*style, "button");
 
@@ -88,6 +110,9 @@ Button :: (parent : *Node, width : Size1D, height : Size1D, style : *ButtonStyle
     }
 }
 
+/**
+ * @brief Button widget with text.
+ */
 Button :: (parent : *Node, text : string, style : *ButtonStyle = null, location := #caller_location) -> clicked : bool, *Node {
     EnsureStyle(*style, "button");
 
@@ -103,6 +128,9 @@ Button :: (parent : *Node, text : string, style : *ButtonStyle = null, location 
     return clicked, node;
 }
 
+/**
+ * @brief Empty toggle button widget.
+ */
 Toggle :: (parent : *Node, width : Size1D, height : Size1D, value : *bool, style : *ButtonStyle = null, location := #caller_location) -> clicked : bool, *Node {
     EnsureStyle(*style, "toggle");
 
@@ -136,6 +164,9 @@ Toggle :: (parent : *Node, width : Size1D, height : Size1D, value : *bool, style
     }
 }
 
+/**
+ * @brief Toggle button widget with text.
+ */
 Toggle :: (parent : *Node, text : string, value : *bool, style : *ButtonStyle = null, location := #caller_location) -> clicked : bool, *Node {
     EnsureStyle(*style, "toggle");
 
@@ -248,8 +279,18 @@ DrawCheckmark :: (draw_list : *DrawList, node : *Node) -> bool {
     return true;
 }
 
-Checkbox :: (parent : *Node, value : *bool, size := 20.0, style : *CheckboxStyle = null, location := #caller_location) -> modified : bool, *Node {
+/**
+ * @brief Checkbox widget.
+ *
+ * @param size Size of the checkbox. If size <= 0 it is calculated based on the text size of the "text" style.
+ */
+Checkbox :: (parent : *Node, value : *bool, size := 0.0, style : *CheckboxStyle = null, location := #caller_location) -> modified : bool, *Node {
     EnsureStyle(*style, "checkbox");
+
+    if size <= 0 {
+        text := GetStyle("text", TextStyle);
+        size = text.text_size / 14.0 * 20.0;
+    }
 
     node := GetNode(parent, location);
     {
@@ -296,7 +337,12 @@ SetColors :: (using style : *RadioButtonStyle, base_background_color : RGBA8, ac
     SetColors(*active.active_mark.background_colors, active_mark_color);
 }
 
-RadioButton :: (parent : *Node, value : *$T, for_value : T, size := 20.0, style : *RadioButtonStyle = null, location := #caller_location) -> clicked : bool, *Node {
+/**
+ * @brief Radio button widget.
+ *
+ * @param size Size of the button. If size <= 0 it is calculated based on the text size of the "text" style.
+ */
+RadioButton :: (parent : *Node, value : *$T, for_value : T, size := 0.0, style : *RadioButtonStyle = null, location := #caller_location) -> clicked : bool, *Node {
     clicked, node := RadioButton(parent, value.* == for_value, size, style, location);
     if clicked {
         value.* = for_value;
@@ -305,8 +351,18 @@ RadioButton :: (parent : *Node, value : *$T, for_value : T, size := 20.0, style 
     return clicked, node;
 }
 
-RadioButton :: (parent : *Node, active : bool, size := 16.0, style : *RadioButtonStyle = null, location := #caller_location) -> clicked : bool, *Node {
+/**
+ * @brief Radio button widget.
+ *
+ * @param size Size of the button. If size <= 0 it is calculated based on the text size of the "text" style.
+ */
+RadioButton :: (parent : *Node, active : bool, size := 0.0, style : *RadioButtonStyle = null, location := #caller_location) -> clicked : bool, *Node {
     EnsureStyle(*style, "radio_button");
+
+    if size <= 0 {
+        text := GetStyle("text", TextStyle);
+        size = text.text_size / 14.0 * 20.0;
+    }
 
     node := GetNode(parent, location);
     {

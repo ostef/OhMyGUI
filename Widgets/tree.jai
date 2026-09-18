@@ -10,6 +10,9 @@ TreeNodeFlags :: enum_flags {
     NoIndent;
 }
 
+/**
+ * @brief Collapsible tree node widget.
+ */
 TreeNode :: (parent : *Node, text : string, flags : TreeNodeFlags = 0, style : *TreeNodeStyle = null, location := #caller_location) -> contents : *Node, tree_item : *Node {
     EnsureStyle(*style, "tree_node");
 
