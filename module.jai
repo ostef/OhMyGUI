@@ -18,45 +18,49 @@ using,only(.["for_expansion"]) HT;
 
 #load "Widgets/widgets.jai";
 
+/**
+ * @brief Global OhMyGUI context.
+ */
 Context :: struct {
     frame_index : u64;
     delta_time : float;
-    layout_time_last_frame : float;
-    draw_time_last_frame : float;
-    total_time_last_frame : float;
-    num_vertices_last_frame : int;
-    num_indices_last_frame : int;
+    layout_time_last_frame : float; ///> Time taken for the layout last frame.
+    draw_time_last_frame : float;   ///> Time taken for drawing on the CPU last frame.
+    total_time_last_frame : float;  ///> Time taken to render (layout, drawing, bookkeeping) last frame.
+    num_vertices_last_frame : int;  ///> Number of vertices drawn last frame.
+    num_indices_last_frame : int;   ///> Number of indices drawn last frame.
 
     platform_funcs : PlatformFunctions;
     renderer_funcs : RendererFunctions;
-    default_draw_node : type_of(Node.draw) = DrawNodeDefault;
+    default_draw_node : type_of(Node.draw) = DrawNodeDefault; ///> Global default Node draw function.
 
-    general_purpose_allocator : Allocator;
+    general_purpose_allocator : Allocator; ///> Allocator used for non temporary things. Initialized to the context's allocator.
 
-    mouse_wheel_multiplier := 10.0;
+    mouse_wheel_multiplier := 10.0; ///> Multiplier value for the mouse wheel.
 
     input : InputContext;
     cursor_this_frame : PlatformCursorHandle;
 
-    windows : *Window;
-    fonts : *Font;
+    windows : *Window; ///> List of windows.
+    fonts : *Font;     ///> List of loaded fonts.
     node_pool : Bucket_Array(Node, 300);
     nodes_by_id : HT.Table(ID, *Node);
-    user_data : *NodeUserData;
+    user_data : *NodeUserData; ///> Global attached user data list.
 
-    theme : *Theme;
+    theme : *Theme; ///> Active theme.
     id_offset_stack : [..]int;
 
-    global_polygon_resolution := 1.0;
+    global_polygon_resolution := 1.0; ///> Global polygon resolution multiplier.
 
+    mouse_hovered_nodes : [..]*Node; ///> All the nodes under the mouse in the current frame.
+    mouse_hovered_node : *Node; ///> Node directly under the mouse in the current frame.
     mouse_hover_time : float;
-    mouse_hovered_node : *Node;
     mouse_focus_time : float;
     mouse_focused_node : *Node;
     mouse_capturing_node : *Node;
     mouse_captured_this_frame : bool;
     mouse_captured_at : Vec2f = .{FLOAT32_NAN, FLOAT32_NAN};
-    mouse_captured_node_value : Vec4f = .{FLOAT32_NAN, FLOAT32_NAN, FLOAT32_NAN, FLOAT32_NAN}; // Value that nodes can specify upon capturing the mouse
+    mouse_captured_node_value : Vec4f = .{FLOAT32_NAN, FLOAT32_NAN, FLOAT32_NAN, FLOAT32_NAN}; ///> Value that nodes can specify upon capturing the mouse.
     scroll_focused_node : *Node;
 }
 
@@ -232,7 +236,9 @@ Window :: struct {
     draw_list : DrawList;
 }
 
-// for_expansion
+/**
+ * @brief Iterate over the Windows.
+ */
 Windows :: (ctx : *Context, body : Code, flags : For_Flags) #expand {
     `it := ctx.windows;
     `it_index := 0;
@@ -247,7 +253,10 @@ Windows :: (ctx : *Context, body : Code, flags : For_Flags) #expand {
     }
 }
 
-GetMouseHoveredWindow :: () -> *Window {
+/**
+ * @brief Get the Window that has mouse focus.
+ */
+GetMouseFocusedWindow :: () -> *Window {
     for :Windows context.omg {
         if PlatformGetWindowFlags(it.platform_handle) & .HasMouseFocus {
             return it;
@@ -257,6 +266,9 @@ GetMouseHoveredWindow :: () -> *Window {
     return null;
 }
 
+/**
+ * @brief Get or create a Window from a platform window handle.
+ */
 GetWindow :: (handle : PlatformWindowHandle, create := true) -> *Window {
     for :Windows context.omg {
         if it.platform_handle == handle {
@@ -305,12 +317,18 @@ DestroyWindow :: (window : *Window) {
     free(window);
 }
 
+/**
+ * @brief Convert a point from screen-space to window-space.
+ */
 ScreenToWindow :: (window : *Window, point : Vec2f) -> Vec2f {
     wx, wy := PlatformGetWindowPosition(window.platform_handle);
 
     return point - Vec2f.{xx wx, xx wy};
 }
 
+/**
+ * @brief Convert a rectangle from screen-space to window-space.
+ */
 ScreenToWindow :: (window : *Window, rect : Vec4f) -> Vec4f {
     wx, wy := PlatformGetWindowPosition(window.platform_handle);
 
@@ -320,12 +338,18 @@ ScreenToWindow :: (window : *Window, rect : Vec4f) -> Vec4f {
     };
 }
 
+/**
+ * @brief Convert a point from window-space to screen-space.
+ */
 WindowToScreen :: (window : *Window, point : Vec2f) -> Vec2f {
     wx, wy := PlatformGetWindowPosition(window.platform_handle);
 
     return point + Vec2f.{xx wx, xx wy};
 }
 
+/**
+ * @brief Convert a rectangle from window-space to screen-space.
+ */
 WindowToScreen :: (window : *Window, rect : Vec4f) -> Vec4f {
     wx, wy := PlatformGetWindowPosition(window.platform_handle);
 
@@ -335,7 +359,9 @@ WindowToScreen :: (window : *Window, rect : Vec4f) -> Vec4f {
     };
 }
 
-// for_expansion
+/**
+ * @brief Iterate over the user data attached to the context.
+ */
 UserData :: (ctx : *Context, body : Code, flags : For_Flags) #expand {
     `it := ctx.user_data;
     `it_index := 0;
@@ -520,6 +546,7 @@ NewFrame :: (delta_time : float) {
         omg := context.omg;
 
         if node.parent && IsHovered(node) {
+            array_add(*omg.mouse_hovered_nodes, node);
             omg.mouse_hovered_node = node;
 
             if !omg.mouse_capturing_node || omg.mouse_capturing_node == node {
@@ -551,6 +578,7 @@ NewFrame :: (delta_time : float) {
 
     prev_mouse_hovered_node := omg.mouse_hovered_node;
     prev_mouse_focused_node := omg.mouse_focused_node;
+    array_reset_keeping_memory(*omg.mouse_hovered_nodes);
     omg.mouse_hovered_node = null;
     omg.mouse_focused_node = null;
     omg.scroll_focused_node = null;

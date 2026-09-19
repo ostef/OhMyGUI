@@ -193,7 +193,7 @@ VerticalSeparator :: (parent : *Node, style : *SeparatorStyle = null, location :
  */
 Tooltip :: (window : *Window = null) -> *Node {
     if !window {
-        window = GetMouseHoveredWindow();
+        window = GetMouseFocusedWindow();
         if !window {
             return null;
         }
