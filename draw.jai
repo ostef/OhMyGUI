@@ -420,20 +420,20 @@ DrawRect :: (
     };
 
     top_left := bounds.xy;
-    top_left.x += radiuses.x + blur_size * 0.5;
-    top_left.y += radiuses.x + blur_size * 0.5;
+    top_left.x += min(radiuses.x + blur_size * 0.5, max_radius);
+    top_left.y += min(radiuses.x + blur_size * 0.5, max_radius);
 
     top_right := Vec2f.{bounds.z, bounds.y};
-    top_right.x -= radiuses.y + blur_size * 0.5;
-    top_right.y += radiuses.y + blur_size * 0.5;
+    top_right.x -= min(radiuses.y + blur_size * 0.5, max_radius);
+    top_right.y += min(radiuses.y + blur_size * 0.5, max_radius);
 
     bottom_left := Vec2f.{bounds.x, bounds.w};
-    bottom_left.x += radiuses.z + blur_size * 0.5;
-    bottom_left.y -= radiuses.z + blur_size * 0.5;
+    bottom_left.x += min(radiuses.z + blur_size * 0.5, max_radius);
+    bottom_left.y -= min(radiuses.z + blur_size * 0.5, max_radius);
 
     bottom_right := bounds.zw;
-    bottom_right.x -= radiuses.w + blur_size * 0.5;
-    bottom_right.y -= radiuses.w + blur_size * 0.5;
+    bottom_right.x -= min(radiuses.w + blur_size * 0.5, max_radius);
+    bottom_right.y -= min(radiuses.w + blur_size * 0.5, max_radius);
 
     PushCornerVertices :: (draw_list : *DrawList, left : Vec2f, right : Vec2f, left_radius : float, right_radius : float, bottom : bool) -> num_segments : int #expand {
         #if #exists(context._Tracy) {
@@ -584,7 +584,6 @@ DrawRect :: (
             }
             v = PushVertex(draw_list, right + n);
             SetAlpha(*v.color, 0);
-
         }
 
         return num_segments;
