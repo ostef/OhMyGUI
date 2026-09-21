@@ -1000,7 +1000,7 @@ ColorInputFlags :: enum_flags {
 
 ColorInputStyle :: struct {
     label_and_content : LabelAndContentStyle;
-    number_input : NumberInputStyle;
+    number_input : TextInputStyle;
     preview : ColorPreviewStyle;
     number_input_gap : s8;
     preview_gap : s8;

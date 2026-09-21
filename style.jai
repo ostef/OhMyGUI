@@ -491,7 +491,6 @@ DefaultTheme :: struct {
     knob_slider : SliderStyle;
     scrollbar : ScrollbarStyle;
     text_input : TextInputStyle;
-    number_input : NumberInputStyle;
     checkbox : CheckboxStyle;
     radio_button : RadioButtonStyle;
     menu_bar : BoxStyle;
@@ -734,33 +733,6 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         SetAlpha(*disabled.background.background_colors, 0.5);
     }
     SetStyle(theme, "text_input", theme.text_input);
-
-    {
-        using theme.number_input;
-
-        text_input = theme.text_input;
-
-        for * increase_button.states {
-            it.background = text_input.states[it_index].background;
-            it.text = text_input.states[it_index].text;
-
-            it.background.padding = .{4,4,4,4};
-
-            it.background.corner_radiuses.x = 0;
-            it.background.corner_radiuses.zw = .{0,0};
-        }
-
-        for * decrease_button.states {
-            it.background = text_input.states[it_index].background;
-            it.text = text_input.states[it_index].text;
-
-            it.background.padding = .{4,4,4,4};
-
-            it.background.corner_radiuses.xy = .{0,0};
-            it.background.corner_radiuses.z = 0;
-        }
-    }
-    SetStyle(theme, "number_input", theme.number_input);
 
     {
         using theme.checkbox;
@@ -1023,7 +995,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
 
         label_and_content = theme.label_and_content;
         label_and_content.text_fill = 0.2;
-        number_input = theme.number_input;
+        number_input = theme.text_input;
         preview = theme.color_picker.preview;
     }
     SetStyle(theme, "color_input", theme.color_input);

@@ -748,14 +748,6 @@ ParseIntInput :: (str : string, $T : Type) -> bool, T {
     return ok && remainder.count == 0, value;
 }
 
-NumberInputStyle :: struct {
-    text_input : TextInputStyle;
-    increase_decrease_buttons_width := 14.0;
-    increase_button : ButtonStyle;
-    decrease_button : ButtonStyle;
-    group_buttons_with_text_input := true;
-}
-
 NumberInputFlags :: enum_flags {
     NoDragging;
 }
@@ -769,7 +761,7 @@ FloatInput :: (
     min : T, max : T, step : T,
     trailing_digits := 3,
     flags : NumberInputFlags = 0,
-    style : *NumberInputStyle = null,
+    style : *TextInputStyle = null,
     location := #caller_location
 ) -> submitted : bool, *Node {
     user : struct {
@@ -803,7 +795,7 @@ IntInput :: (
     base := 10,
     min_digits := 1,
     flags : NumberInputFlags = 0,
-    style : *NumberInputStyle = null,
+    style : *TextInputStyle = null,
     location := #caller_location
 ) -> submitted : bool, *Node {
     user : struct {
@@ -838,12 +830,10 @@ NumberInput :: (
     user_data := null,
     from_string : (str : string, node : *Node, user_data : *void) -> (bool, T) = null,
     to_string : (value : T, node : *Node, user_data : *void) -> string = null,
-    style : *NumberInputStyle = null,
+    style : *TextInputStyle = null,
     location := #caller_location
 ) -> submitted : bool, *Node {
-    EnsureStyle(*style, "number_input");
-
-    text_input_style := style.text_input;
+    EnsureStyle(*style, "text_input");
 
     modified : bool;
     submitted : bool;
@@ -857,7 +847,7 @@ NumberInput :: (
         SetSize(node, SizeFill(), SizeFit());
         SetChildAlign(node, 0, 0.5);
 
-        SetUserData(node, text_input_style);
+        SetUserData(node, style.*);
 
         drag_button := ifx allow_dragging && !(node.state_flags & .ActiveLastFrame) then ButtonBehavior(node);
         if drag_button.pressed {
@@ -898,14 +888,14 @@ NumberInput :: (
             SetDraw(text_node, DrawTextInputText);
 
             state := GetState(node);
-            Apply(node, text_input_style.states[state].background);
-            Apply(text_node, text_input_style.states[state].text);
+            Apply(node, style.states[state].background);
+            Apply(text_node, style.states[state].text);
 
             if HasCursorControl(node) {
                 if allow_dragging && (is_dragging || GetState(node) == .Focused) {
                     SetCursor(GetSystemCursor(.ResizeHorizontal));
                 } else {
-                    SetCursor(text_input_style.states[state].cursor);
+                    SetCursor(style.states[state].cursor);
                 }
             }
 
