@@ -12,6 +12,7 @@ ButtonResult :: struct {
  * @brief Perform button interaction logic for a Node.
  *
  * Perform button interaction logic for a Node if the node is not being interacted with by another mouse button.
+ * This function is idempotent, so calling ButtonBehavior multiple times for the same mouse button yiels the same result.
  */
 ButtonBehavior :: (node : *Node, mouse_button := MouseButton.Left) -> ButtonResult {
     node.flags |= .Focusable;

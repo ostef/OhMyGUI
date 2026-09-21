@@ -880,7 +880,7 @@ ColorPicker :: (
             hex_field := LabelAndContent(inputs, "Hex", style=*label_and_content_style);
 
             hex := cast(u32, ColorU32(color));
-            if IntInput(hex_field, *hex, 0, 0xffffffff, flags=.NoIncreaseDecreaseButtons, base=16, min_digits=8) {
+            if IntInput(hex_field, *hex, 0, 0xffffffff, flags=.NoDragging, base=16, min_digits=8) {
                 color.* = ColorVec4f(xx hex);
                 rgb_modified = true;
             }

@@ -414,7 +414,14 @@ SetCursor :: (input : *TextInputData, cursor : s32, select := false) {
     }
 }
 
-TextInputBehavior :: (node : *Node) -> *TextInputData, submitted : bool, ButtonResult {
+/**
+ * @brief Perform text input interaction logic for a Node.
+ *
+ * Perform text input interaction logic for a Node. Mouse selection is not handled.
+ *
+ * @see TextInputMouseSelectionBehavior
+ */
+TextInputBehavior :: (node : *Node, activate_on : enum { Press; Release; } = .Press) -> *TextInputData, submitted : bool, ButtonResult {
     input, is_new := AddUserData(node, TextInputData, DestroyTextInputData);
     if is_new {
         input.buffer.allocator = context.omg.general_purpose_allocator;
@@ -426,7 +433,8 @@ TextInputBehavior :: (node : *Node) -> *TextInputData, submitted : bool, ButtonR
     should_deactivate |= submitted;
 
     button_result := ButtonBehavior(node);
-    if !should_deactivate && (button_result.pressed || node.state_flags & .ActiveLastFrame) {
+    should_activate := ifx activate_on == .Press then button_result.pressed else button_result.released;
+    if !should_deactivate && (should_activate || node.state_flags & .ActiveLastFrame) {
         node.state_flags |= .Active;
     }
 
@@ -520,6 +528,65 @@ TextInputBehavior :: (node : *Node) -> *TextInputData, submitted : bool, ButtonR
     }
 
     return input, submitted, button_result;
+}
+
+/**
+ * @brief Perform text input mouse selection interaction logic for a Node.
+ *
+ * Perform text input mouse selection interaction logic for a Node and TextInputData.
+ *
+ * @see TextInputBehavior
+ */
+TextInputMouseSelectionBehavior :: (node : *Node, text_node : *Node, input : *TextInputData, allow_select : bool) {
+    if node.state_flags & .Active {
+        cursor_position : Vec2f;
+
+        is_selecting := IsCapturingMouse(node);
+        mouse := GetMousePosition(node.window);
+
+        if is_selecting && mouse.x < text_node.rect.x {
+            SetCursor(input, 0, allow_select);
+        }
+
+        iter := IterText(text_node);
+        for iter {
+            glyph_rect : Vec4f;
+            glyph_rect.xy = text_node.rect.xy + iter.pen - Vec2f.{0, iter.font.ascent * iter.font_size};
+            glyph_rect.zw = glyph_rect.xy + Vec2f.{it.hori_advance, iter.font.ascent + iter.font.descent} * iter.font_size;
+
+            if is_selecting {
+                if mouse.x >= glyph_rect.x && mouse.x < (glyph_rect.x + glyph_rect.z) * 0.5 {
+                    SetCursor(input, xx it_index, allow_select);
+                } else if mouse.x >= (glyph_rect.x + glyph_rect.z) * 0.5 && mouse.x < glyph_rect.z {
+                    SetCursor(input, xx (it_index + 1), allow_select);
+                }
+            }
+
+            if it_index == input.cursor {
+                cursor_position = .{iter.pen.x, iter.pen.y - iter.font.ascent * iter.font_size};
+            }
+        }
+
+        if is_selecting && mouse.x >= text_node.rect.x + iter.pen.x {
+            SetCursor(input, xx input.buffer.count, allow_select);
+        }
+
+        if input.cursor == input.buffer.count {
+            cursor_position = .{iter.pen.x, iter.pen.y - iter.font.ascent * iter.font_size};
+        }
+
+        if text_node.rect.x + cursor_position.x < node.rect.x + node.padding.x {
+            node.scroll.x = ceil(-cursor_position.x);
+        }
+
+        if text_node.rect.x + cursor_position.x >= node.rect.z - node.padding.z {
+            node.scroll.x = floor(-cursor_position.x + node.size.x - node.padding.x - node.padding.z - 1);
+        }
+
+        node.scroll.x = clamp(node.scroll.x, -text_node.size.x, 0);
+    } else if node.state_flags & .ActiveLastFrame {
+        node.scroll.x = 0;
+    }
 }
 
 TextInputStateStyle :: struct {
@@ -665,6 +732,7 @@ DrawTextInputText :: (draw_list : *DrawList, node : *Node) -> bool {
 
 TextInputFlags :: enum_flags {
     Password;
+    ActivateOnReleased;
 }
 
 ParseIntInput :: (str : string, $T : Type) -> bool, T {
@@ -689,7 +757,7 @@ NumberInputStyle :: struct {
 }
 
 NumberInputFlags :: enum_flags {
-    NoIncreaseDecreaseButtons;
+    NoDragging;
 }
 
 /**
@@ -775,77 +843,121 @@ NumberInput :: (
 ) -> submitted : bool, *Node {
     EnsureStyle(*style, "number_input");
 
-    container : *Node;
-    if !(flags & .NoIncreaseDecreaseButtons) {
-        container = GetNode(parent, location);
-        SetSize(container, SizeFill(), SizeFit());
-        SetLayout(container, .LeftToRight);
-    } else {
-        container = parent;
-    }
-
     text_input_style := style.text_input;
-    if !(flags & .NoIncreaseDecreaseButtons) && style.group_buttons_with_text_input {
-        for * text_input_style.states {
-            it.background.corner_radiuses.y = 0;
-            it.background.corner_radiuses.w = 0;
-        }
-    }
 
-    text_input_flags : TextInputFlags;
-    submitted, node := TextInput(container, text_input_flags, *text_input_style, location);
-    modified := submitted;
+    modified : bool;
+    submitted : bool;
 
-    if !(flags & .NoIncreaseDecreaseButtons) {
-        increase_decrease := GetNode(container);
-        SetSize(increase_decrease, SizeFit(), SizeFill());
-        SetLayout(increase_decrease, .TopToBottom);
+    allow_dragging := (flags & .NoDragging) == 0;
 
-        increase, increase_node := Button(increase_decrease, SizePx(style.increase_decrease_buttons_width), SizeFill(), *style.increase_button);
-        increase_node.flags |= .NoPaddedClip;
-        Arrow(increase_node, SizeFill(), SizeFill(), .Up, style.increase_button.states[GetState(increase_node)].text.text_color);
+    node := GetNode(parent, location=location);
+    {
+        node.flags |= .NoPaddedClip;
 
-        if increase {
-            multiplier : T = xx ifx GetModState() == .Shift then 10 else 1;
-            value.* = clamp(value.* + step * multiplier, min, max);
-            modified = true;
+        SetSize(node, SizeFill(), SizeFit());
+        SetChildAlign(node, 0, 0.5);
+
+        SetUserData(node, text_input_style);
+
+        drag_button := ifx allow_dragging && !(node.state_flags & .ActiveLastFrame) then ButtonBehavior(node);
+        if drag_button.pressed {
+            context.omg.mouse_captured_node_value = .{x=cast(float, value.*)}; // @Todo: loss of precision
         }
 
-        decrease, decrease_node := Button(increase_decrease, SizePx(style.increase_decrease_buttons_width), SizeFill(), *style.decrease_button);
-        decrease_node.flags |= .NoPaddedClip;
-        Arrow(decrease_node, SizeFill(), SizeFill(), .Down, style.decrease_button.states[GetState(decrease_node)].text.text_color);
+        disable_text_input : bool;
+        if drag_button.down {
+            mouse := GetMousePosition().x;
+            delta := mouse - context.omg.mouse_captured_at.x;
+            delta = ifx delta < 0 then Min(delta + 4, 0) else Max(delta - 4, 0); // Apply a threshold of 4 pixels
+            disable_text_input = abs(delta) >= 1;
 
-        if decrease {
-            multiplier : T = xx ifx GetModState() == .Shift then 10 else 1;
-            value.* = clamp(value.* - step * multiplier, min, max);
-            modified = true;
+            prev_value := value.*;
+
+            value.* = xx clamp(context.omg.mouse_captured_node_value.x + delta * step * 0.1, xx min, xx max);
+            if GetModState() != .Shift {
+                value.* = xx Snap(cast(float, value.*), cast(float, step));
+            }
+
+            modified |= value.* != prev_value;
+        }
+
+        input, is_new := AddUserData(node, TextInputData, DestroyTextInputData);
+        if is_new {
+            input.buffer.allocator = context.omg.general_purpose_allocator;
+        }
+
+        input_button : ButtonResult;
+        if !disable_text_input {
+            input, submitted, input_button = TextInputBehavior(node, ifx allow_dragging then .Release else .Press);
+        }
+
+        is_dragging := (node.state_flags & .Hot) != 0 && (node.state_flags & .Active) == 0;
+
+        text_node := GetNode(node, "text");
+        {
+            SetDraw(text_node, DrawTextInputText);
+
+            state := GetState(node);
+            Apply(node, text_input_style.states[state].background);
+            Apply(text_node, text_input_style.states[state].text);
+
+            if HasCursorControl(node) {
+                if allow_dragging && (is_dragging || GetState(node) == .Focused) {
+                    SetCursor(GetSystemCursor(.ResizeHorizontal));
+                } else {
+                    SetCursor(text_input_style.states[state].cursor);
+                }
+            }
+
+            text := EncodeStringAsUtf8(input.buffer ,, temp);
+            SetText(text_node, text);
+
+            if !disable_text_input {
+                activated_this_frame := (node.state_flags & .Active) != 0 && (node.state_flags & .ActiveLastFrame) == 0;
+                TextInputMouseSelectionBehavior(node, text_node, input, !input_button.pressed && !activated_this_frame);
+            }
         }
     }
 
     if submitted {
-        value.* = clamp(value.*, min, max);
-
         str := GetTextInputResult(node);
 
         #if T == float32 {
-            f := ifx from_string then from_string else (str : string, node : *Node, user_data : *void) -> (bool, T) { v, ok, remainder := string_to_float(str); return ok && remainder.count == 0, v; };
+            f := ifx from_string then from_string
+                else (str : string, node : *Node, user_data : *void) -> (bool, T) {
+                    v, ok, remainder := string_to_float(str);
+                    return ok && remainder.count == 0, v;
+                };
+
             ok, result := f(str, node, user_data);
             if ok {
                 value.* = result;
             }
         } else #if T == float64 {
-            f := ifx from_string then from_string else (str : string, node : *Node, user_data : *void) -> (bool, T) { v, ok, remainder := string_to_float64(str); return ok && remainder.count == 0, v; };
+            f := ifx from_string then from_string
+                else (str : string, node : *Node, user_data : *void) -> (bool, T) {
+                    v, ok, remainder := string_to_float64(str);
+                    return ok && remainder.count == 0, v;
+                };
+
             ok, result := f(str, node, user_data);
             if ok {
                 value.* = result;
             }
         } else {
-            f := ifx from_string then from_string else (str : string, node : *Node, user_data : *void) -> (bool, T) { v, ok, remainder := string_to_int(str, T=T); return ok && remainder.count == 0, v; };
+            f := ifx from_string then from_string
+                else (str : string, node : *Node, user_data : *void) -> (bool, T) {
+                    v, ok, remainder := string_to_int(str, T=T);
+                    return ok && remainder.count == 0, v;
+                };
+
             ok, result := f(str, node, user_data);
             if ok {
                 value.* = result;
             }
         }
+
+        value.* = clamp(value.*, min, max);
     } else if !(node.state_flags & .Active) {
         str := ifx to_string then to_string(value.*, node, user_data) else trim(tprint("%", value.*));
         SetTextInputResult(node, str);
@@ -857,7 +969,7 @@ NumberInput :: (
 /**
  * @brief Single line text input widget.
  */
-TextInput :: (parent : *Node, flags : TextInputFlags = 0, style : *TextInputStyle = null, location := #caller_location) -> submitted : bool, *Node {
+TextInput :: (parent : *Node, flags : TextInputFlags = 0, style : *TextInputStyle = null, location := #caller_location) -> submitted : bool, *Node, input_button : ButtonResult {
     EnsureStyle(*style, "text_input");
 
     input_field := GetNode(parent, location=location);
@@ -869,7 +981,7 @@ TextInput :: (parent : *Node, flags : TextInputFlags = 0, style : *TextInputStyl
 
         SetUserData(input_field, style.*);
 
-        input, submitted, input_button := TextInputBehavior(input_field);
+        input, submitted, input_button := TextInputBehavior(input_field, .Press);
 
         text_node := GetNode(input_field, "text");
         {
@@ -904,57 +1016,10 @@ TextInput :: (parent : *Node, flags : TextInputFlags = 0, style : *TextInputStyl
                 SetText(text_node, text);
             }
 
-            if input_field.state_flags & .Active {
-                cursor_position : Vec2f;
-
-                is_selecting := IsCapturingMouse(input_field);
-                mouse := GetMousePosition(input_field.window);
-
-                if is_selecting && mouse.x < text_node.rect.x {
-                    SetCursor(input, 0, !input_button.pressed);
-                }
-
-                iter := IterText(text_node);
-                for iter {
-                    glyph_rect : Vec4f;
-                    glyph_rect.xy = text_node.rect.xy + iter.pen - Vec2f.{0, iter.font.ascent * iter.font_size};
-                    glyph_rect.zw = glyph_rect.xy + Vec2f.{it.hori_advance, iter.font.ascent + iter.font.descent} * iter.font_size;
-
-                    if is_selecting {
-                        if mouse.x >= glyph_rect.x && mouse.x < (glyph_rect.x + glyph_rect.z) * 0.5 {
-                            SetCursor(input, xx it_index, !input_button.pressed);
-                        } else if mouse.x >= (glyph_rect.x + glyph_rect.z) * 0.5 && mouse.x < glyph_rect.z {
-                            SetCursor(input, xx (it_index + 1), !input_button.pressed);
-                        }
-                    }
-
-                    if it_index == input.cursor {
-                        cursor_position = .{iter.pen.x, iter.pen.y - iter.font.ascent * iter.font_size};
-                    }
-                }
-
-                if is_selecting && mouse.x >= text_node.rect.x + iter.pen.x {
-                    SetCursor(input, xx input.buffer.count, !input_button.pressed);
-                }
-
-                if input.cursor == input.buffer.count {
-                    cursor_position = .{iter.pen.x, iter.pen.y - iter.font.ascent * iter.font_size};
-                }
-
-                if text_node.rect.x + cursor_position.x < input_field.rect.x + input_field.padding.x {
-                    input_field.scroll.x = ceil(-cursor_position.x);
-                }
-
-                if text_node.rect.x + cursor_position.x >= input_field.rect.z - input_field.padding.z {
-                    input_field.scroll.x = floor(-cursor_position.x + input_field.size.x - input_field.padding.x - input_field.padding.z - 1);
-                }
-
-                input_field.scroll.x = clamp(input_field.scroll.x, -text_node.size.x, 0);
-            } else if input_field.state_flags & .ActiveLastFrame {
-                input_field.scroll.x = 0;
-            }
+            activated_this_frame := (input_field.state_flags & .Active) != 0 && (input_field.state_flags & .ActiveLastFrame) == 0;
+            TextInputMouseSelectionBehavior(input_field, text_node, input, !input_button.pressed && !activated_this_frame);
         }
 
-        return submitted, input_field;
+        return submitted, input_field, input_button;
     }
 }
