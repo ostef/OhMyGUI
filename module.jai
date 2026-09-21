@@ -41,14 +41,15 @@ Context :: struct {
     input : InputContext;
     cursor_this_frame : PlatformCursorHandle;
 
-    windows : *Window; ///> List of windows.
-    fonts : *Font;     ///> List of loaded fonts.
+    windows : *Window; ///> Linked list of windows.
+    fonts : *Font;     ///> Linked list of loaded fonts.
     node_pool : Bucket_Array(Node, 300);
     nodes_by_id : HT.Table(ID, *Node);
     user_data : *NodeUserData; ///> Global attached user data list.
 
     theme : *Theme; ///> Active theme.
-    id_offset_stack : [..]int;
+
+    id_offset_stack : [..]int; ///> Stack of offsets applied to IDs of nodes.
 
     global_polygon_resolution := 1.0; ///> Global polygon resolution multiplier.
 
