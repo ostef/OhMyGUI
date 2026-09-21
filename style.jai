@@ -769,7 +769,6 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         normal.background.padding = .{2,2,2,2};
         SetColors(*normal.background.border_colors, MakeTone(button_base_background_color, 0.3));
         normal.background.border_size = 1;
-        normal.checkmark.rounding = 1;
 
         focused = normal;
         hot = normal;

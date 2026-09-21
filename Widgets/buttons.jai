@@ -182,8 +182,12 @@ Toggle :: (parent : *Node, text : string, value : *bool, style : *ButtonStyle = 
     return clicked, node;
 }
 
+/**
+ * @brief Style for nodes that use the DrawCheckmark drawing function.
+ *
+ * @see DrawCheckmark
+ */
 CheckmarkStyle :: struct {
-    rounding := 1.0;
     thickness := 0.2;
     offset := Vec2f.{-0.2, 0};
     left_size := 0.5;
@@ -222,13 +226,20 @@ SetColors :: (using style : *CheckboxStyle, base_background_color : RGBA8, check
     active.checkmark.background_color = checkmark_color;
 }
 
+/**
+ * @brief Checkmark Node drawing function.
+ *
+ * Checkmark Node drawing function. The Node needs to have a StateStyle(CheckmarkStyle) user data attached.
+ *
+ * @see CheckmarkStyle
+ */
 DrawCheckmark :: (draw_list : *DrawList, node : *Node) -> bool {
     if IsClipped(draw_list, node.rect) {
         return false;
     }
 
-    checkbox_style := GetUserData(node.parent, CheckboxStyle);
-    if !checkbox_style {
+    checkmark_styles := GetUserData(node, StateStyle(CheckmarkStyle));
+    if !checkmark_styles {
         return true;
     }
 
@@ -240,13 +251,11 @@ DrawCheckmark :: (draw_list : *DrawList, node : *Node) -> bool {
 
     size := node.size.y;
     scale := size / 20.0;
-    state := GetState(node.parent);
-    using style := checkbox_style.states[state];
+    checkmark := checkmark_styles.states[GetState(node)];
 
     left_height := size * checkmark.left_size;
     right_height := size * checkmark.right_size;
     thickness := size * checkmark.thickness;
-    radiuses := Vec4f.{checkmark.rounding, checkmark.rounding, 2, 2} * scale;
 
     n0 := Rotate(Vec2f.{0, 1}, -checkmark.angle);
     n1 := Rotate(Vec2f.{0, 1},  checkmark.angle);
@@ -296,8 +305,6 @@ Checkbox :: (parent : *Node, value : *bool, size := 0.0, style : *CheckboxStyle 
     {
         SetSize(node, SizePx(size), SizePx(size));
 
-        SetUserData(node, style.*);
-
         button := ButtonBehavior(node);
         if button.released {
             value.* = !value.*;
@@ -311,6 +318,14 @@ Checkbox :: (parent : *Node, value : *bool, size := 0.0, style : *CheckboxStyle 
             SetDraw(checkmark, DrawCheckmark);
             SetSize(checkmark, SizeFill(), SizeFill());
 
+            checkmark_styles : StateStyle(CheckmarkStyle);
+            for * checkmark_styles.states {
+                it.* = style.states[it_index].checkmark;
+            }
+
+            SetUserData(checkmark, checkmark_styles);
+
+            checkmark.state_flags |= node.state_flags;
             Apply(checkmark, style.states[state].checkmark);
         }
 
