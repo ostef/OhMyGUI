@@ -1,3 +1,41 @@
+GlobalTreeNodeData :: struct {
+    tree_node_open_states : HT.Table(ID, bool);
+}
+
+DestroyGlobalTreeNodeData :: (node : *Node, data : *void) {
+    using _ := cast(*GlobalTreeNodeData, data);
+    HT.table_reset(*tree_node_open_states);
+}
+
+IsTreeNodeOpened :: (id : ID) -> bool {
+    global := GetGlobalUserData(GlobalTreeNodeData);
+    if !global {
+        return false;
+    }
+
+    ok, result := HT.table_find(*global.tree_node_open_states, id);
+    if !ok {
+        return false;
+    }
+
+    return result;
+}
+
+SetTreeNodeOpened :: (id : ID, opened : bool) {
+    global := AddGlobalUserData(GlobalTreeNodeData, DestroyGlobalTreeNodeData);
+    HT.table_set(*global.tree_node_open_states, id, opened);
+}
+
+AddTreeNodeState :: (id : ID, default_value : bool) -> opened : bool {
+    global := AddGlobalUserData(GlobalTreeNodeData, DestroyGlobalTreeNodeData);
+    entry, new := HT.find_or_add(*global.tree_node_open_states, id);
+    if new {
+        entry.* = default_value;
+    }
+
+    return entry.*;
+}
+
 TreeNodeStyle :: struct {
     tree_item : ButtonStyle;
     triangle_size : float;
@@ -21,8 +59,13 @@ TreeNode :: (parent : *Node, text : string, flags : TreeNodeFlags = 0, style : *
         SetSize(node, SizeFill(), SizeFit());
         SetLayout(node, .TopToBottom);
 
-        if !(flags & .Leaf) && (is_new && flags & .OpenByDefault) || node.state_flags & .ActiveLastFrame {
-            SetTreeNodeOpened(node, true);
+        opened : bool;
+        if !(flags & .Leaf) {
+            opened = AddTreeNodeState(node.id, (flags & .OpenByDefault) != 0);
+        }
+
+        if opened {
+            node.state_flags |= .Active;
         }
 
         tree_item := GetNode(node);
@@ -33,7 +76,8 @@ TreeNode :: (parent : *Node, text : string, flags : TreeNodeFlags = 0, style : *
 
             using _ := ButtonBehavior(tree_item);
             if !(flags & .Leaf) && released {
-                SetTreeNodeOpened(node, !IsTreeNodeOpened(node));
+                opened = !opened;
+                SetTreeNodeOpened(node, opened);
             }
 
             state := GetState(tree_item);
@@ -64,7 +108,7 @@ TreeNode :: (parent : *Node, text : string, flags : TreeNodeFlags = 0, style : *
         }
 
         contents : *Node;
-        if IsTreeNodeOpened(node) {
+        if opened {
             contents = GetNode(node);
             SetSize(contents, SizeFill(), SizeFit());
             SetLayout(contents, .TopToBottom);
@@ -78,22 +122,16 @@ TreeNode :: (parent : *Node, text : string, flags : TreeNodeFlags = 0, style : *
     }
 }
 
-IsTreeNodeOpened :: (node : *Node) -> bool {
-    return node.state_flags & .Active != 0;
+IsTreeNodeOpened :: inline (node : *Node) -> bool {
+    return IsTreeNodeOpened(node.id);
 }
 
 SetTreeNodeOpened :: (node : *Node, opened : bool) {
+    SetTreeNodeOpened(node.id, opened);
+
     if opened {
         node.state_flags |= .Active;
     } else {
         node.state_flags &= ~.Active;
     }
-}
-
-OpenTreeNode :: (node : *Node) {
-    SetTreeNodeOpened(node, true);
-}
-
-CloseTreeNode :: (node : *Node) {
-    SetTreeNodeOpened(node, false);
 }
