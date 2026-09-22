@@ -684,7 +684,7 @@ GetNode :: (parent : *Node, id : ID, is_global_id := false) -> *Node, is_new : b
         node.window = parent.window;
         node.parent = parent;
         node.local_id = id;
-        node.id = ifx is_global_id then GetID(id, base=parent.id) else id;
+        node.id = ifx is_global_id then id else GetID(id, base=parent.id);
 
         table_entry := HT.find_or_add(*context.omg.nodes_by_id, node.id);
         table_entry.* = node;
