@@ -488,7 +488,7 @@ END
                 OMG.TreeNode(tree2, "2.2", .Leaf);
             }
 
-            InfiniteTreeNode :: (parent : *OMG.Node, location := #caller_location) {
+            InfiniteTreeNode :: (parent : *OMG.Node) {
                 tree := OMG.TreeNode(parent, "Infinity Tree");
                 if tree {
                     InfiniteTreeNode(tree);
