@@ -64,6 +64,7 @@ SubwindowTitleBarStyle :: StateStyle(SubwindowTitleBarStateStyle);
 SubwindowStyle :: struct {
     title_bar : SubwindowTitleBarStyle;
     background : BoxStyle;
+    docked_background : BoxStyle;
     vertical_scrollbar : ScrollbarStyle;
     horizontal_scrollbar : ScrollbarStyle;
     resize_handle_size := 8.0;
@@ -378,8 +379,10 @@ Subwindow :: (
         content_parent = GetNode(dock_node, GetID(GetID("subwindow_content"), subwindow_id));
         SetSize(content_parent, SizeFill(), SizeFill());
 
-        Apply(content_parent, style.background);
-        content_parent.corner_radiuses = .{}; // Override styling to remove rounded corners when docked
+        Apply(content_parent, style.docked_background);
+
+        content_parent.padding = .{};
+        content_parent.child_gap = .{};
     }
 
     content_and_hscrollbar, content_and_vscrollbar : *Node;
@@ -402,8 +405,13 @@ Subwindow :: (
         SetSize(content, SizeFill(), SizeFill());
         SetLayout(content, .TopToBottom);
 
-        content.padding = style.background.padding;
-        content.child_gap = style.background.child_gap;
+        if dock_node {
+            content.padding = style.docked_background.padding;
+            content.child_gap = style.docked_background.child_gap;
+        } else {
+            content.padding = style.background.padding;
+            content.child_gap = style.background.child_gap;
+        }
 
         if subwindow && !(flags & .NoMove) && !(flags & .NoMoveFromBackground) {
             DragBehavior(subwindow, content, .{xy=avail_area.xy, zw=avail_area.zw - title_bar_size});

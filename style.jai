@@ -846,6 +846,12 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         background.outer_shadow_offset = .{6,6};
         background.outer_shadow_size = 5;
 
+        docked_background = background;
+        docked_background.corner_radiuses = .{0,0,0,0};
+        docked_background.outer_shadow_color = 0;
+        docked_background.outer_shadow_size = 0;
+        docked_background.outer_shadow_offset = .{};
+
         {
             using title_bar;
 
