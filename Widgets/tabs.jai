@@ -1,6 +1,33 @@
 // @Todo: reorder tabs
 // @Todo: close tabs
 
+GlobalTabBarData :: struct {
+    tab_bars : HT.Table(ID, *TabBarData);
+}
+
+DestroyGlobalTabBarData :: (node : *Node, data : *void) {
+    using _ := cast(*GlobalTabBarData, data);
+    for tab_bars {
+        free(it ,, context.omg.general_purpose_allocator);
+    }
+
+    HT.table_reset(*tab_bars);
+}
+
+GetTabBarData :: (id : ID) -> *TabBarData {
+    global := AddGlobalUserData(GlobalTabBarData, DestroyGlobalTabBarData);
+    if !global.tab_bars.allocator.proc {
+        global.tab_bars.allocator = context.omg.general_purpose_allocator;
+    }
+
+    ptr := HT.find_or_add(*global.tab_bars, id);
+    if !ptr.* {
+        ptr.* = New(TabBarData ,, context.omg.general_purpose_allocator);
+    }
+
+    return ptr.*;
+}
+
 TabBarData :: struct {
     active_tab : ID;
     next_active_tab : ID;
@@ -20,8 +47,9 @@ TabBar :: (parent : *Node, local_id : ID, style : *BoxStyle = null) -> *Node {
     node := GetNode(parent, local_id);
     {
         SetSize(node, SizeFill(), SizeFit());
+        node.flags |= .SortChildren;
 
-        data := AddUserData(node, TabBarData);
+        data := GetTabBarData(node.id);
 
         if data.next_active_tab {
             data.active_tab = data.next_active_tab;
@@ -39,11 +67,15 @@ TabBar :: (parent : *Node, local_id : ID, style : *BoxStyle = null) -> *Node {
 Tab :: (parent : *Node, label : string, str_id : string, style : *ButtonStyle = null) -> bool, *Node {
     EnsureStyle(*style, "tab");
 
-    node := GetNode(parent, str_id);
+    node, is_new := GetNode(parent, str_id);
     {
         SetSize(node, SizeFit(), SizeFit());
 
-        data := GetUserData(parent, TabBarData);
+        if is_new {
+            BringForward(node);
+        }
+
+        data := GetTabBarData(parent.id);
 
         if data && data.active_tab == 0 {
             data.active_tab = node.id;
