@@ -808,7 +808,10 @@ ShowNodeGraphWindow :: () {
 
     window := OMG.GetWindow(g_window);
 
-    subwindow := OMG.Subwindow(window, "Node Graph", "node_graph", .{300, 300});
+    subwindow_style := OMG.GetStyle("subwindow", OMG.SubwindowStyle).*;
+    subwindow_style.background.padding = .{};
+    subwindow_style.docked_background.padding = .{};
+    subwindow := OMG.Subwindow(window, "Node Graph", "node_graph", .{500, 500}, style=*subwindow_style);
     if subwindow {
         root := OMG.GetNode(subwindow);
         OMG.SetSize(root, OMG.SizeFill(), OMG.SizeFill());
