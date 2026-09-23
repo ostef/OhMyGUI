@@ -103,20 +103,31 @@ Tab :: (parent : *Node, label : string, str_id : string, style : *ButtonStyle = 
 
         using _ := ButtonBehavior(node);
 
-        // Move tab
-        if down {
-            mouse := GetMousePosition(node.window);
-            if mouse.x < node.rect.x {
-                node.z_index -= 3;
-            } else if mouse.x > node.rect.z {
-                node.z_index += 3;
-            }
-        }
-
-        if released && data {
+        // Activate tab
+        if pressed && data {
             // Set the active tab next frame and not the current frame, otherwise
             // we can get two active tabs at the same time
             data.next_active_tab = node.id;
+        }
+
+        // Move tab
+        if down {
+            mouse := GetMousePosition(node.window);
+            prev := node.tree_last_frame.prev_sibling;
+
+            // Move the tab left only if the mouse enters where the rect would be,
+            // otherwise it can cause the tab to move left then right then left...
+            // each frame
+            if prev {
+                prev_limit := prev.rect.x + node.size.x;
+                if mouse.x < prev_limit {
+                    node.z_index -= 3;
+                }
+            }
+
+            if mouse.x > node.rect.z {
+                node.z_index += 3;
+            }
         }
 
         active := data && data.active_tab == node.id;
