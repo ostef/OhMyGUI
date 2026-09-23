@@ -365,7 +365,7 @@ Subwindow :: (
             start := context.omg.mouse_captured_at;
             current := GetMousePosition();
 
-            if length(current - start) > 20 {
+            if abs(current.y - start.y) > tab.size.y {
                 persistent_data.was_undocked_using_mouse = UndockSubwindow(dock_node_data, subwindow_id);
                 context.omg.mouse_captured_node_value = .{xy=WindowToScreen(window, tab.rect.xy) - context.omg.mouse_captured_at};
             }

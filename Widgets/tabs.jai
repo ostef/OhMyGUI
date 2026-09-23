@@ -33,14 +33,29 @@ TabBarData :: struct {
     next_active_tab : ID;
 }
 
+/**
+ * @brief Tab bar widget
+ *
+ * @see Tab
+ */
 TabBar :: inline (parent : *Node, str_id : string, style : *BoxStyle = null) -> *Node {
     return TabBar(parent, GetID(str_id), style);
 }
 
+/**
+ * @brief Tab bar widget
+ *
+ * @see Tab
+ */
 TabBar :: inline (parent : *Node, style : *BoxStyle = null, location := #caller_location) -> *Node {
     return TabBar(parent, GetID(location), style);
 }
 
+/**
+ * @brief Tab bar widget
+ *
+ * @see Tab
+ */
 TabBar :: (parent : *Node, local_id : ID, style : *BoxStyle = null) -> *Node {
     EnsureStyle(*style, "tab_bar");
 
@@ -50,13 +65,8 @@ TabBar :: (parent : *Node, local_id : ID, style : *BoxStyle = null) -> *Node {
         node.flags |= .SortChildren;
 
         data := GetTabBarData(node.id);
-
-        if data.next_active_tab {
-            data.active_tab = data.next_active_tab;
-            data.next_active_tab = 0;
-        } else {
-            data.active_tab = 0;
-        }
+        data.active_tab = data.next_active_tab;
+        data.next_active_tab = 0;
 
         Apply(node, style);
     }
@@ -64,6 +74,11 @@ TabBar :: (parent : *Node, local_id : ID, style : *BoxStyle = null) -> *Node {
     return node;
 }
 
+/**
+ * @brief Tab widget
+ *
+ * @see TabBar
+ */
 Tab :: (parent : *Node, label : string, str_id : string, style : *ButtonStyle = null) -> bool, *Node {
     EnsureStyle(*style, "tab");
 
@@ -71,11 +86,15 @@ Tab :: (parent : *Node, label : string, str_id : string, style : *ButtonStyle = 
     {
         SetSize(node, SizeFit(), SizeFit());
 
+        // z_index must be even to leave room when we move tabs
+        node.z_index *= 2;
+
         if is_new {
             BringForward(node);
         }
 
         data := GetTabBarData(parent.id);
+        assert(data != null);
 
         if data && data.active_tab == 0 {
             data.active_tab = node.id;
@@ -83,14 +102,29 @@ Tab :: (parent : *Node, label : string, str_id : string, style : *ButtonStyle = 
         }
 
         using _ := ButtonBehavior(node);
+
+        // Move tab
+        if down {
+            mouse := GetMousePosition(node.window);
+            if mouse.x < node.rect.x {
+                node.z_index -= 3;
+            } else if mouse.x > node.rect.z {
+                node.z_index += 3;
+            }
+        }
+
         if released && data {
+            // Set the active tab next frame and not the current frame, otherwise
+            // we can get two active tabs at the same time
             data.next_active_tab = node.id;
         }
 
         active := data && data.active_tab == node.id;
         if active {
             node.state_flags |= .Active;
-            if !data.next_active_tab {
+
+            // Keep the tab active for the next frame unless another tab wants to be active
+            if data.next_active_tab == 0 {
                 data.next_active_tab = node.id;
             }
         }

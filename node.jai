@@ -18,7 +18,7 @@ TextEffects :: enum_flags u8 {
 }
 
 /**
- * Describes the interaction state of a `Node`.
+ * @brief Describes the interaction state of a `Node`.
  *
  * @see NodeStateFlags
  */
@@ -121,10 +121,13 @@ GetStateLastFrame :: inline (state_flags : NodeStateFlags) -> NodeState {
  * @brief Base struct for a `Node` user data
  *
  * Base struct used for a `Node`'s user data. User data can be added to a `Node` in a linked list. It is destroyed when the `Node` is freed.
+ * User data can also be added to the `Context` (i.e. global user data), in which case the `Node` is null.
  *
  * @see AddUserData
  * @see GetUserData
  * @see SetUserData
+ * @see AddGlobalUserData
+ * @see GetGlobalUserData
  */
 NodeUserData :: struct {
     next : *NodeUserData;     ///> Linked list next element.
@@ -144,8 +147,8 @@ Node :: struct {
     local_id : ID;          ///> Local ID within the parent, unique within the node's siblings.
     index : Bucket_Locator; ///> Index in the node_pool Bucket_Array.
 
-    last_used_on_frame : u64; ///> Keep tracks of when the node was last declared. If a node was not declared in the current frame it is freed.
-    z_index : s32 = -1;       ///> Used when the parent wants to sort children.
+    last_used_on_frame : u64; ///> Keep tracks of when the node was last declared. If a node was not declared during the current frame it is freed.
+    z_index : s32 = -1;       ///> Used when the parent wants to sort children. After sorting this is set to the actual index in the list of children.
 
     draw : (*DrawList, *Node) -> draw_children : bool;          ///> Drawing function for the node. Initialized to the context's default drawing function.
     hit_test : (*Node, point : Vec2f) -> bool = DefaultHitTest; ///> Hit test function. Change this to perform custom hit test logic. Clipping test must be performed inside this function manually.
