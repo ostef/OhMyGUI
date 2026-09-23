@@ -741,12 +741,7 @@ GetPopupNode :: inline (window : *Window, id : ID, is_global_id := true) -> *Nod
  * @see NodeFlags.SortChildren
  */
 BringForward :: (node : *Node) {
-    max : s32;
-    for :Children node.parent {
-        max = Max(max, it.z_index);
-    }
-
-    node.z_index = max + 1;
+    node.z_index = S32_MAX;
 }
 
 SetHitTest :: inline (node : *Node, hit_test : type_of(Node.hit_test)) {
