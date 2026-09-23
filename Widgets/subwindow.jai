@@ -400,7 +400,8 @@ Subwindow :: (
         content_parent = content_and_vscrollbar;
     }
 
-    content = GetNode(content_parent, "content");
+    content_id := GetID(GetID("content"), subwindow_id);
+    content = GetNode(content_parent, content_id, is_global_id=true);
     {
         SetSize(content, SizeFill(), SizeFill());
         SetLayout(content, .TopToBottom);

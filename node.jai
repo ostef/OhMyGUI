@@ -460,7 +460,16 @@ FreeNode :: (node : *Node, free_children := true) {
         free(it ,, context.omg.general_purpose_allocator);
     }
 
-    HT.table_remove(*context.omg.nodes_by_id, node.id);
+    // @Todo: could use a custom hash map implementation to make this a single hash lookup
+    // When declaring a node, we allow global ID collision if the other node is not
+    // declared on the same frame. There is a one frame delay before the node is
+    // freed however, so when that happens we need to check the node in the table so
+    // we don't wrongly remove the newly declared node
+    _, node_in_table := HT.table_find(*context.omg.nodes_by_id, node.id);
+    if node_in_table == node {
+        HT.table_remove(*context.omg.nodes_by_id, node.id);
+    }
+
     bucket_array_remove(*context.omg.node_pool, node.index);
 
     if window.root_node == node {
@@ -575,6 +584,7 @@ GetPopupRoot :: (window : *Window) -> *Node, is_new : bool {
         window.popup_root_node.id = GetID(window.popup_root_node.local_id, cast(u64, window));
 
         table_entry := HT.find_or_add(*context.omg.nodes_by_id, window.popup_root_node.id);
+        assert(table_entry.* == null || table_entry.* == window.root_node);
         table_entry.* = window.popup_root_node;
 
         is_new = true;
@@ -628,6 +638,7 @@ GetNode :: (window : *Window) -> *Node, is_new : bool {
         window.root_node.id = GetID(window.root_node.local_id, cast(u64, window));
 
         table_entry := HT.find_or_add(*context.omg.nodes_by_id, window.root_node.id);
+        assert(table_entry.* == null || table_entry.* == window.root_node);
         table_entry.* = window.root_node;
 
         is_new = true;
@@ -689,7 +700,12 @@ GetNode :: (parent : *Node, id : ID, is_global_id := false) -> *Node, is_new : b
         node.local_id = id;
         node.id = ifx is_global_id then id else GetID(id, base=parent.id);
 
-        table_entry := HT.find_or_add(*context.omg.nodes_by_id, node.id);
+        table_entry, new_entry := HT.find_or_add(*context.omg.nodes_by_id, node.id);
+        if !new_entry {
+            // When declaring a node, we allow global ID collision if the other node is not declared on the same frame.
+            assert(table_entry.* == node || table_entry.*.last_used_on_frame != context.omg.frame_index, "Global node ID collision");
+        }
+
         table_entry.* = node;
 
         is_new = true;
