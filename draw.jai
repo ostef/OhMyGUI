@@ -1058,7 +1058,8 @@ DrawText :: inline (
     size : float,
     text : string,
     color : RGBA8,
-    effects : TextEffects = 0
+    effects : TextEffects = 0,
+    blur_amount := 0.0
 ) {
     DrawWrappedText(
         draw_list,
@@ -1068,7 +1069,8 @@ DrawText :: inline (
         text,
         .{FLOAT32_INFINITY, FLOAT32_INFINITY},
         color,
-        effects
+        effects,
+        blur_amount
     );
 }
 
@@ -1080,7 +1082,8 @@ DrawWrappedText :: (
     text : string,
     bounds : Vec2f,
     color : RGBA8,
-    effects : TextEffects = 0
+    effects : TextEffects = 0,
+    blur_amount := 0.0
 ) {
     if !font || (color & 0xff) == 0 {
         return;
@@ -1104,7 +1107,7 @@ DrawWrappedText :: (
             zw=glyph_position + it.texture_size * iter.font_size * 0.5,
         };
 
-        DrawSDFGlyph(draw_list, bounds, color, color, color, color, it.uv_rect, sdf_range);
+        DrawSDFGlyph(draw_list, bounds, color, color, color, color, it.uv_rect, sdf_range, blur_amount);
     }
 
     SetTexture(draw_list, prev_texture);
