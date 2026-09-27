@@ -1,7 +1,6 @@
 #import "Basic";
 #import "Math";
 #import "Bucket_Array";
-#import "Print_Vars";
 HT :: #import "Hash_Table";
 using,only(.["for_expansion"]) HT;
 #import "String";
