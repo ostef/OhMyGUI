@@ -130,7 +130,6 @@ layout(location=5) in int v_clip_box_index;
 
 uniform vec2 u_viewport_size;
 
-out vec2 position;
 out vec2 tex_coords;
 out vec4 color;
 flat out int clip_box_index;
@@ -143,7 +142,6 @@ void main() {
     gl_Position.z = 0;
     gl_Position.w = 1;
 
-    position = v_position;
     tex_coords = v_tex_coords;
     color = v_color.abgr;
     clip_box_index = v_clip_box_index;
@@ -167,7 +165,6 @@ layout(std430) readonly buffer ClipBoxData {
 uniform vec2 u_viewport_size;
 uniform sampler2D u_texture;
 
-in vec2 position;
 in vec2 tex_coords;
 in vec4 color;
 flat in int clip_box_index;
