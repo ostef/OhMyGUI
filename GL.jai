@@ -331,8 +331,6 @@ Render :: (viewport_w : u32, viewport_h : u32) {
         clip_boxes_offset += it.draw_list.clip_boxes.count * size_of(ClipBox);
 
         SendDrawCommands(*it.draw_list, viewport_w, viewport_h);
-
-        ClearDrawList(*it.draw_list);
     }
 }
 

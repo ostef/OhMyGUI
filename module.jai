@@ -569,7 +569,12 @@ NewFrame :: (delta_time : float) {
     omg.frame_index += 1;
     omg.delta_time = delta_time;
 
-    InputNewFrame(*context.omg.input);
+    // Clear draw lists
+    for :Windows omg {
+        ClearDrawList(*it.draw_list);
+    }
+
+    InputNewFrame(*omg.input);
 
     ProcessDockNodeSplitRequests();
     RemoveEmptyDockNodes();
