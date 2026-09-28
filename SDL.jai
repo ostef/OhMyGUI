@@ -180,7 +180,7 @@ HandleInputEvent :: (event : SDL_Event) {
 
     case SDL_MOUSEBUTTONDOWN;
         mouse_button := SDLMouseButtonToMouseButton(event.button.button);
-        if event.button.clicks > 1 {
+        if (event.button.clicks % 2) == 0 {
             omg.input.mouse_button_states[mouse_button] |= .Repeated | .Down;
         } else {
             omg.input.mouse_button_states[mouse_button] |= .Pressed | .Down;
