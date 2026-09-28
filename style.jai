@@ -816,7 +816,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         border_size = 1;
 
         outer_shadow_color = ColorU32(0,0,0,0.25);
-        outer_shadow_offset = .{3,3};
+        outer_shadow_offset = .{0,3};
         outer_shadow_size = 5;
     }
     SetStyle(theme, "menu", theme.menu);
