@@ -58,6 +58,10 @@ GetDefaultFontBold :: inline () -> *Font {
     return GetFont("__default_bold");
 }
 
+GetLineHeight :: inline (font : *Font, size : float) -> float {
+    return (font.descent + font.ascent) * size;
+}
+
 LoadDefaultFonts :: () {
     Roboto_Regular :: #run EmbedFileContents("Roboto-Regular.ttf");
     Roboto_Medium :: #run EmbedFileContents("Roboto-Medium.ttf");
