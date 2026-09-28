@@ -239,8 +239,16 @@ DrawCheckmark :: (draw_list : *DrawList, node : *Node) -> bool {
         return false;
     }
 
+    checkmark : *CheckmarkStyle;
+
     checkmark_styles := GetUserData(node, StateStyle(CheckmarkStyle));
-    if !checkmark_styles {
+    if checkmark_styles {
+        checkmark = *checkmark_styles.states[GetState(node)];
+    } else {
+        checkmark = GetUserData(node, CheckmarkStyle);
+    }
+
+    if !checkmark {
         return true;
     }
 
@@ -252,7 +260,6 @@ DrawCheckmark :: (draw_list : *DrawList, node : *Node) -> bool {
 
     size := node.size.y;
     scale := size / 20.0;
-    checkmark := checkmark_styles.states[GetState(node)];
 
     left_height := size * checkmark.left_size;
     right_height := size * checkmark.right_size;

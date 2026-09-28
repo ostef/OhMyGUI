@@ -58,15 +58,9 @@ MenuItem :: (parent : *Node, text : string, selected := false, style : *MenuItem
             size := GetLineHeight(style.button.states[state].text.font, style.button.states[state].text.text_size) * style.checkmark_size;
 
             checkmark := GetNode(node);
-            SetDraw(checkmark, DrawCheckmark);
             SetSize(checkmark, SizePx(size), SizePx(size));
-
-            checkmark_styles : StateStyle(CheckmarkStyle);
-            for * checkmark_styles.states {
-                it.* = style.checkmark;
-            }
-
-            SetUserData(checkmark, checkmark_styles);
+            SetDraw(checkmark, DrawCheckmark);
+            SetUserData(checkmark, style.checkmark);
 
             checkmark.state_flags |= node.state_flags;
             Apply(checkmark, style.checkmark);
