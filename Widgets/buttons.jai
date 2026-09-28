@@ -315,7 +315,7 @@ Checkbox :: (parent : *Node, value : *bool, size := 0.0, style : *CheckboxStyle 
         Apply(node, style.states[state].background);
 
         if value.* {
-            checkmark := GetNode(node, "text");
+            checkmark := GetNode(node);
             SetDraw(checkmark, DrawCheckmark);
             SetSize(checkmark, SizeFill(), SizeFill());
 

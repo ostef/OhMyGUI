@@ -494,7 +494,7 @@ DefaultTheme :: struct {
     checkbox : CheckboxStyle;
     radio_button : RadioButtonStyle;
     menu_bar : BoxStyle;
-    menu_item : ButtonStyle;
+    menu_item : MenuItemStyle;
     menu : MenuStyle;
     separator : SeparatorStyle;
     subwindow : SubwindowStyle;
@@ -786,21 +786,24 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
     {
         using theme.menu_item;
 
-        normal.background.corner_radiuses = rounding_factor * Vec4f.{3,3,3,3};
-        normal.background.padding = .{4,4,4,4};
-        normal.background.child_gap = .{4,4};
-        normal.text.font = theme.text.font;
-        normal.text.text_size = Round(theme.text.text_size * 0.9);
+        button.normal.background.corner_radiuses = rounding_factor * Vec4f.{3,3,3,3};
+        button.normal.background.padding = .{4,4,4,4};
+        button.normal.background.child_gap = .{4,4};
+        button.normal.text.font = theme.text.font;
+        button.normal.text.text_size = Round(theme.text.text_size * 0.9);
 
-        focused = normal;
-        hot = normal;
-        active = normal;
-        disabled = normal;
+        button.focused = button.normal;
+        button.hot = button.normal;
+        button.active = button.normal;
+        button.disabled = button.normal;
 
-        SetColors(*theme.menu_item, Darken(button_base_background_color, 0.1), ChooseTextColor(base_background_color));
-        SetColors(*normal.background.background_colors, 0);
+        SetColors(*theme.menu_item.button, Darken(button_base_background_color, 0.1), ChooseTextColor(base_background_color));
+        SetColors(*button.normal.background.background_colors, 0);
 
-        SetAlpha(*disabled.text.text_color, 0.5);
+        SetAlpha(*button.disabled.text.text_color, 0.5);
+
+        checkmark = theme.checkbox.active.checkmark;
+        checkmark.background_color = button.active.text.text_color;
     }
     SetStyle(theme, "menu_item", theme.menu_item);
 

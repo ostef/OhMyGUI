@@ -1,7 +1,7 @@
 ComboStyle :: struct {
     button : ButtonStyle;
     popup : MenuStyle;
-    item : ButtonStyle;
+    item : MenuItemStyle;
     arrow_size := Vec2f.{10, 6};
 }
 
