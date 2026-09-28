@@ -46,6 +46,7 @@ TreeNodeFlags :: enum_flags {
     Leaf;
     OpenByDefault;
     NoIndent;
+    Selected;
 }
 
 /**
@@ -78,6 +79,10 @@ TreeNode :: (parent : *Node, text : string, flags : TreeNodeFlags = 0, style : *
             if !(flags & .Leaf) && released {
                 opened = !opened;
                 SetTreeNodeOpened(node, opened);
+            }
+
+            if flags & .Selected {
+                tree_item.state_flags |= .Active;
             }
 
             state := GetState(tree_item);
