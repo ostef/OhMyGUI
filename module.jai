@@ -519,6 +519,10 @@ SetMouseFocus :: inline (node : *Node) {
     }
 }
 
+HasMouseFocus :: inline (node : *Node) -> bool {
+    return context.omg.mouse_focused_node == node;
+}
+
 SetScrollFocus :: inline (node : *Node) {
     context.omg.scroll_focused_node = node;
 }

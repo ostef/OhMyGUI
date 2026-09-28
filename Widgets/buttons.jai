@@ -31,7 +31,7 @@ ButtonBehavior :: (node : *Node, mouse_button := MouseButton.Left) -> ButtonResu
         SetMouseCapture(node);
         SetMouseFocus(node);
         active_from_button = true;
-    } else if node.state_flags & .Focused && IsMouseButtonPressed(mouse_button) {
+    } else if HasMouseFocus(node) && IsMouseButtonPressed(mouse_button) {
         SetMouseCapture(node);
         active_from_button = true;
     }
