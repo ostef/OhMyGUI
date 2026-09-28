@@ -571,6 +571,9 @@ NewFrame :: (delta_time : float) {
 
     // Clear draw lists
     for :Windows omg {
+        omg.num_vertices_last_frame = it.draw_list.vertices.count;
+        omg.num_indices_last_frame = it.draw_list.indices.count;
+
         ClearDrawList(*it.draw_list);
     }
 

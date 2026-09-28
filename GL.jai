@@ -289,11 +289,6 @@ Render :: (viewport_w : u32, viewport_h : u32) {
     vertices : [..]Vertex;
     indices : [..]u32;
 
-    defer {
-        context.omg.num_vertices_last_frame = vertices.count;
-        context.omg.num_indices_last_frame = indices.count;
-    }
-
     for :Windows context.omg {
         it.draw_list.gpu_buffer_clip_boxes_offset = xx clip_boxes.count;
         it.draw_list.gpu_buffer_vertices_offset = xx vertices.count;
