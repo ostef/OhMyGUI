@@ -222,7 +222,8 @@ EditorFrame :: () {
                 g_wants_switch_theme = true;
             }
 
-            OMG.Toggle(title_menu_bar, "Slow Mode", *g_slow_down, style=OMG.GetStyle("menu_item", OMG.ButtonStyle));
+            menu_item_style := OMG.GetStyle("menu_item", OMG.MenuItemStyle);
+            OMG.Toggle(title_menu_bar, "Slow Mode", *g_slow_down, style=*menu_item_style.button);
 
             help_menu := OMG.Menu(title_menu_bar, "Help");
             if help_menu {
