@@ -204,8 +204,8 @@ ContextMenu :: (parent : *Node, style : *MenuStyle = null, location := #caller_l
 
     if button.released {
         opened = true;
-    } else if opened && IsAnyMouseButtonPressed() && !IsInTree(context.omg.mouse_hovered_node, prev_frame_menu.id) {
-        should_deactivate = true;
+    } else if opened && IsAnyMouseButtonPressed() && prev_frame_menu != null {
+        should_deactivate = !IsInTree(context.omg.mouse_hovered_node, prev_frame_menu.id);
     }
 
     if should_deactivate {
