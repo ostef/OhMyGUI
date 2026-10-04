@@ -1,7 +1,7 @@
 ComboStyle :: struct {
     button : ButtonStyle;
     popup : MenuStyle;
-    item : ButtonStyle;
+    item : MenuItemStyle;
     arrow_size := Vec2f.{10, 6};
 }
 
@@ -61,6 +61,8 @@ Combo :: (
     }
 
     popup_root := GetPopupRoot(parent.window);
+    prev_frame_menu := FindPrevFrameNode(popup_root, GetID(location));
+    menu_data := ifx prev_frame_menu then GetUserData(prev_frame_menu, MenuData);
     combo_id := GetID(GetID(location), popup_root.id);
 
     combo := GetNode(parent, location);
@@ -69,16 +71,31 @@ Combo :: (
         SetLayout(combo, .LeftToRight);
         SetChildAlign(combo, 0.5, 0.5);
 
-        should_deactivate := IsKeyPressed(.Escape);
-        if combo.state_flags & .ActiveLastFrame && !(combo.state_flags & .Focused) && IsMouseButtonPressed(.Left) {
-            if !IsInTree(context.omg.mouse_hovered_node, combo_id) {
-                should_deactivate = true;
-            }
+        button := ButtonBehavior(combo);
+        if button.released || (combo.state_flags & .ActiveLastFrame) {
+            combo.state_flags |= .Active;
         }
 
-        button := ButtonBehavior(combo);
-        if !should_deactivate && (button.released || combo.state_flags & .ActiveLastFrame) {
-            combo.state_flags |= .Active;
+        should_deactivate := IsKeyPressed(.Escape);
+        should_deactivate |= menu_data != null && menu_data.wants_close;
+
+        if prev_frame_menu && (combo.state_flags & .ActiveLastFrame) && !(combo.state_flags & .Focused) && IsAnyMouseButtonPressed() {
+            is_in_menu := IsInTree(context.omg.mouse_hovered_node, prev_frame_menu);
+
+            if menu_data && !is_in_menu {
+                for menu_data.submenus {
+                    if IsInTree(context.omg.mouse_hovered_node, it) {
+                        is_in_menu = true;
+                        break;
+                    }
+                }
+            }
+
+            should_deactivate = !is_in_menu;
+        }
+
+        if should_deactivate {
+            combo.state_flags &= ~.Active;
         }
 
         state := GetState(combo);
@@ -106,15 +123,19 @@ Combo :: (
 
     if combo.state_flags & .Active && num_items > 0 {
         popup := GetPopupNode(parent.window, location);
+        assert(prev_frame_menu == null || popup == prev_frame_menu);
         {
             SetLayout(popup, .TopToBottom);
             SetSize(popup, SizePx(combo.size.x), SizeFit());
 
-            popup.flags |= .Focusable;
-
             BringForward(popup);
 
+            menu_data = AddUserData(popup, MenuData, DestroyMenuData);
+            array_reset_keeping_memory(*menu_data.submenus);
+
+            menu_data.parent_menu = null;
             popup.offset = .{combo.rect.x, combo.rect.w};
+
             Apply(popup, style.popup);
 
             ScrollViewBehavior(popup, .Y);

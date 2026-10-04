@@ -494,7 +494,7 @@ DefaultTheme :: struct {
     checkbox : CheckboxStyle;
     radio_button : RadioButtonStyle;
     menu_bar : BoxStyle;
-    menu_item : ButtonStyle;
+    menu_item : MenuItemStyle;
     menu : MenuStyle;
     separator : SeparatorStyle;
     subwindow : SubwindowStyle;
@@ -525,7 +525,7 @@ GetDefaultThemes :: inline () -> light : *Theme, dark : *Theme {
  *
  * Setup a DefaultTheme using a text size, a base color for the background and a base color for accentuation.
  */
-SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_background_color : RGBA8, base_accent_color : RGBA8) {
+SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_background_color : RGBA8, base_accent_color : RGBA8, rounding_factor := 1.0) {
     button_base_background_color := MakeTone(base_background_color, 0.25);
 
     {
@@ -576,7 +576,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
     {
         using theme.button;
 
-        normal.background.corner_radiuses = .{6,6,6,6};
+        normal.background.corner_radiuses = rounding_factor * Vec4f.{6,6,6,6};
         normal.background.padding = .{10,6,10,6};
         normal.background.child_gap = .{4,4};
 
@@ -622,14 +622,14 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         background_size = 25;
         handle_size = .{15,19};
 
-        normal.background.corner_radiuses = .{5,5,5,5};
+        normal.background.corner_radiuses = rounding_factor * Vec4f.{5,5,5,5};
         normal.background.padding = .{3,3,3,3};
         normal.background.border_size = 1;
         SetColors(*normal.background.border_colors, MakeTone(button_base_background_color, 0.3));
         normal.background.inner_shadow_size = 5;
         normal.background.inner_shadow_color = SetAlpha(Darken(button_base_background_color, 0.2), 0.4);
-        normal.fill.corner_radiuses = .{3,3,3,3};
-        normal.handle.corner_radiuses = .{3,3,3,3};
+        normal.fill.corner_radiuses = rounding_factor * Vec4f.{3,3,3,3};
+        normal.handle.corner_radiuses = rounding_factor * Vec4f.{3,3,3,3};
         normal.text = theme.text;
 
         focused = normal;
@@ -646,14 +646,14 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
 
         background_size = 25;
 
-        normal.background.corner_radiuses = .{5,5,5,5};
+        normal.background.corner_radiuses = rounding_factor * Vec4f.{5,5,5,5};
         normal.background.padding = .{3,3,3,3};
         normal.background.border_size = 1;
         SetColors(*normal.background.border_colors, MakeTone(button_base_background_color, 0.3));
         normal.background.inner_shadow_size = 5;
         normal.background.inner_shadow_color = SetAlpha(Darken(button_base_background_color, 0.2), 0.4);
-        normal.fill.corner_radiuses = .{3,3,3,3};
-        normal.handle.corner_radiuses = .{3,3,3,3};
+        normal.fill.corner_radiuses = rounding_factor * Vec4f.{3,3,3,3};
+        normal.handle.corner_radiuses = rounding_factor * Vec4f.{3,3,3,3};
         normal.text = theme.text;
 
         focused = normal;
@@ -709,7 +709,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
 
         SetColors(*cursor.background_colors, ChooseTextColor(base_background_color));
 
-        normal.background.corner_radiuses = .{6,6,6,6};
+        normal.background.corner_radiuses = rounding_factor * Vec4f.{6,6,6,6};
         normal.background.padding = .{10,6,10,6};
         normal.background.child_gap = .{4,4};
         normal.background.border_size = 1;
@@ -737,7 +737,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
     {
         using theme.checkbox;
 
-        normal.background.corner_radiuses = .{4,4,4,4};
+        normal.background.corner_radiuses = rounding_factor * Vec4f.{4,4,4,4};
         normal.background.padding = .{2,2,2,2};
         SetColors(*normal.background.border_colors, MakeTone(button_base_background_color, 0.3));
         normal.background.border_size = 1;
@@ -757,8 +757,8 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
     {
         using theme.radio_button;
 
-        normal.background.corner_radiuses = .{1,1,1,1};
-        normal.active_mark.corner_radiuses = .{1,1,1,1};
+        normal.background.corner_radiuses = rounding_factor * Vec4f.{1,1,1,1};
+        normal.active_mark.corner_radiuses = rounding_factor * Vec4f.{1,1,1,1};
         normal.background.padding = .{2,2,2,2};
         SetColors(*normal.background.border_colors, MakeTone(button_base_background_color, 0.3));
         normal.background.border_size = 1;
@@ -786,21 +786,24 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
     {
         using theme.menu_item;
 
-        normal.background.corner_radiuses = .{3,3,3,3};
-        normal.background.padding = .{4,4,4,4};
-        normal.background.child_gap = .{4,4};
-        normal.text.font = theme.text.font;
-        normal.text.text_size = Round(theme.text.text_size * 0.9);
+        button.normal.background.corner_radiuses = rounding_factor * Vec4f.{3,3,3,3};
+        button.normal.background.padding = .{4,4,4,4};
+        button.normal.background.child_gap = .{4,4};
+        button.normal.text.font = theme.text.font;
+        button.normal.text.text_size = Round(theme.text.text_size * 0.9);
 
-        focused = normal;
-        hot = normal;
-        active = normal;
-        disabled = normal;
+        button.focused = button.normal;
+        button.hot = button.normal;
+        button.active = button.normal;
+        button.disabled = button.normal;
 
-        SetColors(*theme.menu_item, Darken(button_base_background_color, 0.1), ChooseTextColor(base_background_color));
-        SetColors(*normal.background.background_colors, 0);
+        SetColors(*theme.menu_item.button, Darken(button_base_background_color, 0.1), ChooseTextColor(base_background_color));
+        SetColors(*button.normal.background.background_colors, 0);
 
-        SetAlpha(*disabled.text.text_color, 0.5);
+        SetAlpha(*button.disabled.text.text_color, 0.5);
+
+        checkmark = theme.checkbox.active.checkmark;
+        checkmark.background_color = button.active.text.text_color;
     }
     SetStyle(theme, "menu_item", theme.menu_item);
 
@@ -808,7 +811,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         using theme.menu;
 
         max_height_px = 200;
-        corner_radiuses = .{3,3,3,3};
+        corner_radiuses = rounding_factor * Vec4f.{3,3,3,3};
         padding = .{2,2,2,2};
 
         SetColors(*background_colors, base_background_color);
@@ -816,7 +819,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         border_size = 1;
 
         outer_shadow_color = ColorU32(0,0,0,0.25);
-        outer_shadow_offset = .{3,3};
+        outer_shadow_offset = .{0,3};
         outer_shadow_size = 5;
     }
     SetStyle(theme, "menu", theme.menu);
@@ -836,7 +839,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         background.padding = .{10,10,10,10};
         background.child_gap = .{4,4};
 
-        background.corner_radiuses = .{6,6,6,6};
+        background.corner_radiuses = rounding_factor * Vec4f.{6,6,6,6};
 
         SetColors(*background.background_colors, base_background_color);
         SetColors(*background.border_colors, MakeTone(base_background_color, 0.3));
@@ -847,7 +850,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         background.outer_shadow_size = 5;
 
         docked_background = background;
-        docked_background.corner_radiuses = .{0,0,0,0};
+        docked_background.corner_radiuses = rounding_factor * Vec4f.{0,0,0,0};
         docked_background.outer_shadow_color = 0;
         docked_background.outer_shadow_size = 0;
         docked_background.outer_shadow_offset = .{};
@@ -856,7 +859,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
             using title_bar;
 
             normal.background.padding = .{6,6,6,6};
-            normal.background.corner_radiuses = .{6,6,0,0};
+            normal.background.corner_radiuses = rounding_factor * Vec4f.{6,6,0,0};
 
             normal.text.font = theme.text.font;
             normal.text.text_size = theme.text.text_size;
@@ -940,13 +943,13 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         slider_base.handle_size = .{8,25};
         slider_base.handle_outside_background = true;
 
-        slider_base.normal.background.corner_radiuses = .{4,4,4,4};
+        slider_base.normal.background.corner_radiuses = rounding_factor * Vec4f.{4,4,4,4};
         slider_base.normal.background.border_size = 1;
         slider_base.normal.background.border_inset = -1;
         SetColors(*slider_base.normal.background.border_colors, MakeTone(base_background_color, 0.3));
 
         // slider_base.normal.handle.background_color = 0;
-        // slider_base.normal.handle.corner_radiuses = .{3,3,3,3};
+        // slider_base.normal.handle.corner_radiuses = rounding_factor * Vec4f.{3,3,3,3};
         // slider_base.normal.handle.border_color = wheel.border_color;
         // slider_base.normal.handle.border_size = 2;
         SetColors(*slider_base.normal.handle.background_colors, wheel.border_color);
@@ -1004,7 +1007,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         opacity_checkerboard_white = MakeTone(0xffffffff, 0.5);
         opacity_checkerboard_black = MakeTone(0x000000ff, 0.5);
 
-        preview.corner_radiuses = .{5,5,5,5};
+        preview.corner_radiuses = rounding_factor * Vec4f.{5,5,5,5};
         preview.border_size = 1;
         SetColors(*preview.border_colors, MakeTone(button_base_background_color, 0.3));
         preview.opacity_checkerboard_white = opacity_checkerboard_white;
@@ -1049,7 +1052,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
     {
         using theme.tooltip;
 
-        background.corner_radiuses = .{3,3,3,3};
+        background.corner_radiuses = rounding_factor * Vec4f.{3,3,3,3};
         background.padding = .{6,6,6,6};
 
         SetColors(*background.background_colors, base_background_color);
@@ -1069,7 +1072,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         using theme.table;
 
         padding = .{1,1,1,1};
-        corner_radiuses = .{4,4,4,4};
+        corner_radiuses = rounding_factor * Vec4f.{4,4,4,4};
         SetColors(*border_colors, MakeTone(base_background_color, 0.5));
         border_size = 1;
         SetColors(*vertical_inner_border_colors, MakeTone(base_background_color, 0.5));
@@ -1124,7 +1127,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
 
         SetColors(*tree_item.focused.background.background_colors, base_accent_color);
         SetColors(*tree_item.hot.background.background_colors, Darken(base_accent_color, 0.1));
-        SetColors(*tree_item.active.background.background_colors, Darken(base_accent_color, 0.1));
+        SetColors(*tree_item.active.background.background_colors, base_accent_color);
 
         triangle_size = 8;
 
@@ -1147,7 +1150,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         theme.tab = theme.button_accent;
 
         for * states {
-            it.background.corner_radiuses = .{6,6,0,0};
+            it.background.corner_radiuses = rounding_factor * Vec4f.{6,6,0,0};
         }
     }
     SetStyle(theme, "tab", theme.tab);
@@ -1174,7 +1177,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         split_hint.border_size = 1;
         split_hint.border_inset = 2;
         SetColors(*split_hint.background_colors, SetAlpha(base_accent_color, 0.5));
-        split_hint.corner_radiuses = .{6,6,6,6};
+        split_hint.corner_radiuses = rounding_factor * Vec4f.{6,6,6,6};
         split_hint.outer_shadow_size = 4;
         split_hint.outer_shadow_color = ColorU32(0,0,0,0.15);
     }

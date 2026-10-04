@@ -1,3 +1,9 @@
+MenuItemStyle :: struct {
+    button : ButtonStyle;
+    checkmark : CheckmarkStyle;
+    checkmark_size := 0.9;
+}
+
 /**
  * @brief Horizontal menu bar widget.
  */
@@ -18,11 +24,14 @@ MenuBar :: (parent : *Node, str_id : string, style : *BoxStyle = null) -> *Node 
 /**
  * @brief Button widget used inside menus and menu bars.
  */
-MenuItem :: (parent : *Node, text : string, selected := false, style : *ButtonStyle = null, location := #caller_location) -> clicked : bool, *Node {
+MenuItem :: (parent : *Node, text : string, selected := false, style : *MenuItemStyle = null, location := #caller_location) -> clicked : bool, *Node {
     EnsureStyle(*style, "menu_item");
 
     node := GetNode(parent, location);
     {
+        SetLayout(node, .LeftToRight);
+        SetChildAlign(node, 0, 0.5);
+
         if parent.child_layout_mode == .TopToBottom || parent.child_layout_mode == .BottomToTop {
             SetSize(node, SizeFill(), SizeFit());
             SetMinWidthFit(node);
@@ -30,23 +39,35 @@ MenuItem :: (parent : *Node, text : string, selected := false, style : *ButtonSt
             SetSize(node, SizeFit(), SizeFit());
         }
 
+        button := ButtonBehavior(node);
+        if button.released {
+            CloseMenu(parent);
+        }
+
+        state := GetState(node);
+
         text_node := GetNode(node, "text");
         SetText(text_node, text);
 
         if selected {
             node.state_flags |= .Active;
+
+            fill := GetNode(node);
+            SetSize(fill, SizeFill(), SizeFill());
+
+            size := GetLineHeight(style.button.states[state].text.font, style.button.states[state].text.text_size) * style.checkmark_size;
+
+            checkmark := GetNode(node);
+            SetSize(checkmark, SizePx(size), SizePx(size));
+            SetDraw(checkmark, DrawCheckmark);
+            SetUserData(checkmark, style.checkmark);
+
+            checkmark.state_flags |= node.state_flags;
+            Apply(checkmark, style.checkmark);
         }
 
-        button := ButtonBehavior(node);
-
-        state := GetState(node);
-
-        Apply(node, style.states[state].background);
-        Apply(text_node, style.states[state].text);
-
-        if button.released {
-            CloseMenu(parent);
-        }
+        Apply(node, style.button.states[state].background);
+        Apply(text_node, style.button.states[state].text);
 
         return button.released, node;
     }
@@ -94,7 +115,7 @@ Apply :: inline (node : *Node, style : MenuStyle) {
 Menu :: (
     parent : *Node,
     text : string,
-    menu_item_style : *ButtonStyle = null,
+    menu_item_style : *MenuItemStyle = null,
     menu_style : *MenuStyle = null,
     location := #caller_location
 ) -> menu : *Node, menu_item : *Node {
@@ -148,8 +169,8 @@ Menu :: (
 
         state := GetState(menu_item);
 
-        Apply(menu_item, menu_item_style.states[state].background);
-        Apply(text_node, menu_item_style.states[state].text);
+        Apply(menu_item, menu_item_style.button.states[state].background);
+        Apply(text_node, menu_item_style.button.states[state].text);
     }
 
     menu : *Node;

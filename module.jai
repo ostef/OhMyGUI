@@ -1,7 +1,6 @@
 #import "Basic";
 #import "Math";
 #import "Bucket_Array";
-#import "Print_Vars";
 HT :: #import "Hash_Table";
 using,only(.["for_expansion"]) HT;
 #import "String";
@@ -520,6 +519,10 @@ SetMouseFocus :: inline (node : *Node) {
     }
 }
 
+HasMouseFocus :: inline (node : *Node) -> bool {
+    return context.omg.mouse_focused_node == node;
+}
+
 SetScrollFocus :: inline (node : *Node) {
     context.omg.scroll_focused_node = node;
 }
@@ -570,7 +573,15 @@ NewFrame :: (delta_time : float) {
     omg.frame_index += 1;
     omg.delta_time = delta_time;
 
-    InputNewFrame(*context.omg.input);
+    // Clear draw lists
+    for :Windows omg {
+        omg.num_vertices_last_frame = it.draw_list.vertices.count;
+        omg.num_indices_last_frame = it.draw_list.indices.count;
+
+        ClearDrawList(*it.draw_list);
+    }
+
+    InputNewFrame(*omg.input);
 
     ProcessDockNodeSplitRequests();
     RemoveEmptyDockNodes();

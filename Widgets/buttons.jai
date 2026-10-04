@@ -31,7 +31,7 @@ ButtonBehavior :: (node : *Node, mouse_button := MouseButton.Left) -> ButtonResu
         SetMouseCapture(node);
         SetMouseFocus(node);
         active_from_button = true;
-    } else if node.state_flags & .Focused && IsMouseButtonPressed(mouse_button) {
+    } else if HasMouseFocus(node) && IsMouseButtonPressed(mouse_button) {
         SetMouseCapture(node);
         active_from_button = true;
     }
@@ -239,8 +239,16 @@ DrawCheckmark :: (draw_list : *DrawList, node : *Node) -> bool {
         return false;
     }
 
+    checkmark : *CheckmarkStyle;
+
     checkmark_styles := GetUserData(node, StateStyle(CheckmarkStyle));
-    if !checkmark_styles {
+    if checkmark_styles {
+        checkmark = *checkmark_styles.states[GetState(node)];
+    } else {
+        checkmark = GetUserData(node, CheckmarkStyle);
+    }
+
+    if !checkmark {
         return true;
     }
 
@@ -252,7 +260,6 @@ DrawCheckmark :: (draw_list : *DrawList, node : *Node) -> bool {
 
     size := node.size.y;
     scale := size / 20.0;
-    checkmark := checkmark_styles.states[GetState(node)];
 
     left_height := size * checkmark.left_size;
     right_height := size * checkmark.right_size;
@@ -315,7 +322,7 @@ Checkbox :: (parent : *Node, value : *bool, size := 0.0, style : *CheckboxStyle 
         Apply(node, style.states[state].background);
 
         if value.* {
-            checkmark := GetNode(node, "text");
+            checkmark := GetNode(node);
             SetDraw(checkmark, DrawCheckmark);
             SetSize(checkmark, SizeFill(), SizeFill());
 

@@ -46,6 +46,9 @@ TreeNodeFlags :: enum_flags {
     Leaf;
     OpenByDefault;
     NoIndent;
+    Selected;
+    InteractOnArrow;
+    InteractOnDoubleClick;
 }
 
 /**
@@ -74,16 +77,34 @@ TreeNode :: (parent : *Node, text : string, flags : TreeNodeFlags = 0, style : *
             SetLayout(tree_item, .LeftToRight);
             SetChildAlign(tree_item, 0, 0.5);
 
-            using _ := ButtonBehavior(tree_item);
-            if !(flags & .Leaf) && released {
-                opened = !opened;
-                SetTreeNodeOpened(node, opened);
+            if !(flags & .InteractOnArrow) && !(flags & .Leaf) {
+                button := ButtonBehavior(tree_item);
+                interact := ifx (flags & .InteractOnDoubleClick) != 0 then button.double_clicked else button.released;
+                if interact {
+                    opened = !opened;
+                    SetTreeNodeOpened(node, opened);
+                }
             }
 
-            state := GetState(tree_item);
+            if flags & .Selected {
+                tree_item.state_flags |= .Active;
+            }
 
             icon := GetNode(tree_item, "icon");
             SetSize(icon, SizePx(style.triangle_size), SizePx(style.triangle_size));
+
+            if (flags & .InteractOnArrow) && !(flags & .Leaf) {
+                button := ButtonBehavior(icon);
+                interact := ifx (flags & .InteractOnDoubleClick) != 0 then button.double_clicked else button.released;
+                if interact {
+                    opened = !opened;
+                    SetTreeNodeOpened(node, opened);
+                }
+
+                tree_item.state_flags |= icon.state_flags;
+            }
+
+            state := GetState(tree_item);
 
             SetBackgroundColor(icon, style.tree_item.states[state].text.text_color);
 

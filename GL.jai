@@ -130,7 +130,6 @@ layout(location=5) in int v_clip_box_index;
 
 uniform vec2 u_viewport_size;
 
-out vec2 position;
 out vec2 tex_coords;
 out vec4 color;
 flat out int clip_box_index;
@@ -143,7 +142,6 @@ void main() {
     gl_Position.z = 0;
     gl_Position.w = 1;
 
-    position = v_position;
     tex_coords = v_tex_coords;
     color = v_color.abgr;
     clip_box_index = v_clip_box_index;
@@ -167,7 +165,6 @@ layout(std430) readonly buffer ClipBoxData {
 uniform vec2 u_viewport_size;
 uniform sampler2D u_texture;
 
-in vec2 position;
 in vec2 tex_coords;
 in vec4 color;
 flat in int clip_box_index;
@@ -292,11 +289,6 @@ Render :: (viewport_w : u32, viewport_h : u32) {
     vertices : [..]Vertex;
     indices : [..]u32;
 
-    defer {
-        context.omg.num_vertices_last_frame = vertices.count;
-        context.omg.num_indices_last_frame = indices.count;
-    }
-
     for :Windows context.omg {
         it.draw_list.gpu_buffer_clip_boxes_offset = xx clip_boxes.count;
         it.draw_list.gpu_buffer_vertices_offset = xx vertices.count;
@@ -334,8 +326,6 @@ Render :: (viewport_w : u32, viewport_h : u32) {
         clip_boxes_offset += it.draw_list.clip_boxes.count * size_of(ClipBox);
 
         SendDrawCommands(*it.draw_list, viewport_w, viewport_h);
-
-        ClearDrawList(*it.draw_list);
     }
 }
 
