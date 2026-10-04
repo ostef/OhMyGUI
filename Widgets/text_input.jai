@@ -832,7 +832,7 @@ NumberInput :: (
     to_string : (value : T, node : *Node, user_data : *void) -> string = null,
     style : *TextInputStyle = null,
     location := #caller_location
-) -> submitted : bool, *Node {
+) -> modified : bool, *Node {
     EnsureStyle(*style, "text_input");
 
     modified : bool;
@@ -953,7 +953,7 @@ NumberInput :: (
         SetTextInputResult(node, str);
     }
 
-    return modified, node;
+    return modified | submitted, node;
 }
 
 /**
