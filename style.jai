@@ -870,6 +870,25 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
             disabled = normal;
         }
 
+        {
+            using title_bar.collapse_button;
+
+            normal.background.padding = .{5,5,5,5};
+            normal.background.corner_radiuses = Vec4f.{6,6,6,6};
+            normal.text = title_bar.normal.text;
+
+            focused = normal;
+            focused.background.background_colors = theme.button.focused.background.background_colors;
+
+            hot = normal;
+            hot.background.background_colors = theme.button.hot.background.background_colors;
+
+            active = normal;
+            active.background.background_colors = theme.button.active.background.background_colors;
+        }
+
+        title_bar.close_button = title_bar.collapse_button;
+
         horizontal_scrollbar = theme.scrollbar;
         vertical_scrollbar = theme.scrollbar;
     }

@@ -971,7 +971,7 @@ ColorPickerSubwindow :: () {
         return;
     }
 
-    subwindow, subwindow_node := Subwindow(opened_in_window, "Color Picker", "color_picker", .{550, 400});
+    subwindow, subwindow_node := Subwindow(opened_in_window, "Color Picker", "color_picker", initial_size=.{550, 400});
     if !subwindow {
         return;
     }

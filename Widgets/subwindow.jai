@@ -2,6 +2,8 @@ SubwindowPersistentData :: struct {
     id : ID;
     position : Vec2f;
     size : Vec2f;
+    wants_close : bool;
+    collapsed : bool;
     was_docked : bool;
     was_undocked_using_mouse : bool;
 }
@@ -36,6 +38,7 @@ DestroyGlobalSubwindowsData :: (node : *Node, data : *void) {
 SubwindowFlags :: enum_flags {
     NoTitleBar;
     NoClose;
+    NoCollapse;
     NoResize;
     NoMove;
     NoMoveFromBackground;
@@ -59,7 +62,13 @@ SubwindowTitleBarStateStyle :: struct {
     cursor : PlatformCursorHandle;
 }
 
-SubwindowTitleBarStyle :: StateStyle(SubwindowTitleBarStateStyle);
+SubwindowTitleBarStyle :: struct {
+    using _ : StateStyle(SubwindowTitleBarStateStyle);
+
+    button_size := 20.0;
+    collapse_button : ButtonStyle;
+    close_button : ButtonStyle;
+}
 
 SubwindowStyle :: struct {
     title_bar : SubwindowTitleBarStyle;
@@ -72,13 +81,99 @@ SubwindowStyle :: struct {
     corner_resize_handle_size := 20.0;
 }
 
-SubwindowTitleBar :: (subwindow : *Node, parent : *Node, title : string, style : *SubwindowTitleBarStyle) -> *Node {
+SubwindowTitleBar :: (
+    data : *SubwindowPersistentData,
+    subwindow : *Node,
+    parent : *Node,
+    title : string,
+    flags : SubwindowFlags,
+    style : *SubwindowTitleBarStyle
+) -> *Node {
     node := GetNode(parent, "title_bar");
     {
         SetSize(node, SizeFill(), SizeFit());
 
         text := GetNode(node, "text");
         SetText(text, title);
+        SetWidth(text, SizeFill());
+
+        if !(flags & .NoCollapse) {
+            button := GetNode(node, "collapse");
+            SetSize(button, SizePx(style.button_size), SizePx(style.button_size));
+            button.flags |= .NoPaddedClip;
+
+            icon := GetNode(button);
+            SetSize(icon, SizeFill(), SizeFill());
+            SetDraw(icon, (draw_list : *DrawList, node : *Node) -> bool {
+                if IsClipped(draw_list, node.rect) {
+                    return false;
+                }
+
+                center := (node.rect.xy + node.rect.zw) * 0.5;
+                center.x = ceil(center.x);
+                center.y = ceil(center.y);
+                length := node.size.x * 0.7;
+                start := center + Vec2f.{-floor(length * 0.5), 0.5};
+                end := center + Vec2f.{floor(length * 0.5), 0.5};
+
+                DrawLine(draw_list, start, end, 1, node.text_color);
+
+                return true;
+            });
+
+            using _ := ButtonBehavior(button);
+            if released {
+                data.collapsed = !data.collapsed;
+            }
+
+            state := GetState(button);
+            Apply(button, style.collapse_button.states[state].background);
+            Apply(icon, style.collapse_button.states[state].text);
+
+            if HasCursorControl(button) {
+                SetCursor(style.collapse_button.states[state].cursor);
+            }
+        }
+
+        if !(flags & .NoClose) {
+            button := GetNode(node, "close");
+            SetSize(button, SizePx(style.button_size), SizePx(style.button_size));
+            button.flags |= .NoPaddedClip;
+
+            icon := GetNode(button);
+            SetSize(icon, SizeFill(), SizeFill());
+            SetDraw(icon, (draw_list : *DrawList, node : *Node) -> bool {
+                if IsClipped(draw_list, node.rect) {
+                    return false;
+                }
+
+                center := (node.rect.xy + node.rect.zw) * 0.5;
+                dir := normalize(node.rect.zw - node.rect.xy);
+                length := node.size.x;
+                color := node.text_color;
+
+                DrawLine(draw_list, center - dir * length * 0.5, center + dir * length * 0.5, 1, color, color);
+
+                dir = .{dir.y, -dir.x};
+
+                DrawLine(draw_list, center - dir * length * 0.5, center + dir * length * 0.5, 1, color, color);
+
+                return true;
+            });
+
+            using _ := ButtonBehavior(button);
+            if released {
+                data.wants_close = true;
+            }
+
+            state := GetState(button);
+            Apply(button, style.close_button.states[state].background);
+            Apply(icon, style.close_button.states[state].text);
+
+            if HasCursorControl(button) {
+                SetCursor(style.close_button.states[state].cursor);
+            }
+        }
 
         state := GetState(node);
         Apply(node, style.states[state].background);
@@ -237,13 +332,21 @@ Subwindow :: (
     window : *Window,
     title : string,
     str_id : string,
-    initial_size : Vec2f,
-    min_size : Vec2f = .{32,32},
     opened : *bool = null,
+    initial_size : Vec2f = .{300,300},
+    min_size : Vec2f = .{32,32},
     flags : SubwindowFlags = 0,
     style : *SubwindowStyle = null
 ) -> content : *Node, subwindow : *Node {
     EnsureStyle(*style, "subwindow");
+
+    if opened && !opened.* {
+        return null, null;
+    }
+
+    if !opened {
+        flags |= .NoClose;
+    }
 
     resize_handles_expand := ifx !(flags & .NoResize) then Vec2f.{1,1} * max(-style.resize_handle_inset, 0);
     avail_area : Vec4f;
@@ -251,10 +354,13 @@ Subwindow :: (
 
     subwindow_id := GetID(str_id);
 
-    persistent_data : *SubwindowPersistentData;
-    is_new_persistent_data : bool;
-    if !(flags & .NoPersistentStorage) {
-        persistent_data, is_new_persistent_data = GetSubwindowPersistentData(subwindow_id);
+    persistent_data, is_new_persistent_data := GetSubwindowPersistentData(subwindow_id);
+    should_close := persistent_data.wants_close;
+    persistent_data.wants_close = false;
+
+    if should_close && opened {
+        opened.* = false;
+        return null, null;
     }
 
     content, subwindow : *Node;
@@ -313,7 +419,11 @@ Subwindow :: (
         }
 
         title_bar := ifx !(flags & .NoTitleBar)
-            then SubwindowTitleBar(subwindow, title_and_content, title, *style.title_bar);
+            then SubwindowTitleBar(persistent_data, subwindow, title_and_content, title, flags, *style.title_bar);
+
+        if persistent_data.collapsed {
+            SetHeight(subwindow, SizeFit());
+        }
 
         title_bar_size = ifx title_bar then title_bar.size;
         if title_bar && !(flags & .NoResize) {
@@ -354,6 +464,10 @@ Subwindow :: (
         subwindow.flags |= .NoClip;
         title_and_content.padding = .{};
         title_and_content.child_gap = .{};
+
+        if persistent_data.collapsed {
+            return null, subwindow;
+        }
     } else {
         tab_bar := FindNode(dock_node, "docked_subwindows_tab_bar");
         if !tab_bar {
@@ -400,6 +514,8 @@ Subwindow :: (
         content_parent = content_and_vscrollbar;
     }
 
+    // Base the ID off of the subwindow ID, regardless of what is the parent
+    // This keeps the descendants' IDs stable when docked/undocked
     content_id := GetID(GetID("content"), subwindow_id);
     content = GetNode(content_parent, content_id, is_global_id=true);
     {

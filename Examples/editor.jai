@@ -13,6 +13,10 @@ g_selected_fruit : enum {
     Banana;
 };
 
+g_content_browser_opened := true;
+g_entity_outliner_opened := true;
+g_entity_inspector_opened := true;
+
 Entity :: struct {
     id : int;
     name : string;
@@ -201,12 +205,15 @@ EditorFrame :: () {
                     print("Profiler\n");
                 }
                 if OMG.MenuItem(window_menu, "Entity Outliner") {
+                    g_entity_outliner_opened = true;
                     print("Entity Outliner\n");
                 }
                 if OMG.MenuItem(window_menu, "Entity Inspector") {
+                    g_entity_inspector_opened = true;
                     print("Entity Inspector\n");
                 }
                 if OMG.MenuItem(window_menu, "Browser") {
+                    g_content_browser_opened = true;
                     print("Browser\n");
                 }
             }
@@ -343,7 +350,7 @@ EditorFrame :: () {
 
         OMG.DockSpace(root, "dockspace");
 
-        content_browser := OMG.Subwindow(window, "Content Browser", "content_browser", .{400, 500});
+        content_browser := OMG.Subwindow(window, "Content Browser", "content_browser", *g_content_browser_opened, initial_size=.{400, 500});
         if content_browser {
             OMG.Text(content_browser, "% nodes", context.omg.node_pool.count);
 
@@ -433,7 +440,7 @@ END
             the_quick.text_size = 10 + (cos(g_time) + 2) * 0.5 * 30;
         }
 
-        entity_outliner := OMG.Subwindow(window, "Entity Outliner", "entity_outliner", .{400, 500});
+        entity_outliner := OMG.Subwindow(window, "Entity Outliner", "entity_outliner", *g_entity_outliner_opened, initial_size=.{400, 500});
         if entity_outliner {
             table := OMG.Table(entity_outliner);
             OMG.TableAddColumn(table, "ID", "id", OMG.SizeFill(0.2), flags=.Sortable);
@@ -466,7 +473,7 @@ END
             }
         }
 
-        entity_inspector := OMG.Subwindow(window, "Entity Inspector", "entity_inspector", .{400, 500});
+        entity_inspector := OMG.Subwindow(window, "Entity Inspector", "entity_inspector", *g_entity_inspector_opened, initial_size=.{400, 500});
         if entity_inspector {
             tree1 := OMG.TreeNode(entity_inspector, "1", flags=.OpenByDefault);
             if tree1 {
