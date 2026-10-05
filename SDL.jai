@@ -5,6 +5,16 @@
 GetPlatformFuncs :: () -> PlatformFunctions {
     using funcs : PlatformFunctions;
 
+    GetWindowTitle = (handle : PlatformWindowHandle) -> string {
+        title := SDL_GetWindowTitle(handle);
+        return copy_string(to_string(title));
+    }
+
+    SetWindowTitle = (handle : PlatformWindowHandle, title : string) {
+        ctitle := to_c_string(title ,, temp);
+        SDL_SetWindowTitle(handle, ctitle);
+    }
+
     GetWindowPosition = (handle : PlatformWindowHandle) -> int, int {
         x, y : s32;
         SDL_GetWindowPosition(handle, *x, *y);

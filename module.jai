@@ -77,6 +77,8 @@ PlatformWindowFlags :: enum_flags {
 }
 
 PlatformFunctions :: struct {
+    GetWindowTitle : (handle : PlatformWindowHandle) -> string;
+    SetWindowTitle : (handle : PlatformWindowHandle, title : string);
     GetWindowPosition : (handle : PlatformWindowHandle) -> int, int;
     SetWindowPosition : (handle : PlatformWindowHandle, x : int, y : int);
     GetWindowSize : (handle : PlatformWindowHandle) -> int, int;
@@ -91,6 +93,19 @@ PlatformFunctions :: struct {
     GetClipboardText : () -> string;
     SetClipboardText : (text : string);
     HasClipboardText : () -> bool;
+}
+
+PlatformGetWindowTitle :: inline (handle : PlatformWindowHandle) -> string {
+    if context.omg.platform_funcs.GetWindowTitle {
+        return context.omg.platform_funcs.GetWindowTitle(handle);
+    }
+    return "";
+}
+
+PlatformSetWindowTitle :: inline (handle : PlatformWindowHandle, title : string) {
+    if context.omg.platform_funcs.SetWindowTitle {
+        context.omg.platform_funcs.SetWindowTitle(handle, title);
+    }
 }
 
 PlatformGetWindowPosition :: inline (handle : PlatformWindowHandle) -> int, int {
