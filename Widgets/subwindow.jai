@@ -3,6 +3,8 @@ SubwindowPersistentData :: struct {
     position : Vec2f;
     size : Vec2f;
     wants_close : bool;
+    wants_collapse : bool;
+    wants_expand : bool;
     collapsed : bool;
     was_docked : bool;
     was_undocked_using_mouse : bool;
@@ -42,8 +44,6 @@ SubwindowFlags :: enum_flags {
     NoResize;
     NoMove;
     NoMoveFromBackground;
-
-    NoPersistentStorage;
 
     NoVerticalScrollbar;
     NoHorizontalScrollbar;
@@ -93,9 +93,11 @@ SubwindowTitleBar :: (
     {
         SetSize(node, SizeFill(), SizeFit());
 
-        text := GetNode(node, "text");
+        text_container := GetNode(node);
+        SetSize(text_container, SizeFill(), SizeFit());
+
+        text := GetNode(text_container, "text");
         SetText(text, title);
-        SetWidth(text, SizeFill());
 
         if !(flags & .NoCollapse) {
             button := GetNode(node, "collapse");
@@ -123,7 +125,11 @@ SubwindowTitleBar :: (
 
             using _ := ButtonBehavior(button);
             if released {
-                data.collapsed = !data.collapsed;
+                if data.collapsed {
+                    data.wants_expand = true;
+                } else {
+                    data.wants_collapse = true;
+                }
             }
 
             state := GetState(button);
@@ -178,7 +184,7 @@ SubwindowTitleBar :: (
         state := GetState(node);
         Apply(node, style.states[state].background);
         Apply(text, style.states[state].text);
-        SetChildAlign(node, style.states[state].text_align);
+        SetChildAlign(text_container, style.states[state].text_align);
 
         if HasCursorControl(node) {
             SetCursor(style.states[state].cursor);
@@ -259,7 +265,7 @@ SubwindowResizeBehavior :: (subwindow : *Node, handle : *Node, min_size : Vec2f,
     }
 }
 
-SubwindowResizeHandles :: (subwindow : *Node, min_size : Vec2f, style : *SubwindowStyle) -> *Node {
+SubwindowResizeHandles :: (data : *SubwindowPersistentData, subwindow : *Node, min_size : Vec2f, style : *SubwindowStyle) -> *Node {
     SetLayout(subwindow, .None);
 
     title_and_content := GetNode(subwindow, "title_and_content");
@@ -306,20 +312,30 @@ SubwindowResizeHandles :: (subwindow : *Node, min_size : Vec2f, style : *Subwind
     avail_area := subwindow.parent.rect;
     avail_area = InflateRect(avail_area, Vec4f.{xy=resize_handles_expand,zw=resize_handles_expand});
 
-    SubwindowResizeBehavior(subwindow, resize_t, min_size + resize_handles_expand * 2, avail_area, .Top);
-    SubwindowResizeBehavior(subwindow, resize_b, min_size + resize_handles_expand * 2, avail_area, .Bottom);
+    if !data.collapsed {
+        SubwindowResizeBehavior(subwindow, resize_t, min_size + resize_handles_expand * 2, avail_area, .Top);
+        SubwindowResizeBehavior(subwindow, resize_b, min_size + resize_handles_expand * 2, avail_area, .Bottom);
+    }
+
     SubwindowResizeBehavior(subwindow, resize_l, min_size + resize_handles_expand * 2, avail_area, .Left);
     SubwindowResizeBehavior(subwindow, resize_r, min_size + resize_handles_expand * 2, avail_area, .Right);
-    SubwindowResizeBehavior(subwindow, resize_tl, min_size + resize_handles_expand * 2, avail_area, .TopLeft);
-    SubwindowResizeBehavior(subwindow, resize_tr, min_size + resize_handles_expand * 2, avail_area, .TopRight);
-    SubwindowResizeBehavior(subwindow, resize_bl, min_size + resize_handles_expand * 2, avail_area, .BottomLeft);
-    SubwindowResizeBehavior(subwindow, resize_br, min_size + resize_handles_expand * 2, avail_area, .BottomRight);
+
+    if !data.collapsed {
+        SubwindowResizeBehavior(subwindow, resize_tl, min_size + resize_handles_expand * 2, avail_area, .TopLeft);
+        SubwindowResizeBehavior(subwindow, resize_tr, min_size + resize_handles_expand * 2, avail_area, .TopRight);
+        SubwindowResizeBehavior(subwindow, resize_bl, min_size + resize_handles_expand * 2, avail_area, .BottomLeft);
+        SubwindowResizeBehavior(subwindow, resize_br, min_size + resize_handles_expand * 2, avail_area, .BottomRight);
+    }
 
     resize_handles.desired_size = subwindow.desired_size;
 
     title_and_content.desired_size = subwindow.desired_size;
     title_and_content.desired_size.x.value -= resize_handles_expand.x * 2;
-    title_and_content.desired_size.y.value -= resize_handles_expand.y * 2;
+    if data.collapsed {
+        title_and_content.desired_size.y = SizeFit();
+    } else {
+        title_and_content.desired_size.y.value -= resize_handles_expand.y * 2;
+    }
     title_and_content.offset = resize_handles_expand;
 
     return title_and_content;
@@ -355,6 +371,18 @@ Subwindow :: (
     subwindow_id := GetID(str_id);
 
     persistent_data, is_new_persistent_data := GetSubwindowPersistentData(subwindow_id);
+
+    if persistent_data.wants_collapse {
+        persistent_data.collapsed = true;
+        persistent_data.wants_collapse = false;
+    }
+    expanded_this_frame : bool;
+    if persistent_data.wants_expand {
+        persistent_data.collapsed = false;
+        persistent_data.wants_expand = false;
+        expanded_this_frame = true;
+    }
+
     should_close := persistent_data.wants_close;
     persistent_data.wants_close = false;
 
@@ -376,7 +404,10 @@ Subwindow :: (
     if !dock_node {
         defer if persistent_data {
             persistent_data.position = subwindow.offset;
-            persistent_data.size = .{subwindow.desired_size.x.value, subwindow.desired_size.y.value};
+            persistent_data.size.x = subwindow.desired_size.x.value;
+            if !persistent_data.collapsed {
+                persistent_data.size.y = subwindow.desired_size.y.value;
+            }
         }
 
         subwindow=, is_new := GetPopupNode(window, subwindow_id, is_global_id=true);
@@ -396,6 +427,10 @@ Subwindow :: (
                 SetSize(subwindow, SizePx(persistent_data.size.x), SizePx(persistent_data.size.y));
                 subwindow.offset = persistent_data.position;
             }
+        } else if persistent_data.collapsed {
+            SetSize(subwindow, SizePx(subwindow.size.x), SizeFit());
+        } else if expanded_this_frame {
+            SetSize(subwindow, SizePx(subwindow.size.x), SizePx(persistent_data.size.y));
         } else {
             SetSize(subwindow, SizePx(subwindow.size.x), SizePx(subwindow.size.y));
         }
@@ -411,7 +446,7 @@ Subwindow :: (
 
         title_and_content := ifx flags & .NoResize
             then subwindow
-            else SubwindowResizeHandles(subwindow, min_size, style);
+            else SubwindowResizeHandles(persistent_data, subwindow, min_size, style);
 
         avail_area = subwindow.parent.rect;
         if !(flags & .NoResize) {

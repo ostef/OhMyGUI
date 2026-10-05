@@ -859,6 +859,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
             using title_bar;
 
             normal.background.padding = .{6,6,6,6};
+            normal.background.child_gap = .{2,2};
             normal.background.corner_radiuses = rounding_factor * Vec4f.{6,6,0,0};
 
             normal.text.font = theme.text.font;
