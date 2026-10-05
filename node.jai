@@ -681,9 +681,10 @@ GetNode :: inline (parent : *Node, str_id : string, is_global_id := false) -> *N
  * @param is_global_id If false, the id is hashed against the parent's, otherwise id and local_id are the same.
  */
 GetNode :: (parent : *Node, id : ID, is_global_id := false) -> *Node, is_new : bool {
-    assert(id != 0);
-    assert(parent != null && parent.last_used_on_frame == context.omg.frame_index);
-    assert(parent.window != null);
+    assert(id != 0, "ID is 0");
+    assert(parent != null, "Parent is null");
+    assert(parent.last_used_on_frame == context.omg.frame_index, "Parent was not declared this frame");
+    assert(parent.window != null, "Parent window is null");
 
     node := FindPrevFrameNode(parent, id);
 
