@@ -480,6 +480,7 @@ DefaultTheme :: struct {
 
     // Theme stores pointers so the styles need to be stored somewhere persistent
     base : BoxStyle;
+    accent : BoxStyle;
     text : TextStyle;
     label_and_content : LabelAndContentStyle;
     clickable_text : ClickableTextStyle;
@@ -532,8 +533,17 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         using theme.base;
 
         SetColors(*background_colors, base_background_color);
+        corner_radiuses = .{rounding_factor,rounding_factor,rounding_factor,rounding_factor};
     }
     SetStyle(theme, "base", theme.base);
+
+    {
+        using theme.accent;
+
+        SetColors(*background_colors, base_accent_color);
+        corner_radiuses = .{rounding_factor,rounding_factor,rounding_factor,rounding_factor};
+    }
+    SetStyle(theme, "accent", theme.accent);
 
     {
         using theme.text;
