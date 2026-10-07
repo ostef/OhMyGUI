@@ -529,6 +529,15 @@ GetID :: inline (int_value : int, seed := true) -> ID {
     return id;
 }
 
+GetID :: inline (ptr : *void, seed := true) -> ID {
+    id := knuth_hash(xx,no_check ptr);
+    if seed && context.omg.id_stack.count > 0 {
+        id = GetID(id, base=context.omg.id_stack[context.omg.id_stack.count - 1]);
+    }
+
+    return id;
+}
+
 GetID :: inline (loc : Source_Code_Location, seed := true) -> ID {
     id := fnv1a_hash(loc.fully_pathed_filename.data, loc.fully_pathed_filename.count);
     id = fnv1a_hash(cast,no_check(u64, loc.line_number), h=id);
