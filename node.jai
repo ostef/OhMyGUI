@@ -499,47 +499,43 @@ PushChild :: (parent : *Node, node : *Node) {
     parent.num_children += 1;
 }
 
-PushIDOffset :: inline (offset : int) {
-    array_add(*context.omg.id_offset_stack, offset);
+PushID :: inline (id : ID) {
+    array_add(*context.omg.id_stack, id);
 }
 
-PopIDOffset :: inline () {
-    pop(*context.omg.id_offset_stack);
-}
-
-GetIDOffset :: inline () -> int {
-    if context.omg.id_offset_stack.count <= 0 {
-        return 0;
-    }
-
-    return context.omg.id_offset_stack[context.omg.id_offset_stack.count - 1];
+PopID :: inline () {
+    pop(*context.omg.id_stack);
 }
 
 GetID :: inline (id : ID, base : ID) -> ID {
-    return fnv1a_hash(id, h=base);
+    return knuth_hash(id ^ base);
 }
 
-GetID :: inline (str : string, apply_offset := true) -> ID {
-    if !str {
-        return 0;
-    }
-
+GetID :: inline (str : string, seed := true) -> ID {
     id := fnv1a_hash(str.data, str.count);
-
-    if apply_offset {
-        id += xx,no_check GetIDOffset();
+    if seed && context.omg.id_stack.count > 0 {
+        id = GetID(id, base=context.omg.id_stack[context.omg.id_stack.count - 1]);
     }
 
     return id;
 }
 
-GetID :: inline (loc : Source_Code_Location, apply_offset := true) -> ID {
+GetID :: inline (int_value : int, seed := true) -> ID {
+    id := knuth_hash(xx,no_check int_value);
+    if seed && context.omg.id_stack.count > 0 {
+        id = GetID(id, base=context.omg.id_stack[context.omg.id_stack.count - 1]);
+    }
+
+    return id;
+}
+
+GetID :: inline (loc : Source_Code_Location, seed := true) -> ID {
     id := fnv1a_hash(loc.fully_pathed_filename.data, loc.fully_pathed_filename.count);
     id = fnv1a_hash(cast,no_check(u64, loc.line_number), h=id);
     id = fnv1a_hash(cast,no_check(u64, loc.character_number), h=id);
 
-    if apply_offset {
-        id += xx,no_check GetIDOffset();
+    if seed && context.omg.id_stack.count > 0 {
+        id = GetID(id, base=context.omg.id_stack[context.omg.id_stack.count - 1]);
     }
 
     return id;

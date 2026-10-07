@@ -142,9 +142,10 @@ Combo :: (
 
             for i : 0..num_items - 1 {
                 item := get_item(i, user_data);
-                PushIDOffset(i);
+                PushID(GetID(i));
+                defer PopID();
+
                 item_clicked := MenuItem(popup, item, selected=selected.* == i, style=*style.item);
-                PopIDOffset();
 
                 if item_clicked {
                     selected.* = i;

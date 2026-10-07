@@ -408,8 +408,8 @@ EditorFrame :: () {
                 OMG.Separator(fields);
 
                 for type_info(type_of(g_selected_fruit)).values {
-                    OMG.PushIDOffset(xx it);
-                    defer OMG.PopIDOffset();
+                    OMG.PushID(OMG.GetID(it));
+                    defer OMG.PopID();
 
                     field := OMG.GetNode(fields);
                     OMG.SetSize(field, OMG.SizeFill(), OMG.SizeFit());

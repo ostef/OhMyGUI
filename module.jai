@@ -48,7 +48,7 @@ Context :: struct {
 
     theme : *Theme; ///> Active theme.
 
-    id_offset_stack : [..]int; ///> Stack of offsets applied to IDs of nodes.
+    id_stack : [..]ID; ///> Stack of IDs. The top of the stack is used as a seed for `GetID`.
 
     global_polygon_resolution := 1.0; ///> Global polygon resolution multiplier.
 
@@ -510,7 +510,7 @@ Terminate :: () {
         }
     }
 
-    array_reset(*context.omg.id_offset_stack);
+    array_reset(*context.omg.id_stack);
 
     DestroyInput(*context.omg.input);
     DestroySystemCursors();
@@ -662,9 +662,9 @@ Render :: () {
 
     total_start := current_time_monotonic();
 
-    if omg.id_offset_stack.count > 0 {
+    if omg.id_stack.count > 0 {
         log_error("Mismatching number of push/pop for ID offset stack");
-        omg.id_offset_stack.count = 0;
+        omg.id_stack.count = 0;
     }
 
     if !omg.mouse_captured_this_frame {

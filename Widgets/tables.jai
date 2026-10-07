@@ -285,8 +285,8 @@ TableAddRow :: (table : *Node, style : *TableRowStyle) {
     table_style := GetUserData(table, TableStyle);
 
     for * data.columns {
-        PushIDOffset(it.rows.count);
-        defer PopIDOffset();
+        PushID(GetID(it.rows.count));
+        defer PopID();
 
         first := it.rows.count == 0;
         if !first && it.previous_row_border_size > 0 {
