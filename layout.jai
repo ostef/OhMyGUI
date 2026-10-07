@@ -395,9 +395,10 @@ LayoutPosition :: (node : *Node) #no_abc {
     cross := GetCrossAxis(axis);
     reverse := IsLayoutReverseDirection(node);
 
+    node.children_size[axis] += (node.num_children - 1) * node.child_gap[axis];
+
     remaining_size := node.size[axis] - node.padding.xy[axis] - node.padding.zw[axis]
-            - node.children_size[axis]
-            - (node.num_children - 1) * node.child_gap[axis];
+            - node.children_size[axis];
     axis_align_offset := remaining_size * node.child_align[axis];
     cross_size := node.size[cross] - node.padding.xy[cross] - node.padding.zw[cross];
 
