@@ -267,8 +267,12 @@ LayoutFillAndPercentSizing :: (node : *Node, axis : Axis) #no_abc {
         it.size[axis] = max(it.desired_size[axis].value * (node.size[axis] - node.padding.xy[axis] - node.padding.zw[axis]), prev_size);
         it.size[axis] = clamp(it.size[axis], it.min_size[axis], it.max_size[axis]);
 
-        added_size := it.size[axis] - prev_size;
-        node.children_size[axis] += added_size;
+        if axis == layout_axis {
+            added_size := it.size[axis] - prev_size;
+            node.children_size[axis] += added_size;
+        } else {
+            node.children_size[axis] = max(node.children_size[axis], it.size[axis]);
+        }
     }
 
     // @Todo: should we remove this? I think None layout mode should work the same as the other modes
