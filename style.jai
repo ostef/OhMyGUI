@@ -509,6 +509,7 @@ DefaultTheme :: struct {
     tab_bar : BoxStyle;
     tab : ButtonStyle;
     dock_space : DockSpaceStyle;
+    scroll_view : ScrollViewStyle;
 }
 
 g_default_theme_light : DefaultTheme;
@@ -1193,6 +1194,20 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         split_hint.outer_shadow_color = ColorU32(0,0,0,0.15);
     }
     SetStyle(theme, "dock_space", theme.dock_space);
+
+    {
+        using theme.scroll_view;
+
+        background.corner_radiuses = Vec4f.{6,6,6,6} * rounding_factor;
+        background.padding = .{1,1,1,1};
+
+        SetColors(*background.border_colors, MakeTone(button_base_background_color, 0.3));
+        background.border_size = 1;
+
+        horizontal_scrollbar = theme.scrollbar;
+        vertical_scrollbar = theme.scrollbar;
+    }
+    SetStyle(theme, "scroll_view", theme.scroll_view);
 }
 
 /**

@@ -327,6 +327,73 @@ SetContentScrollY :: inline (node : *Node, value : float) {
     node.scroll.y = clamp(value, avail_scroll, 0);
 }
 
+ScrollViewStyle :: struct {
+    background : BoxStyle;
+    horizontal_scrollbar : ScrollbarStyle;
+    vertical_scrollbar : ScrollbarStyle;
+}
+
+ScrollViewFlags :: enum_flags {
+    NoScrollX;
+    NoScrollY;
+    NoScrollbarX;
+    NoScrollbarY;
+    NoScrollbar :: NoScrollbarX | NoScrollbarY;
+}
+
+ScrollView :: (parent : *Node, flags : ScrollViewFlags = 0, style : *ScrollViewStyle = null, location := #caller_location) -> *Node {
+    EnsureStyle(*style, "scroll_view");
+
+    node := GetNode(parent, location);
+    {
+        SetSize(node, SizeFill(), SizeFill());
+        SetLayout(node, .None);
+
+        Apply(node, style.background);
+
+        content_and_hscrollbar, content_and_vscrollbar : *Node;
+        content_parent := node;
+
+        if !(flags & .NoScrollbarX) {
+            content_and_hscrollbar = GetNode(content_parent, "content_and_hscrollbar");
+            SetLayout(content_and_hscrollbar, .TopToBottom);
+            SetSize(content_and_hscrollbar, SizeFill(), SizeFill());
+            content_parent = content_and_hscrollbar;
+        }
+
+        if !(flags & .NoScrollbarY) {
+            content_and_vscrollbar = GetNode(content_parent, "content_and_vscrollbar");
+            SetLayout(content_and_vscrollbar, .LeftToRight);
+            SetSize(content_and_vscrollbar, SizeFill(), SizeFill());
+            content_parent = content_and_vscrollbar;
+        }
+
+        content_id := GetID(GetID("content"), node.id);
+        content := GetNode(content_parent, content_id, is_global_id=true);
+        SetSize(content, SizeFill(), SizeFill());
+        SetLayout(content, parent.child_layout_mode);
+
+        scroll_view_axes : AxisFlags;
+        if !(flags & .NoScrollX) {
+            scroll_view_axes |= .X;
+        }
+        if !(flags & .NoScrollY) {
+            scroll_view_axes |= .Y;
+        }
+
+        ScrollViewBehavior(node, scroll_view_axes);
+
+        if !(flags & .NoScrollbarX) && content.children_size.x > content.size.x - content.padding.x - content.padding.z {
+            Scrollbar(content_and_hscrollbar, content, .X, style=*style.horizontal_scrollbar);
+        }
+        if !(flags & .NoScrollbarY) && content.children_size.y > content.size.y - content.padding.y - content.padding.w {
+            Scrollbar(content_and_vscrollbar, content, .Y, style=*style.vertical_scrollbar);
+        }
+
+        return content;
+    }
+}
+
 /**
  * @brief Perform mouse drag interaction logic for a Node.
  */
