@@ -1144,7 +1144,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
 
         triangle_size = 8;
 
-        indent = 25;
+        indent = 10;
     }
     SetStyle(theme, "tree_node", theme.tree_node);
 
