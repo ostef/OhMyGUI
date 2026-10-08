@@ -892,6 +892,10 @@ SetChildGap :: inline (node : *Node, x : s8, y : s8) {
     node.child_gap = .{x, y};
 }
 
+SetChildGap :: inline (node : *Node, value : s8) {
+    node.child_gap = .{value, value};
+}
+
 SetChildAlign :: inline (node : *Node, align : Vec2f) {
     node.child_align = align;
 }

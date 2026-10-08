@@ -9,6 +9,7 @@
 #load "tree.jai";
 #load "dock_space.jai";
 #load "tabs.jai";
+#load "debug_view.jai";
 
 LabelAndContentStyle :: struct {
     padding : Vec4b;
@@ -21,7 +22,7 @@ LabelAndContentStyle :: struct {
 /**
  * @brief Container widget for label followed by content.
  */
-LabelAndContent :: (parent : *Node, label : string, style : *LabelAndContentStyle = null, location := #caller_location) -> *Node {
+LabelAndContent :: (parent : *Node, label : string, style : *LabelAndContentStyle = null, location := #caller_location) -> *Node, container : *Node {
     EnsureStyle(*style, "label_and_content");
 
     node := GetNode(parent, location);
@@ -39,7 +40,7 @@ LabelAndContent :: (parent : *Node, label : string, style : *LabelAndContentStyl
     SetLayout(content, .LeftToRight);
     SetChildGap(content, style.child_gap);
 
-    return content;
+    return content, node;
 }
 
 /**
@@ -341,7 +342,7 @@ ScrollViewFlags :: enum_flags {
     NoScrollbar :: NoScrollbarX | NoScrollbarY;
 }
 
-ScrollView :: (parent : *Node, flags : ScrollViewFlags = 0, style : *ScrollViewStyle = null, location := #caller_location) -> *Node {
+ScrollView :: (parent : *Node, flags : ScrollViewFlags = 0, style : *ScrollViewStyle = null, location := #caller_location) -> *Node, container : *Node {
     EnsureStyle(*style, "scroll_view");
 
     node := GetNode(parent, location);
@@ -390,7 +391,7 @@ ScrollView :: (parent : *Node, flags : ScrollViewFlags = 0, style : *ScrollViewS
             Scrollbar(content_and_vscrollbar, content, .Y, style=*style.vertical_scrollbar);
         }
 
-        return content;
+        return content, node;
     }
 }
 

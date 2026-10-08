@@ -510,6 +510,7 @@ DefaultTheme :: struct {
     tab : ButtonStyle;
     dock_space : DockSpaceStyle;
     scroll_view : ScrollViewStyle;
+    debug_view : DebugViewStyle;
 }
 
 g_default_theme_light : DefaultTheme;
@@ -1208,6 +1209,25 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         vertical_scrollbar = theme.scrollbar;
     }
     SetStyle(theme, "scroll_view", theme.scroll_view);
+
+    {
+        using theme.debug_view;
+
+        gap = 6;
+
+        properties.padding = .{6,6,6,6};
+        SetColors(*properties.background_colors, MakeTone(base_background_color, 0.1));
+        SetColors(*properties.alternate_background_colors, MakeTone(base_background_color, 0.2));
+
+        SetColors(*selected_overlay.background_colors, SetAlpha(0x00ff00ff, 0.1));
+        SetColors(*selected_overlay.border_colors, 0x00ff00ff);
+        selected_overlay.border_size = 1;
+
+        SetColors(*hovered_overlay.background_colors, SetAlpha(0x0000ffff, 0.1));
+        SetColors(*hovered_overlay.border_colors, 0x0000ffff);
+        hovered_overlay.border_size = 1;
+    }
+    SetStyle(theme, "debug_view", theme.debug_view);
 }
 
 /**

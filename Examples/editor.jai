@@ -16,6 +16,7 @@ g_selected_fruit : enum {
 g_content_browser_opened := true;
 g_entity_outliner_opened := true;
 g_entity_inspector_opened := true;
+g_debug_view_opened := true;
 
 Entity :: struct {
     id : int;
@@ -198,6 +199,9 @@ EditorFrame :: () {
 
             window_menu := OMG.Menu(title_menu_bar, "Window");
             if window_menu {
+                if OMG.MenuItem(window_menu, "Debug View") {
+                    g_debug_view_opened = true;
+                }
                 if OMG.MenuItem(window_menu, "New Viewport") {
                     print("New Viewport\n");
                 }
@@ -505,5 +509,7 @@ END
 
             InfiniteTreeNode(entity_inspector);
         }
+
+        OMG.DebugViewWindow(window, "debugger", *g_debug_view_opened);
     }
 }
