@@ -243,7 +243,7 @@ LayoutFixedAndFitSizing :: (node : *Node, axis : Axis) #no_abc {
         }
         node.size[axis] = clamp(node.size[axis], node.min_size[axis], node.max_size[axis]);
     } else if node.desired_size[axis].kind == .Pixels {
-        node.size[axis] = node.desired_size[axis].value;
+        node.size[axis] = Round(node.desired_size[axis].value);
         node.size[axis] = clamp(node.size[axis], node.min_size[axis], node.max_size[axis]);
     }
 
