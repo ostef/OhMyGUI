@@ -730,7 +730,7 @@ ColorPicker :: (
     {
         SetLayout(picker, .LeftToRight);
         SetSize(picker, SizeFill(), SizeFill());
-        SetChildGap(picker, 0, 10);
+        SetChildGap(picker, 10);
 
         data := AddUserData(picker, ColorPickerData);
         if !data.modifying_hsv {
@@ -753,7 +753,7 @@ ColorPicker :: (
         SetLayout(top, .LeftToRight);
         SetPadding(top, 4, 4);
         SetChildAlign(top, 0.5, 0.5);
-        SetChildGap(top, 4, 4);
+        SetChildGap(top, 4);
 
         if MenuItem(top, "HSV Wheel", selected=data.mode == .HSVWheel) {
             data.mode = .HSVWheel;
@@ -841,12 +841,12 @@ ColorPicker :: (
             inputs := GetNode(bottom);
             SetSize(inputs, SizeFill(), SizeFit());
             SetLayout(inputs, .TopToBottom);
-            SetChildGap(inputs, 4, 6);
+            SetChildGap(inputs, 6);
 
             hsv_inputs := GetNode(inputs);
             SetSize(hsv_inputs, SizeFill(), SizeFit());
             SetLayout(hsv_inputs, .LeftToRight);
-            SetChildGap(hsv_inputs, 4, 0);
+            SetChildGap(hsv_inputs, 4);
 
             h_field := LabelAndContent(hsv_inputs, "H", style=*label_and_content_style);
             data.modifying_hsv |= FloatInput(h_field, *data.hsv.hue, 0, 360, 1, trailing_digits=2);
@@ -863,7 +863,7 @@ ColorPicker :: (
             rgb_inputs := GetNode(inputs);
             SetSize(rgb_inputs, SizeFill(), SizeFit());
             SetLayout(rgb_inputs, .LeftToRight);
-            SetChildGap(rgb_inputs, 4, 0);
+            SetChildGap(rgb_inputs, 4);
 
             r_field := LabelAndContent(rgb_inputs, "R", style=*label_and_content_style);
             rgb_modified := FloatInput(r_field, *color.x, 0, 1, 0.1);
@@ -895,7 +895,7 @@ ColorPicker :: (
         }
 
         SetPadding(right, 10, 10);
-        SetChildGap(right, 5, 5);
+        SetChildGap(right, 5);
 
         SetChildAlign(right, 0.5, 0.5);
         right.flags |= .NoPaddedClip;
@@ -904,7 +904,7 @@ ColorPicker :: (
         previews.flags |= .NoClip;
         SetLayout(previews, .LeftToRight);
         SetSize(previews, SizeFit(), SizeFit());
-        SetChildGap(previews, 5, 5);
+        SetChildGap(previews, 5);
         SetChildAlign(previews, 0.5, 1);
         SetPadding(previews, 0, 10);
 
@@ -935,7 +935,7 @@ ColorPicker :: (
 
         ok_cancel := GetNode(right);
         SetLayout(ok_cancel, .LeftToRight);
-        SetChildGap(ok_cancel, 5, 5);
+        SetChildGap(ok_cancel, 5);
         SetHeight(ok_cancel, SizeFill());
         SetChildAlign(ok_cancel, 0, 1);
 
@@ -1057,13 +1057,13 @@ ColorInput :: (
     {
         SetSize(parent, SizeFill(), SizeFit());
         SetLayout(parent, .LeftToRight);
-        SetChildGap(parent, style.preview_gap, 0);
+        SetChildGap(parent, style.preview_gap);
         SetChildAlign(parent, 0, 0.5);
 
         inputs := GetNode(parent);
         SetSize(inputs, SizeFill(), SizeFit());
         SetLayout(inputs, .LeftToRight);
-        SetChildGap(inputs, style.number_input_gap, 0);
+        SetChildGap(inputs, style.number_input_gap);
 
         r_field := LabelAndContent(inputs, "R", style=*style.label_and_content);
         modified |= FloatInput(r_field, *value.x, 0, 1, 0.1, style=*style.number_input);

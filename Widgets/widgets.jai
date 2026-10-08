@@ -149,7 +149,7 @@ HorizontalSeparatorText :: (parent : *Node, fmt_str : string, args : ..Any, styl
     node := GetNode(parent, location);
     SetSize(node, SizeFill(), SizePx(style.spacing));
     SetChildAlign(node, 0.5, 0.5);
-    SetChildGap(node, style.text_gap, 0);
+    SetChildGap(node, style.text_gap);
     SetPadding(node, style.padding);
     SetLayout(node, .LeftToRight);
 

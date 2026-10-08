@@ -427,7 +427,7 @@ DockSpace :: (parent : *Node, id : ID, dock_node : *DockNode, style : *DockSpace
             SetSize(split_hints, SizeFill(), SizeFill());
             SetLayout(split_hints, .TopToBottom);
             SetChildAlign(split_hints, 0.5, 0.5);
-            SetChildGap(split_hints, 10, 10);
+            SetChildGap(split_hints, 10);
 
             split_hint_style := ifx dock_node.show_split_hints then style.split_hint;
 
@@ -443,7 +443,7 @@ DockSpace :: (parent : *Node, id : ID, dock_node : *DockNode, style : *DockSpace
             SetSize(middle, SizeFill(), SizeFit());
             SetLayout(middle, .LeftToRight);
             SetChildAlign(middle, 0.5, 0.5);
-            SetChildGap(middle, 10, 10);
+            SetChildGap(middle, 10);
 
             dock_node.split_hints.bottom = GetNode(split_hints);
             {

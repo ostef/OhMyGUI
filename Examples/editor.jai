@@ -146,7 +146,7 @@ EditorFrame :: () {
         title_bar := OMG.GetNode(root, "title_bar");
         {
             OMG.SetPadding(title_bar, 4, 4);
-            OMG.SetChildGap(title_bar, 4, 4);
+            OMG.SetChildGap(title_bar, 4);
             OMG.SetChildAlign(title_bar, 0.5, 0.5);
             OMG.SetWidth(title_bar, OMG.SizeFill());
             OMG.SetHeight(title_bar, OMG.SizeFit());
@@ -377,7 +377,7 @@ EditorFrame :: () {
                 OMG.SetMinWidth(password_field, 300);
                 OMG.SetLayout(password_field, .LeftToRight);
                 OMG.SetChildAlign(password_field, 0, 0.5);
-                OMG.SetChildGap(password_field, 6, 6);
+                OMG.SetChildGap(password_field, 6);
 
                 text_input_submitted, text_input := OMG.TextInput(password_field, ifx !g_show_password then .Password);
 
@@ -395,7 +395,7 @@ EditorFrame :: () {
                 OMG.SetSize(fields, OMG.SizeFill(0.3), OMG.SizeFit());
                 OMG.SetMinWidth(fields, 300);
                 OMG.SetLayout(fields, .TopToBottom);
-                OMG.SetChildGap(fields, 0, 10);
+                OMG.SetChildGap(fields, 10);
 
                 OMG.Slider(fields, *g_slider_value, 0, 1, 0.1);
                 OMG.FillSlider(fields, *g_slider_value, 0, 1, 0.1);
@@ -418,7 +418,7 @@ EditorFrame :: () {
                     field := OMG.GetNode(fields);
                     OMG.SetSize(field, OMG.SizeFill(), OMG.SizeFit());
                     OMG.SetChildAlign(field, 0, 0.5);
-                    OMG.SetChildGap(field, 8, 0);
+                    OMG.SetChildGap(field, 8);
 
                     OMG.RadioButton(field, *g_selected_fruit, xx it);
                     OMG.Text(field, "%", type_info(type_of(g_selected_fruit)).names[it_index]);

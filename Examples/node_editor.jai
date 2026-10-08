@@ -293,7 +293,7 @@ NodeGraphBody :: (parent : *OMG.Node) -> body : *OMG.Node {
     OMG.SetMinWidth(inputs, 60);
     OMG.SetMinWidthFit(inputs);
     OMG.SetPadding(inputs, 6, 6);
-    OMG.SetChildGap(inputs, 4, 4);
+    OMG.SetChildGap(inputs, 4);
 
     outputs := OMG.GetNode(body, "outputs");
     OMG.SetLayout(outputs, .TopToBottom);
@@ -301,7 +301,7 @@ NodeGraphBody :: (parent : *OMG.Node) -> body : *OMG.Node {
     OMG.SetMinWidth(outputs, 60);
     OMG.SetMinWidthFit(outputs);
     OMG.SetPadding(outputs, 6, 6);
-    OMG.SetChildGap(outputs, 4, 4);
+    OMG.SetChildGap(outputs, 4);
 
     return body;
 }
@@ -374,7 +374,7 @@ NodeGraphPort :: (parent : *OMG.Node, port : *GraphNodePort) -> *OMG.Node {
     OMG.SetMinWidthFit(container);
     OMG.SetChildAlign(container, 0, 0.5);
     OMG.SetPadding(container, 5, 2);
-    OMG.SetChildGap(container, 5, 0);
+    OMG.SetChildGap(container, 5);
     container.flags |= .NoPaddedClip;
 
     if port.description {
