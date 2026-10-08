@@ -206,11 +206,11 @@ DebugView :: (parent : *Node, style : *DebugViewStyle = null, location := #calle
     data.hovered_node_id = 0;
 
     node_tree, node_tree_container := ScrollView(parent);
-    SetWidth(node_tree_container, SizeFill(0.2));
+    SetWidth(node_tree_container, SizeFill(0.3));
     DebugViewNodeTree(data, node_tree);
 
     properties, properties_container := ScrollView(parent);
-    SetWidth(properties_container, SizeFill(0.8));
+    SetWidth(properties_container, SizeFill(0.7));
     DebugViewNodeProperties(data, properties, style);
 
     DebugViewOverlay(data, parent.window, style);
