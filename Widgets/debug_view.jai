@@ -48,7 +48,7 @@ DebugViewNodeTree :: (data : *DebugViewData, parent : *Node) {
         PushID(node.id);
         defer PopID();
 
-        flags := TreeNodeFlags.InteractOnArrow;
+        flags := TreeNodeFlags.OpenOnArrowClick;
         if node.tree_last_frame.num_children == 0 {
             flags |= .Leaf;
         }

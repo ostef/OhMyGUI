@@ -47,8 +47,8 @@ TreeNodeFlags :: enum_flags {
     OpenByDefault;
     NoIndent;
     Selected;
-    InteractOnArrow;
-    InteractOnDoubleClick;
+    OpenOnArrowClick;
+    OpenOnDoubleClick;
 }
 
 /**
@@ -77,9 +77,9 @@ TreeNode :: (parent : *Node, text : string, flags : TreeNodeFlags = 0, style : *
             SetLayout(tree_item, .LeftToRight);
             SetChildAlign(tree_item, 0, 0.5);
 
-            if !(flags & .InteractOnArrow) && !(flags & .Leaf) {
+            if !(flags & .OpenOnArrowClick) && !(flags & .Leaf) {
                 button := ButtonBehavior(tree_item);
-                interact := ifx (flags & .InteractOnDoubleClick) != 0 then button.double_clicked else button.released;
+                interact := ifx (flags & .OpenOnDoubleClick) != 0 then button.double_clicked else button.released;
                 if interact {
                     opened = !opened;
                     SetTreeNodeOpened(node, opened);
@@ -93,9 +93,9 @@ TreeNode :: (parent : *Node, text : string, flags : TreeNodeFlags = 0, style : *
             icon := GetNode(tree_item, "icon");
             SetSize(icon, SizePx(style.triangle_size), SizePx(style.triangle_size));
 
-            if (flags & .InteractOnArrow) && !(flags & .Leaf) {
+            if (flags & .OpenOnArrowClick) && !(flags & .Leaf) {
                 button := ButtonBehavior(icon);
-                interact := ifx (flags & .InteractOnDoubleClick) != 0 then button.double_clicked else button.released;
+                interact := ifx (flags & .OpenOnDoubleClick) != 0 then button.double_clicked else button.released;
                 if interact {
                     opened = !opened;
                     SetTreeNodeOpened(node, opened);
