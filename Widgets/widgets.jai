@@ -382,7 +382,7 @@ ScrollView :: (parent : *Node, flags : ScrollViewFlags = 0, style : *ScrollViewS
             scroll_view_axes |= .Y;
         }
 
-        ScrollViewBehavior(node, scroll_view_axes);
+        ScrollViewBehavior(content, scroll_view_axes);
 
         if !(flags & .NoScrollbarX) && content.children_size.x > content.size.x - content.padding.x - content.padding.z {
             Scrollbar(content_and_hscrollbar, content, .X, style=*style.horizontal_scrollbar);
