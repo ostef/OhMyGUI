@@ -486,6 +486,8 @@ DefaultTheme :: struct {
     clickable_text : ClickableTextStyle;
     button : ButtonStyle;
     button_accent : ButtonStyle;
+    button_positive : ButtonStyle;
+    button_negative : ButtonStyle;
     toggle : ButtonStyle;
     slider : SliderStyle;
     fill_slider : SliderStyle;
@@ -616,6 +618,28 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         SetAlpha(*disabled.text.text_color, 0.5);
     }
     SetStyle(theme, "button_accent", theme.button_accent);
+
+    {
+        using theme.button_positive;
+
+        theme.button_positive = theme.button;
+
+        SetColors(*theme.button_positive, 0x10c94eff);
+
+        SetAlpha(*disabled.text.text_color, 0.5);
+    }
+    SetStyle(theme, "button_positive", theme.button_positive);
+
+    {
+        using theme.button_negative;
+
+        theme.button_negative = theme.button;
+
+        SetColors(*theme.button_negative, 0xc92610ff);
+
+        SetAlpha(*disabled.text.text_color, 0.5);
+    }
+    SetStyle(theme, "button_negative", theme.button_negative);
 
     {
         theme.toggle = theme.button;
