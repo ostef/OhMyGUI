@@ -102,7 +102,7 @@ SeparatorStyle :: struct {
     color_start : RGBA8;
     color_end : RGBA8;
     thickness := 1.0;
-    spacing := 25.0;
+    spacing := 20.0;
     padding : Vec4b;
     text_gap : s8 = 8;
     text_padding := 12.0;
