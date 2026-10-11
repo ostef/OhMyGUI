@@ -349,6 +349,7 @@ Subwindow :: (
     title : string,
     str_id : string,
     opened : *bool = null,
+    initial_position : Vec2f = .{50, 50},
     initial_size : Vec2f = .{300,300},
     min_size : Vec2f = .{32,32},
     flags : SubwindowFlags = 0,
@@ -403,10 +404,11 @@ Subwindow :: (
 
     if !dock_node {
         defer if persistent_data {
-            persistent_data.position = subwindow.offset;
-            persistent_data.size.x = subwindow.desired_size.x.value;
+            persistent_data.position = subwindow.offset + resize_handles_expand;
+
+            persistent_data.size.x = subwindow.desired_size.x.value - resize_handles_expand.x * 2;
             if !persistent_data.collapsed {
-                persistent_data.size.y = subwindow.desired_size.y.value;
+                persistent_data.size.y = subwindow.desired_size.y.value - resize_handles_expand.y* 2;
             }
         }
 
@@ -418,15 +420,16 @@ Subwindow :: (
 
             if !persistent_data || is_new_persistent_data || persistent_data.was_docked {
                 SetSize(subwindow, SizePx(initial_size.x), SizePx(initial_size.y));
-
-                subwindow.desired_size.x.value += resize_handles_expand.x * 2;
-                subwindow.desired_size.y.value += resize_handles_expand.y * 2;
-
-                subwindow.offset -= resize_handles_expand;
+                subwindow.offset = initial_position;
             } else {
                 SetSize(subwindow, SizePx(persistent_data.size.x), SizePx(persistent_data.size.y));
                 subwindow.offset = persistent_data.position;
             }
+
+            subwindow.desired_size.x.value += resize_handles_expand.x * 2;
+            subwindow.desired_size.y.value += resize_handles_expand.y * 2;
+
+            subwindow.offset -= resize_handles_expand;
         } else if persistent_data.collapsed {
             SetSize(subwindow, SizePx(subwindow.size.x), SizeFit());
         } else if expanded_this_frame {
