@@ -14,6 +14,7 @@ MenuBar :: (parent : *Node, str_id : string, style : *BoxStyle = null) -> *Node 
     {
         SetLayout(node, .LeftToRight);
         SetSize(node, SizeFill(), SizeFit());
+        SetChildAlign(node, 0, 0.5);
 
         Apply(node, style);
     }
