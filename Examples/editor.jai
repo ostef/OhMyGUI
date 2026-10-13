@@ -13,6 +13,10 @@ g_selected_fruit : enum {
     Banana;
 };
 
+g_justify_text : bool;
+g_animate_text : bool;
+g_text_size := 20.0;
+
 g_content_browser_opened := true;
 g_entity_outliner_opened := true;
 g_entity_inspector_opened := true;
@@ -439,10 +443,23 @@ THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG!
 Voix ambiguë d'un cœur qui, au zéphyr, préfère les jattes de kiwis.
 END
 
+            justify_field := OMG.LabelAndContent(content_browser, "Justify");
+            OMG.Checkbox(justify_field, *g_justify_text);
+
+            animate_field := OMG.LabelAndContent(content_browser, "Animate");
+            OMG.Checkbox(animate_field, *g_animate_text);
+
             _, _, the_quick := OMG.ClickableText(content_browser, Text);
             OMG.SetWidth(the_quick, OMG.SizeFill());
             the_quick.flags |= .WrapText;
-            the_quick.text_size = 10 + (cos(g_time) + 2) * 0.5 * 30;
+            if g_justify_text {
+                the_quick.flags |= .JustifyText;
+            }
+            if g_animate_text {
+                g_text_size = 10 + (cos(g_time) + 2) * 0.5 * 30;
+            }
+
+            the_quick.text_size = g_text_size;
         }
 
         entity_outliner := OMG.Subwindow(window, "Entity Outliner", "entity_outliner", *g_entity_outliner_opened, initial_size=.{400, 500});

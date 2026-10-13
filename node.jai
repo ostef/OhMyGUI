@@ -5,6 +5,7 @@ ID :: u64;
 NodeFlags :: enum_flags u32 {
     TextNode;     ///> Take the text value of the node into account instead of the children (e.g. for fit sizing).
     WrapText;     ///> Wrap the text when it goes outside the node width.
+    JustifyText;  ///> When wrapping text, stretch the spaces between words so that wrapped lines span the full node width.
     Focusable;    ///> Capture mouse focus when hovered if no other foreground node has captured it.
     Scrollable;   ///> Capture scroll focus when hovered if no other foreground node has captured it.
     SortChildren; ///> Before laying out nodes, sort the children based on `Node.z_index`.

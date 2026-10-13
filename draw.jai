@@ -1083,7 +1083,8 @@ DrawWrappedText :: (
     bounds : Vec2f,
     color : RGBA8,
     effects : TextEffects = 0,
-    blur_amount := 0.0
+    blur_amount := 0.0,
+    justify := false
 ) {
     if !font || (color & 0xff) == 0 {
         return;
@@ -1098,6 +1099,7 @@ DrawWrappedText :: (
     iter.font_size = size;
     iter.text = text;
     iter.bounds = bounds;
+    iter.justify = justify;
     for :WordWrap iter {
         glyph_position := position + iter.pen + it.hori_bearing * iter.font_size;
         glyph_position += it.size * iter.font_size * 0.5;
@@ -1173,7 +1175,8 @@ DrawNodeDefault :: (draw_list : *DrawList, node : *Node) -> bool {
             node.text,
             node.size,
             node.text_color,
-            node.text_effects
+            node.text_effects,
+            justify=(node.flags & .JustifyText) != 0
         );
     } else {
         DrawText(draw_list,

@@ -390,6 +390,7 @@ TextGlyphIterator :: struct {
     font_size : float;
     bounds : Vec2f;
     include_newlines : bool;
+    justify : bool;
     new_line := true;
     pen : Vec2f;
     computed_size : Vec2f;
@@ -469,6 +470,58 @@ for_expansion :: (iter : *TextGlyphIterator, body : Code, flags : For_Flags) #ex
     iter.computed_size.y = max(iter.computed_size.y, iter.pen.y + iter.font.descent * iter.font_size);
 }
 
+ComputeJustifiedLineSpacing :: (iter : *TextGlyphIterator, text : string) -> extra_spacing : float, num_gaps : int {
+    pen_x := iter.pen.x;
+    line_end_x := pen_x;
+    num_gaps := 0;
+    pending_gap := false;
+    has_word := false;
+
+    for :ByWord word : MakeUtf8String(text) {
+        if word.spaces {
+            for word.str {
+                if it == #char "\n" || it == #char "\t" {
+                    return 0, 0;
+                }
+
+                glyph := GetGlyph(iter.font, it);
+                if glyph {
+                    pen_x += glyph.hori_advance * iter.font_size;
+                }
+            }
+
+            pending_gap = has_word;
+        } else {
+            word_text_length := 0.0;
+            for word.str {
+                glyph := GetGlyph(iter.font, it);
+                if glyph {
+                    word_text_length += glyph.hori_advance * iter.font_size;
+                }
+            }
+
+            if word_text_length < iter.bounds.x && pen_x + word_text_length > iter.bounds.x {
+                if num_gaps == 0 {
+                    return 0, 0;
+                }
+
+                return max((iter.bounds.x - line_end_x) / num_gaps, 0), num_gaps;
+            }
+
+            if pending_gap {
+                num_gaps += 1;
+                pending_gap = false;
+            }
+
+            pen_x += word_text_length;
+            line_end_x = pen_x;
+            has_word = true;
+        }
+    }
+
+    return 0, 0;
+} @Profile
+
 // for_expansion
 WordWrap :: (iter : *TextGlyphIterator, body : Code, flags : For_Flags) #expand {
     if !iter.font {
@@ -483,9 +536,16 @@ WordWrap :: (iter : *TextGlyphIterator, body : Code, flags : For_Flags) #expand 
         iter.pen.y = iter.font.ascent * iter.font_size;
     }
 
+    justify_line_computed := false;
+    justify_line_y := 0.0;
+    justify_extra_spacing := 0.0;
+    justify_gaps_left := 0;
+    justify_line_has_word := false;
+    justify_word_fits := false;
+
     `it : *Glyph;
     `it_index := 0;
-    for :ByWord word, word_index : MakeUtf8String(iter.text) {
+    for :ByWord word, word_index : MakeUtf8String(original_text) {
         if !word.spaces {
             word_text_length := 0.0;
             for word.str {
@@ -497,9 +557,20 @@ WordWrap :: (iter : *TextGlyphIterator, body : Code, flags : For_Flags) #expand 
                 word_text_length += glyph.hori_advance * iter.font_size;
             }
 
-            if word_text_length < iter.bounds.x && iter.pen.x + word_text_length > iter.bounds.x {
+            if !justify_word_fits && word_text_length < iter.bounds.x && iter.pen.x + word_text_length > iter.bounds.x {
                 Newline(iter);
             }
+
+            justify_word_fits = false;
+        }
+
+        if iter.justify && (!justify_line_computed || iter.pen.y != justify_line_y) {
+            remaining_text := string.{original_text.count - (word.str.data - original_text.data), word.str.data};
+
+            justify_line_computed = true;
+            justify_line_y = iter.pen.y;
+            justify_extra_spacing, justify_gaps_left = ComputeJustifiedLineSpacing(iter, remaining_text);
+            justify_line_has_word = false;
         }
 
         iter.text = word.str.as_string;
@@ -508,6 +579,17 @@ WordWrap :: (iter : *TextGlyphIterator, body : Code, flags : For_Flags) #expand 
 
             it = glyph;
             #insert body;
+        }
+
+        if iter.justify {
+            if !word.spaces {
+                justify_line_has_word = true;
+            } else if justify_line_has_word && justify_gaps_left > 0 && iter.pen.y == justify_line_y {
+                iter.pen.x += justify_extra_spacing;
+                iter.computed_size.x = max(iter.computed_size.x, iter.pen.x);
+                justify_gaps_left -= 1;
+                justify_word_fits = true;
+            }
         }
     }
 
