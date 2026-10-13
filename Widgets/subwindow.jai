@@ -44,6 +44,7 @@ SubwindowFlags :: enum_flags {
     NoResize;
     NoMove;
     NoMoveFromBackground;
+    NoDocking;
 
     NoVerticalScrollbar;
     NoHorizontalScrollbar;
@@ -396,6 +397,12 @@ Subwindow :: (
     dock_node, dock_node_data := GetSubwindowDockNode(subwindow_id);
     defer persistent_data.was_docked = dock_node != null;
 
+    if dock_node && (flags & .NoDocking) {
+        UndockSubwindow(dock_node_data, subwindow_id);
+        dock_node = null;
+        dock_node_data = null;
+    }
+
     hscroll := (flags & .NoHorizontalScroll) == 0;
     vscroll := (flags & .NoVerticalScroll) == 0;
     hscrollbar := (flags & .NoHorizontalScrollbar) == 0 && (flags & .NoHorizontalScroll) == 0;
@@ -468,7 +475,7 @@ Subwindow :: (
             title_bar_size += resize_handles_expand * 2;
         }
 
-        if title_bar && !(flags & .NoMove) {
+        if title_bar && !(flags & .NoMove) && !(flags & .NoDocking) {
             if persistent_data.was_undocked_using_mouse {
                 offset := context.omg.mouse_captured_node_value.xy;
 
