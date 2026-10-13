@@ -475,7 +475,7 @@ Subwindow :: (
             title_bar_size += resize_handles_expand * 2;
         }
 
-        if title_bar && !(flags & .NoMove) && !(flags & .NoDocking) {
+        if title_bar && !(flags & .NoMove) {
             if persistent_data.was_undocked_using_mouse {
                 offset := context.omg.mouse_captured_node_value.xy;
 
@@ -488,7 +488,7 @@ Subwindow :: (
             }
 
             interaction := DragBehavior(subwindow, title_bar, .{xy=avail_area.xy, zw=avail_area.zw - title_bar_size});
-            if !IsKeyDown(.Shift) && (interaction.down || interaction.released) {
+            if !(flags & .NoDocking) && !IsKeyDown(.Shift) && (interaction.down || interaction.released) {
                 hovered_dock_node, is_hovering_split, hovered_split := GetHoveredDockSpaceAndSplit();
                 if hovered_dock_node {
                     hovered_dock_node.show_split_hints = true;
