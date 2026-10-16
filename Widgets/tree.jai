@@ -49,6 +49,7 @@ TreeNodeFlags :: enum_flags {
     Selected;
     OpenOnArrowClick;
     OpenOnDoubleClick;
+    ForceOpen;
 }
 
 /**
@@ -65,6 +66,11 @@ TreeNode :: (parent : *Node, text : string, flags : TreeNodeFlags = 0, style : *
         opened : bool;
         if !(flags & .Leaf) {
             opened = AddTreeNodeState(node.id, (flags & .OpenByDefault) != 0);
+
+            if (flags & .ForceOpen) && !opened {
+                opened = true;
+                SetTreeNodeOpened(node.id, true);
+            }
         }
 
         if opened {
