@@ -513,6 +513,7 @@ DefaultTheme :: struct {
     dock_space : DockSpaceStyle;
     scroll_view : ScrollViewStyle;
     debug_view : DebugViewStyle;
+    grid_view : GridViewStyle;
 }
 
 g_default_theme_light : DefaultTheme;
@@ -1252,6 +1253,14 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         hovered_overlay.border_size = 1;
     }
     SetStyle(theme, "debug_view", theme.debug_view);
+
+    {
+        using theme.grid_view;
+
+        background.padding = .{6,6,6,6};
+        background.child_gap = .{8,8};
+    }
+    SetStyle(theme, "grid_view", theme.grid_view);
 }
 
 /**

@@ -10,6 +10,7 @@
 #load "dock_space.jai";
 #load "tabs.jai";
 #load "debug_view.jai";
+#load "grid_view.jai";
 
 LabelAndContentStyle :: struct {
     padding : Vec4b;
