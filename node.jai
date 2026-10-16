@@ -522,6 +522,10 @@ GetID :: inline (str : string, seed := true) -> ID {
 }
 
 GetID :: inline (int_value : int, seed := true) -> ID {
+    if int_value == 0 {
+        int_value = S64_MAX;
+    }
+
     id := knuth_hash(xx,no_check int_value);
     if seed && context.omg.id_stack.count > 0 {
         id = GetID(id, base=context.omg.id_stack[context.omg.id_stack.count - 1]);
