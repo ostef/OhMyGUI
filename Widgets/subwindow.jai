@@ -37,6 +37,70 @@ DestroyGlobalSubwindowsData :: (node : *Node, data : *void) {
     array_reset(*entries);
 }
 
+CollapseButton :: (parent: *Node, size : float, style : *ButtonStyle = null, location := #caller_location) -> bool, *Node {
+    EnsureStyle(*style, "button");
+
+    clicked, button := Button(parent, SizePx(size), SizePx(size), style, location);
+    button.flags |= .NoPaddedClip;
+
+    icon := GetNode(button);
+    SetSize(icon, SizeFill(), SizeFill());
+    SetDraw(icon, (draw_list : *DrawList, node : *Node) -> bool {
+        if IsClipped(draw_list, node.rect) {
+            return false;
+        }
+
+        center := (node.rect.xy + node.rect.zw) * 0.5;
+        center.x = ceil(center.x);
+        center.y = ceil(center.y);
+        length := node.size.x * 0.7;
+        start := center + Vec2f.{-floor(length * 0.5), 0.5};
+        end := center + Vec2f.{floor(length * 0.5), 0.5};
+
+        DrawLine(draw_list, start, end, 1, node.text_color);
+
+        return true;
+    });
+
+    state := GetState(button);
+    Apply(icon, style.states[state].text);
+
+    return clicked, button;
+}
+
+CloseButton :: (parent: *Node, size : float, style : *ButtonStyle = null, location := #caller_location) -> bool, *Node {
+    EnsureStyle(*style, "button");
+
+    clicked, button := Button(parent, SizePx(size), SizePx(size), style, location);
+    button.flags |= .NoPaddedClip;
+
+    icon := GetNode(button);
+    SetSize(icon, SizeFill(), SizeFill());
+    SetDraw(icon, (draw_list : *DrawList, node : *Node) -> bool {
+        if IsClipped(draw_list, node.rect) {
+            return false;
+        }
+
+        center := (node.rect.xy + node.rect.zw) * 0.5;
+        dir := normalize(node.rect.zw - node.rect.xy);
+        length := node.size.x;
+        color := node.text_color;
+
+        DrawLine(draw_list, center - dir * length * 0.5, center + dir * length * 0.5, 1, color, color);
+
+        dir = .{dir.y, -dir.x};
+
+        DrawLine(draw_list, center - dir * length * 0.5, center + dir * length * 0.5, 1, color, color);
+
+        return true;
+    });
+
+    state := GetState(button);
+    Apply(icon, style.states[state].text);
+
+    return clicked, button;
+}
+
 SubwindowFlags :: enum_flags {
     NoTitleBar;
     NoClose;
@@ -101,84 +165,18 @@ SubwindowTitleBar :: (
         SetText(text, title);
 
         if !(flags & .NoCollapse) {
-            button := GetNode(node, "collapse");
-            SetSize(button, SizePx(style.button_size), SizePx(style.button_size));
-            button.flags |= .NoPaddedClip;
-
-            icon := GetNode(button);
-            SetSize(icon, SizeFill(), SizeFill());
-            SetDraw(icon, (draw_list : *DrawList, node : *Node) -> bool {
-                if IsClipped(draw_list, node.rect) {
-                    return false;
-                }
-
-                center := (node.rect.xy + node.rect.zw) * 0.5;
-                center.x = ceil(center.x);
-                center.y = ceil(center.y);
-                length := node.size.x * 0.7;
-                start := center + Vec2f.{-floor(length * 0.5), 0.5};
-                end := center + Vec2f.{floor(length * 0.5), 0.5};
-
-                DrawLine(draw_list, start, end, 1, node.text_color);
-
-                return true;
-            });
-
-            using _ := ButtonBehavior(button);
-            if released {
+            if CollapseButton(node, style.button_size, style=*style.collapse_button) {
                 if data.collapsed {
                     data.wants_expand = true;
                 } else {
                     data.wants_collapse = true;
                 }
             }
-
-            state := GetState(button);
-            Apply(button, style.collapse_button.states[state].background);
-            Apply(icon, style.collapse_button.states[state].text);
-
-            if HasCursorControl(button) {
-                SetCursor(style.collapse_button.states[state].cursor);
-            }
         }
 
         if !(flags & .NoClose) {
-            button := GetNode(node, "close");
-            SetSize(button, SizePx(style.button_size), SizePx(style.button_size));
-            button.flags |= .NoPaddedClip;
-
-            icon := GetNode(button);
-            SetSize(icon, SizeFill(), SizeFill());
-            SetDraw(icon, (draw_list : *DrawList, node : *Node) -> bool {
-                if IsClipped(draw_list, node.rect) {
-                    return false;
-                }
-
-                center := (node.rect.xy + node.rect.zw) * 0.5;
-                dir := normalize(node.rect.zw - node.rect.xy);
-                length := node.size.x;
-                color := node.text_color;
-
-                DrawLine(draw_list, center - dir * length * 0.5, center + dir * length * 0.5, 1, color, color);
-
-                dir = .{dir.y, -dir.x};
-
-                DrawLine(draw_list, center - dir * length * 0.5, center + dir * length * 0.5, 1, color, color);
-
-                return true;
-            });
-
-            using _ := ButtonBehavior(button);
-            if released {
+            if CloseButton(node, style.button_size, style=*style.collapse_button) {
                 data.wants_close = true;
-            }
-
-            state := GetState(button);
-            Apply(button, style.close_button.states[state].background);
-            Apply(icon, style.close_button.states[state].text);
-
-            if HasCursorControl(button) {
-                SetCursor(style.close_button.states[state].cursor);
             }
         }
 
