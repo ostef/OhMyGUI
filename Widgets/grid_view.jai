@@ -30,6 +30,9 @@ GridView :: (parent : *Node, item_size : Vec2f, item_count := -1, style : *GridV
     {
         SetSize(node, SizeFill(), SizeFit());
         SetLayout(node, .TopToBottom);
+
+        node.flags |= .NoPaddedClip;
+
         Apply(node, style.background);
 
         data := AddUserData(node, GridViewData);
@@ -112,6 +115,7 @@ GridViewNextItem :: (grid : *Node) -> cell : *Node {
         SetSize(row, SizeFit(), SizeFit());
         SetLayout(row, .LeftToRight);
         SetChildGap(row, grid.child_gap.x, 0);
+        row.flags |= .NoClip;
 
         data.current_row = row;
     }
