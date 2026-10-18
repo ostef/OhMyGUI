@@ -714,7 +714,9 @@ GetNode :: (parent : *Node, id : ID, is_global_id := false) -> *Node, is_new : b
         table_entry, new_entry := HT.find_or_add(*context.omg.nodes_by_id, node.id);
         if !new_entry {
             // When declaring a node, we allow global ID collision if the other node is not declared on the same frame.
-            assert(table_entry.* == node || table_entry.*.last_used_on_frame != context.omg.frame_index, "Global node ID collision");
+            if table_entry.* != node && table_entry.*.last_used_on_frame == context.omg.frame_index {
+                log_error("Global node ID collision (%)", node.id);
+            }
         }
 
         table_entry.* = node;
