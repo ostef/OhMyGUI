@@ -3,7 +3,7 @@ InputContext :: struct {
     mouse_delta : Vec2f;
     mouse_wheel : Vec2f;
 
-    mouse_button_states : [3]KeyState;
+    mouse_button_states : [Num_Mouse_Buttons]KeyState;
     key_states : []KeyState;
 
     text : [..]u32;
@@ -20,12 +20,18 @@ MouseButton :: enum u8 {
     Left;
     Middle;
     Right;
+    Extra1;
+    Extra2;
 }
+
+Num_Mouse_Buttons :: #run type_info(MouseButton).values.count;
 
 MouseButtonFlags :: enum_flags u8 {
     Left;
     Middle;
     Right;
+    Extra1;
+    Extra2;
 }
 
 InitInput :: (using input : *InputContext) {

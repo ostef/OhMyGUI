@@ -189,17 +189,21 @@ HandleInputEvent :: (event : SDL_Event) {
         }
 
     case SDL_MOUSEBUTTONDOWN;
-        mouse_button := SDLMouseButtonToMouseButton(event.button.button);
-        if (event.button.clicks % 2) == 0 {
-            omg.input.mouse_button_states[mouse_button] |= .Repeated | .Down;
-        } else {
-            omg.input.mouse_button_states[mouse_button] |= .Pressed | .Down;
+        mouse_button, ok := SDLMouseButtonToMouseButton(event.button.button);
+        if ok {
+            if (event.button.clicks % 2) == 0 {
+                omg.input.mouse_button_states[mouse_button] |= .Repeated | .Down;
+            } else {
+                omg.input.mouse_button_states[mouse_button] |= .Pressed | .Down;
+            }
         }
 
     case SDL_MOUSEBUTTONUP;
-        mouse_button := SDLMouseButtonToMouseButton(event.button.button);
-        omg.input.mouse_button_states[mouse_button] &= ~.Down;
-        omg.input.mouse_button_states[mouse_button] |= .Released;
+        mouse_button, ok := SDLMouseButtonToMouseButton(event.button.button);
+        if ok {
+            omg.input.mouse_button_states[mouse_button] &= ~.Down;
+            omg.input.mouse_button_states[mouse_button] |= .Released;
+        }
 
     case SDL_MOUSEWHEEL;
         if event.wheel.direction == xx SDL_MouseWheelDirection.SDL_MOUSEWHEEL_FLIPPED {
@@ -222,14 +226,16 @@ HandleInputEvent :: (event : SDL_Event) {
     }
 }
 
-SDLMouseButtonToMouseButton :: (button : u8) -> MouseButton {
+SDLMouseButtonToMouseButton :: (button : u8) -> MouseButton, bool {
     if button == {
-    case SDL_BUTTON_LEFT; return .Left;
-    case SDL_BUTTON_MIDDLE; return .Middle;
-    case SDL_BUTTON_RIGHT; return .Right;
+    case SDL_BUTTON_LEFT; return .Left, true;
+    case SDL_BUTTON_MIDDLE; return .Middle, true;
+    case SDL_BUTTON_RIGHT; return .Right, true;
+    case SDL_BUTTON_X1; return .Extra1, true;
+    case SDL_BUTTON_X2; return .Extra2, true;
     }
 
-    return .Left;
+    return .Left, false;
 }
 
 SDLScancodeToKeyCode :: (scancode : SDL_Scancode) -> KeyCode {
