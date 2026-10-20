@@ -3,6 +3,10 @@ ComboStyle :: struct {
     popup : MenuStyle;
     item : MenuItemStyle;
     arrow_size := Vec2f.{10, 6};
+    arrow_style : enum {
+        Arrow;
+        Chevron;
+    };
 }
 
 /**
@@ -116,7 +120,12 @@ Combo :: (
 
         Apply(text_node, style.button.states[state].text);
 
-        Arrow(combo, SizePx(style.arrow_size.x), SizePx(style.arrow_size.y), .Down, style.button.states[state].text.text_color);
+        if #complete style.arrow_style == {
+        case .Arrow;
+            Arrow(combo, SizePx(style.arrow_size.x), SizePx(style.arrow_size.y), .Down, style.button.states[state].text.text_color);
+        case .Chevron;
+            Chevron(combo, SizePx(style.arrow_size.x), SizePx(style.arrow_size.y), .Down, style.button.states[state].text.text_color);
+        }
     }
 
     modified := false;

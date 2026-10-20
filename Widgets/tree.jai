@@ -38,7 +38,11 @@ AddTreeNodeState :: (id : ID, default_value : bool) -> opened : bool {
 
 TreeNodeStyle :: struct {
     tree_item : ButtonStyle;
-    triangle_size : float;
+    arrow_size : float;
+    arrow_style : enum {
+        Arrow;
+        Chevron;
+    };
     indent : s8;
 }
 
@@ -97,7 +101,7 @@ TreeNode :: (parent : *Node, text : string, flags : TreeNodeFlags = 0, style : *
             }
 
             icon := GetNode(tree_item, "icon");
-            SetSize(icon, SizePx(style.triangle_size), SizePx(style.triangle_size));
+            SetSize(icon, SizePx(style.arrow_size), SizePx(style.arrow_size));
 
             if (flags & .OpenOnArrowClick) && !(flags & .Leaf) {
                 button := ButtonBehavior(icon);
@@ -112,11 +116,12 @@ TreeNode :: (parent : *Node, text : string, flags : TreeNodeFlags = 0, style : *
 
             state := GetState(tree_item);
 
-            SetBackgroundColor(icon, style.tree_item.states[state].text.text_color);
+            SetTextColor(icon, style.tree_item.states[state].text.text_color);
 
             if flags & .Leaf {
                 SetDraw(icon, null);
-            } else {
+            } else if #complete style.arrow_style == {
+            case .Arrow;
                 SetDraw(icon, (draw_list : *DrawList, node : *Node) -> bool {
                     if IsClipped(draw_list, node.rect) {
                         return false;
@@ -124,6 +129,18 @@ TreeNode :: (parent : *Node, text : string, flags : TreeNodeFlags = 0, style : *
 
                     rotation := ifx !(node.parent.parent.state_flags & .Active) then -PI * 0.5 else 0.0;
                     DrawArrow(draw_list, node, rotation);
+
+                    return true;
+                });
+
+            case .Chevron;
+                SetDraw(icon, (draw_list : *DrawList, node : *Node) -> bool {
+                    if IsClipped(draw_list, node.rect) {
+                        return false;
+                    }
+
+                    rotation := ifx !(node.parent.parent.state_flags & .Active) then -PI * 0.5 else 0.0;
+                    DrawChevron(draw_list, node, rotation);
 
                     return true;
                 });

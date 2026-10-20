@@ -14,6 +14,10 @@ TableStyle :: struct {
     header_row : TableRowStyle;
     header_text : TextStyle;
     header_sort_icon_size : float;
+    header_sort_icon_style : enum {
+        Arrow;
+        Chevron;
+    };
 }
 
 TableRowStyle :: struct {
@@ -361,7 +365,12 @@ TableHeadersRow :: (table : *Node) {
                     }
 
                     arrow_dir := ifx sort_dir == .Ascending then ArrowDirection.Up else .Down;
-                    Arrow(sort_indicator, SizePx(style.header_sort_icon_size), SizePx(style.header_sort_icon_size), arrow_dir, style.header_text.text_color);
+                    if #complete style.header_sort_icon_style == {
+                    case .Arrow;
+                        Arrow(sort_indicator, SizePx(style.header_sort_icon_size), SizePx(style.header_sort_icon_size), arrow_dir, style.header_text.text_color);
+                    case .Chevron;
+                        Chevron(sort_indicator, SizePx(style.header_sort_icon_size), SizePx(style.header_sort_icon_size), arrow_dir, style.header_text.text_color);
+                    }
                 }
             }
         }

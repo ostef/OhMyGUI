@@ -457,7 +457,7 @@ DrawArrow :: (draw_list : *DrawList, node : *Node, rotation : float) -> bool {
         return false;
     }
 
-    if (node.background_colors.top_left & 0xff) == 0 {
+    if (node.text_color & 0xff) == 0 {
         return true;
     }
 
@@ -465,14 +465,11 @@ DrawArrow :: (draw_list : *DrawList, node : *Node, rotation : float) -> bool {
     half_w := node.size.x * 0.5;
     half_h := node.size.y * 0.5;
 
-    p0 := Rotate(Vec2f.{half_w, -half_h}, rotation);
-    p1 := Rotate(Vec2f.{-half_w, -half_h}, rotation);
-    p2 := Rotate(Vec2f.{0, half_h}, rotation);
-    p0 += center;
-    p1 += center;
-    p2 += center;
+    p0 := center + Rotate(Vec2f.{half_w, -half_h}, rotation);
+    p1 := center + Rotate(Vec2f.{-half_w, -half_h}, rotation);
+    p2 := center + Rotate(Vec2f.{0, half_h}, rotation);
 
-    DrawTriangle(draw_list, p0, p1, p2, node.background_colors.top_left);
+    DrawTriangle(draw_list, p0, p1, p2, node.text_color);
 
     return true;
 }
@@ -480,6 +477,8 @@ DrawArrow :: (draw_list : *DrawList, node : *Node, rotation : float) -> bool {
 Arrow :: (parent : *Node, width : Size1D, height : Size1D, direction : ArrowDirection, color : RGBA8, location := #caller_location) -> *Node {
     node := GetNode(parent, location);
     SetSize(node, width, height);
+    SetTextColor(node, color);
+
     if #complete direction == {
     case .Up;
         SetDraw(node, #bake_arguments DrawArrow(rotation=PI));
@@ -490,7 +489,53 @@ Arrow :: (parent : *Node, width : Size1D, height : Size1D, direction : ArrowDire
     case .Right;
         SetDraw(node, #bake_arguments DrawArrow(rotation=PI * 0.75));
     }
-    SetBackgroundColor(node, color);
+
+    return node;
+}
+
+DrawChevron :: (draw_list : *DrawList, node : *Node, rotation : float) -> bool {
+    if IsClipped(draw_list, node.rect) {
+        return false;
+    }
+
+    if (node.text_color & 0xff) == 0 {
+        return true;
+    }
+
+    center := (node.rect.xy + node.rect.zw) * 0.5;
+    half_w := node.size.x * 0.5;
+    half_h := node.size.y * 0.5;
+
+    p0 := center + Rotate(Vec2f.{half_w, -half_h * 0.5}, rotation);
+    p1 := center + Rotate(Vec2f.{-half_w, -half_h * 0.5}, rotation);
+    p2 := center + Rotate(Vec2f.{0, half_h * 0.5}, rotation);
+
+    array_add(*draw_list.path, .{position=p0});
+    array_add(*draw_list.path, .{position=p2});
+    array_add(*draw_list.path, .{position=p1});
+
+    DrawPolygonLine(draw_list, draw_list.path, false, 1, node.text_color);
+
+    array_reset_keeping_memory(*draw_list.path);
+
+    return true;
+}
+
+Chevron :: (parent : *Node, width : Size1D, height : Size1D, direction : ArrowDirection, color : RGBA8, location := #caller_location) -> *Node {
+    node := GetNode(parent, location);
+    SetSize(node, width, height);
+    SetTextColor(node, color);
+
+    if #complete direction == {
+    case .Up;
+        SetDraw(node, #bake_arguments DrawChevron(rotation=PI));
+    case .Down;
+        SetDraw(node, #bake_arguments DrawChevron(rotation=0));
+    case .Left;
+        SetDraw(node, #bake_arguments DrawChevron(rotation=PI * 0.5));
+    case .Right;
+        SetDraw(node, #bake_arguments DrawChevron(rotation=PI * 0.75));
+    }
 
     return node;
 }

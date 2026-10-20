@@ -1168,7 +1168,8 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         SetColors(*tree_item.hot.background.background_colors, Darken(base_accent_color, 0.1));
         SetColors(*tree_item.active.background.background_colors, base_accent_color);
 
-        triangle_size = 8;
+        arrow_size = 8;
+        arrow_style = .Chevron;
 
         indent = 10;
     }
