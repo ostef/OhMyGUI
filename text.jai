@@ -390,6 +390,7 @@ TextGlyphIterator :: struct {
     font_size : float;
     bounds : Vec2f;
     include_newlines : bool;
+    include_all_characters : bool;
     justify : bool;
     new_line := true;
     pen : Vec2f;
@@ -436,7 +437,7 @@ for_expansion :: (iter : *TextGlyphIterator, body : Code, flags : For_Flags) #ex
     for codepoint, `it_index : MakeUtf8String(iter.text) {
         if codepoint == {
         case #char "\n";
-            if iter.include_newlines {
+            if iter.include_newlines || iter.include_all_characters {
                 dummy_glyph := Glyph.{codepoint=codepoint};
                 it = *dummy_glyph;
                 #insert body;
@@ -445,6 +446,12 @@ for_expansion :: (iter : *TextGlyphIterator, body : Code, flags : For_Flags) #ex
             Newline(iter);
 
         case #char "\t";
+            if iter.include_all_characters {
+                dummy_glyph := Glyph.{codepoint=codepoint};
+                it = *dummy_glyph;
+                #insert body;
+            }
+
             iter.pen.x = SnapUp(iter.pen.x + iter.font.space_advance * iter.font_size, iter.font.space_advance * 4 * iter.font_size);
             iter.computed_size.x = max(iter.computed_size.x, iter.pen.x);
             iter.computed_size.y = max(iter.computed_size.y, iter.pen.y + iter.font.descent * iter.font_size);
@@ -646,3 +653,38 @@ CalculateTextSize :: (font : *Font, size : float, text : string) -> Vec2f {
 
     return iter.computed_size;
 } @Profile
+
+// WIP and untested
+EllipsizeText :: (font : *Font, size : float, text : string, max_width : float, ellipsis := "...") -> string {
+    ellipsis_size := CalculateTextSize(font, size, ellipsis);
+
+    iter : TextGlyphIterator;
+    iter.text = text;
+    iter.font = font;
+    iter.font_size = size;
+    iter.include_all_characters = true;
+
+    buffer : [..]u8;
+    buffer.allocator = Temp;
+    array_reserve(*buffer, text.count);
+
+    added_ellipses := false;
+    for iter {
+        if added_ellipses {
+            if it.codepoint == #char "\n" {
+                added_ellipses = false;
+            }
+
+            continue;
+        }
+
+        if iter.pen.x + it.hori_advance * size + ellipsis_size.x > max_width {
+            array_add(*buffer, ..cast([]u8, ellipsis));
+            added_ellipses = true;
+        } else {
+            EncodeCharacterAsUtf8(it.codepoint, *buffer);
+        }
+    }
+
+    return xx buffer;
+}

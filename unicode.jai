@@ -259,6 +259,22 @@ EncodeCharacterAsUtf8 :: (codepoint : u32, buffer : []u8, byte_offset : s64) -> 
     return size, .Ok;
 }
 
+EncodeCharacterAsUtf8 :: (codepoint : u32, buffer : *[..]u8) -> s64, UnicodeResult {
+    size := GetUtf8EncodingSize(codepoint);
+    if buffer.count + size > buffer.allocated {
+        array_reserve(buffer, max(8, buffer.allocated * 2));
+    }
+
+    buff : []u8;
+    buff.data = buffer.data;
+    buff.count = buffer.allocated;
+
+    size=, result := EncodeCharacterAsUtf8(codepoint, buff, buffer.count);
+    buffer.count += size;
+
+    return size, result;
+}
+
 // @Todo: correctly handle non ascii characters
 IsAlpha :: inline (codepoint : u32) -> bool {
     return codepoint < 127 && is_alpha(xx codepoint);

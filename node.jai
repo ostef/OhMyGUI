@@ -772,7 +772,7 @@ GetPopupNode :: inline (window : *Window, id : ID, is_global_id := true) -> *Nod
  *
  * @see NodeFlags.SortChildren
  */
-BringForward :: (node : *Node) {
+BringForward :: inline (node : *Node) {
     node.z_index = S32_MAX;
 }
 
