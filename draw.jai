@@ -1406,9 +1406,12 @@ DrawPolygonLine :: (
         if p1.normal != .{0,0} {
             n = p1.normal;
         } else if !closed && (i1 == 0 || i1 == points.count - 1) {
-            p2 := ifx i1 == 0 then points[1] else points[points.count - 2];
+            first := i1 == 0;
+            p2 := ifx first then points[1] else points[points.count - 2];
 
-            n = PerpendicularCW(p2.position - p1.position);
+            n = ifx first
+                then PerpendicularCCW(p2.position - p1.position)
+                else PerpendicularCW(p2.position - p1.position);
             normalize(*n);
         } else {
             #if #exists(__Tracy) {
