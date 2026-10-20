@@ -604,10 +604,12 @@ TextInputStyle :: struct {
 
 SetColors :: (using style : *TextInputStyle, base_background_color : RGBA8, accent_color : RGBA8) {
     text_color := ChooseTextColor(base_background_color);
+
     normal.text.text_color = text_color;
     focused.text.text_color = text_color;
     hot.text.text_color = text_color;
     active.text.text_color = text_color;
+    disabled.text.text_color = SetAlpha(text_color, 0.5);
 
     SetColors(*cursor.background_colors, text_color);
     SetColors(*selection.background_colors, accent_color);
@@ -616,6 +618,7 @@ SetColors :: (using style : *TextInputStyle, base_background_color : RGBA8, acce
     SetColors(*focused.background.background_colors, Whiten(base_background_color, 0.05));
     SetColors(*hot.background.background_colors, Darken(base_background_color, 0.05));
     SetColors(*active.background.background_colors, Whiten(base_background_color, 0.1));
+    SetColors(*disabled.background.background_colors, Darken(base_background_color, 0.1));
 
     SetColors(*active.background.border_colors, accent_color);
 }

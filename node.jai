@@ -81,6 +81,9 @@ GetState :: inline (node : *Node) -> NodeState {
 }
 
 GetState :: inline (state_flags : NodeStateFlags) -> NodeState {
+    if state_flags & .Disabled {
+        return .Disabled;
+    }
     if state_flags & .Active {
         return .Active;
     }
@@ -89,9 +92,6 @@ GetState :: inline (state_flags : NodeStateFlags) -> NodeState {
     }
     if state_flags & .Focused {
         return .Focused;
-    }
-    if state_flags & .Disabled {
-        return .Disabled;
     }
 
     return .None;
@@ -498,6 +498,21 @@ PushChild :: (parent : *Node, node : *Node) {
     parent.last_child = node;
 
     parent.num_children += 1;
+}
+
+PushDisabled :: inline (disabled := true) {
+    array_add(*context.omg.disabled_stack, disabled || IsDisabled());
+}
+
+PopDisabled :: inline () {
+    pop(*context.omg.disabled_stack);
+}
+
+IsDisabled :: inline () -> bool {
+    if context.omg.disabled_stack.count <= 0 {
+        return false;
+    }
+    return context.omg.disabled_stack[context.omg.disabled_stack.count - 1];
 }
 
 PushID :: inline (id : ID) {

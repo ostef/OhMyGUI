@@ -49,6 +49,7 @@ Context :: struct {
     theme : *Theme; ///> Active theme.
 
     id_stack : [..]ID; ///> Stack of IDs. The top of the stack is used as a seed for `GetID`.
+    disabled_stack : [..]bool;
 
     global_polygon_resolution := 1.0; ///> Global polygon resolution multiplier.
 

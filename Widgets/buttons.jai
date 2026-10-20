@@ -15,6 +15,12 @@ ButtonResult :: struct {
  * This function is idempotent, so calling ButtonBehavior multiple times for the same mouse button yields the same result.
  */
 ButtonBehavior :: (node : *Node, mouse_button := MouseButton.Left) -> ButtonResult {
+    disabled := IsDisabled();
+
+    if disabled {
+        node.state_flags |= .Disabled;
+    }
+
     node.flags |= .Focusable;
 
     button_flags := cast(NodeInteractingMouseButtons, 1 << mouse_button);
@@ -41,12 +47,14 @@ ButtonBehavior :: (node : *Node, mouse_button := MouseButton.Left) -> ButtonResu
         node.interacting_mouse_buttons |= button_flags;
         node.state_flags |= .Hot;
 
-        is_hovered := IsHovered(node);
-        result.pressed = is_hovered && IsMouseButtonPressed(mouse_button);
-        result.double_clicked = is_hovered && IsMouseButtonDoubleClicked(mouse_button);
-        result.released = is_hovered && IsMouseButtonReleased(mouse_button);
+        if !disabled {
+            is_hovered := IsHovered(node);
+            result.pressed = is_hovered && IsMouseButtonPressed(mouse_button);
+            result.double_clicked = is_hovered && IsMouseButtonDoubleClicked(mouse_button);
+            result.released = is_hovered && IsMouseButtonReleased(mouse_button);
 
-        result.down = true;
+            result.down = true;
+        }
     }
 
     return result;
@@ -80,11 +88,13 @@ SetColors :: (using style : *ButtonStyle, base_background_color : RGBA8, text_co
     SetColors(*focused.background.background_colors, Whiten(base_background_color, 0.05));
     SetColors(*hot.background.background_colors, Darken(base_background_color, 0.05));
     SetColors(*active.background.background_colors, Whiten(base_background_color, 0.1));
+    SetColors(*disabled.background.background_colors, Darken(base_background_color, 0.1));
 
     normal.text.text_color = text_color;
     focused.text.text_color = text_color;
     hot.text.text_color = text_color;
     active.text.text_color = text_color;
+    disabled.text.text_color = SetAlpha(text_color, 0.5);
 }
 
 /**
@@ -220,11 +230,13 @@ SetColors :: (using style : *CheckboxStyle, base_background_color : RGBA8, check
     SetColors(*focused.background.background_colors, Whiten(base_background_color, 0.05));
     SetColors(*hot.background.background_colors, Darken(base_background_color, 0.05));
     SetColors(*active.background.background_colors, Whiten(base_background_color, 0.1));
+    SetColors(*disabled.background.background_colors, Darken(base_background_color, 0.1));
 
     normal.checkmark.background_color = checkmark_color;
     focused.checkmark.background_color = checkmark_color;
     hot.checkmark.background_color = checkmark_color;
     active.checkmark.background_color = checkmark_color;
+    disabled.checkmark.background_color = SetAlpha(checkmark_color, 0.5);
 }
 
 /**
@@ -353,11 +365,13 @@ SetColors :: (using style : *RadioButtonStyle, base_background_color : RGBA8, ac
     SetColors(*focused.background.background_colors, Whiten(base_background_color, 0.05));
     SetColors(*hot.background.background_colors, Darken(base_background_color, 0.05));
     SetColors(*active.background.background_colors, Whiten(base_background_color, 0.1));
+    SetColors(*disabled.background.background_colors, Darken(base_background_color, 0.1));
 
     SetColors(*normal.active_mark.background_colors, active_mark_color);
     SetColors(*focused.active_mark.background_colors, active_mark_color);
     SetColors(*hot.active_mark.background_colors, active_mark_color);
     SetColors(*active.active_mark.background_colors, active_mark_color);
+    SetColors(*disabled.active_mark.background_colors, SetAlpha(active_mark_color, 0.5));
 }
 
 /**

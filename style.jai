@@ -140,6 +140,7 @@ SetColors :: (using style : *StateStyle(BoxStyle), base_background_color : RGBA8
     SetColors(*focused.background_colors, Whiten(base_background_color, 0.05));
     SetColors(*hot.background_colors, Darken(base_background_color, 0.05));
     SetColors(*active.background_colors, Whiten(base_background_color, 0.1));
+    SetColors(*disabled.background_colors, Darken(base_background_color, 0.1));
 }
 
 /**
