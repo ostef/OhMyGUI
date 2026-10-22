@@ -432,3 +432,79 @@ RadioButton :: (parent : *Node, active : bool, size := 0.0, style : *RadioButton
         return button.released, node;
     }
 }
+
+CollapseButton :: (parent: *Node, size : float, style : *ButtonStyle = null, location := #caller_location) -> bool, *Node {
+    EnsureStyle(*style, "button_small");
+
+    clicked, button := Button(parent, SizePx(size), SizePx(size), style, location);
+    button.flags |= .NoPaddedClip;
+
+    icon := GetNode(button);
+    SetSize(icon, SizeFill(), SizeFill());
+    SetDraw(icon, (draw_list : *DrawList, node : *Node) -> bool {
+        if IsClipped(draw_list, node.rect) {
+            return false;
+        }
+
+        center := (node.rect.xy + node.rect.zw) * 0.5;
+        center.x = ceil(center.x);
+        center.y = ceil(center.y);
+        length := node.size.x * 0.7;
+        start := center + Vec2f.{-floor(length * 0.5), 0.5};
+        end := center + Vec2f.{floor(length * 0.5), 0.5};
+
+        DrawLine(draw_list, start, end, 1, node.text_color);
+
+        return true;
+    });
+
+    state := GetState(button);
+    Apply(icon, style.states[state].text);
+
+    return clicked, button;
+}
+
+CloseButton :: (parent : *Node, size : float, style : *ButtonStyle = null, location := #caller_location) -> bool, *Node {
+    EnsureStyle(*style, "button_small");
+
+    clicked, button := Button(parent, SizePx(size), SizePx(size), style, location);
+    button.flags |= .NoPaddedClip;
+
+    icon := GetNode(button);
+    SetSize(icon, SizeFill(), SizeFill());
+    SetDraw(icon, (draw_list : *DrawList, node : *Node) -> bool {
+        if IsClipped(draw_list, node.rect) {
+            return false;
+        }
+
+        center := (node.rect.xy + node.rect.zw) * 0.5;
+        dir := normalize(node.rect.zw - node.rect.xy);
+        length := node.size.x;
+        color := node.text_color;
+
+        DrawLine(draw_list, center - dir * length * 0.5, center + dir * length * 0.5, 1, color, color);
+
+        dir = .{dir.y, -dir.x};
+
+        DrawLine(draw_list, center - dir * length * 0.5, center + dir * length * 0.5, 1, color, color);
+
+        return true;
+    });
+
+    state := GetState(button);
+    Apply(icon, style.states[state].text);
+
+    return clicked, button;
+}
+
+ChevronButton :: (parent : *Node, size : float, direction : ArrowDirection, style : *ButtonStyle = null, location := #caller_location) -> bool, *Node {
+    EnsureStyle(*style, "button_small");
+
+    clicked, button := Button(parent, SizePx(size), SizePx(size), style, location);
+    button.flags |= .NoPaddedClip;
+
+    state := GetState(button);
+    Chevron(button, SizeFill(), SizeFill(), direction, style.states[state].text.text_color);
+
+    return clicked, button;
+}

@@ -148,7 +148,11 @@ TreeNode :: (parent : *Node, text : string, flags : TreeNodeFlags = 0, style : *
 
             Apply(tree_item, style.tree_item.states[state].background);
 
-            Text(tree_item, "%", text, style=*style.tree_item.states[state].text);
+            text_node := GetNode(tree_item, "text");
+            SetText(text_node, text);
+            SetSize(text_node, SizeFill(), SizeFit());
+
+            Apply(text_node, style.tree_item.states[state].text);
         }
 
         contents : *Node;

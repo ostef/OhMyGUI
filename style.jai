@@ -486,6 +486,7 @@ DefaultTheme :: struct {
     label_and_content : LabelAndContentStyle;
     clickable_text : ClickableTextStyle;
     button : ButtonStyle;
+    button_small : ButtonStyle;
     button_accent : ButtonStyle;
     button_positive : ButtonStyle;
     button_negative : ButtonStyle;
@@ -609,6 +610,24 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         SetAlpha(*disabled.text.text_color, 0.5);
     }
     SetStyle(theme, "button", theme.button);
+
+    {
+        using theme.button_small;
+
+        normal.background.padding = .{5,5,5,5};
+        normal.background.corner_radiuses = rounding_factor * Vec4f.{6,6,6,6};
+        normal.text = theme.text;
+
+        focused = normal;
+        SetColors(*focused.background.background_colors, SetAlpha(theme.text.text_color, 0.25));
+
+        hot = normal;
+        SetColors(*hot.background.background_colors, SetAlpha(theme.text.text_color, 0.15));
+
+        active = normal;
+        SetColors(*active.background.background_colors, SetAlpha(theme.text.text_color, 0.2));
+    }
+    SetStyle(theme, "button_small", theme.button_small);
 
     {
         using theme.button_accent;
@@ -912,24 +931,8 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
             disabled = normal;
         }
 
-        {
-            using title_bar.collapse_button;
-
-            normal.background.padding = .{5,5,5,5};
-            normal.background.corner_radiuses = Vec4f.{6,6,6,6};
-            normal.text = title_bar.normal.text;
-
-            focused = normal;
-            focused.background.background_colors = theme.button.focused.background.background_colors;
-
-            hot = normal;
-            hot.background.background_colors = theme.button.hot.background.background_colors;
-
-            active = normal;
-            active.background.background_colors = theme.button.active.background.background_colors;
-        }
-
-        title_bar.close_button = title_bar.collapse_button;
+        title_bar.collapse_button = theme.button_small;
+        title_bar.close_button = theme.button_small;
 
         horizontal_scrollbar = theme.scrollbar;
         vertical_scrollbar = theme.scrollbar;
