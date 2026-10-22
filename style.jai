@@ -626,6 +626,9 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
 
         active = normal;
         SetColors(*active.background.background_colors, SetAlpha(theme.text.text_color, 0.2));
+
+        disabled = normal;
+        SetAlpha(*disabled.text.text_color, 0.5);
     }
     SetStyle(theme, "button_small", theme.button_small);
 
