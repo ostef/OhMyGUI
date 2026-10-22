@@ -25,7 +25,7 @@ MenuBar :: (parent : *Node, str_id : string, style : *BoxStyle = null) -> *Node 
 /**
  * @brief Button widget used inside menus and menu bars.
  */
-MenuItem :: (parent : *Node, text : string, selected := false, style : *MenuItemStyle = null, location := #caller_location) -> clicked : bool, *Node {
+MenuItem :: (parent : *Node, icon : TextureHandle, icon_size : float, text : string, selected := false, style : *MenuItemStyle = null, location := #caller_location) -> clicked : bool, *Node {
     EnsureStyle(*style, "menu_item");
 
     node := GetNode(parent, location);
@@ -46,6 +46,16 @@ MenuItem :: (parent : *Node, text : string, selected := false, style : *MenuItem
         }
 
         state := GetState(node);
+
+        if icon_size > 0 {
+            icon_node := GetNode(node, "icon");
+            SetSize(icon_node, SizePx(icon_size), SizePx(icon_size));
+
+            if icon {
+                SetImage(icon_node, icon);
+                SetBackgroundColor(icon_node, 0xffffffff);
+            }
+        }
 
         text_node := GetNode(node, "text");
         SetText(text_node, text);
@@ -72,6 +82,14 @@ MenuItem :: (parent : *Node, text : string, selected := false, style : *MenuItem
 
         return button.released, node;
     }
+}
+
+/**
+ * @brief Button widget used inside menus and menu bars.
+ */
+MenuItem :: (parent : *Node, text : string, selected := false, style : *MenuItemStyle = null, location := #caller_location) -> clicked : bool, *Node {
+    clicked, node := MenuItem(parent, 0, 0, text, selected, style, location);
+    return clicked, node;
 }
 
 MenuData :: struct {
@@ -115,6 +133,8 @@ Apply :: inline (node : *Node, style : MenuStyle) {
  */
 Menu :: (
     parent : *Node,
+    icon : TextureHandle,
+    icon_size : float,
     text : string,
     menu_item_style : *MenuItemStyle = null,
     menu_style : *MenuStyle = null,
@@ -131,10 +151,22 @@ Menu :: (
 
     menu_item := GetNode(parent, location);
     {
+        SetChildAlign(menu_item, 0, 0.5);
+
         if parent_menu_data {
             SetSize(menu_item, SizeFill(), SizeFit());
         } else {
             SetSize(menu_item, SizeFit(), SizeFit());
+        }
+
+        if icon_size > 0 {
+            icon_node := GetNode(menu_item, "icon");
+            SetSize(icon_node, SizePx(icon_size), SizePx(icon_size));
+
+            if icon {
+                SetImage(icon_node, icon);
+                SetBackgroundColor(icon_node, 0xffffffff);
+            }
         }
 
         text_node := GetNode(menu_item, "text");
@@ -172,6 +204,14 @@ Menu :: (
 
         Apply(menu_item, menu_item_style.button.states[state].background);
         Apply(text_node, menu_item_style.button.states[state].text);
+
+        if parent_menu_data && text_node.font {
+            SetWidth(text_node, SizeFill());
+
+            chevron_size := GetLineHeight(text_node.font, text_node.text_size);
+            chevron_size = floor(chevron_size * 0.5);
+            Chevron(menu_item, SizePx(chevron_size), SizePx(chevron_size), .Right, text_node.text_color);
+        }
     }
 
     menu : *Node;
@@ -200,6 +240,20 @@ Menu :: (
         }
     }
 
+    return menu, menu_item;
+}
+
+/**
+ * @brief Menu item widget that opens a menu.
+ */
+Menu :: (
+    parent : *Node,
+    text : string,
+    menu_item_style : *MenuItemStyle = null,
+    menu_style : *MenuStyle = null,
+    location := #caller_location
+) -> menu : *Node, menu_item : *Node {
+    menu, menu_item := Menu(parent, 0, 0, text, menu_item_style, menu_style, location);
     return menu, menu_item;
 }
 

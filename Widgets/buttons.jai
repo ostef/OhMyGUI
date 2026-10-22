@@ -149,8 +149,11 @@ Button :: (parent : *Node, icon : TextureHandle, icon_size : float, text : strin
 
     icon_node := GetNode(node, "icon");
     SetSize(icon_node, SizePx(icon_size), SizePx(icon_size));
-    SetImage(icon_node, icon);
-    SetBackgroundColor(icon_node, 0xffffffff);
+
+    if icon {
+        SetImage(icon_node, icon);
+        SetBackgroundColor(icon_node, 0xffffffff);
+    }
 
     text_node := GetNode(node, "text");
     SetText(text_node, text);

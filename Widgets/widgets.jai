@@ -534,7 +534,7 @@ Chevron :: (parent : *Node, width : Size1D, height : Size1D, direction : ArrowDi
     case .Left;
         SetDraw(node, #bake_arguments DrawChevron(rotation=PI * 0.5));
     case .Right;
-        SetDraw(node, #bake_arguments DrawChevron(rotation=PI * 0.75));
+        SetDraw(node, #bake_arguments DrawChevron(rotation=-PI * 0.5));
     }
 
     return node;
