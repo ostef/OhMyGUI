@@ -140,6 +140,29 @@ Button :: (parent : *Node, text : string, style : *ButtonStyle = null, location 
 }
 
 /**
+ * @brief Button widget with icon and text.
+ */
+Button :: (parent : *Node, icon : TextureHandle, icon_size : float, text : string, style : *ButtonStyle = null, location := #caller_location) -> clicked : bool, *Node {
+    EnsureStyle(*style, "button");
+
+    clicked, node := Button(parent, SizeFit(), SizeFit(), style, location);
+
+    icon_node := GetNode(node, "icon");
+    SetSize(icon_node, SizePx(icon_size), SizePx(icon_size));
+    SetImage(icon_node, icon);
+    SetBackgroundColor(icon_node, 0xffffffff);
+
+    text_node := GetNode(node, "text");
+    SetText(text_node, text);
+
+    state := GetState(node);
+
+    Apply(text_node, style.states[state].text);
+
+    return clicked, node;
+}
+
+/**
  * @brief Empty toggle button widget.
  */
 Toggle :: (parent : *Node, width : Size1D, height : Size1D, value : *bool, style : *ButtonStyle = null, location := #caller_location) -> clicked : bool, *Node {
