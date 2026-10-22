@@ -59,7 +59,7 @@ TreeNodeFlags :: enum_flags {
 /**
  * @brief Collapsible tree node widget.
  */
-TreeNode :: (parent : *Node, text : string, flags : TreeNodeFlags = 0, style : *TreeNodeStyle = null, location := #caller_location) -> contents : *Node, tree_item : *Node {
+TreeNode :: (parent : *Node, text : string, flags : TreeNodeFlags = 0, style : *TreeNodeStyle = null, location := #caller_location) -> contents : *Node, tree_item : *Node, tree_node : *Node {
     EnsureStyle(*style, "tree_node");
 
     node, is_new := GetNode(parent, location);
@@ -162,7 +162,7 @@ TreeNode :: (parent : *Node, text : string, flags : TreeNodeFlags = 0, style : *
             }
         }
 
-        return contents, tree_item;
+        return contents, tree_item, node;
     }
 }
 
