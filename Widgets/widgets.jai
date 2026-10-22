@@ -385,10 +385,10 @@ ScrollView :: (parent : *Node, flags : ScrollViewFlags = 0, style : *ScrollViewS
 
         ScrollViewBehavior(content, scroll_view_axes);
 
-        if !(flags & .NoScrollbarX) && content.children_size.x > content.size.x - content.padding.x - content.padding.z {
+        if !(flags & .NoScrollbarX) && content.children_size.x > 0 && content.children_size.x > content.size.x - content.padding.x - content.padding.z {
             Scrollbar(content_and_hscrollbar, content, .X, style=*style.horizontal_scrollbar);
         }
-        if !(flags & .NoScrollbarY) && content.children_size.y > content.size.y - content.padding.y - content.padding.w {
+        if !(flags & .NoScrollbarY) && content.children_size.y > 0 && content.children_size.y > content.size.y - content.padding.y - content.padding.w {
             Scrollbar(content_and_vscrollbar, content, .Y, style=*style.vertical_scrollbar);
         }
 
