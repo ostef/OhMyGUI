@@ -94,7 +94,7 @@ SubwindowTitleBar :: (
     {
         SetSize(node, SizeFill(), SizeFit());
 
-        text_container := GetNode(node);
+        text_container := GetNode(node, "text_container");
         SetSize(text_container, SizeFill(), SizeFit());
 
         text := GetNode(text_container, "text");
@@ -274,6 +274,24 @@ SubwindowResizeHandles :: (data : *SubwindowPersistentData, subwindow : *Node, m
     title_and_content.offset = resize_handles_expand;
 
     return title_and_content;
+}
+
+GetSubwindowTitleBar :: (node : *Node) -> *Node {
+    if !node {
+        return null;
+    }
+
+    title_bar := FindNode(node, "title_bar");
+    if title_bar {
+        return title_bar;
+    }
+
+    title_and_content := FindNode(node, "title_and_content");
+    if !title_and_content {
+        return null;
+    }
+
+    return FindNode(title_and_content, "title_bar");
 }
 
 /**
