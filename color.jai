@@ -348,15 +348,19 @@ ChooseTextColor :: inline (background : RGBA8, dark : RGBA8 = 0x0d0d0dff, light 
  * Mix two colors together, interpolate each component from a to b by a factor of t.
  */
 MixColors :: (a : RGBA8, b : RGBA8, t : float) -> RGBA8 {
+    if a == b {
+        return a;
+    }
+
     inv_t := 1 - t;
 
     ar, ag, ab, aa := GetRGBAU8(a);
     br, bg, bb, ba := GetRGBAU8(b);
 
     return PackRGBA8(
-        xx clamp((ar * inv_t) + (br * t), 0, 255),
-        xx clamp((ag * inv_t) + (bg * t), 0, 255),
-        xx clamp((ab * inv_t) + (bb * t), 0, 255),
-        xx clamp((aa * inv_t) + (ba * t), 0, 255),
+        xx clamp((ar * inv_t) + (br * t) + 0.5, 0, 255),
+        xx clamp((ag * inv_t) + (bg * t) + 0.5, 0, 255),
+        xx clamp((ab * inv_t) + (bb * t) + 0.5, 0, 255),
+        xx clamp((aa * inv_t) + (ba * t) + 0.5, 0, 255),
     );
 }
