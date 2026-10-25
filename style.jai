@@ -615,6 +615,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         using theme.button_small;
 
         normal.background.padding = .{5,5,5,5};
+        normal.background.child_gap = .{4,4};
         normal.background.corner_radiuses = rounding_factor * Vec4f.{6,6,6,6};
         normal.text = theme.text;
 
