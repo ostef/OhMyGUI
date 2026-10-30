@@ -42,7 +42,7 @@ main :: () {
         }
     }
 
-    window_flags := SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE;
+    window_flags := SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN;
     g_window = SDL_CreateWindow("Oh My GUI", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1600, 900, window_flags);
     defer SDL_DestroyWindow(g_window);
 
@@ -60,6 +60,10 @@ main :: () {
 
     OMG_GL.Init();
     defer OMG_GL.Terminate();
+
+    OMG.EnableCustomWindowDecorations(OMG.GetWindow(g_window));
+
+    SDL_ShowWindow(g_window);
 
     glGenQueries(xx (g_timestamp_queries.count * 2), xx g_timestamp_queries.data);
     defer glDeleteQueries(xx (g_timestamp_queries.count * 2), xx g_timestamp_queries.data);

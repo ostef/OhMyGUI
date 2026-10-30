@@ -94,6 +94,7 @@ PlatformFunctions :: struct {
     GetClipboardText : () -> string;
     SetClipboardText : (text : string);
     HasClipboardText : () -> bool;
+    EnableCustomWindowDecorations : (window : *Window) -> bool;
 }
 
 PlatformGetWindowTitle :: inline (handle : PlatformWindowHandle) -> string {
@@ -208,6 +209,14 @@ PlatformHasClipboardText :: inline () -> bool {
     return false;
 }
 
+EnableCustomWindowDecorations :: inline (window : *Window) -> bool {
+    if context.omg.platform_funcs.EnableCustomWindowDecorations {
+        window.has_custom_decorations = context.omg.platform_funcs.EnableCustomWindowDecorations(window);
+        return window.has_custom_decorations;
+    }
+    return false;
+}
+
 RendererFunctions :: struct {
     CreateR8Texture : (name : string, data : *void, width : u32, height : u32) -> TextureHandle;
     CreateRGBA8Texture : (name : string, data : *void, width : u32, height : u32) -> TextureHandle;
@@ -242,10 +251,18 @@ SetTheme :: inline (theme : *Theme) {
     context.omg.theme = theme;
 }
 
+WindowArea :: enum {
+    None;
+    Draggable;
+}
+
 Window :: struct {
     platform_handle : PlatformWindowHandle;
     prev : *Window;
     next : *Window;
+
+    has_custom_decorations : bool;
+    hovered_area : WindowArea; ///> What part of the OS window is hovered. Only when custom window decorations are enabled.
 
     root_node : *Node;
     popup_root_node : *Node;
@@ -617,6 +634,8 @@ NewFrame :: (delta_time : float) {
     }
 
     for :Windows omg {
+        it.hovered_area = .None;
+
         if it.root_node {
             FindMouseFocus(it.root_node);
         }
