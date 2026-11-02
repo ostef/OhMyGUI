@@ -401,8 +401,8 @@ Subwindow :: (
 
         subwindow.flags |= .Focusable | .Scrollable; // Prevent the mouse from getting used through the window
 
-        // Bring forward if any element inside the window is pressed
-        if IsMouseButtonPressed(.Left) && IsInTree(context.omg.mouse_hovered_node, subwindow) {
+        // Bring forward on mouse release of any element inside the window
+        if IsMouseButtonReleased(.Left) && IsInTree(context.omg.mouse_hovered_node, subwindow) {
             BringForward(subwindow);
         }
 
