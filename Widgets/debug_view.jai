@@ -166,10 +166,10 @@ DebugViewNodeProperties :: (data : *DebugViewData, parent : *Node, style : *Debu
     DebugViewProperty(parent, *alternate, "Text", "%, %", FormatColor(selected_node.text_color), selected_node.text_effects, style=style);
 }
 
-DebugViewOverlay :: (data : *DebugViewData, window : *Window, style : *DebugViewStyle) {
+DebugViewOverlay :: (data : *DebugViewData, style : *DebugViewStyle) {
     selected_node := GetNodeByGlobalID(data.selected_node_id);
     if selected_node {
-        overlay := GetPopupNode(window);
+        overlay := GetPopupNode(selected_node.window);
         BringForward(overlay);
 
         SetSize(overlay, SizePx(selected_node.size.x), SizePx(selected_node.size.y));
@@ -182,7 +182,7 @@ DebugViewOverlay :: (data : *DebugViewData, window : *Window, style : *DebugView
 
     hovered_node := GetNodeByGlobalID(data.hovered_node_id);
     if hovered_node {
-        overlay := GetPopupNode(window);
+        overlay := GetPopupNode(hovered_node.window);
         BringForward(overlay);
 
         SetSize(overlay, SizePx(hovered_node.size.x), SizePx(hovered_node.size.y));
@@ -207,13 +207,14 @@ DebugView :: (parent : *Node, style : *DebugViewStyle = null, location := #calle
 
     node_tree, node_tree_container := ScrollView(parent);
     SetWidth(node_tree_container, SizeFill(0.3));
+    SetLayout(node_tree, .TopToBottom);
     DebugViewNodeTree(data, node_tree);
 
     properties, properties_container := ScrollView(parent);
     SetWidth(properties_container, SizeFill(0.7));
     DebugViewNodeProperties(data, properties, style);
 
-    DebugViewOverlay(data, parent.window, style);
+    DebugViewOverlay(data, style);
 }
 
 DebugViewWindow :: (window : *Window, str_id : string, opened : *bool, style : *DebugViewStyle = null) {
