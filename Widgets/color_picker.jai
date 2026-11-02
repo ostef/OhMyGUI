@@ -881,7 +881,7 @@ ColorPicker :: (
 
             hex := cast(u32, MakeRGBA8(color));
             if IntInput(hex_field, *hex, 0, 0xffffffff, flags=.NoDragging, base=16, min_digits=8) {
-                color.* = ToVec4f(xx hex);
+                color.* = ToVec4f(cast(RGBA8, hex));
                 rgb_modified = true;
             }
 
