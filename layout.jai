@@ -220,18 +220,32 @@ LayoutFixedAndFitSizing :: (node : *Node, axis : Axis) #no_abc {
         }
     }
 
+    min_should_fit := node.min_max_size_fit & xx (node.min_max_size_fit.MinFitWidth << axis) != 0;
+    max_should_fit := node.min_max_size_fit & xx (node.min_max_size_fit.MaxFitWidth << axis) != 0;
+
     text_size : Vec2f;
-    if (node.flags & .TextNode) && (axis == .X || !(node.flags & .WrapText)) && node.desired_size[axis].kind == .FitChildren {
+    if (node.flags & .TextNode) && (axis == .X || !(node.flags & .WrapText)) && (node.desired_size[axis].kind == .FitChildren || min_should_fit || max_should_fit) {
         text_size = CalculateTextSize(node.font, node.text_size, node.text);
     }
 
-    if node.min_size_fit & xx (1 << axis) {
-        node.min_size[axis] = ceil(node.children_size[axis] + node.padding.xy[axis] + node.padding.zw[axis]);
+    if min_should_fit {
+        if !(node.flags & .TextNode) {
+            node.min_size[axis] = ceil(node.children_size[axis] + node.padding.xy[axis] + node.padding.zw[axis]);
+        } else if axis == .X || !(node.flags & .WrapText) {
+            node.min_size[axis] = ceil(text_size[axis]);
+        }
+    }
+    if max_should_fit {
+        if !(node.flags & .TextNode) {
+            node.max_size[axis] = ceil(node.children_size[axis] + node.padding.xy[axis] + node.padding.zw[axis]);
+        } else if axis == .X || !(node.flags & .WrapText) {
+            node.max_size[axis] = ceil(text_size[axis]);
+        }
     }
 
     // We should set the size to fit also if min size is set to fit and we want to fill the parent
     // We need this because otherwise a we can't have a parent that wants to fit with children that wants to fill with a min size of fit
-    should_fit := node.desired_size[axis].kind == .FitChildren || (node.desired_size[axis].kind == .FillParent && (node.min_size_fit & xx (1 << axis)) != 0);
+    should_fit := node.desired_size[axis].kind == .FitChildren || (node.desired_size[axis].kind == .FillParent && min_should_fit);
 
     if should_fit {
         if node.flags & .TextNode {

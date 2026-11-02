@@ -1,3 +1,6 @@
+/**
+ * @brief Opaque handle to a GPU texture.
+ */
 TextureHandle :: u64;
 
 /**

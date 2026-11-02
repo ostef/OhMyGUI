@@ -194,16 +194,18 @@ Node :: struct {
 
         flags : NodeFlags;
 
-        offset : Vec2f;                                           ///> Offset relative to the parent, after scroll is applied. Not reset each frame.
-        scroll : Vec2f;                                           ///> Scroll, additional offset applied to children. Not reset each frame.
-        child_align : Vec2f;                                      ///> Child alignment on each axis; 0 means the start of the axis, 1 means the end (depends on the layout direction).
+        offset : Vec2f;      ///> Offset relative to the parent, after scroll is applied. Not reset each frame.
+        scroll : Vec2f;      ///> Scroll, additional offset applied to children. Not reset each frame.
+        child_align : Vec2f; ///> Child alignment on each axis; 0 means the start of the axis, 1 means the end (depends on the layout direction).
         desired_size := Size2D.{.{kind=.FitChildren}, .{kind=.FitChildren}};
         min_size := Vec2f.{-FLOAT32_INFINITY, -FLOAT32_INFINITY}; ///> Min size in pixels.
         max_size := Vec2f.{ FLOAT32_INFINITY,  FLOAT32_INFINITY}; ///> Max size in pixels.
-        min_size_fit : enum_flags u8 {
-            Width;  ///> Fit children on the X axis
-            Height; ///> Fit children on the Y axis
-        }; ///> Flags describing whether the node should at least fit its child contents.
+        min_max_size_fit : enum_flags u8 {
+            MinFitWidth;  ///> The width should at least fit children on the X axis
+            MinFitHeight; ///> The height should at least fit children on the Y axis
+            MaxFitWidth;  ///> The width should at most fit children on the X axis
+            MaxFitHeight; ///> The height should at most fit children on the Y axis
+        }; ///> Flags describing whether the node should fit its child contents as min/max size.
         child_gap : Vec2b; ///> Gap between children (at most 127). Currently the value on the cross layout axis is unused, until we have element wrapping.
         padding : Vec4b;   ///> Inner padding applied on the left, top, right and bottom of the node (at most 127).
         child_layout_mode := LayoutMode.LeftToRight;
@@ -815,14 +817,22 @@ SetMinWidth :: inline (node : *Node, size : float) {
 
 SetMinWidthFit :: inline (node : *Node, fit := true) {
     if fit {
-        node.min_size_fit |= .Width;
+        node.min_max_size_fit |= .MinFitWidth;
     } else {
-        node.min_size_fit &= ~.Width;
+        node.min_max_size_fit &= ~.MinFitWidth;
     }
 }
 
 SetMaxWidth :: inline (node : *Node, size : float) {
     node.max_size.x = size;
+}
+
+SetMaxWidthFit :: inline (node : *Node, fit := true) {
+    if fit {
+        node.min_max_size_fit |= .MaxFitWidth;
+    } else {
+        node.min_max_size_fit &= ~.MaxFitWidth;
+    }
 }
 
 SetMinMaxWidth :: inline (node : *Node, min : float, max : float) {
@@ -846,14 +856,22 @@ SetMinHeight :: inline (node : *Node, size : float) {
 
 SetMinHeightFit :: inline (node : *Node, fit := true) {
     if fit {
-        node.min_size_fit |= .Height;
+        node.min_max_size_fit |= .MinFitHeight;
     } else {
-        node.min_size_fit &= ~.Height;
+        node.min_max_size_fit &= ~.MinFitHeight;
     }
 }
 
 SetMaxHeight :: inline (node : *Node, size : float) {
     node.max_size.y = size;
+}
+
+SetMaxHeightFit :: inline (node : *Node, fit := true) {
+    if fit {
+        node.min_max_size_fit |= .MaxFitHeight;
+    } else {
+        node.min_max_size_fit &= ~.MaxFitHeight;
+    }
 }
 
 SetMinMaxHeight :: inline (node : *Node, min : float, max : float) {

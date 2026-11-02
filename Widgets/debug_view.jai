@@ -148,8 +148,8 @@ DebugViewNodeProperties :: (data : *DebugViewData, parent : *Node, style : *Debu
     DebugViewProperty(parent, *alternate, "Scroll", "%, %", selected_node.scroll.x, selected_node.scroll.y, style=style);
     DebugViewProperty(parent, *alternate, "Child align", "%, %", selected_node.child_align.x, selected_node.child_align.y, style=style);
     DebugViewProperty(parent, *alternate, "Desired size", "%, %", FormatSize1D(selected_node.desired_size.x), FormatSize1D(selected_node.desired_size.y), style=style);
-    DebugViewProperty(parent, *alternate, "Min Size", "%0%, %0%", selected_node.min_size.x, ifx selected_node.min_size_fit & .Width then " fit", selected_node.min_size.y, ifx selected_node.min_size_fit & .Height then " fit", style=style);
-    DebugViewProperty(parent, *alternate, "Max Size", "%, %", selected_node.max_size.x, selected_node.max_size.y, style=style);
+    DebugViewProperty(parent, *alternate, "Min Size", "%0%, %0%", selected_node.min_size.x, ifx selected_node.min_max_size_fit & .MinFitWidth then " fit", selected_node.min_size.y, ifx selected_node.min_max_size_fit & .MinFitHeight then " fit", style=style);
+    DebugViewProperty(parent, *alternate, "Max Size", "%0%, %0%", selected_node.max_size.x, ifx selected_node.min_max_size_fit & .MaxFitWidth then " fit", selected_node.max_size.y, ifx selected_node.min_max_size_fit & .MaxFitHeight then " fit", style=style);
     DebugViewProperty(parent, *alternate, "Child Gap", "%, %", selected_node.child_gap.x, selected_node.child_gap.y, style=style);
     DebugViewProperty(parent, *alternate, "Padding", "%, %", selected_node.padding.x, selected_node.padding.y, style=style);
     DebugViewProperty(parent, *alternate, "Layout mode", "%", selected_node.child_layout_mode, style=style);
