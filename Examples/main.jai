@@ -21,6 +21,9 @@ OMG_GL :: #import "OhMyGUI/GL";
 
 g_quit := false;
 g_window : *SDL_Window;
+g_gl_context : SDL_GLContext;
+g_node_graph_window : *SDL_Window;
+g_node_graph_gl_context : SDL_GLContext;
 g_time : float;
 g_delta_time : float;
 g_gpu_time : float;
@@ -46,12 +49,24 @@ main :: () {
     g_window = SDL_CreateWindow("Oh My GUI", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1600, 900, window_flags);
     defer SDL_DestroyWindow(g_window);
 
+    g_node_graph_window = SDL_CreateWindow("Node Graph", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1200, 800, window_flags);
+
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, xx SDL_GL_CONTEXT_PROFILE_CORE);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
 
-    gl_context := SDL_GL_CreateContext(g_window);
-    defer SDL_GL_DeleteContext(gl_context);
+    g_gl_context = SDL_GL_CreateContext(g_window);
+    defer SDL_GL_DeleteContext(g_gl_context);
+
+    // Share shaders, textures and buffers with the main window's GL context
+    SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1);
+
+    g_node_graph_gl_context = SDL_GL_CreateContext(g_node_graph_window);
+
+    // Only wait for vsync once per frame
+    SDL_GL_SetSwapInterval(0);
+
+    SDL_GL_MakeCurrent(g_window, g_gl_context);
 
     gl_load(*gl);
 
@@ -61,9 +76,13 @@ main :: () {
     OMG_GL.Init();
     defer OMG_GL.Terminate();
 
+    // Must be destroyed while OMG is still initialized
+    defer DestroyNodeGraphWindow();
+
     OMG.EnableCustomWindowDecorations(OMG.GetWindow(g_window));
 
     SDL_ShowWindow(g_window);
+    SDL_ShowWindow(g_node_graph_window);
 
     glGenQueries(xx (g_timestamp_queries.count * 2), xx g_timestamp_queries.data);
     defer glDeleteQueries(xx (g_timestamp_queries.count * 2), xx g_timestamp_queries.data);
@@ -107,6 +126,15 @@ main :: () {
             }
 
             OMG_SDL.HandleEvent(event);
+
+            if event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE {
+                sdl_window := SDL_GetWindowFromID(event.window.windowID);
+                if sdl_window == g_window {
+                    g_quit = true;
+                } else if sdl_window == g_node_graph_window {
+                    DestroyNodeGraphWindow();
+                }
+            }
         }
 
         #if #exists(Tracy) {
@@ -115,7 +143,9 @@ main :: () {
         OMG.NewFrame(g_delta_time);
 
         EditorFrame();
-        ShowNodeGraphWindow();
+        if g_node_graph_window {
+            ShowNodeGraphWindow(OMG.GetWindow(g_node_graph_window));
+        }
 
         user_end := current_time_monotonic();
         g_user_time = xx to_float64_seconds(user_end - user_start);
@@ -124,6 +154,8 @@ main :: () {
             Tracy.EmitMessage("OMG.Render");
         }
         OMG.Render();
+
+        SDL_GL_MakeCurrent(g_window, g_gl_context);
 
         w, h : s32;
         SDL_GetWindowSize(g_window, *w, *h);
@@ -145,7 +177,7 @@ main :: () {
 
         glQueryCounter(g_timestamp_queries[g_current_timestamp_query][0], GL_TIMESTAMP);
 
-        OMG_GL.Render(xx w, xx h);
+        OMG_GL.Render(OMG.GetWindow(g_window), xx w, xx h);
 
         glQueryCounter(g_timestamp_queries[g_current_timestamp_query][1], GL_TIMESTAMP);
 
@@ -153,8 +185,43 @@ main :: () {
 
         SDL_GL_SwapWindow(g_window);
 
+        if g_node_graph_window {
+            SDL_GL_MakeCurrent(g_node_graph_window, g_node_graph_gl_context);
+
+            SDL_GetWindowSize(g_node_graph_window, *w, *h);
+
+            glViewport(0, 0, xx w, xx h);
+            glClearColor(0,0,0,1);
+            glClear(GL_COLOR_BUFFER_BIT);
+
+            OMG_GL.Render(OMG.GetWindow(g_node_graph_window), xx w, xx h);
+
+            SDL_GL_SwapWindow(g_node_graph_window);
+
+            // Keep the main context current outside of rendering (e.g. for textures created during the frame)
+            SDL_GL_MakeCurrent(g_window, g_gl_context);
+        }
+
         if g_slow_down {
             sleep_milliseconds(100);
         }
     }
+}
+
+DestroyNodeGraphWindow :: () {
+    if !g_node_graph_window {
+        return;
+    }
+
+    omg_window := OMG.GetWindow(g_node_graph_window, create=false);
+    if omg_window {
+        OMG.DestroyWindow(omg_window);
+    }
+
+    SDL_GL_MakeCurrent(g_window, g_gl_context);
+    SDL_GL_DeleteContext(g_node_graph_gl_context);
+    SDL_DestroyWindow(g_node_graph_window);
+
+    g_node_graph_gl_context = null;
+    g_node_graph_window = null;
 }

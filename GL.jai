@@ -8,6 +8,7 @@ GetRendererFuncs :: inline () -> RendererFunctions {
         CreateR8Texture=CreateR8Texture,
         CreateRGBA8Texture=CreateRGBA8Texture,
         DestroyTexture=DestroyTexture,
+        DestroyWindowData=DestroyWindowData,
     };
 }
 
@@ -23,11 +24,69 @@ Shader :: struct {
 
 g_shader : Shader;
 
-g_vao : GLuint;
+// Buffers are shared between GL contexts, so they can be released from any context.
+// Vertex array objects are not, see Render.
+WindowData :: struct {
+    clip_boxes_buffer : GLuint;
+    vertices_buffer : GLuint;
+    indices_buffer : GLuint;
+}
 
-g_clip_boxes_buffer : GLuint;
-g_vertices_buffer : GLuint;
-g_indices_buffer : GLuint;
+GetWindowData :: (window : *Window) -> *WindowData {
+    if !window.renderer_data {
+        data := New(WindowData);
+        glGenBuffers(1, *data.clip_boxes_buffer);
+        glGenBuffers(1, *data.vertices_buffer);
+        glGenBuffers(1, *data.indices_buffer);
+
+        window.renderer_data = data;
+    }
+
+    return window.renderer_data;
+}
+
+DestroyWindowData :: (window : *Window) {
+    data := cast(*WindowData, window.renderer_data);
+    if !data {
+        return;
+    }
+
+    glDeleteBuffers(1, *data.clip_boxes_buffer);
+    glDeleteBuffers(1, *data.vertices_buffer);
+    glDeleteBuffers(1, *data.indices_buffer);
+
+    free(data);
+    window.renderer_data = null;
+}
+
+CreateVertexArray :: (vertices_buffer : GLuint, indices_buffer : GLuint) -> GLuint {
+    vao : GLuint;
+    glGenVertexArrays(1, *vao);
+    glBindVertexArray(vao);
+
+    glBindBuffer(GL_ARRAY_BUFFER, vertices_buffer);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indices_buffer);
+
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, size_of(Vertex), cast(*void, 0));
+
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, size_of(Vertex), cast(*void, 8));
+
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE, size_of(Vertex), cast(*void, 16));
+
+    glEnableVertexAttribArray(3);
+    glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, size_of(Vertex), cast(*void, 20));
+
+    glEnableVertexAttribArray(4);
+    glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, size_of(Vertex), cast(*void, 24));
+
+    glEnableVertexAttribArray(5);
+    glVertexAttribIPointer(5, 1, GL_INT, size_of(Vertex), cast(*void, 28));
+
+    return vao;
+}
 
 LoadShader :: (name : string, vertex_source : string, fragment_source : string) -> Shader {
     status, log_length : GLint;
@@ -225,114 +284,83 @@ GLSL
 
 #scope_export
 
+/**
+ * @brief Initialize the renderer.
+ *
+ * Initialize the renderer. Must be called with an active GL context. Shaders and textures are created once
+ * and used by all windows, so every GL context passed to Render must share objects with this context (e.g.
+ * SDL_GL_SHARE_WITH_CURRENT_CONTEXT).
+ */
 Init :: () {
-    #import "File";
-
     g_shader = LoadShader("OhMyGUI", Vertex_Shader, Fragment_Shader);
     assert(g_shader.handle != 0, "Could not load OhMyGUI shader");
-
-    glGenBuffers(1, *g_clip_boxes_buffer);
-    glGenBuffers(1, *g_vertices_buffer);
-    glGenBuffers(1, *g_indices_buffer);
-
-    glGenVertexArrays(1, *g_vao);
-    glBindVertexArray(g_vao);
-    glBindBuffer(GL_ARRAY_BUFFER, g_vertices_buffer);
-
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, size_of(Vertex), cast(*void, 0));
-
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, size_of(Vertex), cast(*void, 8));
-
-    glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE, size_of(Vertex), cast(*void, 16));
-
-    glEnableVertexAttribArray(3);
-    glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, size_of(Vertex), cast(*void, 20));
-
-    glEnableVertexAttribArray(4);
-    glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, size_of(Vertex), cast(*void, 24));
-
-    glEnableVertexAttribArray(5);
-    glVertexAttribIPointer(5, 1, GL_INT, size_of(Vertex), cast(*void, 28));
-
-    glBindVertexArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     white : u32 = 0xffffffff;
     g_white_texture = xx CreateRGBA8Texture("White Texture", *white, 1, 1);
 }
 
 Terminate :: () {
+    for :Windows context.omg {
+        DestroyWindowData(it);
+    }
+
     glDeleteProgram(g_shader.handle);
     g_shader.handle = 0;
-
-    glDeleteBuffers(1, *g_clip_boxes_buffer);
-    glDeleteBuffers(1, *g_vertices_buffer);
-    glDeleteBuffers(1, *g_indices_buffer);
-    glDeleteVertexArrays(1, *g_vao);
 
     glDeleteTextures(1, *g_white_texture);
 }
 
-Render :: (viewport_w : u32, viewport_h : u32) {
+/**
+ * @brief Render a Window's draw list into the current framebuffer.
+ *
+ * Render a Window's draw list into the current framebuffer.
+ * The GL context associated with the window must be active.
+ */
+Render :: (window : *Window, viewport_w : u32, viewport_h : u32) {
+    draw_list := *window.draw_list;
+    if draw_list.indices.count <= 0 {
+        return;
+    }
+
+    data := GetWindowData(window);
+
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glBlendEquation(GL_FUNC_ADD);
 
-    push_allocator(temp);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, data.clip_boxes_buffer);
+    clip_boxes_size := draw_list.clip_boxes.count * size_of(ClipBox);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, xx clip_boxes_size, draw_list.clip_boxes.data, GL_STREAM_DRAW);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
-    clip_boxes : [..]ClipBox;
-    vertices : [..]Vertex;
-    indices : [..]u32;
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, data.clip_boxes_buffer);
+    defer glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
 
-    for :Windows context.omg {
-        array_add(*clip_boxes, ..it.draw_list.clip_boxes);
-        array_add(*vertices, ..it.draw_list.vertices);
-        array_add(*indices, ..it.draw_list.indices);
+    // Vertex array objects are not shared between GL contexts, and we can't know which context
+    // will be current when the window is destroyed, so create a temporary one each frame.
+    vao := CreateVertexArray(data.vertices_buffer, data.indices_buffer);
+    defer {
+        glBindVertexArray(0);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glDeleteVertexArrays(1, *vao);
     }
 
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, g_clip_boxes_buffer);
-    defer glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+    vertices_size := draw_list.vertices.count * size_of(Vertex);
+    glBufferData(GL_ARRAY_BUFFER, xx vertices_size, draw_list.vertices.data, GL_STREAM_DRAW);
 
-    clip_boxes_size := clip_boxes.count * size_of(ClipBox);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, xx clip_boxes_size, clip_boxes.data, GL_STREAM_DRAW);
+    indices_size := draw_list.indices.count * size_of(u32);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, xx indices_size, draw_list.indices.data, GL_STREAM_DRAW);
 
-    glBindVertexArray(g_vao);
-    defer glBindVertexArray(0);
-
-    glBindBuffer(GL_ARRAY_BUFFER, g_vertices_buffer);
-    defer glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-    vertices_size := vertices.count * size_of(Vertex);
-    glBufferData(GL_ARRAY_BUFFER, xx vertices_size, vertices.data, GL_STREAM_DRAW);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_indices_buffer);
-    defer glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-    indices_size := indices.count * size_of(u32);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, xx indices_size, indices.data, GL_STREAM_DRAW);
-
-    base_index, base_vertex : u32;
-    clip_boxes_offset := 0;
-    for :Windows context.omg {
-        glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 0, g_clip_boxes_buffer, xx clip_boxes_offset, xx (it.draw_list.clip_boxes.count * size_of(ClipBox)));
-
-        SendDrawCommands(*it.draw_list, viewport_w, viewport_h, base_index, base_vertex);
-
-        base_index += xx it.draw_list.indices.count;
-        base_vertex += xx it.draw_list.vertices.count;
-        clip_boxes_offset += it.draw_list.clip_boxes.count * size_of(ClipBox);
-    }
+    SendDrawCommands(draw_list, viewport_w, viewport_h);
 }
 
-SendDrawCommands :: (draw_list : *DrawList, viewport_w : u32, viewport_h : u32, base_index : u32, base_vertex : u32) {
+SendDrawCommands :: (draw_list : *DrawList, viewport_w : u32, viewport_h : u32) {
     current_texture : GLuint = 0;
 
     glUseProgram(g_shader.handle);
+    defer glUseProgram(0);
 
     if g_shader.u_viewport_size >= 0 {
         glUniform2f(g_shader.u_viewport_size, xx viewport_w, xx viewport_h);
@@ -353,8 +381,8 @@ SendDrawCommands :: (draw_list : *DrawList, viewport_w : u32, viewport_h : u32, 
             current_texture = xx it.texture.handle;
         }
 
-        indices_offset := (base_index + it.index_offset) * size_of(u32);
-        glDrawElementsBaseVertex(GL_TRIANGLES, xx it.num_indices, GL_UNSIGNED_INT, cast(*void, indices_offset), xx base_vertex);
+        indices_offset := it.index_offset * size_of(u32);
+        glDrawElements(GL_TRIANGLES, xx it.num_indices, GL_UNSIGNED_INT, cast(*void, indices_offset));
     }
 }
 

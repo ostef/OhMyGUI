@@ -41,6 +41,7 @@ Context :: struct {
     cursor_this_frame : PlatformCursorHandle;
 
     windows : *Window; ///> Linked list of windows.
+    hovered_window : *Window; ///> Window under the mouse in the current frame.
     fonts : *Font;     ///> Linked list of loaded fonts.
     node_pool : Bucket_Array(Node, 300);
     nodes_by_id : HT.Table(ID, *Node);
@@ -221,6 +222,7 @@ RendererFunctions :: struct {
     CreateR8Texture : (name : string, data : *void, width : u32, height : u32) -> TextureHandle;
     CreateRGBA8Texture : (name : string, data : *void, width : u32, height : u32) -> TextureHandle;
     DestroyTexture : (texture : TextureHandle);
+    DestroyWindowData : (window : *Window);
 }
 
 RendererCreateR8Texture :: inline (name : string, data : *void, width : u32, height : u32) -> TextureHandle {
@@ -240,6 +242,12 @@ RendererCreateRGBA8Texture :: inline (name : string, data : *void, width : u32, 
 RendererDestroyTexture :: inline (texture : TextureHandle) {
     if context.omg.renderer_funcs.DestroyTexture {
         context.omg.renderer_funcs.DestroyTexture(texture);
+    }
+}
+
+RendererDestroyWindowData :: inline (window : *Window) {
+    if context.omg.renderer_funcs.DestroyWindowData {
+        context.omg.renderer_funcs.DestroyWindowData(window);
     }
 }
 
@@ -267,6 +275,7 @@ Window :: struct {
     root_node : *Node;
     popup_root_node : *Node;
     draw_list : DrawList;
+    renderer_data : *void;
 }
 
 /**
@@ -336,6 +345,12 @@ DestroyWindow :: (window : *Window) {
     if context.omg.windows == window {
         context.omg.windows = window.next;
     }
+
+    if context.omg.hovered_window == window {
+        context.omg.hovered_window = null;
+    }
+
+    RendererDestroyWindowData(window);
 
     DestroyDrawList(*window.draw_list);
 
@@ -607,14 +622,18 @@ NewFrame :: (delta_time : float) {
     omg.delta_time = delta_time;
 
     // Clear draw lists
+    omg.num_vertices_last_frame = 0;
+    omg.num_indices_last_frame = 0;
     for :Windows omg {
-        omg.num_vertices_last_frame = it.draw_list.vertices.count;
-        omg.num_indices_last_frame = it.draw_list.indices.count;
+        omg.num_vertices_last_frame += it.draw_list.vertices.count;
+        omg.num_indices_last_frame += it.draw_list.indices.count;
 
         ClearDrawList(*it.draw_list);
     }
 
     InputNewFrame(*omg.input);
+
+    omg.hovered_window = GetMouseFocusedWindow();
 
     ProcessDockNodeSplitRequests();
     RemoveEmptyDockNodes();
@@ -635,6 +654,10 @@ NewFrame :: (delta_time : float) {
 
     for :Windows omg {
         it.hovered_area = .None;
+
+        if omg.hovered_window && omg.hovered_window != it {
+            continue;
+        }
 
         if it.root_node {
             FindMouseFocus(it.root_node);

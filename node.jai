@@ -291,8 +291,13 @@ DefaultHitTest :: (node : *Node, point : Vec2f) -> bool {
     return IsInsideRect(point, node.clipped_rect);
 }
 
+// @Todo @Fix: this function ignores overlapping nodes
 IsHovered :: (node : *Node) -> bool {
     if !node.hit_test {
+        return false;
+    }
+
+    if context.omg.hovered_window && context.omg.hovered_window != node.window {
         return false;
     }
 
