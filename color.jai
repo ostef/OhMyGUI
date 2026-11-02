@@ -27,7 +27,7 @@ SetRGB :: inline (color : *RGBA8, rgb : Vec3f) {
  * @brief Set the RGB components of a color as floats.
  */
 SetRGB :: inline (color : RGBA8, rgb : Vec3f) -> RGBA8 {
-    rgba := ColorVec4f(color);
+    rgba := ToVec4f(color);
     rgba.xyz = rgb;
     return MakeRGBA8(rgba);
 }
@@ -36,7 +36,7 @@ SetRGB :: inline (color : RGBA8, rgb : Vec3f) -> RGBA8 {
  * @brief Get the RGB components of a color as floats.
  */
 GetRGB :: inline (color : RGBA8) -> Vec3f {
-    rgba := ColorVec4f(color);
+    rgba := ToVec4f(color);
 
     return rgba.xyz;
 }
@@ -52,7 +52,7 @@ SetAlpha :: inline (color : *RGBA8, alpha : float) {
  * @brief Set the alpha component of a color as float.
  */
 SetAlpha :: inline (color : RGBA8, alpha : float) -> RGBA8 {
-    rgba := ColorVec4f(color);
+    rgba := ToVec4f(color);
     rgba.w = alpha;
     return MakeRGBA8(rgba);
 }
@@ -83,7 +83,7 @@ PackRGBA8 :: inline (r : u8, g : u8, b : u8, a : u8) -> RGBA8 {
     return cast(RGBA8, (ur << 24) | (ug << 16) | (ub << 8) | ua);
 }
 
-ColorVec4f :: inline (rgba : RGBA8) -> Vec4f {
+ToVec4f :: inline (rgba : RGBA8) -> Vec4f {
     r := (cast(u32, rgba) >> 24) & 0xff;
     g := (cast(u32, rgba) >> 16) & 0xff;
     b := (cast(u32, rgba) >> 8)  & 0xff;

@@ -410,8 +410,8 @@ Animate :: inline (a : Vec4f, b : Vec4f, t : float, func : AnimFunc) -> Vec4f {
 }
 
 Animate :: inline (a : RGBA8, b : RGBA8, t : float, func : AnimFunc) -> RGBA8 {
-    a4f := ColorVec4f(a);
-    b4f := ColorVec4f(b);
+    a4f := ToVec4f(a);
+    b4f := ToVec4f(b);
 
     return MakeRGBA8(
         Animate(a4f.x, b4f.x, t, func),

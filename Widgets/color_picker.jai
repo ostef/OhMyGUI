@@ -569,7 +569,7 @@ ColorPreview :: (parent : *Node, color : RGBA8, style : *ColorPreviewStyle, loca
 
     if node == context.omg.mouse_hovered_node {
         r, g, b, a := GetRGBAU8(color);
-        rgba := ColorVec4f(color);
+        rgba := ToVec4f(color);
         hsv := RGBToHSV(rgba.xyz);
         Tooltip(
             "R: %  G: %  B: %  A: %\n%, %, %, %\n\n#%",
@@ -601,7 +601,7 @@ PickColorButton :: (parent : *Node, color : *Vec4f, previous_color : Vec4f, data
     cancel := IsMouseButtonPressed(.Right) || IsKeyPressed(.Escape);
 
     if data.picking_color && accept {
-        color.* = ColorVec4f(GetColorAtMousePosition());
+        color.* = ToVec4f(GetColorAtMousePosition());
         data.hsv = RGBToHSVPreserving(color.xyz, data.hsv);
         data.picking_color = false;
     }
@@ -615,7 +615,7 @@ PickColorButton :: (parent : *Node, color : *Vec4f, previous_color : Vec4f, data
         SetMouseCapture(pick_button);
         SetCursor(GetSystemCursor(.EyeDropper));
 
-        color.* = ColorVec4f(GetColorAtMousePosition());
+        color.* = ToVec4f(GetColorAtMousePosition());
         data.hsv = RGBToHSVPreserving(color.xyz, data.hsv);
     }
 
@@ -881,7 +881,7 @@ ColorPicker :: (
 
             hex := cast(u32, MakeRGBA8(color));
             if IntInput(hex_field, *hex, 0, 0xffffffff, flags=.NoDragging, base=16, min_digits=8) {
-                color.* = ColorVec4f(xx hex);
+                color.* = ToVec4f(xx hex);
                 rgb_modified = true;
             }
 
@@ -1013,7 +1013,7 @@ ColorInput :: (
     style : *ColorInputStyle = null,
     location := #caller_location
 ) -> modified : bool {
-    rgba := ColorVec4f(value.*);
+    rgba := ToVec4f(value.*);
 
     modified := ColorInput(parent, *rgba, flags, style, location);
 
