@@ -290,10 +290,6 @@ Render :: (viewport_w : u32, viewport_h : u32) {
     indices : [..]u32;
 
     for :Windows context.omg {
-        it.draw_list.gpu_buffer_clip_boxes_offset = xx clip_boxes.count;
-        it.draw_list.gpu_buffer_vertices_offset = xx vertices.count;
-        it.draw_list.gpu_buffer_indices_offset = xx indices.count;
-
         array_add(*clip_boxes, ..it.draw_list.clip_boxes);
         array_add(*vertices, ..it.draw_list.vertices);
         array_add(*indices, ..it.draw_list.indices);
@@ -320,16 +316,20 @@ Render :: (viewport_w : u32, viewport_h : u32) {
     indices_size := indices.count * size_of(u32);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, xx indices_size, indices.data, GL_STREAM_DRAW);
 
+    base_index, base_vertex : u32;
     clip_boxes_offset := 0;
     for :Windows context.omg {
         glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 0, g_clip_boxes_buffer, xx clip_boxes_offset, xx (it.draw_list.clip_boxes.count * size_of(ClipBox)));
-        clip_boxes_offset += it.draw_list.clip_boxes.count * size_of(ClipBox);
 
-        SendDrawCommands(*it.draw_list, viewport_w, viewport_h);
+        SendDrawCommands(*it.draw_list, viewport_w, viewport_h, base_index, base_vertex);
+
+        base_index += xx it.draw_list.indices.count;
+        base_vertex += xx it.draw_list.vertices.count;
+        clip_boxes_offset += it.draw_list.clip_boxes.count * size_of(ClipBox);
     }
 }
 
-SendDrawCommands :: (draw_list : *DrawList, viewport_w : u32, viewport_h : u32) {
+SendDrawCommands :: (draw_list : *DrawList, viewport_w : u32, viewport_h : u32, base_index : u32, base_vertex : u32) {
     current_texture : GLuint = 0;
 
     glUseProgram(g_shader.handle);
@@ -353,8 +353,8 @@ SendDrawCommands :: (draw_list : *DrawList, viewport_w : u32, viewport_h : u32) 
             current_texture = xx it.texture.handle;
         }
 
-        indices_offset := (draw_list.gpu_buffer_indices_offset + it.index_offset) * size_of(u32);
-        glDrawElementsBaseVertex(GL_TRIANGLES, xx it.num_indices, GL_UNSIGNED_INT, cast(*void, indices_offset), xx draw_list.gpu_buffer_vertices_offset);
+        indices_offset := (base_index + it.index_offset) * size_of(u32);
+        glDrawElementsBaseVertex(GL_TRIANGLES, xx it.num_indices, GL_UNSIGNED_INT, cast(*void, indices_offset), xx base_vertex);
     }
 }
 

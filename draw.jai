@@ -49,10 +49,6 @@ DrawList :: struct {
     indices : [..]u32;        ///> List of indices into the vertices array. Must form triangles.
     path : [..]PathPoint;     ///> Local PathPoint array provided for convenience and performance, recycled for each drawing.
     anti_alias_margin := 1.0; ///> Margin used for anti-aliasing. Drawings are anti-aliased with additional polygons at the edges of shapes.
-
-    gpu_buffer_clip_boxes_offset : u32;
-    gpu_buffer_vertices_offset : u32;
-    gpu_buffer_indices_offset : u32;
 }
 
 InitDrawList :: (draw_list : *DrawList) {
@@ -81,10 +77,6 @@ ClearDrawList :: (draw_list : *DrawList) {
     array_reset_keeping_memory(*draw_list.vertices);
     array_reset_keeping_memory(*draw_list.indices);
     array_reset_keeping_memory(*draw_list.path);
-
-    draw_list.gpu_buffer_clip_boxes_offset = 0;
-    draw_list.gpu_buffer_vertices_offset = 0;
-    draw_list.gpu_buffer_indices_offset = 0;
 }
 
 GetCurrentDrawCall :: (draw_list : *DrawList) -> *DrawCall {
