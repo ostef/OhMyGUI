@@ -215,10 +215,10 @@ NodeGraphNode :: (parent : *OMG.Node, id : OMG.ID) -> *OMG.Node {
     color = OMG.SetAlpha(color, 0.8);
 
     OMG.SetBackgroundColor(node, color);
-    OMG.SetOuterShadowColor(node, OMG.ColorU32(0, 0, 0, 0.4));
+    OMG.SetOuterShadowColor(node, OMG.MakeRGBA8(0, 0, 0, 0.4));
     OMG.SetOuterShadowOffset(node, 0, 5);
     OMG.SetOuterShadowSize(node, 10);
-    OMG.SetInnerShadowColor(node, OMG.ColorU32(0, 0, 0, 0.2));
+    OMG.SetInnerShadowColor(node, OMG.MakeRGBA8(0, 0, 0, 0.2));
     OMG.SetInnerShadowSize(node, 6); // @Todo @Fix: larger than corner radius produces intersecting triangles
     OMG.SetCornerRadius(node, 6);
     OMG.SetLayout(node, .TopToBottom);
@@ -247,8 +247,8 @@ NodeGraphNode :: (parent : *OMG.Node, id : OMG.ID) -> *OMG.Node {
 
     if node.state_flags & .Active {
         OMG.SetBorderColors(node,
-            OMG.ColorU32(0.870, 0.718, 0.0435, 1), OMG.ColorU32(0.870, 0.718, 0.0435, 1),
-            OMG.ColorU32(0.870, 0.512, 0.0435, 1), OMG.ColorU32(0.870, 0.512, 0.0435, 1)
+            OMG.MakeRGBA8(0.870, 0.718, 0.0435, 1), OMG.MakeRGBA8(0.870, 0.718, 0.0435, 1),
+            OMG.MakeRGBA8(0.870, 0.512, 0.0435, 1), OMG.MakeRGBA8(0.870, 0.512, 0.0435, 1)
         );
         OMG.SetBorderSize(node, 2);
         OMG.SetBorderInset(node, -2);
@@ -262,7 +262,7 @@ NodeGraphNode :: (parent : *OMG.Node, id : OMG.ID) -> *OMG.Node {
 NodeGraphTitleBar :: (parent : *OMG.Node, title : string, color : OMG.RGBA8) -> *OMG.Node {
     node := OMG.GetNode(parent, "title_bar");
     OMG.SetBackgroundColors(node, color, OMG.Darken(color, 0.15), OMG.Darken(color, 0.3), OMG.Darken(color, 0.5));
-    OMG.SetBorderColors(node, OMG.ColorU32(1, 1, 1, 0.6), OMG.ColorU32(1, 1, 1, 0.6), 0, 0);
+    OMG.SetBorderColors(node, OMG.MakeRGBA8(1, 1, 1, 0.6), OMG.MakeRGBA8(1, 1, 1, 0.6), 0, 0);
     OMG.SetBorderSize(node, 1);
     OMG.SetInnerShadowColor(node, OMG.SetAlpha(color, 0.6));
     OMG.SetInnerShadowSize(node, 5);
@@ -604,33 +604,33 @@ AnimAdditivePose :: struct {}
 SetPortStyle :: (port : *GraphNodePort, node : *OMG.Node) {
     if port.type.type == {
     case .FLOAT;
-        OMG.SetBackgroundColor(node, OMG.ColorU32(0.0435, 0.870, 0.209, 1));
+        OMG.SetBackgroundColor(node, OMG.MakeRGBA8(0.0435, 0.870, 0.209, 1));
 
     case .INTEGER;
-        OMG.SetBackgroundColor(node, OMG.ColorU32(0.161, 0.950, 0.635, 1));
+        OMG.SetBackgroundColor(node, OMG.MakeRGBA8(0.161, 0.950, 0.635, 1));
 
     case .BOOL;
-        OMG.SetBackgroundColor(node, OMG.ColorU32(0.720, 0.115, 0.115, 1));
+        OMG.SetBackgroundColor(node, OMG.MakeRGBA8(0.720, 0.115, 0.115, 1));
 
     case .STRING;
-        OMG.SetBackgroundColor(node, OMG.ColorU32(0.772, 0.218, 0.910, 1));
+        OMG.SetBackgroundColor(node, OMG.MakeRGBA8(0.772, 0.218, 0.910, 1));
 
     case .ENUM;
-        OMG.SetBackgroundColor(node, OMG.ColorU32(0.163, 0.740, 0.480, 1));
+        OMG.SetBackgroundColor(node, OMG.MakeRGBA8(0.163, 0.740, 0.480, 1));
 
     case .STRUCT;
         if port.type == type_info(AnimPose) {
-            OMG.SetBackgroundColor(node, OMG.ColorU32(1,1,1,1));
+            OMG.SetBackgroundColor(node, OMG.MakeRGBA8(1,1,1,1));
             OMG.SetImage(node, ifx port.connections.count > 0 then g_pose_filled_icon else g_pose_empty_icon);
         } else if port.type == type_info(AnimAdditivePose) {
-            OMG.SetBackgroundColor(node, OMG.ColorU32(0.838, 0.107, 0.890, 1));
+            OMG.SetBackgroundColor(node, OMG.MakeRGBA8(0.838, 0.107, 0.890, 1));
             OMG.SetImage(node, ifx port.connections.count > 0 then g_pose_filled_icon else g_pose_empty_icon);
         } else if port.type == type_info(Vector2) || port.type == type_info(Vector3) || port.type == type_info(Vector4) {
-            OMG.SetBackgroundColor(node, OMG.ColorU32(0.910, 0.813, 0.0819, 1));
+            OMG.SetBackgroundColor(node, OMG.MakeRGBA8(0.910, 0.813, 0.0819, 1));
         } else if port.type == type_info(Quaternion) {
-            OMG.SetBackgroundColor(node, OMG.ColorU32(0.525, 0.380, 1.00, 1));
+            OMG.SetBackgroundColor(node, OMG.MakeRGBA8(0.525, 0.380, 1.00, 1));
         } else {
-            OMG.SetBackgroundColor(node, OMG.ColorU32(0.130, 0.333, 1.00, 1));
+            OMG.SetBackgroundColor(node, OMG.MakeRGBA8(0.130, 0.333, 1.00, 1));
         }
     }
 }
@@ -639,7 +639,7 @@ CreateBlendSpacePlayerNode :: (graph : *Graph) -> *GraphNode {
     node := CreateNode(graph);
     node.title = "Blend Space Player";
     node.description = "Play a blend space";
-    node.color = OMG.ColorU32(0.178, 0.810, 0.399, 1);
+    node.color = OMG.MakeRGBA8(0.178, 0.810, 0.399, 1);
     AddInputPort(node, "X", float);
     AddInputPort(node, "Y", float);
     AddOutputPort(node, "Pose", AnimPose);
@@ -651,7 +651,7 @@ CreateAnimationPlayerNode :: (graph : *Graph) -> *GraphNode {
     node := CreateNode(graph);
     node.title = "Animation Player";
     node.description = "Play an animation clip";
-    node.color = OMG.ColorU32(0.178, 0.810, 0.399, 1);
+    node.color = OMG.MakeRGBA8(0.178, 0.810, 0.399, 1);
     AddInputPort(node, "Speed", float);
     AddOutputPort(node, "Pose", AnimPose);
 
@@ -662,7 +662,7 @@ CreateBlendPosesNode :: (graph : *Graph) -> *GraphNode {
     node := CreateNode(graph);
     node.title = "Blend Poses";
     node.description = "Blend two poses together";
-    node.color = OMG.ColorU32(0.772, 0.780, 0.655, 1);
+    node.color = OMG.MakeRGBA8(0.772, 0.780, 0.655, 1);
     AddInputPort(node, "A", AnimPose);
     AddInputPort(node, "B", AnimPose);
     AddInputPort(node, "Alpha", float);
@@ -675,7 +675,7 @@ CreateMakeAdditivePoseNode :: (graph : *Graph) -> *GraphNode {
     node := CreateNode(graph);
     node.title = "Make Additive";
     node.description = "Create an additive pose from two poses";
-    node.color = OMG.ColorU32(0.772, 0.780, 0.655, 1);
+    node.color = OMG.MakeRGBA8(0.772, 0.780, 0.655, 1);
     AddInputPort(node, "A", AnimPose);
     AddInputPort(node, "B", AnimPose);
     AddOutputPort(node, "Pose", AnimAdditivePose);
@@ -687,7 +687,7 @@ CreateApplyAdditivePoseNode :: (graph : *Graph) -> *GraphNode {
     node := CreateNode(graph);
     node.title = "Apply Additive";
     node.description = "Apply an additive pose onto another";
-    node.color = OMG.ColorU32(0.772, 0.780, 0.655, 1);
+    node.color = OMG.MakeRGBA8(0.772, 0.780, 0.655, 1);
     AddInputPort(node, "Base", AnimPose);
     AddInputPort(node, "Additive", AnimAdditivePose);
     AddOutputPort(node, "Pose", AnimPose);
@@ -699,7 +699,7 @@ Canvas :: (parent : *OMG.Node, location := #caller_location) -> *OMG.Node {
     node := OMG.GetNode(parent, location);
     OMG.SetLayout(node, .None);
     OMG.SetSize(node, OMG.SizeFill(), OMG.SizeFill());
-    OMG.SetInnerShadowColor(node, OMG.ColorU32(0, 0, 0, 0.2));
+    OMG.SetInnerShadowColor(node, OMG.MakeRGBA8(0, 0, 0, 0.2));
     OMG.SetInnerShadowSize(node, 40);
 
     color := OMG.GetStyle("base", OMG.BoxStyle).background_colors.top_left;

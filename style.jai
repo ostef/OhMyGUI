@@ -413,7 +413,7 @@ Animate :: inline (a : RGBA8, b : RGBA8, t : float, func : AnimFunc) -> RGBA8 {
     a4f := ColorVec4f(a);
     b4f := ColorVec4f(b);
 
-    return ColorU32(
+    return MakeRGBA8(
         Animate(a4f.x, b4f.x, t, func),
         Animate(a4f.y, b4f.y, t, func),
         Animate(a4f.z, b4f.z, t, func),
@@ -879,7 +879,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         SetColors(*border_colors, MakeTone(base_background_color, 0.3));
         border_size = 1;
 
-        outer_shadow_color = ColorU32(0,0,0,0.25);
+        outer_shadow_color = MakeRGBA8(0,0,0,0.25);
         outer_shadow_offset = .{0,3};
         outer_shadow_size = 5;
     }
@@ -888,8 +888,8 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
     {
         using theme.separator;
 
-        color_start = ColorU32(0.5, 0.5, 0.5, 1);
-        color_end = ColorU32(0.5, 0.5, 0.5, 1);
+        color_start = MakeRGBA8(0.5, 0.5, 0.5, 1);
+        color_end = MakeRGBA8(0.5, 0.5, 0.5, 1);
         text = theme.text;
     }
     SetStyle(theme, "separator", theme.separator);
@@ -906,7 +906,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         SetColors(*background.border_colors, MakeTone(base_background_color, 0.3));
         background.border_size = 1;
 
-        background.outer_shadow_color = ColorU32(0,0,0,0.25);
+        background.outer_shadow_color = MakeRGBA8(0,0,0,0.25);
         background.outer_shadow_offset = .{6,6};
         background.outer_shadow_size = 5;
 
@@ -950,11 +950,11 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
 
         wheel.border_color = MakeTone(0xffffffff, 0.3);
         wheel.outer_shadow_offset = .{wheel.border_size * 0.5, wheel.border_size * 0.5};
-        wheel.outer_shadow_color = ColorU32(0,0,0,0.25);
+        wheel.outer_shadow_color = MakeRGBA8(0,0,0,0.25);
         wheel.outer_shadow_size = 5;
 
         SetColors(*wheel.wheel_cursor.normal.border_colors, wheel.border_color);
-        wheel.wheel_cursor.normal.outer_shadow_color = ColorU32(0,0,0,0.25);
+        wheel.wheel_cursor.normal.outer_shadow_color = MakeRGBA8(0,0,0,0.25);
         wheel.wheel_cursor.normal.outer_shadow_size = 2;
 
         wheel.wheel_cursor.focused = wheel.wheel_cursor.normal;
@@ -966,7 +966,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
 
         wheel.triangle_cursor.normal.radius = 6;
         SetColors(*wheel.triangle_cursor.normal.border_colors, wheel.border_color);
-        wheel.triangle_cursor.normal.outer_shadow_color = ColorU32(0,0,0,0.25);
+        wheel.triangle_cursor.normal.outer_shadow_color = MakeRGBA8(0,0,0,0.25);
         wheel.triangle_cursor.normal.outer_shadow_size = 2;
 
         wheel.triangle_cursor.focused = wheel.triangle_cursor.normal;
@@ -1001,7 +1001,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         SetColors(*slider_base.normal.handle.background_colors, wheel.border_color);
         // slider_base.normal.handle.border_color = MakeTone(button_base_background_color, 0.3);
         // slider_base.normal.handle.border_size = 1;
-        slider_base.normal.handle.outer_shadow_color = ColorU32(0,0,0,0.25);
+        slider_base.normal.handle.outer_shadow_color = MakeRGBA8(0,0,0,0.25);
         slider_base.normal.handle.outer_shadow_size = 2;
 
         slider_base.focused = slider_base.normal;
@@ -1105,7 +1105,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         SetColors(*background.border_colors, MakeTone(base_background_color, 0.3));
         background.border_size = 1;
 
-        background.outer_shadow_color = ColorU32(0,0,0,0.25);
+        background.outer_shadow_color = MakeRGBA8(0,0,0,0.25);
         background.outer_shadow_offset = .{3,3};
         background.outer_shadow_size = 5;
 
@@ -1220,13 +1220,13 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
 
         SetColors(*target_split.background_colors, SetAlpha(base_accent_color, 0.5));
 
-        SetColors(*split_hint.border_colors, ColorU32(0.7,0.7,0.7,1));
+        SetColors(*split_hint.border_colors, MakeRGBA8(0.7,0.7,0.7,1));
         split_hint.border_size = 1;
         split_hint.border_inset = 2;
         SetColors(*split_hint.background_colors, SetAlpha(base_accent_color, 0.5));
         split_hint.corner_radiuses = rounding_factor * Vec4f.{6,6,6,6};
         split_hint.outer_shadow_size = 4;
-        split_hint.outer_shadow_color = ColorU32(0,0,0,0.15);
+        split_hint.outer_shadow_color = MakeRGBA8(0,0,0,0.15);
     }
     SetStyle(theme, "dock_space", theme.dock_space);
 

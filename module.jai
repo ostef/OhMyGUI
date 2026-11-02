@@ -488,14 +488,14 @@ Init :: (platform_funcs : PlatformFunctions, renderer_funcs : RendererFunctions)
     SetupDefaultTheme(
         *g_default_theme_light,
         base_text_size=14,
-        base_background_color=ColorU32(0.95, 0.95, 0.95, 1),
-        base_accent_color=ColorU32(0.3, 0.5, 0.8, 1),
+        base_background_color=MakeRGBA8(0.95, 0.95, 0.95, 1),
+        base_accent_color=MakeRGBA8(0.3, 0.5, 0.8, 1),
     );
     SetupDefaultTheme(
         *g_default_theme_dark,
         base_text_size=14,
-        base_background_color=ColorU32(0.05, 0.05, 0.05, 1),
-        base_accent_color=ColorU32(0.3, 0.5, 0.8, 1),
+        base_background_color=MakeRGBA8(0.05, 0.05, 0.05, 1),
+        base_accent_color=MakeRGBA8(0.3, 0.5, 0.8, 1),
     );
 
     SetTheme(*g_default_theme_dark);

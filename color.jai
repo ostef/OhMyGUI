@@ -11,43 +11,61 @@ operator == :: inline (a : HSV, b : HSV) -> bool {
     return a.hue == b.hue && a.saturation == b.saturation && a.value == b.value;
 }
 
+/**
+ * @brief 8-bit per channel RGBA color.
+ */
 RGBA8 :: #type,isa u32; // We could make this a struct but then we wouldn't be able to use hex integer literals
 
+/**
+ * @brief Set the RGB components of a color as floats.
+ */
 SetRGB :: inline (color : *RGBA8, rgb : Vec3f) {
     color.* = SetRGB(color.*, rgb);
 }
 
+/**
+ * @brief Set the RGB components of a color as floats.
+ */
 SetRGB :: inline (color : RGBA8, rgb : Vec3f) -> RGBA8 {
     rgba := ColorVec4f(color);
     rgba.xyz = rgb;
-    return ColorU32(rgba);
+    return MakeRGBA8(rgba);
 }
 
+/**
+ * @brief Get the RGB components of a color as floats.
+ */
 GetRGB :: inline (color : RGBA8) -> Vec3f {
     rgba := ColorVec4f(color);
 
     return rgba.xyz;
 }
 
+/**
+ * @brief Set the alpha component of a color as float.
+ */
 SetAlpha :: inline (color : *RGBA8, alpha : float) {
     color.* = SetAlpha(color.*, alpha);
 }
 
+/**
+ * @brief Set the alpha component of a color as float.
+ */
 SetAlpha :: inline (color : RGBA8, alpha : float) -> RGBA8 {
     rgba := ColorVec4f(color);
     rgba.w = alpha;
-    return ColorU32(rgba);
+    return MakeRGBA8(rgba);
 }
 
-ColorU32 :: inline (rgb : Vec3f, alpha : float) -> RGBA8 {
-    return ColorU32(rgb.x, rgb.y, rgb.z, alpha);
+MakeRGBA8 :: inline (rgb : Vec3f, alpha : float = 1.0) -> RGBA8 {
+    return MakeRGBA8(rgb.x, rgb.y, rgb.z, alpha);
 }
 
-ColorU32 :: inline (rgba : Vec4f) -> RGBA8 {
-    return ColorU32(rgba.x, rgba.y, rgba.z, rgba.w);
+MakeRGBA8 :: inline (rgba : Vec4f) -> RGBA8 {
+    return MakeRGBA8(rgba.x, rgba.y, rgba.z, rgba.w);
 }
 
-ColorU32 :: inline (r : float, g : float, b : float, a : float) -> RGBA8 {
+MakeRGBA8 :: inline (r : float, g : float, b : float, a : float) -> RGBA8 {
     ur := cast(u32, clamp(r * 255, 0, 255));
     ug := cast(u32, clamp(g * 255, 0, 255));
     ub := cast(u32, clamp(b * 255, 0, 255));

@@ -214,7 +214,7 @@ SaturationValueTriangle :: (parent : *Node, using data : *ColorPickerData, style
 
         DrawTriangle(draw_list,
             p0=hue_point, p1=black_point, p2=white_point,
-            c0=ColorU32(HSVToRGB(.{hsv.hue, 1, 1}), 1), c1=0x000000ff, c2=0xffffffff,
+            c0=MakeRGBA8(HSVToRGB(.{hsv.hue, 1, 1}), 1), c1=0x000000ff, c2=0xffffffff,
         );
 
         cursor := lerp(hue_point, white_point, 1 - hsv.saturation);
@@ -224,7 +224,7 @@ SaturationValueTriangle :: (parent : *Node, using data : *ColorPickerData, style
         DrawBox(draw_list, .{
             bounds=.{xy=cursor - Vec2f.{cursor_style.radius, cursor_style.radius}, zw=cursor + Vec2f.{cursor_style.radius, cursor_style.radius}},
             corner_radiuses=Vec4f.{1,1,1,1} * cursor_style.radius,
-            background_colors=MakeBoxColors(ColorU32(HSVToRGB(hsv), 1)),
+            background_colors=MakeBoxColors(MakeRGBA8(HSVToRGB(hsv), 1)),
             border_colors=cursor_style.border_colors,
             border_size=cursor_style.border_size,
             outer_shadow_color=cursor_style.outer_shadow_color,
@@ -316,7 +316,7 @@ HueWheel :: (parent : *Node, using data : *ColorPickerData, style : *HSVTriangle
         GetColor :: (index : int, data : *void) -> RGBA8 {
             points := cast(*[]PathPoint, data);
             hue := 360 - index / cast(float, points.count) * 360;
-            return ColorU32(HSVToRGB(.{hue, 1, 1}), 1);
+            return MakeRGBA8(HSVToRGB(.{hue, 1, 1}), 1);
         }
 
         PathPushArc(*draw_list.path, center, (inner_radius + outer_radius) * 0.5, 0, 2 * PI);
@@ -331,7 +331,7 @@ HueWheel :: (parent : *Node, using data : *ColorPickerData, style : *HSVTriangle
         DrawBox(draw_list, .{
             bounds=.{xy=cursor - Vec2f.{cursor_style.radius, cursor_style.radius}, zw=cursor + Vec2f.{cursor_style.radius, cursor_style.radius}},
             corner_radiuses=Vec4f.{1,1,1,1} * cursor_style.radius,
-            background_colors=MakeBoxColors(ColorU32(HSVToRGB(.{hsv.hue, 1, 1}), 1)),
+            background_colors=MakeBoxColors(MakeRGBA8(HSVToRGB(.{hsv.hue, 1, 1}), 1)),
             border_colors=cursor_style.border_colors,
             border_size=cursor_style.border_size,
             outer_shadow_color=cursor_style.outer_shadow_color,
@@ -438,13 +438,13 @@ ColoredSlider :: (parent : *Node, value : *float, min : float, max : float, step
             for i : 0..resolution - 1 {
                 t0 := node.rect.xy[axis] + t * node.size[axis];
                 h0 := ifx axis == .X then t * 360 else 360 - t * 360;
-                c0 := ColorU32(HSVToRGB(.{h0, hsv.saturation, hsv.value}), 1);
+                c0 := MakeRGBA8(HSVToRGB(.{h0, hsv.saturation, hsv.value}), 1);
 
                 t += 1.0 / resolution;
 
                 t1 := node.rect.xy[axis] + t * node.size[axis];
                 h1 := ifx axis == .X then t * 360 else 360 - t * 360;
-                c1 := ColorU32(HSVToRGB(.{h1, hsv.saturation, hsv.value}), 1);
+                c1 := MakeRGBA8(HSVToRGB(.{h1, hsv.saturation, hsv.value}), 1);
 
                 p0 : Vec2f;
                 p0[axis] = t0;
@@ -776,8 +776,8 @@ ColorPicker :: (
                 SetUserData(opacity_slider, ColoredSliderData.{
                     checkerboard_white=style.opacity_checkerboard_white,
                     checkerboard_black=style.opacity_checkerboard_black,
-                    start_color=ColorU32(color.xyz, 0),
-                    end_color  =ColorU32(color.xyz, 1),
+                    start_color=MakeRGBA8(color.xyz, 0),
+                    end_color  =MakeRGBA8(color.xyz, 1),
                 });
             }
 
@@ -800,12 +800,12 @@ ColorPicker :: (
             if style.dynamic_hsv_slider_color {
                 SetUserData(h_slider, ColoredSliderData.{hue=true, hsv=data.hsv});
                 SetUserData(s_slider, ColoredSliderData.{
-                    start_color=ColorU32(HSVToRGB(.{data.hsv.hue, 0, data.hsv.value}), 1),
-                    end_color  =ColorU32(HSVToRGB(.{data.hsv.hue, 1, data.hsv.value}), 1),
+                    start_color=MakeRGBA8(HSVToRGB(.{data.hsv.hue, 0, data.hsv.value}), 1),
+                    end_color  =MakeRGBA8(HSVToRGB(.{data.hsv.hue, 1, data.hsv.value}), 1),
                 });
                 SetUserData(v_slider, ColoredSliderData.{
-                    start_color=ColorU32(HSVToRGB(.{data.hsv.hue, data.hsv.saturation, 0}), 1),
-                    end_color  =ColorU32(HSVToRGB(.{data.hsv.hue, data.hsv.saturation, 1}), 1),
+                    start_color=MakeRGBA8(HSVToRGB(.{data.hsv.hue, data.hsv.saturation, 0}), 1),
+                    end_color  =MakeRGBA8(HSVToRGB(.{data.hsv.hue, data.hsv.saturation, 1}), 1),
                 });
             }
 
@@ -817,16 +817,16 @@ ColorPicker :: (
 
             if style.dynamic_rgb_slider_color {
                 SetUserData(r_slider, ColoredSliderData.{
-                    start_color=ColorU32(0, color.y, color.z, 1),
-                    end_color  =ColorU32(1, color.y, color.z, 1),
+                    start_color=MakeRGBA8(0, color.y, color.z, 1),
+                    end_color  =MakeRGBA8(1, color.y, color.z, 1),
                 });
                 SetUserData(g_slider, ColoredSliderData.{
-                    start_color=ColorU32(color.x, 0, color.z, 1),
-                    end_color  =ColorU32(color.x, 1, color.z, 1),
+                    start_color=MakeRGBA8(color.x, 0, color.z, 1),
+                    end_color  =MakeRGBA8(color.x, 1, color.z, 1),
                 });
                 SetUserData(b_slider, ColoredSliderData.{
-                    start_color=ColorU32(color.x, color.y, 0, 1),
-                    end_color  =ColorU32(color.x, color.y, 1, 1),
+                    start_color=MakeRGBA8(color.x, color.y, 0, 1),
+                    end_color  =MakeRGBA8(color.x, color.y, 1, 1),
                 });
             }
 
@@ -879,7 +879,7 @@ ColorPicker :: (
 
             hex_field := LabelAndContent(inputs, "Hex", style=*label_and_content_style);
 
-            hex := cast(u32, ColorU32(color));
+            hex := cast(u32, MakeRGBA8(color));
             if IntInput(hex_field, *hex, 0, 0xffffffff, flags=.NoDragging, base=16, min_digits=8) {
                 color.* = ColorVec4f(xx hex);
                 rgb_modified = true;
@@ -913,14 +913,14 @@ ColorPicker :: (
         SetSize(current, SizeFit(), SizeFit());
 
         Text(current, "New");
-        ColorPreview(current, ColorU32(color), *style.preview);
+        ColorPreview(current, MakeRGBA8(color), *style.preview);
 
         previous := GetNode(previews);
         SetLayout(previous, .TopToBottom);
         SetSize(previous, SizeFit(), SizeFit());
 
         Text(previous, "Old");
-        previous_preview := ColorPreview(previous, ColorU32(previous_color), *style.preview);
+        previous_preview := ColorPreview(previous, MakeRGBA8(previous_color), *style.preview);
 
         if ButtonBehavior(previous_preview).released {
             color.* = previous_color;
@@ -1018,7 +1018,7 @@ ColorInput :: (
     modified := ColorInput(parent, *rgba, flags, style, location);
 
     if modified {
-        value.* = ColorU32(rgba);
+        value.* = MakeRGBA8(rgba);
     }
 
     return modified;
@@ -1080,7 +1080,7 @@ ColorInput :: (
         }
 
         if !(flags & .NoPreview) {
-            preview := ColorPreview(parent, ColorU32(value.*), *style.preview);
+            preview := ColorPreview(parent, MakeRGBA8(value.*), *style.preview);
 
             if !(flags & .NoColorPickerWindow) {
                 preview_button := ButtonBehavior(preview);

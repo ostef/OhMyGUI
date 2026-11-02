@@ -961,13 +961,13 @@ SetCornerRadiuses :: inline (node : *Node, radiuses : Vec4f) {
 
 SetBackgroundColor :: inline (node : *Node, r : float, g : float, b : float, a : float) {
     for * node.background_colors.corners {
-        it.* = ColorU32(r, g, b, a);
+        it.* = MakeRGBA8(r, g, b, a);
     }
 }
 
 SetBackgroundColor :: inline (node : *Node, color : Vec4f) {
     for * node.background_colors.corners {
-        it.* = ColorU32(color);
+        it.* = MakeRGBA8(color);
     }
 }
 
@@ -990,13 +990,13 @@ SetBackgroundColors :: inline (node : *Node, colors : BoxColors) {
 
 SetBorderColor :: inline (node : *Node, r : float, g : float, b : float, a : float) {
     for * node.border_colors.corners {
-        it.* = ColorU32(r, g, b, a);
+        it.* = MakeRGBA8(r, g, b, a);
     }
 }
 
 SetBorderColor :: inline (node : *Node, color : Vec4f) {
     for * node.border_colors.corners {
-        it.* = ColorU32(color);
+        it.* = MakeRGBA8(color);
     }
 }
 
@@ -1026,11 +1026,11 @@ SetBorderInset :: inline (node : *Node, inset : float) {
 }
 
 SetTextColor :: inline (node : *Node, r : float, g : float, b : float, a : float) {
-    node.text_color = ColorU32(r, g, b, a);
+    node.text_color = MakeRGBA8(r, g, b, a);
 }
 
 SetTextColor :: inline (node : *Node, color : Vec4f) {
-    node.text_color = ColorU32(color);
+    node.text_color = MakeRGBA8(color);
 }
 
 SetTextColor :: inline (node : *Node, color : RGBA8) {
@@ -1046,11 +1046,11 @@ SetOuterShadowOffset :: inline (node : *Node, offset : Vec2f) {
 }
 
 SetOuterShadowColor :: inline (node : *Node, r : float, g : float, b : float, a : float) {
-    node.outer_shadow_color = ColorU32(r, g, b, a);
+    node.outer_shadow_color = MakeRGBA8(r, g, b, a);
 }
 
 SetOuterShadowColor :: inline (node : *Node, color : Vec4f) {
-    node.outer_shadow_color = ColorU32(color);
+    node.outer_shadow_color = MakeRGBA8(color);
 }
 
 SetOuterShadowColor :: inline (node : *Node, color : RGBA8) {
@@ -1066,11 +1066,11 @@ SetOuterShadowSize :: inline (node : *Node, blur : float) {
 }
 
 SetInnerShadowColor :: inline (node : *Node, r : float, g : float, b : float, a : float) {
-    node.inner_shadow_color = ColorU32(r, g, b, a);
+    node.inner_shadow_color = MakeRGBA8(r, g, b, a);
 }
 
 SetInnerShadowColor :: inline (node : *Node, color : Vec4f) {
-    node.inner_shadow_color = ColorU32(color);
+    node.inner_shadow_color = MakeRGBA8(color);
 }
 
 SetInnerShadowColor :: inline (node : *Node, color : RGBA8) {
