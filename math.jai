@@ -378,6 +378,10 @@ Rotate :: inline (v : Vec2f, angle : float) -> Vec2f {
     };
 }
 
+floor :: inline (value : Vec2f) -> Vec2f {
+    return .{floor(value.x), floor(value.y)};
+}
+
 ceil :: inline (value : Vec2f) -> Vec2f {
     return .{ceil(value.x), ceil(value.y)};
 }

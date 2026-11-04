@@ -149,7 +149,7 @@ EditorFrame :: () {
 
         title_bar := OMG.GetNode(root, "title_bar");
         {
-            OMG.SetPadding(title_bar, 4, 4);
+            OMG.SetPadding(title_bar, 6, 4, 4, 4);
             OMG.SetChildGap(title_bar, 4);
             OMG.SetChildAlign(title_bar, 0.5, 0.5);
             OMG.SetWidth(title_bar, OMG.SizeFill());
@@ -252,118 +252,27 @@ EditorFrame :: () {
             }
 
             if window.has_custom_decorations {
-                Btn_Size :: 20.0;
+                Btn_Size :: 26.0;
 
-                minimize, minimize_node := OMG.Button(title_bar, OMG.SizePx(Btn_Size), OMG.SizePx(Btn_Size));
-                minimize_node.flags |= .NoPaddedClip;
-                OMG.SetCornerRadius(minimize_node, Btn_Size * 0.5);
-                OMG.SetPadding(minimize_node, 5, 5);
-                OMG.SetInnerShadowOpacity(minimize_node, 0.15);
-                OMG.SetInnerShadowSize(minimize_node, 4);
-                if minimize {
+                if OMG.CollapseButton(title_bar, Btn_Size) {
                     SDL_MinimizeWindow(g_window);
                 }
 
-                maximize, maximize_node := OMG.Button(title_bar, OMG.SizePx(Btn_Size), OMG.SizePx(Btn_Size));
-                maximize_node.flags |= .NoPaddedClip;
-                OMG.SetCornerRadius(maximize_node, Btn_Size * 0.5);
-                OMG.SetPadding(maximize_node, 5, 5);
-                OMG.SetInnerShadowOpacity(maximize_node, 0.15);
-                OMG.SetInnerShadowSize(maximize_node, 4);
-                if maximize {
-                    flags := SDL_GetWindowFlags(g_window);
-                    if flags & SDL_WINDOW_MAXIMIZED {
+                flags := SDL_GetWindowFlags(g_window);
+                is_maximized := (flags & SDL_WINDOW_MAXIMIZED) != 0;
+                if is_maximized {
+                    if OMG.UnmaximizeButton(title_bar, Btn_Size) {
                         SDL_RestoreWindow(g_window);
-                    } else {
+                    }
+                } else {
+                    if OMG.MaximizeButton(title_bar, Btn_Size) {
                         SDL_MaximizeWindow(g_window);
                     }
                 }
 
-                close, close_node := OMG.Button(title_bar, OMG.SizePx(Btn_Size), OMG.SizePx(Btn_Size));
-                close_node.flags |= .NoPaddedClip;
-                OMG.SetCornerRadius(close_node, Btn_Size * 0.5);
-                OMG.SetPadding(close_node, 5, 5);
-                OMG.SetInnerShadowOpacity(close_node, 0.15);
-                OMG.SetInnerShadowSize(close_node, 4);
-                if close {
+                if OMG.CloseButton(title_bar, Btn_Size) {
                     g_quit = true;
                 }
-
-                minimize_icon := OMG.GetNode(minimize_node);
-                OMG.SetSize(minimize_icon, OMG.SizeFill(), OMG.SizeFill());
-                OMG.SetBackgroundColor(minimize_icon, OMG.ChooseTextColor(base_background_color));
-                OMG.SetDraw(minimize_icon, (draw_list : *OMG.DrawList, node : *OMG.Node) -> bool {
-                    if OMG.IsClipped(draw_list, node.rect) {
-                        return false;
-                    }
-
-                    center := (node.rect.xy + node.rect.zw) * 0.5;
-                    center.x = ceil(center.x);
-                    center.y = ceil(center.y);
-                    length := node.size.x * 0.7;
-                    start := center + OMG.Vec2f.{-floor(length * 0.5), 0.5};
-                    end := center + OMG.Vec2f.{floor(length * 0.5), 0.5};
-
-                    OMG.DrawLine(draw_list, start, end, 1, node.background_colors.top_left);
-
-                    return true;
-                });
-
-                maximize_icon := OMG.GetNode(maximize_node);
-                OMG.SetSize(maximize_icon, OMG.SizeFill(), OMG.SizeFill());
-                OMG.SetBackgroundColor(maximize_icon, OMG.ChooseTextColor(base_background_color));
-
-                OMG.SetDraw(maximize_icon, (draw_list : *OMG.DrawList, node : *OMG.Node) -> bool {
-                    if OMG.IsClipped(draw_list, node.rect) {
-                        return false;
-                    }
-
-                    size := OMG.Vec2f.{1,1} * sqrt(0.5 * node.size.x * node.size.x);
-                    center := (node.rect.xy + node.rect.zw) * 0.5;
-                    rect := OMG.Vec4f.{xy=center - size * 0.5, zw=center + size * 0.5};
-
-                    Size :: 0.6;
-
-                    p0, p1, p2 : OMG.Vec2f = ---;
-
-                    if !(SDL_GetWindowFlags(g_window) & SDL_WINDOW_MAXIMIZED) {
-                        p0 = OMG.Vec2f.{size.x, 0};
-                        p1 = OMG.Vec2f.{size.x * Size, 0};
-                        p2 = OMG.Vec2f.{size.x, size.y - size.y * Size};
-
-                        OMG.DrawTriangle(draw_list, rect.xy + p0, rect.xy + p1, rect.xy + p2, node.background_colors.top_left);
-                    }
-
-                    p0 = OMG.Vec2f.{0, size.y * Size};
-                    p1 = OMG.Vec2f.{0, size.y};
-                    p2 = OMG.Vec2f.{size.x - size.x * Size, size.y};
-
-                    OMG.DrawTriangle(draw_list, rect.xy + p0, rect.xy + p1, rect.xy + p2, node.background_colors.top_left);
-
-                    return true;
-                });
-
-                close_icon := OMG.GetNode(close_node);
-                OMG.SetSize(close_icon, OMG.SizeFill(), OMG.SizeFill());
-                OMG.SetBackgroundColor(close_icon, OMG.ChooseTextColor(base_background_color));
-                OMG.SetDraw(close_icon, (draw_list : *OMG.DrawList, node : *OMG.Node) -> bool {
-                    if OMG.IsClipped(draw_list, node.rect) {
-                        return false;
-                    }
-
-                    center := (node.rect.xy + node.rect.zw) * 0.5;
-                    dir := normalize(node.rect.zw - node.rect.xy);
-                    length := node.size.x;
-                    color := node.background_colors.top_left;
-
-                    OMG.DrawLine(draw_list, center - dir * length * 0.5, center + dir * length * 0.5, 1, color, color);
-
-                    dir = .{dir.y, -dir.x};
-
-                    OMG.DrawLine(draw_list, center - dir * length * 0.5, center + dir * length * 0.5, 1, color, color);
-
-                    return true;
-                });
             }
         }
 

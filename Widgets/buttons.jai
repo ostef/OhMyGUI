@@ -459,14 +459,14 @@ RadioButton :: (parent : *Node, active : bool, size := 0.0, style : *RadioButton
     }
 }
 
-CollapseButton :: (parent: *Node, size : float, style : *ButtonStyle = null, location := #caller_location) -> bool, *Node {
+CollapseButton :: (parent: *Node, width : Size1D, height : Size1D, icon_size : float, style : *ButtonStyle = null, location := #caller_location) -> bool, *Node {
     EnsureStyle(*style, "button_small");
 
-    clicked, button := Button(parent, SizePx(size), SizePx(size), style, location);
-    button.flags |= .NoPaddedClip;
+    clicked, button := Button(parent, width, height, style, location);
+    SetPadding(button, 0, 0);
 
     icon := GetNode(button);
-    SetSize(icon, SizeFill(), SizeFill());
+    SetSize(icon, SizePx(icon_size), SizePx(icon_size));
     SetDraw(icon, (draw_list : *DrawList, node : *Node) -> bool {
         if IsClipped(draw_list, node.rect) {
             return false;
@@ -475,9 +475,8 @@ CollapseButton :: (parent: *Node, size : float, style : *ButtonStyle = null, loc
         center := (node.rect.xy + node.rect.zw) * 0.5;
         center.x = ceil(center.x);
         center.y = ceil(center.y);
-        length := node.size.x * 0.7;
-        start := center + Vec2f.{-floor(length * 0.5), 0.5};
-        end := center + Vec2f.{floor(length * 0.5), 0.5};
+        start := center + Vec2f.{-floor(node.size.x * 0.5), 0.5};
+        end := center + Vec2f.{floor(node.size.x * 0.5), 0.5};
 
         DrawLine(draw_list, start, end, 1, node.text_color);
 
@@ -490,14 +489,86 @@ CollapseButton :: (parent: *Node, size : float, style : *ButtonStyle = null, loc
     return clicked, button;
 }
 
-CloseButton :: (parent : *Node, size : float, style : *ButtonStyle = null, location := #caller_location) -> bool, *Node {
+CollapseButton :: (parent: *Node, size : float, style : *ButtonStyle = null, location := #caller_location) -> bool, *Node {
+    clicked, button := CollapseButton(parent, SizePx(size), SizePx(size), size * 0.4, style, location);
+    return clicked, button;
+}
+
+MaximizeButton :: (parent: *Node, width : Size1D, height : Size1D, icon_size : float, style : *ButtonStyle = null, location := #caller_location) -> bool, *Node {
     EnsureStyle(*style, "button_small");
 
-    clicked, button := Button(parent, SizePx(size), SizePx(size), style, location);
-    button.flags |= .NoPaddedClip;
+    clicked, button := Button(parent, width, height, style, location);
+    SetPadding(button, 0, 0);
 
     icon := GetNode(button);
-    SetSize(icon, SizeFill(), SizeFill());
+    SetSize(icon, SizePx(icon_size), SizePx(icon_size));
+    SetBorderColor(icon, style.states[GetState(button)].text.text_color);
+    SetBorderSize(icon, 1);
+
+    return clicked, button;
+}
+
+MaximizeButton :: (parent: *Node, size : float, style : *ButtonStyle = null, location := #caller_location) -> bool, *Node {
+    clicked, button := MaximizeButton(parent, SizePx(size), SizePx(size), size * 0.4, style, location);
+    return clicked, button;
+}
+
+UnmaximizeButton :: (parent: *Node, width : Size1D, height : Size1D, icon_size : float, style : *ButtonStyle = null, location := #caller_location) -> bool, *Node {
+    EnsureStyle(*style, "button_small");
+
+    clicked, button := Button(parent, width, height, style, location);
+    SetPadding(button, 0, 0);
+
+    icon := GetNode(button);
+    SetSize(icon, SizePx(icon_size), SizePx(icon_size));
+    SetBorderColor(icon, style.states[GetState(button)].text.text_color);
+    SetBorderSize(icon, 1);
+    SetDraw(icon, (draw_list : *DrawList, node : *Node) -> bool {
+        if IsClipped(draw_list, node.rect) {
+            return false;
+        }
+
+        Offset := 0.15;
+
+        center := (node.rect.xy + node.rect.zw) * 0.5;
+        size := node.size * (1 - Offset * 2);
+        half_size := size * 0.5;
+
+        fg_center := center + Vec2f.{-node.size.x * Offset,  node.size.y * Offset};
+        fg_bounds := Vec4f.{xy=ceil(fg_center - half_size), zw=floor(fg_center + half_size)};
+        fg_bounds = InflateRect(fg_bounds, -node.border_size * 0.5);
+
+        DrawRectOutline(draw_list, fg_bounds, node.border_colors, node.border_size);
+
+        bg_center := center + Vec2f.{ node.size.x * Offset, -node.size.y * Offset};
+        bg_bounds := Vec4f.{xy=ceil(bg_center - half_size), zw=floor(bg_center + half_size)};
+        bg_bounds = InflateRect(bg_bounds, -node.border_size * 0.5);
+
+        array_add(*draw_list.path, .{position=bg_bounds.xy});
+        array_add(*draw_list.path, .{position=.{bg_bounds.z, bg_bounds.y}});
+        array_add(*draw_list.path, .{position=bg_bounds.zw});
+        DrawPolygonLine(draw_list, draw_list.path, false, node.border_size, node.border_colors.top_left);
+        array_reset_keeping_memory(*draw_list.path);
+
+        return true;
+    });
+
+    return clicked, button;
+}
+
+UnmaximizeButton :: (parent: *Node, size : float, style : *ButtonStyle = null, location := #caller_location) -> bool, *Node {
+    clicked, button := UnmaximizeButton(parent, SizePx(size), SizePx(size), size * 0.4, style, location);
+    return clicked, button;
+}
+
+CloseButton :: (parent : *Node, width : Size1D, height : Size1D, icon_size : float, style : *ButtonStyle = null, location := #caller_location) -> bool, *Node {
+    EnsureStyle(*style, "button_small");
+
+    clicked, button := Button(parent, width, height, style, location);
+    SetPadding(button, 0, 0);
+
+    icon := GetNode(button);
+    SetSize(icon, SizePx(icon_size), SizePx(icon_size));
     SetDraw(icon, (draw_list : *DrawList, node : *Node) -> bool {
         if IsClipped(draw_list, node.rect) {
             return false;
@@ -505,7 +576,7 @@ CloseButton :: (parent : *Node, size : float, style : *ButtonStyle = null, locat
 
         center := (node.rect.xy + node.rect.zw) * 0.5;
         dir := normalize(node.rect.zw - node.rect.xy);
-        length := node.size.x;
+        length := sqrt(2 * node.size.x * node.size.x);
         color := node.text_color;
 
         DrawLine(draw_list, center - dir * length * 0.5, center + dir * length * 0.5, 1, color, color);
@@ -520,6 +591,11 @@ CloseButton :: (parent : *Node, size : float, style : *ButtonStyle = null, locat
     state := GetState(button);
     Apply(icon, style.states[state].text);
 
+    return clicked, button;
+}
+
+CloseButton :: (parent : *Node, size : float, style : *ButtonStyle = null, location := #caller_location) -> bool, *Node {
+    clicked, button := CloseButton(parent, SizePx(size), SizePx(size), size * 0.4, style, location);
     return clicked, button;
 }
 
