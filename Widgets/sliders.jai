@@ -276,7 +276,7 @@ Scrollbar :: (parent : *Node, target : *Node, axis : Axis, style : *ScrollbarSty
         {
             ratio := size / children_size;
 
-            handle.desired_size[axis] = SizeFill(ratio);
+            handle.desired_size[axis] = SizePercent(ratio);
             handle.desired_size[GetCrossAxis(axis)] = SizePx(style.handle_size.y);
             handle.min_size[axis] = style.handle_size.x;
 

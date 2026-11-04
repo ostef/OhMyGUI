@@ -325,10 +325,10 @@ LayoutFillAndPercentSizing :: (node : *Node, axis : Axis) #no_abc {
                 continue;
             }
 
-            total_weights += clamp(it.desired_size[axis].value, 0, 1);
+            total_weights += it.desired_size[axis].value;
 
-            if (remaining_size < 0 && abs(it.size[axis] - it.min_size[axis]) < 0.00001)
-            || (remaining_size > 0 && abs(it.size[axis] - it.max_size[axis]) < 0.00001) {
+            if (remaining_size < 0 && abs(it.min_size[axis] - it.size[axis]) < 0.00001)
+            || (remaining_size > 0 && abs(it.max_size[axis] - it.size[axis]) < 0.00001) {
                 continue;
             }
 
@@ -344,8 +344,8 @@ LayoutFillAndPercentSizing :: (node : *Node, axis : Axis) #no_abc {
                     continue;
                 }
 
-                if (remaining_size < 0 && abs(it.size[axis] - it.min_size[axis]) < 0.00001)
-                || (remaining_size > 0 && abs(it.size[axis] - it.max_size[axis]) < 0.00001) {
+                if (remaining_size < 0 && abs(it.min_size[axis] - it.size[axis]) < 0.00001)
+                || (remaining_size > 0 && abs(it.max_size[axis] - it.size[axis]) < 0.00001) {
                     continue;
                 }
 
@@ -355,8 +355,8 @@ LayoutFillAndPercentSizing :: (node : *Node, axis : Axis) #no_abc {
                 }
                 it.size[axis] = clamp(it.size[axis], it.min_size[axis], it.max_size[axis]);
 
-                if (remaining_size < 0 && abs(it.size[axis] - it.min_size[axis]) < 0.00001)
-                || (remaining_size > 0 && abs(it.size[axis] - it.max_size[axis]) < 0.00001) {
+                if (remaining_size < 0 && abs(it.min_size[axis] - it.size[axis]) < 0.00001)
+                || (remaining_size > 0 && abs(it.max_size[axis] - it.size[axis]) < 0.00001) {
                     num_fill_children -= 1;
                 }
 
@@ -377,7 +377,9 @@ LayoutFillAndPercentSizing :: (node : *Node, axis : Axis) #no_abc {
 
     for :Children node {
         if (node.child_layout_mode == .None || layout_axis != axis) && it.desired_size[axis].kind == .FillParent {
-            it.size[axis] = floor(node.size[axis] * it.desired_size[axis].value - node.padding.xy[axis] - node.padding.zw[axis]);
+            // Weight is always 1 because on the cross axis there is only one element laid out
+            // SizeFill with a non 1 weight does not make much sense, use SizePercent instead
+            it.size[axis] = floor(node.size[axis] - node.padding.xy[axis] - node.padding.zw[axis]);
             it.size[axis] = clamp(it.size[axis], it.min_size[axis], it.max_size[axis]);
             node.children_size[axis] = max(node.children_size[axis], it.size[axis]);
         }

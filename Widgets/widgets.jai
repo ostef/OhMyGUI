@@ -437,7 +437,7 @@ ProgressBar :: (parent : *Node, value : float, style : *ProgressBarStyle = null,
         Apply(node, style.background);
 
         fill := GetNode(node);
-        SetSize(fill, SizeFill(value), SizeFill());
+        SetSize(fill, SizePercent(value), SizeFill());
 
         Apply(fill, style.fill);
     }
