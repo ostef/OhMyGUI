@@ -254,23 +254,34 @@ EditorFrame :: () {
             if window.has_custom_decorations {
                 Btn_Size :: 26.0;
 
-                if OMG.CollapseButton(title_bar, Btn_Size) {
+                button_style := OMG.GetStyle("button_small", OMG.ButtonStyle).*;
+                for * button_style.states {
+                    it.background.corner_radiuses = .{2,2,2,2};
+                }
+
+                if OMG.CollapseButton(title_bar, Btn_Size, style=*button_style) {
                     SDL_MinimizeWindow(g_window);
                 }
 
                 flags := SDL_GetWindowFlags(g_window);
                 is_maximized := (flags & SDL_WINDOW_MAXIMIZED) != 0;
                 if is_maximized {
-                    if OMG.UnmaximizeButton(title_bar, Btn_Size) {
+                    if OMG.UnmaximizeButton(title_bar, Btn_Size, style=*button_style) {
                         SDL_RestoreWindow(g_window);
                     }
                 } else {
-                    if OMG.MaximizeButton(title_bar, Btn_Size) {
+                    if OMG.MaximizeButton(title_bar, Btn_Size, style=*button_style) {
                         SDL_MaximizeWindow(g_window);
                     }
                 }
 
-                if OMG.CloseButton(title_bar, Btn_Size) {
+                close_button_style := button_style;
+                OMG.SetColors(*close_button_style.focused.background.background_colors, 0xc81123ff);
+                OMG.SetColors(*close_button_style.hot.background.background_colors, 0xc81123ff);
+                OMG.SetAlpha(*close_button_style.hot.background.background_colors, 0.5);
+                OMG.SetColors(*close_button_style.active.background.background_colors, 0xc81123ff);
+
+                if OMG.CloseButton(title_bar, Btn_Size, style=*close_button_style) {
                     g_quit = true;
                 }
             }
