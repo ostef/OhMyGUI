@@ -40,6 +40,12 @@ SizePercent :: inline (value : float) -> Size1D {
     return .{kind=.ParentPercent, value=value};
 }
 
+/**
+ * @brief Fill the remainder after all siblings have been sized. `value` is normalized between siblings (two siblings at fill{2} is the same then fill{1}).
+ *
+ * Fill the remainder after all siblings have been sized. `value` is normalized between siblings (two siblings at fill{2} is the same then fill{1}).
+ * On the cross layout axis, value is ignored and the node always fills all the available space.
+ */
 SizeFill :: inline (ratio := 1.0) -> Size1D {
     return .{kind=.FillParent, value=ratio};
 }
