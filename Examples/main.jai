@@ -6,7 +6,7 @@ Enable_Memory_Debugger :: false;
 OMG :: #import "OhMyGUI";
 using,only(.["*"]) OMG;
 
-OMG_SDL :: #import "OhMyGUI/SDL";
+OMG_SDL :: #import "OhMyGUI/SDL2";
 OMG_GL :: #import "OhMyGUI/GL";
 
 #import "SDL";
