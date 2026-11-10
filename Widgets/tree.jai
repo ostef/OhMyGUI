@@ -161,8 +161,12 @@ TreeNode :: (parent : *Node, text : string, flags : TreeNodeFlags = 0, style : *
             SetSize(contents, SizeFill(), SizeFit());
             SetLayout(contents, .TopToBottom);
 
+            // Inherit the parent's layout properties
+            SetChildGap(contents, parent.child_gap);
+            SetPadding(contents, parent.padding);
+
             if !(flags & .NoIndent) {
-                SetPadding(contents, style.indent, 0, 0, 0);
+                contents.padding.x = style.indent;
             }
         }
 
