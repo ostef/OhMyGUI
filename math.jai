@@ -129,7 +129,7 @@ max :: inline (v : Vec4f) -> Vec4f {
     return .{max(v.x), max(v.y), max(v.z), max(v.w)};
 }
 
-sign :: inline (x : float) -> float {
+sign :: inline (x : $T/.[float, float64]) -> T {
     return ifx x < 0 then -1.0 else 1.0;
 }
 
@@ -386,6 +386,14 @@ ceil :: inline (value : Vec2f) -> Vec2f {
     return .{ceil(value.x), ceil(value.y)};
 }
 
+Round :: inline (value : float64) -> float64 {
+    if value < 0 {
+        return cast(float64, cast(int, value - 0.5));
+    }
+
+    return cast(float64, cast(int, value + 0.5));
+}
+
 Round :: inline (value : float) -> float {
     if value < 0 {
         return cast(float, cast(int, value - 0.5));
@@ -401,36 +409,50 @@ Round :: inline (value : Vec2f) -> Vec2f {
     };
 }
 
-SnapDown :: inline (value : float, grid_size : float) -> float {
+SnapDown :: inline (value : $T/.[float, float64, s8, s16, s32, s64, u8, u16, u32, u64], grid_size : T) -> T {
     if grid_size == 0 {
         return value;
     }
-    return floor(value / grid_size) * grid_size;
+    #if T == float || T == float64 {
+        return floor(value / grid_size) * grid_size;
+    } else {
+        return (value / grid_size) * grid_size;
+    }
 }
 
-Snap :: (value : float, grid_size : float) -> float {
+Snap :: (value : $T/.[float, float64, s8, s16, s32, s64, u8, u16, u32, u64], grid_size : T) -> T {
     if grid_size == 0 {
         return value;
     }
-    return Round(value / grid_size) * grid_size;
+
+    #if T == float || T == float64 {
+        return Round(value / grid_size) * grid_size;
+    } else {
+        result := (value / grid_size) * grid_size;
+        if value % grid_size > grid_size / 2 {
+            result += grid_size;
+        }
+
+        return result;
+    }
 }
 
-SnapUp :: (value : float, grid_size : float) -> float {
+SnapUp :: (value : $T/.[float, float64, s8, s16, s32, s64, u8, u16, u32, u64], grid_size : T) -> T {
     if grid_size == 0 {
         return value;
     }
     return ceil(value / grid_size) * grid_size;
 }
 
-ToRads :: inline (angle_in_degrees : float) -> float {
+ToRads :: inline (angle_in_degrees : $T/.[float, float64]) -> T {
     return angle_in_degrees * PI / 180.0;
 }
 
-ToDegs :: inline (angle_in_radians : float) -> float {
+ToDegs :: inline (angle_in_radians : $T/.[float, float64]) -> T {
     return angle_in_radians * 180.0 / PI;
 }
 
-InverseLerp :: inline (a : float, b : float, t : float) -> float {
+InverseLerp :: inline (a : $T/.[float, float64], b : T, t : T) -> T {
     return (t - a) / (b - a);
 }
 
@@ -674,4 +696,64 @@ BezierCubicBounds :: (p0 : Vec2f, p1 : Vec2f, p2 : Vec2f, p3 : Vec2f) -> Vec4f {
     }
 
     return .{xy=min_, zw=max_};
+}
+
+MinValue :: inline ($T: Type) -> T {
+    #if T == float32 {
+        return -FLOAT32_MAX;
+    } else #if T == float64 {
+        return -FLOAT64_MAX;
+    } else #if T == s8 {
+        return S8_MIN;
+    } else #if T == s16 {
+        return S16_MIN;
+    } else #if T == s32 {
+        return S32_MIN;
+    } else #if T == s64 {
+        return S64_MIN;
+    } else #if T == u8 {
+        return 0;
+    } else #if T == u16 {
+        return 0;
+    } else #if T == u32 {
+        return 0;
+    } else #if T == u64 {
+        return 0;
+    } else {
+        #assert false;
+    }
+}
+
+MaxValue :: inline ($T: Type) -> T {
+    #if T == float32 {
+        return FLOAT32_MAX;
+    } else #if T == float64 {
+        return FLOAT64_MAX;
+    } else #if T == s8 {
+        return S8_MAX;
+    } else #if T == s16 {
+        return S16_MAX;
+    } else #if T == s32 {
+        return S32_MAX;
+    } else #if T == s64 {
+        return S64_MAX;
+    } else #if T == u8 {
+        return U8_MAX;
+    } else #if T == u16 {
+        return U16_MAX;
+    } else #if T == u32 {
+        return U32_MAX;
+    } else #if T == u64 {
+        return U64_MAX;
+    } else {
+        #assert false;
+    }
+}
+
+DefaultStep :: inline ($T: Type) -> T {
+    #if T == float32 || T == float64 {
+        return 0.1;
+    } else {
+        return 1;
+    }
 }

@@ -183,3 +183,13 @@ SetTreeNodeOpened :: (node : *Node, opened : bool) {
         node.state_flags &= ~.Active;
     }
 }
+
+/**
+ * @brief Collapsible header widget.
+ */
+CollapsingHeader :: (parent : *Node, text : string, flags : TreeNodeFlags = 0, style : *TreeNodeStyle = null, location := #caller_location) -> contents : *Node, tree_item : *Node, tree_node : *Node {
+    EnsureStyle(*style, "collapsing_header");
+
+    contents, tree_item, tree_node := TreeNode(parent, text, flags, style, location);
+    return contents, tree_item, tree_node;
+}

@@ -738,6 +738,9 @@ GetNode :: (parent : *Node, id : ID, is_global_id := false) -> *Node, is_new : b
             // When declaring a node, we allow global ID collision if the other node is not declared on the same frame.
             if table_entry.* != node && table_entry.*.last_used_on_frame == context.omg.frame_index {
                 log_error("Global node ID collision (%)", node.id);
+                if context.stack_trace {
+                    log_stack_trace(context.stack_trace);
+                }
             }
         }
 

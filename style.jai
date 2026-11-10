@@ -510,6 +510,7 @@ DefaultTheme :: struct {
     table : TableStyle;
     progress_bar : ProgressBarStyle;
     tree_node : TreeNodeStyle;
+    collapsing_header : TreeNodeStyle;
     tab_bar : BoxStyle;
     tab : ButtonStyle;
     dock_space : DockSpaceStyle;
@@ -1181,6 +1182,20 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         indent = 10;
     }
     SetStyle(theme, "tree_node", theme.tree_node);
+
+    {
+        theme.collapsing_header = theme.tree_node;
+        using theme.collapsing_header;
+
+        tree_item = theme.button_accent;
+
+        for * tree_item.states {
+            it.background.child_gap = .{8,0};
+        }
+
+        indent = 0;
+    }
+    SetStyle(theme, "collapsing_header", theme.collapsing_header);
 
     {
         using theme.tab_bar;

@@ -16,6 +16,7 @@ OMG_GL :: #import "OhMyGUI/GL";
     Tracy :: __Tracy;
 }
 
+#load "gallery.jai";
 #load "editor.jai";
 #load "node_editor.jai";
 
@@ -142,7 +143,10 @@ main :: () {
         }
         OMG.NewFrame(g_delta_time);
 
-        EditorFrame();
+        // EditorFrame();
+
+        WidgetsGallerySubwindow(OMG.GetWindow(g_window));
+
         if g_node_graph_window {
             ShowNodeGraphWindow(OMG.GetWindow(g_node_graph_window));
         }
