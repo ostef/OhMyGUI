@@ -15,9 +15,7 @@ ButtonResult :: struct {
  * This function is idempotent, so calling ButtonBehavior multiple times for the same mouse button yields the same result.
  */
 ButtonBehavior :: (node : *Node, mouse_button := MouseButton.Left) -> ButtonResult {
-    disabled := IsDisabled();
-
-    if disabled {
+    if IsDisabled() {
         node.state_flags |= .Disabled;
     }
 
@@ -47,7 +45,7 @@ ButtonBehavior :: (node : *Node, mouse_button := MouseButton.Left) -> ButtonResu
         node.interacting_mouse_buttons |= button_flags;
         node.state_flags |= .Hot;
 
-        if !disabled {
+        if !(node.state_flags & .Disabled) {
             is_hovered := IsHovered(node);
             result.pressed = is_hovered && IsMouseButtonPressed(mouse_button);
             result.double_clicked = is_hovered && IsMouseButtonDoubleClicked(mouse_button);

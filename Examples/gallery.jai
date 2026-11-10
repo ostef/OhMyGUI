@@ -1,5 +1,12 @@
 g_disabled: bool;
 
+ButtonsGallery :: (parent: *OMG.Node) {
+    OMG.Button(parent, "Press Me!");
+    OMG.Button(parent, "Accent Button", style=OMG.GetStyle("button_accent", OMG.ButtonStyle));
+    OMG.Button(parent, "Positive Button", style=OMG.GetStyle("button_positive", OMG.ButtonStyle));
+    OMG.Button(parent, "Negative Button", style=OMG.GetStyle("button_negative", OMG.ButtonStyle));
+}
+
 g_sliders_data_type: enum {
     Float32;
     Float64;
@@ -65,8 +72,21 @@ WidgetsGallery :: (parent: *OMG.Node) {
     OMG.PushDisabled(g_disabled);
     defer OMG.PopDisabled();
 
-    sliders := OMG.CollapsingHeader(parent, "Sliders");
+    scroll_view := OMG.ScrollView(parent, .NoScrollbarX);
+
+    buttons := OMG.CollapsingHeader(scroll_view, "Buttons");
+    if buttons {
+        buttons.padding.x += 4;
+        buttons.padding.z += 4;
+
+        ButtonsGallery(buttons);
+    }
+
+    sliders := OMG.CollapsingHeader(scroll_view, "Sliders");
     if sliders {
+        sliders.padding.x += 4;
+        sliders.padding.z += 4;
+
         data_type_container := OMG.LabelAndContent(sliders, "Type");
         OMG.EnumCombo(data_type_container, *g_sliders_data_type);
 

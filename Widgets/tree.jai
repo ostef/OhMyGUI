@@ -66,6 +66,7 @@ TreeNode :: (parent : *Node, text : string, flags : TreeNodeFlags = 0, style : *
     {
         SetSize(node, SizeFill(), SizeFit());
         SetLayout(node, .TopToBottom);
+        SetChildGap(node, parent.child_gap);
 
         opened : bool;
         if !(flags & .Leaf) {

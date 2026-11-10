@@ -273,6 +273,10 @@ FocusTooltip :: (node : *Node, fmt_str : string, args : ..Any, min_focus_time :=
 ScrollBehavior :: (node : *Node) -> Vec2f {
     node.flags |= .Scrollable;
 
+    if IsDisabled() {
+        return .{};
+    }
+
     if context.omg.scroll_focused_node == node {
         return GetMouseWheel();
     }
@@ -283,7 +287,7 @@ ScrollBehavior :: (node : *Node) -> Vec2f {
 /**
  * @brief Perform mouse wheel scroll interaction logic for a Node.
  */
- ScrollViewBehavior :: (node : *Node, axis : AxisFlags) {
+ScrollViewBehavior :: (node : *Node, axis : AxisFlags) {
     ScrollViewBehavior(node, node, axis);
 }
 
@@ -374,6 +378,7 @@ ScrollView :: (parent : *Node, flags : ScrollViewFlags = 0, style : *ScrollViewS
         content := GetNode(content_parent, content_id, is_global_id=true);
         SetSize(content, SizeFill(), SizeFill());
         SetLayout(content, parent.child_layout_mode);
+        SetChildGap(content, parent.child_gap);
 
         scroll_view_axes : AxisFlags;
         if !(flags & .NoScrollX) {
@@ -382,6 +387,9 @@ ScrollView :: (parent : *Node, flags : ScrollViewFlags = 0, style : *ScrollViewS
         if !(flags & .NoScrollY) {
             scroll_view_axes |= .Y;
         }
+
+        PushDisabled(false);
+        defer PopDisabled();
 
         ScrollViewBehavior(content, scroll_view_axes);
 

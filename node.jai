@@ -508,7 +508,7 @@ PushChild :: (parent : *Node, node : *Node) {
 }
 
 PushDisabled :: inline (disabled := true) {
-    array_add(*context.omg.disabled_stack, disabled || IsDisabled());
+    array_add(*context.omg.disabled_stack, disabled);
 }
 
 PopDisabled :: inline () {

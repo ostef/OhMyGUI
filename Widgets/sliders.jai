@@ -291,7 +291,7 @@ Scrollbar :: (parent : *Node, target : *Node, axis : Axis, style : *ScrollbarSty
 
             // Allow the user to click on the background to interact with the scrollbar
             background.flags |= .Focusable;
-            if background.state_flags & .Focused && IsMouseButtonPressed(.Left) {
+            if !IsDisabled() && background.state_flags & .Focused && IsMouseButtonPressed(.Left) {
                 SetMouseCapture(handle);
                 SetMouseFocus(handle);
                 handle_result.pressed = true;

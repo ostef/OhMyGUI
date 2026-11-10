@@ -1252,6 +1252,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         background.padding = .{1,1,1,1};
 
         SetColors(*background.border_colors, MakeTone(button_base_background_color, 0.3));
+        SetAlpha(*background.border_colors, 0.25);
         background.border_size = 1;
 
         horizontal_scrollbar = theme.scrollbar;
