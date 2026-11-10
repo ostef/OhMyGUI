@@ -18,7 +18,7 @@ g_sliders_data_type: enum {
     UInt16;
     UInt32;
     UInt64;
-};
+} = .Int8;
 
 SliderValues :: struct(T: Type) {
     min := #run OMG.MinValue(T);

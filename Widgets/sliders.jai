@@ -24,13 +24,14 @@ SetColors :: (using style : *SliderStyle, base_background_color : RGBA8, base_fi
     SetColors(*focused.fill.background_colors, base_fill_color);
     SetColors(*hot.fill.background_colors, base_fill_color);
     SetColors(*active.fill.background_colors, base_fill_color);
-    SetColors(*disabled.fill.background_colors, Darken(base_fill_color, 0.1));
+    SetColors(*disabled.fill.background_colors, SetAlpha(MakeTone(base_background_color, 0.3), ToVec4f(base_fill_color).w));
 
     SetColors(*normal.handle.background_colors, base_handle_color);
     SetColors(*focused.handle.background_colors, Whiten(base_handle_color, 0.05));
     SetColors(*hot.handle.background_colors, Darken(base_handle_color, 0.05));
     SetColors(*active.handle.background_colors, Whiten(base_handle_color, 0.1));
     SetColors(*disabled.handle.background_colors, Darken(base_handle_color, 0.1));
+    SetColors(*disabled.handle.background_colors, MakeTone(base_background_color, 0.2));
 }
 
 SliderFlags :: enum_flags {
