@@ -531,7 +531,7 @@ PopID :: inline () {
 }
 
 GetID :: inline (id : ID, base : ID) -> ID {
-    return knuth_hash(id ^ base);
+    return fnv1a_hash(id, base);
 }
 
 GetID :: inline (str : string, seed := true) -> ID {
@@ -548,7 +548,7 @@ GetID :: inline (int_value : int, seed := true) -> ID {
         int_value = S64_MAX;
     }
 
-    id := knuth_hash(xx,no_check int_value);
+    id := fnv1a_hash(cast,no_check(u64, int_value));
     if seed && context.omg.id_stack.count > 0 {
         id = GetID(id, base=context.omg.id_stack[context.omg.id_stack.count - 1]);
     }
@@ -557,7 +557,7 @@ GetID :: inline (int_value : int, seed := true) -> ID {
 }
 
 GetID :: inline (ptr : *void, seed := true) -> ID {
-    id := knuth_hash(xx,no_check ptr);
+    id := fnv1a_hash(cast(u64, ptr));
     if seed && context.omg.id_stack.count > 0 {
         id = GetID(id, base=context.omg.id_stack[context.omg.id_stack.count - 1]);
     }
@@ -589,6 +589,19 @@ TouchNode :: (node : *Node) {
     if node.last_used_on_frame == context.omg.frame_index {
         return;
     }
+
+    table_entry, new_entry := HT.find_or_add(*context.omg.nodes_by_id, node.id);
+    if !new_entry {
+        // When declaring a node, we allow global ID collision if the other node is not declared on the same frame.
+        if table_entry.* != node && table_entry.*.last_used_on_frame == context.omg.frame_index {
+            log_error("Global node ID collision (%, text: '%')", node.id, node.text);
+            if context.stack_trace {
+                log_stack_trace(context.stack_trace);
+            }
+        }
+    }
+
+    table_entry.* = node;
 
     node.last_used_on_frame = context.omg.frame_index;
 
@@ -732,19 +745,6 @@ GetNode :: (parent : *Node, id : ID, is_global_id := false) -> *Node, is_new : b
         node.parent = parent;
         node.local_id = id;
         node.id = ifx is_global_id then id else GetID(id, base=parent.id);
-
-        table_entry, new_entry := HT.find_or_add(*context.omg.nodes_by_id, node.id);
-        if !new_entry {
-            // When declaring a node, we allow global ID collision if the other node is not declared on the same frame.
-            if table_entry.* != node && table_entry.*.last_used_on_frame == context.omg.frame_index {
-                log_error("Global node ID collision (%)", node.id);
-                if context.stack_trace {
-                    log_stack_trace(context.stack_trace);
-                }
-            }
-        }
-
-        table_entry.* = node;
 
         is_new = true;
     }
