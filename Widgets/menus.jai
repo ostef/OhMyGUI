@@ -7,7 +7,7 @@ MenuItemStyle :: struct {
 /**
  * @brief Horizontal menu bar widget.
  */
-MenuBar :: (parent : *Node, str_id : string, style : *BoxStyle = null) -> *Node {
+MenuBar :: (parent : *Node, str_id : string, act_as_title_bar : bool = false, style : *BoxStyle = null) -> *Node {
     EnsureStyle(*style, "menu_bar");
 
     node := GetNode(parent, str_id);
@@ -15,6 +15,14 @@ MenuBar :: (parent : *Node, str_id : string, style : *BoxStyle = null) -> *Node 
         SetLayout(node, .LeftToRight);
         SetSize(node, SizeFill(), SizeFit());
         SetChildAlign(node, 0, 0.5);
+
+        if act_as_title_bar {
+            node.flags |= .Focusable;
+
+            if HasMouseFocus(node) {
+                parent.window.hovered_area = .Draggable;
+            }
+        }
 
         Apply(node, style);
     }
