@@ -50,6 +50,23 @@ InitCustomWindowDecorations :: (window : *Window) -> bool {
     return true;
 }
 
+DestroyCustomWindowDecorations :: (window: *Window, reset_frame := true) {
+    decorations := GetCustomWindowDecorations(window.platform_handle);
+    if !decorations {
+        return;
+    }
+
+    Win32.SetWindowLongPtrW(decorations.hwnd, Win32.GWL_WNDPROC, xx decorations.prev_window_proc);
+
+    if reset_frame {
+        Win32.SetWindowPos(decorations.hwnd, null, 0, 0, 0, 0, Win32.SWP_FRAMECHANGED | Win32.SWP_NOMOVE | Win32.SWP_NOSIZE | Win32.SWP_NOZORDER | Win32.SWP_NOACTIVATE);
+    }
+
+    SDL_SetPointerProperty(SDL_GetWindowProperties(window.platform_handle), "OMG.CustomWindowDecorations", null);
+
+    free(decorations);
+}
+
 GetCustomWindowDecorations :: inline (window: *SDL_Window) -> *CustomWindowDecorations {
     return xx SDL_GetPointerProperty(SDL_GetWindowProperties(window), "OMG.CustomWindowDecorations", null);
 }

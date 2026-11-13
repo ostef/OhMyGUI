@@ -79,6 +79,7 @@ PlatformWindowFlags :: enum_flags {
 }
 
 PlatformFunctions :: struct {
+    DestroyWindowData : (window : *Window);
     GetWindowTitle : (handle : PlatformWindowHandle) -> string;
     SetWindowTitle : (handle : PlatformWindowHandle, title : string);
     GetWindowPosition : (handle : PlatformWindowHandle) -> int, int;
@@ -96,6 +97,13 @@ PlatformFunctions :: struct {
     SetClipboardText : (text : string);
     HasClipboardText : () -> bool;
     EnableCustomWindowDecorations : (window : *Window) -> bool;
+    DisableCustomWindowDecorations : (window : *Window);
+}
+
+PlatformDestroyWindowData :: inline (window : *Window) {
+    if context.omg.platform_funcs.DestroyWindowData {
+        context.omg.platform_funcs.DestroyWindowData(window);
+    }
 }
 
 PlatformGetWindowTitle :: inline (handle : PlatformWindowHandle) -> string {
@@ -211,11 +219,27 @@ PlatformHasClipboardText :: inline () -> bool {
 }
 
 EnableCustomWindowDecorations :: inline (window : *Window) -> bool {
+    if window.has_custom_decorations {
+        return true;
+    }
+
     if context.omg.platform_funcs.EnableCustomWindowDecorations {
         window.has_custom_decorations = context.omg.platform_funcs.EnableCustomWindowDecorations(window);
         return window.has_custom_decorations;
     }
     return false;
+}
+
+DisableCustomWindowDecorations :: inline (window : *Window) {
+    if !window.has_custom_decorations {
+        return;
+    }
+
+    if context.omg.platform_funcs.DisableCustomWindowDecorations {
+        context.omg.platform_funcs.DisableCustomWindowDecorations(window);
+    }
+
+    window.has_custom_decorations = false;
 }
 
 RendererFunctions :: struct {
@@ -351,6 +375,7 @@ DestroyWindow :: (window : *Window) {
     }
 
     RendererDestroyWindowData(window);
+    PlatformDestroyWindowData(window);
 
     DestroyDrawList(*window.draw_list);
 

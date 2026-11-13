@@ -11,6 +11,14 @@
 GetPlatformFuncs :: () -> PlatformFunctions {
     using funcs : PlatformFunctions;
 
+    DestroyWindowData = (window : *Window) {
+        #if OS == .WINDOWS {
+            if window.has_custom_decorations {
+                DestroyCustomWindowDecorations(window, reset_frame=false);
+            }
+        }
+    }
+
     GetWindowTitle = (handle : PlatformWindowHandle) -> string {
         title := SDL_GetWindowTitle(handle);
         return copy_string(to_string(title));
@@ -141,11 +149,13 @@ GetPlatformFuncs :: () -> PlatformFunctions {
         return xx SDL_HasClipboardText();
     }
 
-    EnableCustomWindowDecorations = (window : *Window) -> bool {
-        #if OS == .WINDOWS {
+    #if OS == .WINDOWS {
+        EnableCustomWindowDecorations = (window : *Window) -> bool {
             return InitCustomWindowDecorations(window);
-        } else {
-            return false;
+        }
+
+        DisableCustomWindowDecorations = (window : *Window) {
+            DestroyCustomWindowDecorations(window);
         }
     }
 
