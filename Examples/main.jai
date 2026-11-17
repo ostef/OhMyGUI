@@ -143,6 +143,11 @@ main :: () {
         }
         OMG.NewFrame(g_delta_time);
 
+        window := OMG.GetWindow(g_window);
+        if window.has_custom_decorations {
+            TitleBar(OMG.GetNode(window), "OhMyGUI");
+        }
+
         // EditorFrame();
 
         WidgetsGallerySubwindow(OMG.GetWindow(g_window));
@@ -228,4 +233,68 @@ DestroyNodeGraphWindow :: () {
 
     g_node_graph_gl_context = null;
     g_node_graph_window = null;
+}
+
+TitleBar :: (parent: *OMG.Node, title: string, location := #caller_location) -> *OMG.Node {
+    window := parent.window;
+
+    base_background_color := OMG.GetStyle("base", OMG.BoxStyle).background_colors.top_left;
+
+    title_bar := OMG.GetNode(parent, location);
+    {
+        OMG.SetChildGap(title_bar, 4);
+        OMG.SetChildAlign(title_bar, 0.5, 0.5);
+        OMG.SetWidth(title_bar, OMG.SizeFill());
+        OMG.SetHeight(title_bar, OMG.SizeFit());
+
+        OMG.SetBackgroundColor(title_bar, base_background_color);
+
+        title_bar.flags |= .Focusable;
+
+        if OMG.HasMouseFocus(title_bar) {
+            parent.window.hovered_area = .Draggable;
+        }
+
+        title_container := OMG.GetNode(title_bar);
+        OMG.SetPadding(title_container, 6, 6, 6, 6);
+        OMG.SetSize(title_container, OMG.SizeFill(), OMG.SizeFill());
+
+        text := OMG.Text(title_container, title);
+        OMG.SetWidth(text, OMG.SizeFill());
+
+        Btn_Size :: 30.0;
+
+        button_style := OMG.GetStyle("button_small", OMG.ButtonStyle).*;
+        for * button_style.states {
+            it.background.corner_radiuses = .{2,2,2,2};
+        }
+
+        if OMG.CollapseButton(title_bar, Btn_Size, style=*button_style) {
+            SDL_MinimizeWindow(window.platform_handle);
+        }
+
+        flags := SDL_GetWindowFlags(window.platform_handle);
+        is_maximized := (flags & SDL_WINDOW_MAXIMIZED) != 0;
+        if is_maximized {
+            if OMG.UnmaximizeButton(title_bar, Btn_Size, style=*button_style) {
+                SDL_RestoreWindow(window.platform_handle);
+            }
+        } else {
+            if OMG.MaximizeButton(title_bar, Btn_Size, style=*button_style) {
+                SDL_MaximizeWindow(window.platform_handle);
+            }
+        }
+
+        close_button_style := button_style;
+        OMG.SetColors(*close_button_style.focused.background.background_colors, 0xc81123ff);
+        OMG.SetColors(*close_button_style.hot.background.background_colors, 0xc81123ff);
+        OMG.SetAlpha(*close_button_style.hot.background.background_colors, 0.5);
+        OMG.SetColors(*close_button_style.active.background.background_colors, 0xc81123ff);
+
+        if OMG.CloseButton(title_bar, Btn_Size, style=*close_button_style) {
+            g_quit = true;
+        }
+    }
+
+    return title_bar;
 }
