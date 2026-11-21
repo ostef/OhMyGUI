@@ -782,6 +782,24 @@ DrawRectOutline :: (
     blur_size := 0.0,
     blur_sides := LineSides.All
 ) {
+    PushVertex :: (draw_list : *DrawList, position : Vec2f) -> *Vertex #expand {
+        tx := InverseLerp(`bounds.x, `bounds.z, position.x);
+        ty := InverseLerp(`bounds.y, `bounds.w, position.y);
+        tx = clamp(tx, 0, 1);
+        ty = clamp(ty, 0, 1);
+
+        v := PushVertex(draw_list);
+        v.position = position;
+
+        a := MixColors(`color_top_left, `color_top_right, tx);
+        b := MixColors(`color_bottom_left, `color_bottom_right, tx);
+
+        v.color = MixColors(a, b, ty);
+        v.tex_coords = .{lerp(uv_bounds.x, uv_bounds.z, tx), lerp(uv_bounds.y, uv_bounds.w, ty)};
+
+        return v;
+    }
+
     if IsClipped(draw_list, bounds) {
         return;
     }
@@ -793,6 +811,165 @@ DrawRectOutline :: (
         return;
     }
 
+    size := bounds.zw - bounds.xy;
+    half_size := size * 0.5;
+
+    max_radius := min(half_size.x, half_size.y);
+    outer_radiuses := Vec4f.{
+        max(min(corner_radiuses.x, max_radius), 0),
+        max(min(corner_radiuses.y, max_radius), 0),
+        max(min(corner_radiuses.z, max_radius), 0),
+        max(min(corner_radiuses.w, max_radius), 0),
+    };
+
+    inner_radiuses := outer_radiuses - Vec4f.{thickness, thickness, thickness, thickness};
+
+    top_left := bounds.xy;
+    top_left.x += outer_radiuses.x;
+    top_left.y += outer_radiuses.x;
+
+    top_right := Vec2f.{bounds.z, bounds.y};
+    top_right.x -= outer_radiuses.y;
+    top_right.y += outer_radiuses.y;
+
+    bottom_left := Vec2f.{bounds.x, bounds.w};
+    bottom_left.x += outer_radiuses.z;
+    bottom_left.y -= outer_radiuses.z;
+
+    bottom_right := bounds.zw;
+    bottom_right.x -= outer_radiuses.w;
+    bottom_right.y -= outer_radiuses.w;
+
+    PushCornerVertices :: (
+        draw_list: *DrawList,
+        center: Vec2f, outer_radius: float, inner_radius: float,
+        start_angle: float
+    ) -> num_outer_segments: u32, num_inner_segments: u32 #expand {
+
+        if outer_radius <= 0 {
+            diagonal := SampleCosSinTable(-(start_angle + PI * 0.25));
+            PushVertex(draw_list, center);
+            PushVertex(draw_list, center + inner_radius * sign(diagonal));
+
+            return 0, 0;
+        }
+
+        num_segments: u32 = xx max((outer_radius * 0.25) * context.omg.global_polygon_resolution, 3);
+
+        for i: 0..num_segments {
+            t := i / cast(float, num_segments);
+            angle := start_angle + t * PI * 0.5;
+            p := SampleCosSinTable(-angle);
+
+            PushVertex(draw_list, center + outer_radius * p);
+
+            if inner_radius > 0 {
+                PushVertex(draw_list, center + inner_radius * p);
+            }
+        }
+
+        if inner_radius <= 0 {
+            diagonal := SampleCosSinTable(-(start_angle + PI * 0.25));
+            PushVertex(draw_list, center + inner_radius * sign(diagonal));
+        }
+
+        return num_segments, ifx inner_radius > 0 then num_segments else 0;
+    }
+
+    tl_start_index := GetCurrentIndex(draw_list);
+    tl_segments, tl_inner_segments := PushCornerVertices(draw_list, top_left, outer_radiuses.x, inner_radiuses.x, PI * 0.5);
+
+    tr_start_index := GetCurrentIndex(draw_list);
+    tr_segments, tr_inner_segments := PushCornerVertices(draw_list, top_right, outer_radiuses.y, inner_radiuses.y, 0);
+
+    bl_start_index := GetCurrentIndex(draw_list);
+    bl_segments, bl_inner_segments := PushCornerVertices(draw_list, bottom_left, outer_radiuses.z, inner_radiuses.z, PI);
+
+    br_start_index := GetCurrentIndex(draw_list);
+    br_segments, br_inner_segments := PushCornerVertices(draw_list, bottom_right, outer_radiuses.w, inner_radiuses.w, PI * 1.5);
+
+    PushCornerIndices :: (draw_list: *DrawList, start_index: u32, num_outer_segments: u32, num_inner_segments: u32) -> first_outer: u32, first_inner: u32, last_outer: u32, last_inner: u32 {
+        if num_outer_segments == 0 {
+            return start_index, start_index + 1, start_index, start_index + 1;
+        }
+
+        first_outer, first_inner, last_outer, last_inner: u32 = ---;
+        if num_inner_segments > 0 {
+            first_outer = start_index;
+            first_inner = first_outer + 1;
+            last_outer = start_index + num_outer_segments * 2;
+            last_inner = last_outer + 1;
+        } else {
+            first_outer = start_index;
+            last_outer = start_index + num_outer_segments;
+
+            first_inner = last_outer + 1;
+            last_inner = last_outer + 1;
+        }
+
+        for i: 0..num_outer_segments - 1 {
+            if num_inner_segments > 0 {
+                i0 := start_index + i * 2;
+                PushIndex(draw_list, i0);
+                PushIndex(draw_list, i0 + 1);
+                PushIndex(draw_list, i0 + 2);
+
+                PushIndex(draw_list, i0 + 2);
+                PushIndex(draw_list, i0 + 1);
+                PushIndex(draw_list, i0 + 3);
+            } else {
+                i0 := start_index + i;
+                PushIndex(draw_list, i0);
+                PushIndex(draw_list, last_inner);
+                PushIndex(draw_list, i0 + 1);
+            }
+        }
+
+        return first_outer, first_inner, last_outer, last_inner;
+    }
+
+    tl_o0, tl_i0, tl_o1, tl_i1 := PushCornerIndices(draw_list, tl_start_index, tl_segments, tl_inner_segments);
+    tr_o0, tr_i0, tr_o1, tr_i1 := PushCornerIndices(draw_list, tr_start_index, tr_segments, tr_inner_segments);
+    bl_o0, bl_i0, bl_o1, bl_i1 := PushCornerIndices(draw_list, bl_start_index, bl_segments, bl_inner_segments);
+    br_o0, br_i0, br_o1, br_i1 := PushCornerIndices(draw_list, br_start_index, br_segments, br_inner_segments);
+
+    // Top edge
+    PushIndex(draw_list, tl_o0);
+    PushIndex(draw_list, tr_o1);
+    PushIndex(draw_list, tl_i0);
+
+    PushIndex(draw_list, tl_i0);
+    PushIndex(draw_list, tr_o1);
+    PushIndex(draw_list, tr_i1);
+
+    // Right edge
+    PushIndex(draw_list, tr_o0);
+    PushIndex(draw_list, br_o1);
+    PushIndex(draw_list, tr_i0);
+
+    PushIndex(draw_list, tr_i0);
+    PushIndex(draw_list, br_o1);
+    PushIndex(draw_list, br_i1);
+
+    // Bottom edge
+    PushIndex(draw_list, br_o0);
+    PushIndex(draw_list, bl_o1);
+    PushIndex(draw_list, br_i0);
+
+    PushIndex(draw_list, br_i0);
+    PushIndex(draw_list, bl_o1);
+    PushIndex(draw_list, bl_i1);
+
+    // Left edge
+    PushIndex(draw_list, bl_o0);
+    PushIndex(draw_list, tl_o1);
+    PushIndex(draw_list, bl_i0);
+
+    PushIndex(draw_list, bl_i0);
+    PushIndex(draw_list, tl_o1);
+    PushIndex(draw_list, tl_i1);
+
+    /*
     PathPushRoundedRect(*draw_list.path, bounds, corner_radiuses);
 
     get_color_data : struct {
@@ -819,6 +996,7 @@ DrawRectOutline :: (
 
     DrawPolygonLine(draw_list, draw_list.path, true, thickness, GetColor, *get_color_data, blur_size, blur_sides);
     array_reset_keeping_memory(*draw_list.path);
+    */
 } @Profile
 
 BoxDrawing :: struct {
@@ -874,10 +1052,9 @@ DrawBox :: inline (draw_list : *DrawList, box : BoxDrawing, texture : TextureHan
     );
 
     // Border
-    border_inset := Vec4f.{-1,-1,-1,-1} * (box.border_size * 0.5 + box.border_inset);
     DrawRectOutline(
         draw_list,
-        InflateRect(box.bounds, border_inset),
+        InflateRect(box.bounds, -box.border_inset),
         box.border_colors,
         box.border_size,
         box.corner_radiuses,

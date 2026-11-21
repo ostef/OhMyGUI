@@ -31,6 +31,10 @@ g_gpu_time : float;
 g_user_time : float;
 g_slow_down : bool;
 
+g_rect_corner_radiuses: OMG.Vec4f;
+g_rect_size: OMG.Vec2f = .{100, 100};
+g_rect_thickness := 10.0;
+
 g_current_timestamp_query : int;
 g_timestamp_queries : [2][2]GLuint;
 
@@ -152,9 +156,35 @@ main :: () {
 
         WidgetsGallerySubwindow(OMG.GetWindow(g_window));
 
-        if g_node_graph_window {
-            ShowNodeGraphWindow(OMG.GetWindow(g_node_graph_window));
+        rect_test := OMG.Subwindow(window, "Rect Test", "rect_test");
+        if rect_test {
+            OMG.SetLayout(rect_test, .TopToBottom);
+
+            top_left := OMG.LabelAndContent(rect_test, "Top-left");
+            OMG.FloatInput(top_left, *g_rect_corner_radiuses.x, 0, 1000, 1);
+
+            top_right := OMG.LabelAndContent(rect_test, "Top-right");
+            OMG.FloatInput(top_right, *g_rect_corner_radiuses.y, 0, 1000, 1);
+
+            bottom_left := OMG.LabelAndContent(rect_test, "Bottom-left");
+            OMG.FloatInput(bottom_left, *g_rect_corner_radiuses.z, 0, 1000, 1);
+
+            bottom_right := OMG.LabelAndContent(rect_test, "Bottom-right");
+            OMG.FloatInput(bottom_right, *g_rect_corner_radiuses.w, 0, 1000, 1);
+
+            thickness := OMG.LabelAndContent(rect_test, "Thickness");
+            OMG.FloatInput(thickness, *g_rect_thickness, 0, 1000, 1);
+
+            rect := OMG.GetNode(rect_test);
+            OMG.SetSize(rect, OMG.SizeFill(), OMG.SizeFill());
+            OMG.SetBorderSize(rect, g_rect_thickness);
+            OMG.SetBorderColor(rect, 0xffffffff);
+            OMG.SetCornerRadiuses(rect, g_rect_corner_radiuses);
         }
+
+        // if g_node_graph_window {
+        //     ShowNodeGraphWindow(OMG.GetWindow(g_node_graph_window));
+        // }
 
         user_end := current_time_monotonic();
         g_user_time = xx to_float64_seconds(user_end - user_start);

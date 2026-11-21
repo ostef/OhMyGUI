@@ -105,30 +105,6 @@ Scale :: inline (a : Vec2f, b : Vec2f) -> Vec2f {
     };
 }
 
-min :: inline (v : Vec2f) -> Vec2f {
-    return .{min(v.x), min(v.y)};
-}
-
-min :: inline (v : Vec3f) -> Vec3f {
-    return .{min(v.x), min(v.y), min(v.z)};
-}
-
-min :: inline (v : Vec4f) -> Vec4f {
-    return .{min(v.x), min(v.y), min(v.z), min(v.w)};
-}
-
-max :: inline (v : Vec2f) -> Vec2f {
-    return .{max(v.x), max(v.y)};
-}
-
-max :: inline (v : Vec3f) -> Vec3f {
-    return .{max(v.x), max(v.y), max(v.z)};
-}
-
-max :: inline (v : Vec4f) -> Vec4f {
-    return .{max(v.x), max(v.y), max(v.z), max(v.w)};
-}
-
 sign :: inline (x : $T/.[float, float64]) -> T {
     return ifx x < 0 then -1.0 else 1.0;
 }
