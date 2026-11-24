@@ -32,7 +32,8 @@ g_user_time : float;
 g_slow_down : bool;
 
 g_rect_corner_radiuses: OMG.Vec4f;
-g_rect_size: OMG.Vec2f = .{100, 100};
+g_rect_blur := 0.0;
+g_rect_blur_sides := OMG.LineSides.All;
 g_rect_thickness := 10.0;
 
 g_current_timestamp_query : int;
@@ -175,11 +176,23 @@ main :: () {
             thickness := OMG.LabelAndContent(rect_test, "Thickness");
             OMG.FloatInput(thickness, *g_rect_thickness, 0, 1000, 1);
 
+            blur_sides := OMG.LabelAndContent(rect_test, "Blur Sides");
+            OMG.EnumCombo(blur_sides, *g_rect_blur_sides);
+
+            blur := OMG.LabelAndContent(rect_test, "Blur");
+            OMG.FloatInput(blur, *g_rect_blur, 0, 1000, 1);
+
             rect := OMG.GetNode(rect_test);
             OMG.SetSize(rect, OMG.SizeFill(), OMG.SizeFill());
-            OMG.SetBorderSize(rect, g_rect_thickness);
-            OMG.SetBorderColor(rect, 0xffffffff);
-            OMG.SetCornerRadiuses(rect, g_rect_corner_radiuses);
+            OMG.SetDraw(rect, (draw_list: *OMG.DrawList, node: *OMG.Node) -> bool {
+                if OMG.IsClipped(draw_list, node.rect) {
+                    return false;
+                }
+
+                OMG.DrawRectOutline(draw_list, node.rect, 0xffffffff, g_rect_thickness, g_rect_corner_radiuses, blur_size=g_rect_blur, blur_sides=g_rect_blur_sides);
+
+                return true;
+            });
         }
 
         // if g_node_graph_window {
