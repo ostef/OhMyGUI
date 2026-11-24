@@ -829,9 +829,8 @@ DrawRectOutline :: (
     outer_blur := ifx blur_sides & .Exterior then max(blur_size, aa) else aa;
     inner_blur := ifx blur_sides & .Interior then max(blur_size, aa) else aa;
 
-    thickness = max(thickness, 0);
-    has_middle_part := thickness > max(blur_size, aa);
-    half_inner_thickness := (thickness - max(blur_size, aa)) * 0.5;
+    // @Todo: do not emit triangles for the middle part when the thickness is smaller than the anti-alias margins
+    thickness = max(thickness - (aa + aa) * 0.5 , 0);
 
     half_size := (bounds.zw - bounds.xy) * 0.5;
 
@@ -843,10 +842,10 @@ DrawRectOutline :: (
         max(min(corner_radiuses.w, max_radius), 0),
     };
 
-    top_left := bounds.xy;
-    top_right := Vec2f.{bounds.z, bounds.y};
-    bottom_left := Vec2f.{bounds.x, bounds.w};
-    bottom_right := bounds.zw;
+    top_left := bounds.xy + Vec2f.{aa * 0.5, aa * 0.5};
+    top_right := Vec2f.{bounds.z, bounds.y} + Vec2f.{-aa * 0.5, aa * 0.5};
+    bottom_left := Vec2f.{bounds.x, bounds.w} + Vec2f.{aa * 0.5, -aa * 0.5};
+    bottom_right := bounds.zw + Vec2f.{-aa * 0.5, -aa * 0.5};
 
     PushCornerVertices :: (
         draw_list: *DrawList,
@@ -879,7 +878,7 @@ DrawRectOutline :: (
         center := position - .{sign(diagonal.x) * outer_radius, sign(diagonal.y) * outer_radius};
         inner_radius := outer_radius - thickness;
 
-        num_segments: u32 = xx max((outer_radius * 0.25) * context.omg.global_polygon_resolution, 3);
+        num_segments: u32 = xx max((outer_radius + outer_blur) * 0.25 * context.omg.global_polygon_resolution, 3);
         num_inner_segments: u32 = xx ifx inner_radius > 0 then num_segments else 0;
         num_inner_blur_segments: u32 = xx ifx thickness + inner_blur < outer_radius then num_segments else 0;
 
