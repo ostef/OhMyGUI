@@ -1,4 +1,4 @@
-SubwindowPersistentData :: struct {
+SubwindowData :: struct {
     id : ID;
     position : Vec2f;
     size : Vec2f;
@@ -11,10 +11,10 @@ SubwindowPersistentData :: struct {
 }
 
 GlobalSubwindowsData :: struct {
-    entries : [..]SubwindowPersistentData;
+    entries : [..]SubwindowData;
 }
 
-GetSubwindowPersistentData :: (id : ID) -> *SubwindowPersistentData, is_new : bool {
+GetSubwindowData :: (id : ID) -> *SubwindowData, is_new : bool {
     storage, new := AddGlobalUserData(GlobalSubwindowsData, DestroyGlobalSubwindowsData);
     if new {
         storage.entries.allocator = context.omg.general_purpose_allocator;
@@ -83,7 +83,7 @@ SubwindowStyle :: struct {
 }
 
 SubwindowTitleBar :: (
-    data : *SubwindowPersistentData,
+    data : *SubwindowData,
     subwindow : *Node,
     parent : *Node,
     title : string,
@@ -200,7 +200,7 @@ SubwindowResizeBehavior :: (subwindow : *Node, handle : *Node, min_size : Vec2f,
     }
 }
 
-SubwindowResizeHandles :: (data : *SubwindowPersistentData, subwindow : *Node, min_size : Vec2f, style : *SubwindowStyle) -> *Node {
+SubwindowResizeHandles :: (data : *SubwindowData, subwindow : *Node, min_size : Vec2f, style : *SubwindowStyle) -> *Node {
     SetLayout(subwindow, .None);
 
     title_and_content := GetNode(subwindow, "title_and_content");
@@ -324,21 +324,21 @@ Subwindow :: (
 
     subwindow_id := GetID(str_id);
 
-    persistent_data, is_new_persistent_data := GetSubwindowPersistentData(subwindow_id);
+    data, is_new_data := GetSubwindowData(subwindow_id);
 
-    if persistent_data.wants_collapse {
-        persistent_data.collapsed = true;
-        persistent_data.wants_collapse = false;
+    if data.wants_collapse {
+        data.collapsed = true;
+        data.wants_collapse = false;
     }
     expanded_this_frame : bool;
-    if persistent_data.wants_expand {
-        persistent_data.collapsed = false;
-        persistent_data.wants_expand = false;
+    if data.wants_expand {
+        data.collapsed = false;
+        data.wants_expand = false;
         expanded_this_frame = true;
     }
 
-    should_close := persistent_data.wants_close;
-    persistent_data.wants_close = false;
+    should_close := data.wants_close;
+    data.wants_close = false;
 
     if should_close && opened {
         opened.* = false;
@@ -347,7 +347,7 @@ Subwindow :: (
 
     content, subwindow : *Node;
     dock_node, dock_node_data := GetSubwindowDockNode(subwindow_id);
-    defer persistent_data.was_docked = dock_node != null;
+    defer data.was_docked = dock_node != null;
 
     if dock_node && (flags & .NoDocking) {
         UndockSubwindow(dock_node_data, subwindow_id);
@@ -362,37 +362,37 @@ Subwindow :: (
     content_parent : *Node;
 
     if !dock_node {
-        defer if persistent_data {
-            persistent_data.position = subwindow.offset + resize_handles_expand;
+        defer if data {
+            data.position = subwindow.offset + resize_handles_expand;
 
-            persistent_data.size.x = subwindow.desired_size.x.value - resize_handles_expand.x * 2;
-            if !persistent_data.collapsed {
-                persistent_data.size.y = subwindow.desired_size.y.value - resize_handles_expand.y* 2;
+            data.size.x = subwindow.desired_size.x.value - resize_handles_expand.x * 2;
+            if !data.collapsed {
+                data.size.y = subwindow.desired_size.y.value - resize_handles_expand.y* 2;
             }
         }
 
         subwindow=, is_new := GetPopupNode(window, subwindow_id, is_global_id=true);
-        defer persistent_data.was_undocked_using_mouse = false;
+        defer data.was_undocked_using_mouse = false;
 
         if is_new {
             BringForward(subwindow);
 
-            if !persistent_data || is_new_persistent_data || persistent_data.was_docked {
+            if !data || is_new_data || data.was_docked {
                 SetSize(subwindow, SizePx(initial_size.x), SizePx(initial_size.y));
                 subwindow.offset = initial_position;
             } else {
-                SetSize(subwindow, SizePx(persistent_data.size.x), SizePx(persistent_data.size.y));
-                subwindow.offset = persistent_data.position;
+                SetSize(subwindow, SizePx(data.size.x), SizePx(data.size.y));
+                subwindow.offset = data.position;
             }
 
             subwindow.desired_size.x.value += resize_handles_expand.x * 2;
             subwindow.desired_size.y.value += resize_handles_expand.y * 2;
 
             subwindow.offset -= resize_handles_expand;
-        } else if persistent_data.collapsed {
+        } else if data.collapsed {
             SetSize(subwindow, SizePx(subwindow.size.x), SizeFit());
         } else if expanded_this_frame {
-            SetSize(subwindow, SizePx(subwindow.size.x), SizePx(persistent_data.size.y));
+            SetSize(subwindow, SizePx(subwindow.size.x), SizePx(data.size.y));
         } else {
             SetSize(subwindow, SizePx(subwindow.size.x), SizePx(subwindow.size.y));
         }
@@ -408,7 +408,7 @@ Subwindow :: (
 
         title_and_content := ifx flags & .NoResize
             then subwindow
-            else SubwindowResizeHandles(persistent_data, subwindow, min_size, style);
+            else SubwindowResizeHandles(data, subwindow, min_size, style);
 
         avail_area = subwindow.parent.rect;
         if !(flags & .NoResize) {
@@ -416,9 +416,9 @@ Subwindow :: (
         }
 
         title_bar := ifx !(flags & .NoTitleBar)
-            then SubwindowTitleBar(persistent_data, subwindow, title_and_content, title, flags, *style.title_bar);
+            then SubwindowTitleBar(data, subwindow, title_and_content, title, flags, *style.title_bar);
 
-        if persistent_data.collapsed {
+        if data.collapsed {
             SetHeight(subwindow, SizeFit());
         }
 
@@ -428,7 +428,7 @@ Subwindow :: (
         }
 
         if title_bar && !(flags & .NoMove) {
-            if persistent_data.was_undocked_using_mouse {
+            if data.was_undocked_using_mouse {
                 offset := context.omg.mouse_captured_node_value.xy;
 
                 SetMouseCapture(title_bar);
@@ -462,7 +462,7 @@ Subwindow :: (
         title_and_content.padding = .{};
         title_and_content.child_gap = .{};
 
-        if persistent_data.collapsed {
+        if data.collapsed {
             return null, subwindow;
         }
     } else {
@@ -478,7 +478,7 @@ Subwindow :: (
             current := GetMousePosition();
 
             if abs(current.y - start.y) > tab.size.y {
-                persistent_data.was_undocked_using_mouse = UndockSubwindow(dock_node_data, subwindow_id);
+                data.was_undocked_using_mouse = UndockSubwindow(dock_node_data, subwindow_id);
                 context.omg.mouse_captured_node_value = .{xy=WindowToScreen(window, tab.rect.xy) - context.omg.mouse_captured_at};
             }
         }
