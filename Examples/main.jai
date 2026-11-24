@@ -195,9 +195,9 @@ main :: () {
             });
         }
 
-        // if g_node_graph_window {
-        //     ShowNodeGraphWindow(OMG.GetWindow(g_node_graph_window));
-        // }
+        if g_node_graph_window {
+            ShowNodeGraphWindow(OMG.GetWindow(g_node_graph_window));
+        }
 
         user_end := current_time_monotonic();
         g_user_time = xx to_float64_seconds(user_end - user_start);
