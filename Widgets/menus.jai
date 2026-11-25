@@ -137,6 +137,28 @@ Apply :: inline (node : *Node, style : MenuStyle) {
 }
 
 /**
+ * @brief Check if a Node is in a menu or one of its submenus.
+ */
+IsInMenuOrSubmenus :: (node: *Node, of: *Node) -> bool {
+    if IsInTree(node, of) {
+        return true;
+    }
+
+    menu := GetUserData(of, MenuData);
+    if !menu {
+        return false;
+    }
+
+    for menu.submenus {
+        if IsInMenuOrSubmenus(node, it) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
  * @brief Menu item widget that opens a menu.
  */
 Menu :: (
@@ -153,8 +175,9 @@ Menu :: (
 
     parent_menu_data := GetUserData(parent, MenuData);
 
+    menu_id := GetID(GetID("menu"), GetID(GetID(location), parent.id));
     popup_root := GetPopupRoot(parent.window);
-    prev_frame_menu := FindPrevFrameNode(popup_root, GetID(location));
+    prev_frame_menu := FindPrevFrameNode(popup_root, menu_id);
     menu_data := ifx prev_frame_menu then GetUserData(prev_frame_menu, MenuData);
 
     menu_item := GetNode(parent, location);
@@ -190,18 +213,7 @@ Menu :: (
         should_deactivate |= menu_data != null && menu_data.wants_close;
 
         if prev_frame_menu && menu_item.state_flags & .ActiveLastFrame && !(menu_item.state_flags & .Focused) && IsAnyMouseButtonPressed() {
-            is_in_menu := IsInTree(context.omg.mouse_hovered_node, prev_frame_menu);
-
-            if menu_data && !is_in_menu {
-                for menu_data.submenus {
-                    if IsInTree(context.omg.mouse_hovered_node, it) {
-                        is_in_menu = true;
-                        break;
-                    }
-                }
-            }
-
-            should_deactivate = !is_in_menu;
+            should_deactivate = !IsInMenuOrSubmenus(context.omg.mouse_hovered_node, prev_frame_menu);
         }
 
         if should_deactivate {
@@ -224,7 +236,7 @@ Menu :: (
 
     menu : *Node;
     if menu_item.state_flags & .Active {
-        menu = GetNode(popup_root, location);
+        menu = GetNode(popup_root, menu_id);
         assert(prev_frame_menu == null || menu == prev_frame_menu);
         {
             SetLayout(menu, .TopToBottom);
@@ -279,8 +291,9 @@ ContextMenu :: (parent : *Node, style : *MenuStyle = null, location := #caller_l
 
     button := ButtonBehavior(parent, .Right);
 
+    menu_id := GetID(GetID("menu"), GetID(GetID(location), parent.id));
     popup_root := GetPopupRoot(parent.window);
-    prev_frame_menu := FindPrevFrameNode(popup_root, GetID(location));
+    prev_frame_menu := FindPrevFrameNode(popup_root, menu_id);
     menu_data := ifx prev_frame_menu then GetUserData(prev_frame_menu, MenuData);
 
     should_deactivate := IsKeyPressed(.Escape);
@@ -289,7 +302,7 @@ ContextMenu :: (parent : *Node, style : *MenuStyle = null, location := #caller_l
     if button.released {
         opened = true;
     } else if opened && IsAnyMouseButtonPressed() && prev_frame_menu != null {
-        should_deactivate = !IsInTree(context.omg.mouse_hovered_node, prev_frame_menu.id);
+        should_deactivate = !IsInMenuOrSubmenus(context.omg.mouse_hovered_node, prev_frame_menu);
     }
 
     if should_deactivate {
@@ -298,7 +311,7 @@ ContextMenu :: (parent : *Node, style : *MenuStyle = null, location := #caller_l
 
     menu : *Node;
     if opened {
-        menu = GetNode(popup_root, location);
+        menu = GetNode(popup_root, menu_id);
         assert(prev_frame_menu == null || menu == prev_frame_menu);
         {
             SetLayout(menu, .TopToBottom);
