@@ -7,13 +7,13 @@
  * @see Context.theme
  */
 Theme :: struct {
-    styles : HT.Table(string, Any); ///> Record of style name to Any value. Values are not owned by this table.
+    styles: HT.Table(string, Any); ///> Record of style name to Any value. Values are not owned by this table.
 }
 
 /**
  * @brief Set a value in the Theme's styles table
  */
-SetStyle :: (theme : *Theme, name : string, value : Any) {
+SetStyle :: (theme: *Theme, name: string, value: Any) {
     HT.table_set(*theme.styles, name, value);
 }
 
@@ -22,7 +22,7 @@ SetStyle :: (theme : *Theme, name : string, value : Any) {
  *
  * Fetch the style inside the active theme if it's null. Asserts that the result exists and is of the correct type.
  */
-EnsureStyle :: inline (style : **$T, name : string) {
+EnsureStyle :: inline (style: **$T, name: string) {
     if !style.* {
         style.* = GetStyle(name, T);
         assert(style.* != null, "Theme has no style named '%' of type %", name, T);
@@ -32,14 +32,14 @@ EnsureStyle :: inline (style : **$T, name : string) {
 /**
  * @brief Find a style by name in the active Theme.
  */
-GetStyle :: inline (name : string, $T : Type) -> *T {
+GetStyle :: inline (name: string, $T: Type) -> *T {
     return GetStyle(GetTheme(), name, T);
 }
 
 /**
  * @brief Find a style by name in the specified Theme.
  */
-GetStyle :: (theme : *Theme, name : string, $T : Type) -> *T {
+GetStyle :: (theme: *Theme, name: string, $T: Type) -> *T {
     if !theme {
         return null;
     }
@@ -62,23 +62,23 @@ GetStyle :: (theme : *Theme, name : string, $T : Type) -> *T {
  * Colors for each corners of a box.
  */
 BoxColors :: struct {
-    top_left : RGBA8;
-    top_right : RGBA8;
-    bottom_left : RGBA8;
-    bottom_right : RGBA8;
+    top_left: RGBA8;
+    top_right: RGBA8;
+    bottom_left: RGBA8;
+    bottom_right: RGBA8;
 
     #overlay(top_left)
-    corners : [4]RGBA8;
+    corners: [4]RGBA8;
 }
 
-MakeBoxColors :: inline (color : RGBA8) -> BoxColors {
+MakeBoxColors :: inline (color: RGBA8) -> BoxColors {
     return .{color, color, color, color};
 }
 
 /**
  * @brief Set the color of all corners of a BoxColors.
  */
-SetColors :: inline (colors : *BoxColors, color : RGBA8) {
+SetColors :: inline (colors: *BoxColors, color: RGBA8) {
     colors.corners[0] = color;
     colors.corners[1] = color;
     colors.corners[2] = color;
@@ -92,7 +92,7 @@ SetColors :: inline (colors : *BoxColors, color : RGBA8) {
  * @param y Interpolation factor on the Y axis between 0 and 1.
  * @returns The interpolated color between all corners of the BoxColors.
  */
-GetColor :: inline (colors : BoxColors, x : float, y : float) -> RGBA8 {
+GetColor :: inline (colors: BoxColors, x: float, y: float) -> RGBA8 {
     x = clamp(x, 0, 1);
     y = clamp(y, 0, 1);
 
@@ -101,11 +101,11 @@ GetColor :: inline (colors : BoxColors, x : float, y : float) -> RGBA8 {
     return MixColors(a, b, y);
 }
 
-SetAlpha :: inline (colors : *BoxColors, alpha : float) {
+SetAlpha :: inline (colors: *BoxColors, alpha: float) {
     colors.* = SetAlpha(colors.*, alpha);
 }
 
-SetAlpha :: inline (colors : BoxColors, alpha : float) -> BoxColors {
+SetAlpha :: inline (colors: BoxColors, alpha: float) -> BoxColors {
     return .{
         SetAlpha(colors.corners[0], alpha),
         SetAlpha(colors.corners[1], alpha),
@@ -120,22 +120,22 @@ SetAlpha :: inline (colors : BoxColors, alpha : float) -> BoxColors {
  * Styling properties for a box. Reflects what exists in the Node struct.
  */
 BoxStyle :: struct {
-    padding : Vec4b;   ///> Node padding, this affects layout.
-    child_gap : Vec2b; ///> Node child gap, this affects layout.
+    padding: Vec4b;   ///> Node padding, this affects layout.
+    child_gap: Vec2b; ///> Node child gap, this affects layout.
 
-    corner_radiuses : Vec4f;       ///> Radius for the top-left, top-right, bottom-left and bottom-right corners.
-    background_colors : BoxColors; ///> Colors for each corner of the background.
-    border_colors : BoxColors;     ///> Colors for each corner of the border.
-    border_size : float;           ///> Thickness of the border.
-    border_inset : float;          ///> Amount of inset applied to the border, positive means the border will be smaller than the background, negative means it will go outside.
-    outer_shadow_size : float;
-    outer_shadow_offset : Vec2f;
-    outer_shadow_color : RGBA8;
-    inner_shadow_size : float;
-    inner_shadow_color : RGBA8;    ///> Size of the inner shadow. Warning: Currently a size greater than the smallest corner radius will produce visual artifacts (except for a size or min corner radius of 0)
+    corner_radiuses: Vec4f;       ///> Radius for the top-left, top-right, bottom-left and bottom-right corners.
+    background_colors: BoxColors; ///> Colors for each corner of the background.
+    border_colors: BoxColors;     ///> Colors for each corner of the border.
+    border_size: float;           ///> Thickness of the border.
+    border_inset: float;          ///> Amount of inset applied to the border, positive means the border will be smaller than the background, negative means it will go outside.
+    outer_shadow_size: float;
+    outer_shadow_offset: Vec2f;
+    outer_shadow_color: RGBA8;
+    inner_shadow_size: float;
+    inner_shadow_color: RGBA8;    ///> Size of the inner shadow. Warning: Currently a size greater than the smallest corner radius will produce visual artifacts (except for a size or min corner radius of 0)
 }
 
-SetColors :: (using style : *StateStyle(BoxStyle), base_background_color : RGBA8) {
+SetColors :: (using style: *StateStyle(BoxStyle), base_background_color: RGBA8) {
     SetColors(*normal.background_colors, base_background_color);
     SetColors(*focused.background_colors, Whiten(base_background_color, 0.05));
     SetColors(*hot.background_colors, Darken(base_background_color, 0.05));
@@ -146,7 +146,7 @@ SetColors :: (using style : *StateStyle(BoxStyle), base_background_color : RGBA8
 /**
  * @brief Apply the BoxStyle onto the Node.
  */
-Apply :: inline (node : *Node, style : BoxStyle) {
+Apply :: inline (node: *Node, style: BoxStyle) {
     node.padding = style.padding;
     node.child_gap = style.child_gap;
     node.corner_radiuses = style.corner_radiuses;
@@ -167,19 +167,19 @@ Apply :: inline (node : *Node, style : BoxStyle) {
  * Styling properties for text. Reflects what exists in the Node struct.
  */
 TextStyle :: struct {
-    font : *Font;
-    text_size : float;
-    text_color : RGBA8;
-    text_effects : TextEffects;
-    outer_shadow_size : float;
-    outer_shadow_offset : Vec2f;
-    outer_shadow_color : RGBA8;
+    font: *Font;
+    text_size: float;
+    text_color: RGBA8;
+    text_effects: TextEffects;
+    outer_shadow_size: float;
+    outer_shadow_offset: Vec2f;
+    outer_shadow_color: RGBA8;
 }
 
 /**
  * @brief Apply the TextStyle onto the Node.
  */
-Apply :: inline (node : *Node, style : TextStyle) {
+Apply :: inline (node: *Node, style: TextStyle) {
     node.font = style.font;
     node.text_size = style.text_size;
     node.text_color = style.text_color;
@@ -191,15 +191,15 @@ Apply :: inline (node : *Node, style : TextStyle) {
 /**
  * @brief Styles for each state of a Node.
  */
-StateStyle :: struct(T : Type) {
-    disabled : T;
-    active : T;
-    hot : T;
-    focused : T;
-    normal : T;
+StateStyle :: struct(T: Type) {
+    disabled: T;
+    active: T;
+    hot: T;
+    focused: T;
+    normal: T;
 
     #overlay(disabled)
-    states : [Num_Node_States]T;
+    states: [Num_Node_States]T;
 }
 
 /**
@@ -228,13 +228,13 @@ SystemCursor :: enum u8 {
  *
  * Set the cursor for the current frame. The cursor is reset each frame.
  */
-SetCursor :: inline (cursor : PlatformCursorHandle) {
+SetCursor :: inline (cursor: PlatformCursorHandle) {
     context.omg.cursor_this_frame = cursor;
 }
 
 #scope_file
 
-g_system_cursors : [SystemCursor.Count]PlatformCursorHandle;
+g_system_cursors: [SystemCursor.Count]PlatformCursorHandle;
 
 #scope_export
 
@@ -266,14 +266,14 @@ DestroySystemCursors :: () {
     }
 }
 
-GetSystemCursor :: inline (cursor : SystemCursor) -> PlatformCursorHandle {
+GetSystemCursor :: inline (cursor: SystemCursor) -> PlatformCursorHandle {
     return g_system_cursors[cursor];
 }
 
 /**
  * @brief Should a node be able to affect the cursor icon ?
  */
-HasCursorControl :: (node : *Node) -> bool {
+HasCursorControl :: (node: *Node) -> bool {
     if node.state_flags & .Disabled {
         return false;
     }
@@ -288,10 +288,10 @@ HasCursorControl :: (node : *Node) -> bool {
  * @param hot_x_01 X offset of the cursor tip between 0 and 1.
  * @param hot_y_01 Y offset of the cursor tip between 0 and 1.
  */
-CreateCursorFromFileContents :: (contents : string, hot_x_01 : float, hot_y_01 : float) -> PlatformCursorHandle {
+CreateCursorFromFileContents :: (contents: string, hot_x_01: float, hot_y_01: float) -> PlatformCursorHandle {
     #import "stb_image";
 
-    w, h : s32;
+    w, h: s32;
     stbi_set_flip_vertically_on_load(0);
     data := stbi_load_from_memory(contents.data, xx contents.count, *w, *h, null, 4);
     if !data {
@@ -308,10 +308,10 @@ CreateCursorFromFileContents :: (contents : string, hot_x_01 : float, hot_y_01 :
  * @param hot_x_01 X offset of the cursor tip between 0 and 1.
  * @param hot_y_01 Y offset of the cursor tip between 0 and 1.
  */
-CreateCursorFromFile :: (filename : string, hot_x_01 : float, hot_y_01 : float) -> PlatformCursorHandle {
+CreateCursorFromFile :: (filename: string, hot_x_01: float, hot_y_01: float) -> PlatformCursorHandle {
     #import "stb_image";
 
-    w, h : s32;
+    w, h: s32;
     stbi_set_flip_vertically_on_load(0);
     data := stbi_load(tprint("%\0", filename).data, *w, *h, null, 4);
     if !data {
@@ -337,7 +337,7 @@ AnimFunc :: enum u8 {
     BackInOut;
 }
 
-Animate :: inline (a : float, b : float, t : float, func : AnimFunc) -> float {
+Animate :: inline (a: float, b: float, t: float, func: AnimFunc) -> float {
     if #complete func == {
     case .Linear;
         // t = t
@@ -393,14 +393,14 @@ Animate :: inline (a : float, b : float, t : float, func : AnimFunc) -> float {
     return a * (1 - t) + b * t;
 }
 
-Animate :: inline (a : Vec2f, b : Vec2f, t : float, func : AnimFunc) -> Vec2f {
+Animate :: inline (a: Vec2f, b: Vec2f, t: float, func: AnimFunc) -> Vec2f {
     return .{
         Animate(a.x, b.x, t, func),
         Animate(a.y, b.y, t, func),
     };
 }
 
-Animate :: inline (a : Vec4f, b : Vec4f, t : float, func : AnimFunc) -> Vec4f {
+Animate :: inline (a: Vec4f, b: Vec4f, t: float, func: AnimFunc) -> Vec4f {
     return .{
         Animate(a.x, b.x, t, func),
         Animate(a.y, b.y, t, func),
@@ -409,7 +409,7 @@ Animate :: inline (a : Vec4f, b : Vec4f, t : float, func : AnimFunc) -> Vec4f {
     };
 }
 
-Animate :: inline (a : RGBA8, b : RGBA8, t : float, func : AnimFunc) -> RGBA8 {
+Animate :: inline (a: RGBA8, b: RGBA8, t: float, func: AnimFunc) -> RGBA8 {
     a4f := ToVec4f(a);
     b4f := ToVec4f(b);
 
@@ -421,7 +421,7 @@ Animate :: inline (a : RGBA8, b : RGBA8, t : float, func : AnimFunc) -> RGBA8 {
     );
 }
 
-AnimateStyle :: (a : $T, b : T, t : float, func : AnimFunc) -> T {
+AnimateStyle :: (a: $T, b: T, t: float, func: AnimFunc) -> T {
     if t < 0 {
         return a;
     }
@@ -429,10 +429,10 @@ AnimateStyle :: (a : $T, b : T, t : float, func : AnimFunc) -> T {
         return b;
     }
 
-    result : T;
+    result: T;
 
     #insert -> string {
-        AppendAnimate :: (builder : *String_Builder, name : string, type : *Type_Info) {
+        AppendAnimate :: (builder: *String_Builder, name: string, type: *Type_Info) {
             if type == type_info(Vec2f) || type == type_info(Vec4f) || type == type_info(RGBA8) {
                 print_to_builder(*builder, "result.%1 = Animate(a.%1, b.%1, t, func);\n", name);
             } else if type.kind == {
@@ -460,7 +460,7 @@ AnimateStyle :: (a : $T, b : T, t : float, func : AnimFunc) -> T {
             }
         }
 
-        builder : String_Builder;
+        builder: String_Builder;
 
         info := type_info(T);
         for info.members {
@@ -477,55 +477,55 @@ AnimateStyle :: (a : $T, b : T, t : float, func : AnimFunc) -> T {
  * @brief Struct containing all styles for the default widgets.
  */
 DefaultTheme :: struct {
-    #as theme : Theme;
+    #as theme: Theme;
 
     // Theme stores pointers so the styles need to be stored somewhere persistent
-    base : BoxStyle;
-    accent : BoxStyle;
-    text : TextStyle;
-    label_and_content : LabelAndContentStyle;
-    clickable_text : ClickableTextStyle;
-    button : ButtonStyle;
-    button_small : ButtonStyle;
-    button_accent : ButtonStyle;
-    button_positive : ButtonStyle;
-    button_negative : ButtonStyle;
-    toggle : ButtonStyle;
-    slider : SliderStyle;
-    fill_slider : SliderStyle;
-    knob_slider : SliderStyle;
-    scrollbar : ScrollbarStyle;
-    text_input : TextInputStyle;
-    checkbox : CheckboxStyle;
-    radio_button : RadioButtonStyle;
-    menu_bar : BoxStyle;
-    menu_item : MenuItemStyle;
-    menu : MenuStyle;
-    separator : SeparatorStyle;
-    subwindow : SubwindowStyle;
-    color_picker : ColorPickerStyle;
-    color_input : ColorInputStyle;
-    combo : ComboStyle;
-    tooltip : TooltipStyle;
-    table : TableStyle;
-    progress_bar : ProgressBarStyle;
-    tree_node : TreeNodeStyle;
-    collapsing_header : TreeNodeStyle;
-    tab_bar : BoxStyle;
-    tab : ButtonStyle;
-    dock_space : DockSpaceStyle;
-    scroll_view : ScrollViewStyle;
-    debug_view : DebugViewStyle;
-    grid_view : GridViewStyle;
+    base: BoxStyle;
+    accent: BoxStyle;
+    text: TextStyle;
+    label_and_content: LabelAndContentStyle;
+    clickable_text: ClickableTextStyle;
+    button: ButtonStyle;
+    button_small: ButtonStyle;
+    button_accent: ButtonStyle;
+    button_positive: ButtonStyle;
+    button_negative: ButtonStyle;
+    toggle: ButtonStyle;
+    slider: SliderStyle;
+    fill_slider: SliderStyle;
+    knob_slider: SliderStyle;
+    scrollbar: ScrollbarStyle;
+    text_input: TextInputStyle;
+    checkbox: CheckboxStyle;
+    radio_button: RadioButtonStyle;
+    menu_bar: BoxStyle;
+    menu_item: MenuItemStyle;
+    menu: MenuStyle;
+    separator: SeparatorStyle;
+    subwindow: SubwindowStyle;
+    color_picker: ColorPickerStyle;
+    color_input: ColorInputStyle;
+    combo: ComboStyle;
+    tooltip: TooltipStyle;
+    table: TableStyle;
+    progress_bar: ProgressBarStyle;
+    tree_node: TreeNodeStyle;
+    collapsing_header: TreeNodeStyle;
+    tab_bar: BoxStyle;
+    tab: ButtonStyle;
+    dock_space: DockSpaceStyle;
+    scroll_view: ScrollViewStyle;
+    debug_view: DebugViewStyle;
+    grid_view: GridViewStyle;
 }
 
-g_default_theme_light : DefaultTheme;
-g_default_theme_dark : DefaultTheme;
+g_default_theme_light: DefaultTheme;
+g_default_theme_dark: DefaultTheme;
 
 /**
  * @brief Retrieve the default light and dark themes.
  */
-GetDefaultThemes :: inline () -> light : *Theme, dark : *Theme {
+GetDefaultThemes :: inline () -> light: *Theme, dark: *Theme {
     return *g_default_theme_light, *g_default_theme_dark;
 }
 
@@ -534,7 +534,7 @@ GetDefaultThemes :: inline () -> light : *Theme, dark : *Theme {
  *
  * Setup a DefaultTheme using a text size, a base color for the background and a base color for accentuation.
  */
-SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_background_color : RGBA8, base_accent_color : RGBA8, rounding_factor := 1.0) {
+SetupDefaultTheme :: (theme: *DefaultTheme, base_text_size: float, base_background_color: RGBA8, base_accent_color: RGBA8, rounding_factor := 1.0) {
     button_base_background_color := MakeTone(base_background_color, 0.25);
 
     {
@@ -985,7 +985,7 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
         dynamic_hsv_slider_color = true;
         dynamic_opacity_slider_color = true;
 
-        slider_base : SliderStyle;
+        slider_base: SliderStyle;
         slider_base.background_size = 21;
         slider_base.handle_size = .{8,25};
         slider_base.handle_outside_background = true;
@@ -1294,8 +1294,8 @@ SetupDefaultTheme :: (theme : *DefaultTheme, base_text_size : float, base_backgr
  * Set a Theme's global text size. Iterate over all the styles and scale all text_size fields in TextStyles accordingly.
  * The function fetches the "text" TextStyle as a base for how much scaling needs to be applied.
  */
-SetGlobalTextSize :: (theme : *Theme, new_size : float) {
-    Recurse :: (value : Any, ratio : float) {
+SetGlobalTextSize :: (theme: *Theme, new_size: float) {
+    Recurse :: (value: Any, ratio: float) {
         if value.type == type_info(TextStyle) {
             text_style := cast(*TextStyle, value.value_pointer);
             text_style.text_size = ifx ratio < 1 then floor(text_style.text_size * ratio) else ceil(text_style.text_size * ratio);
@@ -1310,7 +1310,7 @@ SetGlobalTextSize :: (theme : *Theme, new_size : float) {
 
                 highest_offset = it.offset_in_bytes;
 
-                member : Any;
+                member: Any;
                 member.value_pointer = value.value_pointer + it.offset_in_bytes;
                 member.type = it.type;
 
@@ -1319,8 +1319,8 @@ SetGlobalTextSize :: (theme : *Theme, new_size : float) {
         } else if value.type.type == .ARRAY {
             array_info := cast(*Type_Info_Array, value.type);
 
-            for i : 0..array_info.array_count - 1 {
-                member : Any;
+            for i: 0..array_info.array_count - 1 {
+                member: Any;
                 member.value_pointer = value.value_pointer + i * array_info.element_type.runtime_size;
                 member.type = array_info.element_type;
 

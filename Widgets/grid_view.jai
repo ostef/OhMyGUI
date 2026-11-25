@@ -1,16 +1,16 @@
 GridViewStyle :: struct {
-    background : BoxStyle;
+    background: BoxStyle;
 }
 
 GridViewData :: struct {
-    item_size : Vec2f;
-    item_count : int;
-    num_columns : int;
-    next_item_index : int;
-    first_visible_row : int;
-    last_visible_row : int;
-    current_row : *Node;
-    added_bottom_spacer : bool;
+    item_size: Vec2f;
+    item_count: int;
+    num_columns: int;
+    next_item_index: int;
+    first_visible_row: int;
+    last_visible_row: int;
+    current_row: *Node;
+    added_bottom_spacer: bool;
 }
 
 /**
@@ -23,7 +23,7 @@ GridViewData :: struct {
  *
  * @see GridViewNextItem
  */
-GridView :: (parent : *Node, item_size : Vec2f, item_count := -1, style : *GridViewStyle = null, location := #caller_location) -> *Node {
+GridView :: (parent: *Node, item_size: Vec2f, item_count := -1, style: *GridViewStyle = null, location := #caller_location) -> *Node {
     EnsureStyle(*style, "grid_view");
 
     node, is_new := GetNode(parent, location);
@@ -76,8 +76,8 @@ GridView :: (parent : *Node, item_size : Vec2f, item_count := -1, style : *GridV
  *
  * @returns The cell to fill, or null if the item is not visible and should be skipped.
  */
-GridViewNextItem :: (grid : *Node) -> cell : *Node {
-    GridViewSpacer :: (grid : *Node, data : *GridViewData, str_id : string, num_rows : int) {
+GridViewNextItem :: (grid: *Node) -> cell: *Node {
+    GridViewSpacer :: (grid: *Node, data: *GridViewData, str_id: string, num_rows: int) {
         if num_rows <= 0 {
             return;
         }

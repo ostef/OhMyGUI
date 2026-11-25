@@ -3,48 +3,48 @@
 // https://freetype.org/freetype2/docs/glyphs/glyphs-3.html
 
 Font :: struct {
-    prev : *Font;
-    next : *Font;
+    prev: *Font;
+    next: *Font;
 
-    filename : string;
-    name : string;
-    glyph_map : HT.Table(u32, Glyph);
-    resolution : u32;
-    ascent, descent : float;
-    space_advance : float;
-    desired_underline_position : float;
-    desired_underline_thickness : float;
-    sdf_range : float;
-    texture : TextureHandle;
+    filename: string;
+    name: string;
+    glyph_map: HT.Table(u32, Glyph);
+    resolution: u32;
+    ascent, descent: float;
+    space_advance: float;
+    desired_underline_position: float;
+    desired_underline_thickness: float;
+    sdf_range: float;
+    texture: TextureHandle;
 
-    unicode_replacement_glyph : Glyph;
-    ascii_glyphs : [128]Glyph;
+    unicode_replacement_glyph: Glyph;
+    ascii_glyphs: [128]Glyph;
 }
 
 FontConfig :: struct {
-    resolution : u32 = 32;
-    glyph_ranges : []GlyphRange = .[.{0x20, 0x7f}];
-    atlas_width : u32 = 1024;
-    atlas_height : u32 = 1024;
+    resolution: u32 = 32;
+    glyph_ranges: []GlyphRange = .[.{0x20, 0x7f}];
+    atlas_width: u32 = 1024;
+    atlas_height: u32 = 1024;
 }
 
 GlyphRange :: struct {
-    start : u32;
-    end : u32;
+    start: u32;
+    end: u32;
 }
 
 Glyph :: struct {
-    codepoint : u32;
-    texture_size : Vec2f;
-    size : Vec2f;
-    hori_bearing : Vec2f;
-    vert_bearing : Vec2f;
-    hori_advance : float;
-    vert_advance : float;
-    uv_rect : Vec4f;
+    codepoint: u32;
+    texture_size: Vec2f;
+    size: Vec2f;
+    hori_bearing: Vec2f;
+    vert_bearing: Vec2f;
+    hori_advance: float;
+    vert_advance: float;
+    uv_rect: Vec4f;
 }
 
-g_ft_lib : FT_Library;
+g_ft_lib: FT_Library;
 
 GetDefaultFont :: inline () -> *Font {
     return GetFont("__default");
@@ -58,7 +58,7 @@ GetDefaultFontBold :: inline () -> *Font {
     return GetFont("__default_bold");
 }
 
-GetLineHeight :: inline (font : *Font, size : float) -> float {
+GetLineHeight :: inline (font: *Font, size: float) -> float {
     return (font.descent + font.ascent) * size;
 }
 
@@ -67,7 +67,7 @@ LoadDefaultFonts :: () {
     Roboto_Medium :: #run EmbedFileContents("Roboto-Medium.ttf");
     Roboto_Bold :: #run EmbedFileContents("Roboto-Bold.ttf");
 
-    config : FontConfig;
+    config: FontConfig;
     config.glyph_ranges = .[
         .{0x20, 0x7f}, // ASCII
         .{0xa0, 0x24f}, // Latin
@@ -84,11 +84,11 @@ LoadDefaultFonts :: () {
     assert(bold != null, "Could not load default bold font");
 } @Profile
 
-LoadFontFromFile :: (filename : string, config : FontConfig) -> *Font {
+LoadFontFromFile :: (filename: string, config: FontConfig) -> *Font {
     return LoadFontFromFile(basename(filename), filename, config);
 }
 
-LoadFontFromFile :: (name : string, filename : string, config : FontConfig) -> *Font {
+LoadFontFromFile :: (name: string, filename: string, config: FontConfig) -> *Font {
     #import "File";
     contents, ok := read_entire_file(filename);
     if !ok {
@@ -103,7 +103,7 @@ LoadFontFromFile :: (name : string, filename : string, config : FontConfig) -> *
     return font;
 } @Profile
 
-LoadFontFromMemory :: (name : string, data : string, config : FontConfig) -> *Font {
+LoadFontFromMemory :: (name: string, data: string, config: FontConfig) -> *Font {
     if !g_ft_lib {
         ft_err := FT_Init_FreeType(*g_ft_lib);
         if ft_err != xx FT_Err.Ok {
@@ -121,7 +121,7 @@ LoadFontFromMemory :: (name : string, data : string, config : FontConfig) -> *Fo
         return null;
     }
 
-    ft_face : FT_Face;
+    ft_face: FT_Face;
     ft_err := FT_New_Memory_Face(g_ft_lib, data.data, xx data.count, 0, *ft_face);
     if ft_err != xx FT_Err.Ok {
         return null;
@@ -141,10 +141,10 @@ LoadFontFromMemory :: (name : string, data : string, config : FontConfig) -> *Fo
     font.desired_underline_thickness = ft_face.underline_thickness * Fract16ToFloat(ft_face.size.metrics.y_scale);
     font.desired_underline_thickness = FractToFloat(xx font.desired_underline_thickness) / cast(float, config.resolution);
 
-    sdf_spread : s32 = 8;
+    sdf_spread: s32 = 8;
     font.sdf_range = sdf_spread / cast(float, font.resolution);
 
-    packer : RectPacker;
+    packer: RectPacker;
     packer.width = config.atlas_width;
     packer.height = config.atlas_height;
     packer.data = xx alloc(packer.width * packer.height * size_of(RGBA8));
@@ -163,8 +163,8 @@ LoadFontFromMemory :: (name : string, data : string, config : FontConfig) -> *Fo
 
     LoadGlyph(font, Unicode_Replacement, ft_face, *packer);
 
-    for range : config.glyph_ranges {
-        for i : range.start..range.end {
+    for range: config.glyph_ranges {
+        for i: range.start..range.end {
             LoadGlyph(font, i, ft_face, *packer);
         }
     }
@@ -180,7 +180,7 @@ LoadFontFromMemory :: (name : string, data : string, config : FontConfig) -> *Fo
     return font;
 } @Profile
 
-DestroyFont :: (font : *Font) {
+DestroyFont :: (font: *Font) {
     if font.prev {
         font.prev.next = font.next;
     }
@@ -199,7 +199,7 @@ DestroyFont :: (font : *Font) {
     free(font);
 } @Profile
 
-GetFont :: (name : string) -> *Font {
+GetFont :: (name: string) -> *Font {
     font := context.omg.fonts;
     while font {
         if font.name == name {
@@ -212,7 +212,7 @@ GetFont :: (name : string) -> *Font {
     return null;
 }
 
-GetGlyph :: (font : *Font, codepoint : u32, replace_if_missing := true) -> *Glyph {
+GetGlyph :: (font: *Font, codepoint: u32, replace_if_missing := true) -> *Glyph {
     if codepoint < 128 #no_abc {
         glyph := *font.ascii_glyphs[codepoint];
         if glyph.codepoint != codepoint {
@@ -239,15 +239,15 @@ GetGlyph :: (font : *Font, codepoint : u32, replace_if_missing := true) -> *Glyp
 #scope_file
 
 RectPacker :: struct {
-    data : *RGBA8;
-    width : u32;
-    height : u32;
-    cursor_x : u32;
-    cursor_y : u32;
-    row_end : u32;
+    data: *RGBA8;
+    width: u32;
+    height: u32;
+    cursor_x: u32;
+    cursor_y: u32;
+    row_end: u32;
 }
 
-PackRect :: (packer : *RectPacker, width : u32, height : u32) -> bool, x : u32, y : u32 {
+PackRect :: (packer: *RectPacker, width: u32, height: u32) -> bool, x: u32, y: u32 {
     if width > packer.width || height > packer.height {
         return false, 0, 0;
     }
@@ -274,7 +274,7 @@ PackRect :: (packer : *RectPacker, width : u32, height : u32) -> bool, x : u32, 
     return true, x, y;
 }
 
-BlitPixel :: (packer : *RectPacker, pixel : RGBA8, x : u32, y : u32) {
+BlitPixel :: (packer: *RectPacker, pixel: RGBA8, x: u32, y: u32) {
     if x >= packer.width || y >= packer.height {
         return;
     }
@@ -283,13 +283,13 @@ BlitPixel :: (packer : *RectPacker, pixel : RGBA8, x : u32, y : u32) {
     packer.data[index] = pixel;
 }
 
-BlitGlyph :: (packer : *RectPacker, bitmap_data : *u8, bitmap_x : u32, bitmap_y : u32, bitmap_width : u32, bitmap_height : u32, bitmap_pitch : u32) {
+BlitGlyph :: (packer: *RectPacker, bitmap_data: *u8, bitmap_x: u32, bitmap_y: u32, bitmap_width: u32, bitmap_height: u32, bitmap_pitch: u32) {
     if bitmap_width == 0 || bitmap_height == 0 {
         return;
     }
 
-    for y : 0..bitmap_height - 1 {
-        for x : 0..bitmap_width - 1 {
+    for y: 0..bitmap_height - 1 {
+        for x: 0..bitmap_width - 1 {
             index := (bitmap_y + y) * packer.width + (bitmap_x + x);
             value := bitmap_data[y * bitmap_pitch + x];
             packer.data[index] = PackRGBA8(255, 0, 0, value);
@@ -297,15 +297,15 @@ BlitGlyph :: (packer : *RectPacker, bitmap_data : *u8, bitmap_x : u32, bitmap_y 
     }
 }
 
-FractToFloat :: inline (value : s64) -> float {
+FractToFloat :: inline (value: s64) -> float {
     return cast(float, value) / 64.0;
 }
 
-Fract16ToFloat :: inline (value : s64) -> float {
+Fract16ToFloat :: inline (value: s64) -> float {
     return cast(float, value) / 65536.0;
 }
 
-LoadGlyph :: (font : *Font, codepoint : u32, ft_face : FT_Face, packer : *RectPacker) -> *Glyph {
+LoadGlyph :: (font: *Font, codepoint: u32, ft_face: FT_Face, packer: *RectPacker) -> *Glyph {
     if codepoint == Unicode_Replacement {
         existing_glyph := *font.unicode_replacement_glyph;
         if existing_glyph.codepoint == Unicode_Replacement {
@@ -339,7 +339,7 @@ LoadGlyph :: (font : *Font, codepoint : u32, ft_face : FT_Face, packer : *RectPa
 
     slot := ft_face.glyph;
 
-    glyph : Glyph;
+    glyph: Glyph;
     glyph.codepoint = codepoint;
 
     glyph.texture_size.x = slot.bitmap.width / cast(float, font.resolution);
@@ -385,25 +385,25 @@ LoadGlyph :: (font : *Font, codepoint : u32, ft_face : FT_Face, packer : *RectPa
 #scope_export
 
 TextGlyphIterator :: struct {
-    text : string;
-    font : *Font;
-    font_size : float;
-    bounds : Vec2f;
-    include_newlines : bool;
-    include_all_characters : bool;
-    justify : bool;
+    text: string;
+    font: *Font;
+    font_size: float;
+    bounds: Vec2f;
+    include_newlines: bool;
+    include_all_characters: bool;
+    justify: bool;
     new_line := true;
-    pen : Vec2f;
-    computed_size : Vec2f;
+    pen: Vec2f;
+    computed_size: Vec2f;
 }
 
-ResetPen :: (using iter : *TextGlyphIterator) {
+ResetPen :: (using iter: *TextGlyphIterator) {
     new_line = true;
     pen = .{};
     computed_size = .{};
 }
 
-IterText :: inline (node : *Node) -> TextGlyphIterator {
+IterText :: inline (node: *Node) -> TextGlyphIterator {
     return .{
         text=node.text,
         font=node.font,
@@ -411,7 +411,7 @@ IterText :: inline (node : *Node) -> TextGlyphIterator {
     };
 }
 
-Newline :: (iter : *TextGlyphIterator) {
+Newline :: (iter: *TextGlyphIterator) {
     iter.new_line = true;
 
     iter.computed_size.x = max(iter.computed_size.x, iter.pen.x);
@@ -422,8 +422,8 @@ Newline :: (iter : *TextGlyphIterator) {
     iter.computed_size.y = max(iter.computed_size.y, iter.pen.y + iter.font.descent * iter.font_size);
 }
 
-for_expansion :: (iter : *TextGlyphIterator, body : Code, flags : For_Flags) #expand {
-    `it : *Glyph;
+for_expansion :: (iter: *TextGlyphIterator, body: Code, flags: For_Flags) #expand {
+    `it: *Glyph;
 
     if !iter.font {
         return;
@@ -434,7 +434,7 @@ for_expansion :: (iter : *TextGlyphIterator, body : Code, flags : For_Flags) #ex
         iter.pen.y = iter.font.ascent * iter.font_size;
     }
 
-    for codepoint, `it_index : MakeUtf8String(iter.text) {
+    for codepoint, `it_index: MakeUtf8String(iter.text) {
         if codepoint == {
         case #char "\n";
             if iter.include_newlines || iter.include_all_characters {
@@ -477,14 +477,14 @@ for_expansion :: (iter : *TextGlyphIterator, body : Code, flags : For_Flags) #ex
     iter.computed_size.y = max(iter.computed_size.y, iter.pen.y + iter.font.descent * iter.font_size);
 }
 
-ComputeJustifiedLineSpacing :: (iter : *TextGlyphIterator, text : string) -> extra_spacing : float, num_gaps : int {
+ComputeJustifiedLineSpacing :: (iter: *TextGlyphIterator, text: string) -> extra_spacing: float, num_gaps: int {
     pen_x := iter.pen.x;
     line_end_x := pen_x;
     num_gaps := 0;
     pending_gap := false;
     has_word := false;
 
-    for :ByWord word : MakeUtf8String(text) {
+    for :ByWord word: MakeUtf8String(text) {
         if word.spaces {
             for word.str {
                 if it == #char "\n" || it == #char "\t" {
@@ -530,7 +530,7 @@ ComputeJustifiedLineSpacing :: (iter : *TextGlyphIterator, text : string) -> ext
 } @Profile
 
 // for_expansion
-WordWrap :: (iter : *TextGlyphIterator, body : Code, flags : For_Flags) #expand {
+WordWrap :: (iter: *TextGlyphIterator, body: Code, flags: For_Flags) #expand {
     if !iter.font {
         return;
     }
@@ -550,9 +550,9 @@ WordWrap :: (iter : *TextGlyphIterator, body : Code, flags : For_Flags) #expand 
     justify_line_has_word := false;
     justify_word_fits := false;
 
-    `it : *Glyph;
+    `it: *Glyph;
     `it_index := 0;
-    for :ByWord word, word_index : MakeUtf8String(original_text) {
+    for :ByWord word, word_index: MakeUtf8String(original_text) {
         if !word.spaces {
             word_text_length := 0.0;
             for word.str {
@@ -581,7 +581,7 @@ WordWrap :: (iter : *TextGlyphIterator, body : Code, flags : For_Flags) #expand 
         }
 
         iter.text = word.str.as_string;
-        for glyph, char_index : iter {
+        for glyph, char_index: iter {
             defer it_index += 1;
 
             it = glyph;
@@ -603,10 +603,10 @@ WordWrap :: (iter : *TextGlyphIterator, body : Code, flags : For_Flags) #expand 
     iter.computed_size.y = max(iter.computed_size.y, iter.pen.y + iter.font.descent * iter.font_size);
 }
 
-WordWrappedLines :: (iter : *TextGlyphIterator, body : Code, flags : For_Flags) #expand {
-    `it : struct {
-        line_pen_start : Vec2f;
-        line_pen_end : Vec2f;
+WordWrappedLines :: (iter: *TextGlyphIterator, body: Code, flags: For_Flags) #expand {
+    `it: struct {
+        line_pen_start: Vec2f;
+        line_pen_end: Vec2f;
     };
     `it_index := 0;
 
@@ -624,7 +624,7 @@ WordWrappedLines :: (iter : *TextGlyphIterator, body : Code, flags : For_Flags) 
     it.line_pen_end = iter.pen;
 
     prev_pen := iter.pen;
-    for :WordWrap glyph, glyph_index : iter {
+    for :WordWrap glyph, glyph_index: iter {
         if it.line_pen_end != iter.pen && iter.pen.x == 0 {
             #insert body;
 
@@ -644,8 +644,8 @@ WordWrappedLines :: (iter : *TextGlyphIterator, body : Code, flags : For_Flags) 
     }
 }
 
-CalculateTextSize :: (font : *Font, size : float, text : string) -> Vec2f {
-    iter : TextGlyphIterator;
+CalculateTextSize :: (font: *Font, size: float, text: string) -> Vec2f {
+    iter: TextGlyphIterator;
     iter.font = font;
     iter.font_size = size;
     iter.text = text;
@@ -655,16 +655,16 @@ CalculateTextSize :: (font : *Font, size : float, text : string) -> Vec2f {
 } @Profile
 
 // WIP and untested
-EllipsizeText :: (font : *Font, size : float, text : string, max_width : float, ellipsis := "...") -> string {
+EllipsizeText :: (font: *Font, size: float, text: string, max_width: float, ellipsis := "...") -> string {
     ellipsis_size := CalculateTextSize(font, size, ellipsis);
 
-    iter : TextGlyphIterator;
+    iter: TextGlyphIterator;
     iter.text = text;
     iter.font = font;
     iter.font_size = size;
     iter.include_all_characters = true;
 
-    buffer : [..]u8;
+    buffer: [..]u8;
     buffer.allocator = Temp;
     array_reserve(*buffer, text.count);
 

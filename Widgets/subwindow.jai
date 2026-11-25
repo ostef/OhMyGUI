@@ -1,25 +1,25 @@
 SubwindowData :: struct {
-    id : ID;
-    position : Vec2f;
-    size : Vec2f;
-    wants_close : bool;
-    wants_collapse : bool;
-    wants_expand : bool;
-    collapsed : bool;
-    was_docked : bool;
-    was_undocked_using_mouse : bool;
+    id: ID;
+    position: Vec2f;
+    size: Vec2f;
+    wants_close: bool;
+    wants_collapse: bool;
+    wants_expand: bool;
+    collapsed: bool;
+    was_docked: bool;
+    was_undocked_using_mouse: bool;
 }
 
 GlobalSubwindowsData :: struct {
-    entries : [..]SubwindowData;
+    entries: [..]SubwindowData;
 
-    Destroy :: (node : *Node, data : *void) {
+    Destroy :: (node: *Node, data: *void) {
         using _ := cast(*GlobalSubwindowsData, data);
         array_reset(*entries);
     }
 }
 
-GetSubwindowData :: (id : ID) -> *SubwindowData, is_new : bool {
+GetSubwindowData :: (id: ID) -> *SubwindowData, is_new: bool {
     storage, new := AddGlobalUserData(GlobalSubwindowsData);
     if new {
         storage.entries.allocator = context.omg.general_purpose_allocator;
@@ -57,38 +57,38 @@ SubwindowFlags :: enum_flags {
 }
 
 SubwindowTitleBarStateStyle :: struct {
-    background : BoxStyle;
-    text : TextStyle;
+    background: BoxStyle;
+    text: TextStyle;
     text_align := Vec2f.{0, 0.5};
-    cursor : PlatformCursorHandle;
+    cursor: PlatformCursorHandle;
 }
 
 SubwindowTitleBarStyle :: struct {
-    using _ : StateStyle(SubwindowTitleBarStateStyle);
+    using _: StateStyle(SubwindowTitleBarStateStyle);
 
     button_size := 20.0;
-    collapse_button : ButtonStyle;
-    close_button : ButtonStyle;
+    collapse_button: ButtonStyle;
+    close_button: ButtonStyle;
 }
 
 SubwindowStyle :: struct {
-    title_bar : SubwindowTitleBarStyle;
-    background : BoxStyle;
-    docked_background : BoxStyle;
-    vertical_scrollbar : ScrollbarStyle;
-    horizontal_scrollbar : ScrollbarStyle;
+    title_bar: SubwindowTitleBarStyle;
+    background: BoxStyle;
+    docked_background: BoxStyle;
+    vertical_scrollbar: ScrollbarStyle;
+    horizontal_scrollbar: ScrollbarStyle;
     resize_handle_size := 8.0;
     resize_handle_inset := -6.0;
     corner_resize_handle_size := 20.0;
 }
 
 SubwindowTitleBar :: (
-    data : *SubwindowData,
-    subwindow : *Node,
-    parent : *Node,
-    title : string,
-    flags : SubwindowFlags,
-    style : *SubwindowTitleBarStyle
+    data: *SubwindowData,
+    subwindow: *Node,
+    parent: *Node,
+    title: string,
+    flags: SubwindowFlags,
+    style: *SubwindowTitleBarStyle
 ) -> *Node {
     node := GetNode(parent, "title_bar");
     {
@@ -140,7 +140,7 @@ ResizeHandle :: enum {
     BottomRight;
 }
 
-SubwindowResizeBehavior :: (subwindow : *Node, handle : *Node, min_size : Vec2f, avail_area : Vec4f, direction : ResizeHandle) {
+SubwindowResizeBehavior :: (subwindow: *Node, handle: *Node, min_size: Vec2f, avail_area: Vec4f, direction: ResizeHandle) {
     Cursors :: SystemCursor.[
         .ResizeVertical,
         .ResizeVertical,
@@ -161,7 +161,7 @@ SubwindowResizeBehavior :: (subwindow : *Node, handle : *Node, min_size : Vec2f,
     if button.down {
         mouse_delta := GetMousePosition() - context.omg.mouse_captured_at;
         new_rect := ScreenToWindow(subwindow.window, context.omg.mouse_captured_node_value);
-        to_modify : struct {x: bool; y: bool; z: bool; w: bool;}
+        to_modify: struct {x: bool; y: bool; z: bool; w: bool;}
 
         if #complete direction == {
         case .Top; to_modify.y = true;
@@ -200,7 +200,7 @@ SubwindowResizeBehavior :: (subwindow : *Node, handle : *Node, min_size : Vec2f,
     }
 }
 
-SubwindowResizeHandles :: (data : *SubwindowData, subwindow : *Node, min_size : Vec2f, style : *SubwindowStyle) -> *Node {
+SubwindowResizeHandles :: (data: *SubwindowData, subwindow: *Node, min_size: Vec2f, style: *SubwindowStyle) -> *Node {
     SetLayout(subwindow, .None);
 
     title_and_content := GetNode(subwindow, "title_and_content");
@@ -276,7 +276,7 @@ SubwindowResizeHandles :: (data : *SubwindowData, subwindow : *Node, min_size : 
     return title_and_content;
 }
 
-GetSubwindowTitleBar :: (node : *Node) -> *Node {
+GetSubwindowTitleBar :: (node: *Node) -> *Node {
     if !node {
         return null;
     }
@@ -298,16 +298,16 @@ GetSubwindowTitleBar :: (node : *Node) -> *Node {
  * @brief Dockable subwindow widget.
  */
 Subwindow :: (
-    window : *Window,
-    title : string,
-    str_id : string,
-    opened : *bool = null,
-    initial_position : Vec2f = .{50, 50},
-    initial_size : Vec2f = .{300,300},
-    min_size : Vec2f = .{32,32},
-    flags : SubwindowFlags = 0,
-    style : *SubwindowStyle = null
-) -> content : *Node, subwindow : *Node {
+    window: *Window,
+    title: string,
+    str_id: string,
+    opened: *bool = null,
+    initial_position: Vec2f = .{50, 50},
+    initial_size: Vec2f = .{300,300},
+    min_size: Vec2f = .{32,32},
+    flags: SubwindowFlags = 0,
+    style: *SubwindowStyle = null
+) -> content: *Node, subwindow: *Node {
     EnsureStyle(*style, "subwindow");
 
     if opened && !opened.* {
@@ -319,8 +319,8 @@ Subwindow :: (
     }
 
     resize_handles_expand := ifx !(flags & .NoResize) then Vec2f.{1,1} * max(-style.resize_handle_inset, 0);
-    avail_area : Vec4f;
-    title_bar_size : Vec2f;
+    avail_area: Vec4f;
+    title_bar_size: Vec2f;
 
     subwindow_id := GetID(str_id);
 
@@ -330,7 +330,7 @@ Subwindow :: (
         data.collapsed = true;
         data.wants_collapse = false;
     }
-    expanded_this_frame : bool;
+    expanded_this_frame: bool;
     if data.wants_expand {
         data.collapsed = false;
         data.wants_expand = false;
@@ -345,7 +345,7 @@ Subwindow :: (
         return null, null;
     }
 
-    content, subwindow : *Node;
+    content, subwindow: *Node;
     dock_node, dock_node_data := GetSubwindowDockNode(subwindow_id);
     defer data.was_docked = dock_node != null;
 
@@ -359,7 +359,7 @@ Subwindow :: (
     vscroll := (flags & .NoVerticalScroll) == 0;
     hscrollbar := (flags & .NoHorizontalScrollbar) == 0 && (flags & .NoHorizontalScroll) == 0;
     vscrollbar := (flags & .NoVerticalScrollbar) == 0 && (flags & .NoVerticalScroll) == 0;
-    content_parent : *Node;
+    content_parent: *Node;
 
     if !dock_node {
         defer if data {
@@ -496,7 +496,7 @@ Subwindow :: (
         content_parent.child_gap = .{};
     }
 
-    content_and_hscrollbar, content_and_vscrollbar : *Node;
+    content_and_hscrollbar, content_and_vscrollbar: *Node;
     if hscrollbar {
         content_and_hscrollbar = GetNode(content_parent, "content_and_hscrollbar");
         SetLayout(content_and_hscrollbar, .TopToBottom);
@@ -531,7 +531,7 @@ Subwindow :: (
             DragBehavior(subwindow, content, .{xy=avail_area.xy, zw=avail_area.zw - title_bar_size});
         }
 
-        axes : AxisFlags;
+        axes: AxisFlags;
         if hscroll {
             axes |= .X;
         }

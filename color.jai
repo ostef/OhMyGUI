@@ -2,12 +2,12 @@
  * @brief Color as hue, saturation and value.
  */
 HSV :: struct {
-    hue : float;
-    saturation : float;
-    value : float;
+    hue: float;
+    saturation: float;
+    value: float;
 }
 
-operator == :: inline (a : HSV, b : HSV) -> bool {
+operator == :: inline (a: HSV, b: HSV) -> bool {
     return a.hue == b.hue && a.saturation == b.saturation && a.value == b.value;
 }
 
@@ -19,14 +19,14 @@ RGBA8 :: #type,isa u32; // We could make this a struct but then we wouldn't be a
 /**
  * @brief Set the RGB components of a color as floats.
  */
-SetRGB :: inline (color : *RGBA8, rgb : Vec3f) {
+SetRGB :: inline (color: *RGBA8, rgb: Vec3f) {
     color.* = SetRGB(color.*, rgb);
 }
 
 /**
  * @brief Set the RGB components of a color as floats.
  */
-SetRGB :: inline (color : RGBA8, rgb : Vec3f) -> RGBA8 {
+SetRGB :: inline (color: RGBA8, rgb: Vec3f) -> RGBA8 {
     rgba := ToVec4f(color);
     rgba.xyz = rgb;
     return MakeRGBA8(rgba);
@@ -35,7 +35,7 @@ SetRGB :: inline (color : RGBA8, rgb : Vec3f) -> RGBA8 {
 /**
  * @brief Get the RGB components of a color as floats.
  */
-GetRGB :: inline (color : RGBA8) -> Vec3f {
+GetRGB :: inline (color: RGBA8) -> Vec3f {
     rgba := ToVec4f(color);
 
     return rgba.xyz;
@@ -44,28 +44,28 @@ GetRGB :: inline (color : RGBA8) -> Vec3f {
 /**
  * @brief Set the alpha component of a color as float.
  */
-SetAlpha :: inline (color : *RGBA8, alpha : float) {
+SetAlpha :: inline (color: *RGBA8, alpha: float) {
     color.* = SetAlpha(color.*, alpha);
 }
 
 /**
  * @brief Set the alpha component of a color as float.
  */
-SetAlpha :: inline (color : RGBA8, alpha : float) -> RGBA8 {
+SetAlpha :: inline (color: RGBA8, alpha: float) -> RGBA8 {
     rgba := ToVec4f(color);
     rgba.w = alpha;
     return MakeRGBA8(rgba);
 }
 
-MakeRGBA8 :: inline (rgb : Vec3f, alpha : float = 1.0) -> RGBA8 {
+MakeRGBA8 :: inline (rgb: Vec3f, alpha: float = 1.0) -> RGBA8 {
     return MakeRGBA8(rgb.x, rgb.y, rgb.z, alpha);
 }
 
-MakeRGBA8 :: inline (rgba : Vec4f) -> RGBA8 {
+MakeRGBA8 :: inline (rgba: Vec4f) -> RGBA8 {
     return MakeRGBA8(rgba.x, rgba.y, rgba.z, rgba.w);
 }
 
-MakeRGBA8 :: inline (r : float, g : float, b : float, a : float) -> RGBA8 {
+MakeRGBA8 :: inline (r: float, g: float, b: float, a: float) -> RGBA8 {
     ur := cast(u32, clamp(r * 255, 0, 255));
     ug := cast(u32, clamp(g * 255, 0, 255));
     ub := cast(u32, clamp(b * 255, 0, 255));
@@ -74,7 +74,7 @@ MakeRGBA8 :: inline (r : float, g : float, b : float, a : float) -> RGBA8 {
     return cast(RGBA8, (ur << 24) | (ug << 16) | (ub << 8) | ua);
 }
 
-PackRGBA8 :: inline (r : u8, g : u8, b : u8, a : u8) -> RGBA8 {
+PackRGBA8 :: inline (r: u8, g: u8, b: u8, a: u8) -> RGBA8 {
     ur := cast(u32, r);
     ug := cast(u32, g);
     ub := cast(u32, b);
@@ -83,7 +83,7 @@ PackRGBA8 :: inline (r : u8, g : u8, b : u8, a : u8) -> RGBA8 {
     return cast(RGBA8, (ur << 24) | (ug << 16) | (ub << 8) | ua);
 }
 
-ToVec4f :: inline (rgba : RGBA8) -> Vec4f {
+ToVec4f :: inline (rgba: RGBA8) -> Vec4f {
     r := (cast(u32, rgba) >> 24) & 0xff;
     g := (cast(u32, rgba) >> 16) & 0xff;
     b := (cast(u32, rgba) >> 8)  & 0xff;
@@ -92,7 +92,7 @@ ToVec4f :: inline (rgba : RGBA8) -> Vec4f {
     return .{r / 255.0, g / 255.0, b / 255.0, a / 255.0};
 }
 
-GetRGBAU8 :: inline (rgba : RGBA8) -> r : u8, g : u8, b : u8, a : u8 {
+GetRGBAU8 :: inline (rgba: RGBA8) -> r: u8, g: u8, b: u8, a: u8 {
     r := (cast(u32, rgba) >> 24) & 0xff;
     g := (cast(u32, rgba) >> 16) & 0xff;
     b := (cast(u32, rgba) >> 8)  & 0xff;
@@ -104,7 +104,7 @@ GetRGBAU8 :: inline (rgba : RGBA8) -> r : u8, g : u8, b : u8, a : u8 {
 /**
  * @brief Convert a RGB float color to HSV.
  */
-RGBToHSV :: inline (rgb : Vec3f) -> HSV {
+RGBToHSV :: inline (rgb: Vec3f) -> HSV {
     h, s, v := RGBToHSV(rgb.x, rgb.y, rgb.z);
     return .{h, s, v};
 }
@@ -112,7 +112,7 @@ RGBToHSV :: inline (rgb : Vec3f) -> HSV {
 /**
  * @brief Convert a RGB float color to HSV.
  */
-RGBToHSV :: (r : $T, g : T, b: T) -> h : T, s : T, v : T
+RGBToHSV :: (r: $T, g: T, b: T) -> h: T, s: T, v: T
 #modify { return T == float32 || T == float64, "T needs to be a floating point type"; } {
     rgb_min := min(r, g, b);
     rgb_max := max(r, g, b);
@@ -130,7 +130,7 @@ RGBToHSV :: (r : $T, g : T, b: T) -> h : T, s : T, v : T
         return 0, 0, v;
     }
 
-    h : T;
+    h: T;
     if rgb_max == r {
         h = 0 + (g - b) / delta;
     } else if rgb_max == g {
@@ -153,7 +153,7 @@ RGBToHSV :: (r : $T, g : T, b: T) -> h : T, s : T, v : T
 /**
  * @brief Convert a HSV color to a RGB float color.
  */
-HSVToRGB :: inline (hsv : HSV) -> Vec3f {
+HSVToRGB :: inline (hsv: HSV) -> Vec3f {
     r, g, b := HSVToRGB(hsv.hue, hsv.saturation, hsv.value);
     return .{r, g, b};
 }
@@ -161,7 +161,7 @@ HSVToRGB :: inline (hsv : HSV) -> Vec3f {
 /**
  * @brief Convert a HSV color to a RGB float color.
  */
-HSVToRGB :: (h : $T, s : T, v : T) -> r : T, g : T, b : T {
+HSVToRGB :: (h: $T, s: T, v: T) -> r: T, g: T, b: T {
     h /= 360;
 
     x := clamp(abs(fract(h + 1)       * 6 - 3) - 1, 0, 1);
@@ -180,7 +180,7 @@ HSVToRGB :: (h : $T, s : T, v : T) -> r : T, g : T, b : T {
  *
  * Reduce the value component of the color. Converts RGB to HSV then back to RGB.
  */
-Darken :: inline (rgba : RGBA8, amount : float) -> RGBA8 {
+Darken :: inline (rgba: RGBA8, amount: float) -> RGBA8 {
     return SetRGB(rgba, Darken(GetRGB(rgba), amount));
 }
 
@@ -189,7 +189,7 @@ Darken :: inline (rgba : RGBA8, amount : float) -> RGBA8 {
  *
  * Reduce the value component of the color. Converts RGB to HSV then back to RGB.
  */
-Darken :: (rgb : Vec3f, amount : float) -> Vec3f {
+Darken :: (rgb: Vec3f, amount: float) -> Vec3f {
     hsv := RGBToHSV(rgb);
     hsv.value = clamp(hsv.value - amount, 0, 1);
 
@@ -201,7 +201,7 @@ Darken :: (rgb : Vec3f, amount : float) -> Vec3f {
  *
  * Increase the value component of the color. Converts RGB to HSV then back to RGB.
  */
-Brighten :: inline (rgba : RGBA8, amount : float) -> RGBA8 {
+Brighten :: inline (rgba: RGBA8, amount: float) -> RGBA8 {
     return SetRGB(rgba, Brighten(GetRGB(rgba), amount));
 }
 
@@ -210,7 +210,7 @@ Brighten :: inline (rgba : RGBA8, amount : float) -> RGBA8 {
  *
  * Increase the value component of the color. Converts RGB to HSV then back to RGB.
  */
-Brighten :: (rgb : Vec3f, amount : float) -> Vec3f {
+Brighten :: (rgb: Vec3f, amount: float) -> Vec3f {
     hsv := RGBToHSV(rgb);
     hsv.value = clamp(hsv.value + amount, 0, 1);
 
@@ -222,7 +222,7 @@ Brighten :: (rgb : Vec3f, amount : float) -> Vec3f {
  *
  * Increase the value and decrease the saturation components of the color. Converts RGB to HSV then back to RGB.
  */
-Whiten :: inline (rgba : RGBA8, amount : float) -> RGBA8 {
+Whiten :: inline (rgba: RGBA8, amount: float) -> RGBA8 {
     return SetRGB(rgba, Whiten(GetRGB(rgba), amount));
 }
 
@@ -231,7 +231,7 @@ Whiten :: inline (rgba : RGBA8, amount : float) -> RGBA8 {
  *
  * Increase the value and decrease the saturation components of the color. Converts RGB to HSV then back to RGB.
  */
-Whiten :: (rgb : Vec3f, amount : float) -> Vec3f {
+Whiten :: (rgb: Vec3f, amount: float) -> Vec3f {
     hsv := RGBToHSV(rgb);
     hsv.saturation = clamp(hsv.saturation - amount, 0, 1);
     hsv.value = clamp(hsv.value + amount, 0, 1);
@@ -244,7 +244,7 @@ Whiten :: (rgb : Vec3f, amount : float) -> Vec3f {
  *
  * Make the color greyer, move the value towards 0.5 and the saturation towards 0. Converts RGB to HSV then back to RGB.
  */
-MakeTone :: inline (rgba : RGBA8, t : float) -> RGBA8 {
+MakeTone :: inline (rgba: RGBA8, t: float) -> RGBA8 {
     return SetRGB(rgba, MakeTone(GetRGB(rgba), t));
 }
 
@@ -253,7 +253,7 @@ MakeTone :: inline (rgba : RGBA8, t : float) -> RGBA8 {
  *
  * Make the color greyer, move the value towards 0.5 and the saturation towards 0. Converts RGB to HSV then back to RGB.
  */
-MakeTone :: (rgb : Vec3f, t : float) -> Vec3f {
+MakeTone :: (rgb: Vec3f, t: float) -> Vec3f {
     t = clamp(t, 0, 1);
 
     hsv := RGBToHSV(rgb);
@@ -263,24 +263,24 @@ MakeTone :: (rgb : Vec3f, t : float) -> Vec3f {
     return HSVToRGB(hsv);
 }
 
-InvertColor :: (rgba : RGBA8, t := 1.0) -> RGBA8 {
+InvertColor :: (rgba: RGBA8, t := 1.0) -> RGBA8 {
     rgb := GetRGB(rgba);
     rgb = lerp(rgb, Vec3f.{1,1,1} - rgb, t);
     return SetRGB(rgba, rgb);
 }
 
-InvertColor :: (rgb : Vec3f, t := 1.0) -> Vec3f {
+InvertColor :: (rgb: Vec3f, t := 1.0) -> Vec3f {
     return lerp(rgb, Vec3f.{1,1,1} - rgb, t);
 }
 
-ComplementaryColor :: (rgb : Vec3f) -> Vec3f {
+ComplementaryColor :: (rgb: Vec3f) -> Vec3f {
     hsv := RGBToHSV(rgb);
     hsv.hue = fmod_cycling(hsv.hue + 180, 360);
 
     return HSVToRGB(hsv);
 }
 
-SplitComplementaryColors :: (rgb : Vec3f, hue_shift := 30.0) -> Vec3f, Vec3f {
+SplitComplementaryColors :: (rgb: Vec3f, hue_shift := 30.0) -> Vec3f, Vec3f {
     hsv := RGBToHSV(rgb);
 
     a := hsv;
@@ -292,7 +292,7 @@ SplitComplementaryColors :: (rgb : Vec3f, hue_shift := 30.0) -> Vec3f, Vec3f {
     return HSVToRGB(a), HSVToRGB(b);
 }
 
-AnalogousColors :: (rgb : Vec3f, hue_shift := 30.0) -> Vec3f, Vec3f {
+AnalogousColors :: (rgb: Vec3f, hue_shift := 30.0) -> Vec3f, Vec3f {
     hsv := RGBToHSV(rgb);
 
     a := hsv;
@@ -304,7 +304,7 @@ AnalogousColors :: (rgb : Vec3f, hue_shift := 30.0) -> Vec3f, Vec3f {
     return HSVToRGB(a), HSVToRGB(b);
 }
 
-TriadicColors :: (rgb : Vec3f) -> Vec3f, Vec3f {
+TriadicColors :: (rgb: Vec3f) -> Vec3f, Vec3f {
     hsv := RGBToHSV(rgb);
 
     K :: 360 / 3.0;
@@ -318,7 +318,7 @@ TriadicColors :: (rgb : Vec3f) -> Vec3f, Vec3f {
     return HSVToRGB(a), HSVToRGB(b);
 }
 
-TetradicColors :: (rgb : Vec3f, hue_shift := 30.0) -> Vec3f, Vec3f, Vec3f {
+TetradicColors :: (rgb: Vec3f, hue_shift := 30.0) -> Vec3f, Vec3f, Vec3f {
     hsv := RGBToHSV(rgb);
 
     a := hsv;
@@ -333,7 +333,7 @@ TetradicColors :: (rgb : Vec3f, hue_shift := 30.0) -> Vec3f, Vec3f, Vec3f {
     return HSVToRGB(a), HSVToRGB(b), HSVToRGB(c);
 }
 
-SquareColors :: (rgb : Vec3f, hue_shift := 30.0) -> Vec3f, Vec3f, Vec3f {
+SquareColors :: (rgb: Vec3f, hue_shift := 30.0) -> Vec3f, Vec3f, Vec3f {
     hsv := RGBToHSV(rgb);
 
     a := hsv;
@@ -348,15 +348,15 @@ SquareColors :: (rgb : Vec3f, hue_shift := 30.0) -> Vec3f, Vec3f, Vec3f {
     return HSVToRGB(a), HSVToRGB(b), HSVToRGB(c);
 }
 
-PerceivedBrightnessYIQ :: inline (rgba : RGBA8) -> float {
+PerceivedBrightnessYIQ :: inline (rgba: RGBA8) -> float {
     return PerceivedBrightnessYIQ(GetRGB(rgba));
 }
 
-PerceivedBrightnessYIQ :: inline (rgb : Vec3f) -> float {
+PerceivedBrightnessYIQ :: inline (rgb: Vec3f) -> float {
     return 0.299 * rgb.x + 0.587 * rgb.y + 0.114 * rgb.z;
 }
 
-ChooseTextColor :: inline (background : RGBA8, dark : RGBA8 = 0x0d0d0dff, light : RGBA8 = 0xf2f2f2ff, $choose : (RGBA8) -> bool = (color) => PerceivedBrightnessYIQ(color) > 0.5) -> RGBA8 {
+ChooseTextColor :: inline (background: RGBA8, dark: RGBA8 = 0x0d0d0dff, light: RGBA8 = 0xf2f2f2ff, $choose: (RGBA8) -> bool = (color) => PerceivedBrightnessYIQ(color) > 0.5) -> RGBA8 {
     return ifx choose(background) then dark else light;
 }
 
@@ -365,7 +365,7 @@ ChooseTextColor :: inline (background : RGBA8, dark : RGBA8 = 0x0d0d0dff, light 
  *
  * Mix two colors together, interpolate each component from a to b by a factor of t.
  */
-MixColors :: (a : RGBA8, b : RGBA8, t : float) -> RGBA8 {
+MixColors :: (a: RGBA8, b: RGBA8, t: float) -> RGBA8 {
     if a == b {
         return a;
     }

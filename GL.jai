@@ -14,25 +14,25 @@ GetRendererFuncs :: inline () -> RendererFunctions {
 
 #scope_module
 
-g_white_texture : GLuint;
+g_white_texture: GLuint;
 
 Shader :: struct {
-    handle : GLuint;
-    u_base_instance : GLint;
-    u_viewport_size : GLint;
+    handle: GLuint;
+    u_base_instance: GLint;
+    u_viewport_size: GLint;
 }
 
-g_shader : Shader;
+g_shader: Shader;
 
 // Buffers are shared between GL contexts, so they can be released from any context.
 // Vertex array objects are not, see Render.
 WindowData :: struct {
-    clip_boxes_buffer : GLuint;
-    vertices_buffer : GLuint;
-    indices_buffer : GLuint;
+    clip_boxes_buffer: GLuint;
+    vertices_buffer: GLuint;
+    indices_buffer: GLuint;
 }
 
-GetWindowData :: (window : *Window) -> *WindowData {
+GetWindowData :: (window: *Window) -> *WindowData {
     if !window.renderer_data {
         data := New(WindowData);
         glGenBuffers(1, *data.clip_boxes_buffer);
@@ -45,7 +45,7 @@ GetWindowData :: (window : *Window) -> *WindowData {
     return window.renderer_data;
 }
 
-DestroyWindowData :: (window : *Window) {
+DestroyWindowData :: (window: *Window) {
     data := cast(*WindowData, window.renderer_data);
     if !data {
         return;
@@ -59,8 +59,8 @@ DestroyWindowData :: (window : *Window) {
     window.renderer_data = null;
 }
 
-CreateVertexArray :: (vertices_buffer : GLuint, indices_buffer : GLuint) -> GLuint {
-    vao : GLuint;
+CreateVertexArray :: (vertices_buffer: GLuint, indices_buffer: GLuint) -> GLuint {
+    vao: GLuint;
     glGenVertexArrays(1, *vao);
     glBindVertexArray(vao);
 
@@ -88,8 +88,8 @@ CreateVertexArray :: (vertices_buffer : GLuint, indices_buffer : GLuint) -> GLui
     return vao;
 }
 
-LoadShader :: (name : string, vertex_source : string, fragment_source : string) -> Shader {
-    status, log_length : GLint;
+LoadShader :: (name: string, vertex_source: string, fragment_source: string) -> Shader {
+    status, log_length: GLint;
 
     vertex_shader := glCreateShader(GL_VERTEX_SHADER);
     defer glDeleteShader(vertex_shader);
@@ -110,7 +110,7 @@ LoadShader :: (name : string, vertex_source : string, fragment_source : string) 
     glGetShaderiv(vertex_shader, GL_COMPILE_STATUS, *status);
     glGetShaderiv(vertex_shader, GL_INFO_LOG_LENGTH, *log_length);
     if !status {
-        log : *u8 = alloc(log_length + 1 ,, temp);
+        log: *u8 = alloc(log_length + 1 ,, temp);
         glGetShaderInfoLog(vertex_shader, xx log_length, null, log);
 
         message := string.{log_length, log};
@@ -127,7 +127,7 @@ LoadShader :: (name : string, vertex_source : string, fragment_source : string) 
     glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, *status);
     glGetShaderiv(fragment_shader, GL_INFO_LOG_LENGTH, *log_length);
     if !status {
-        log : *u8 = alloc(log_length + 1 ,, temp);
+        log: *u8 = alloc(log_length + 1 ,, temp);
         glGetShaderInfoLog(fragment_shader, xx log_length, null, log);
 
         message := string.{log_length, log};
@@ -153,7 +153,7 @@ LoadShader :: (name : string, vertex_source : string, fragment_source : string) 
     glGetProgramiv(program, GL_LINK_STATUS, *status);
     glGetProgramiv(program, GL_INFO_LOG_LENGTH, *log_length);
     if !status {
-        log : *u8 = alloc(log_length + 1 ,, temp);
+        log: *u8 = alloc(log_length + 1 ,, temp);
         glGetProgramInfoLog(program, xx log_length, null, log);
 
         message := string.{log_length, log};
@@ -164,7 +164,7 @@ LoadShader :: (name : string, vertex_source : string, fragment_source : string) 
     }
 
     // Setup binding indices
-    result : Shader;
+    result: Shader;
     result.handle = program;
     result.u_base_instance = glGetUniformLocation(program, "u_base_instance");
     result.u_viewport_size = glGetUniformLocation(program, "u_viewport_size");
@@ -295,7 +295,7 @@ Init :: () {
     g_shader = LoadShader("OhMyGUI", Vertex_Shader, Fragment_Shader);
     assert(g_shader.handle != 0, "Could not load OhMyGUI shader");
 
-    white : u32 = 0xffffffff;
+    white: u32 = 0xffffffff;
     g_white_texture = xx CreateRGBA8Texture("White Texture", *white, 1, 1);
 }
 
@@ -316,7 +316,7 @@ Terminate :: () {
  * Render a Window's draw list into the current framebuffer.
  * The GL context associated with the window must be active.
  */
-Render :: (window : *Window, viewport_w : u32, viewport_h : u32) {
+Render :: (window: *Window, viewport_w: u32, viewport_h: u32) {
     draw_list := *window.draw_list;
     if draw_list.indices.count <= 0 {
         return;
@@ -356,8 +356,8 @@ Render :: (window : *Window, viewport_w : u32, viewport_h : u32) {
     SendDrawCommands(draw_list, viewport_w, viewport_h);
 }
 
-SendDrawCommands :: (draw_list : *DrawList, viewport_w : u32, viewport_h : u32) {
-    current_texture : GLuint = 0;
+SendDrawCommands :: (draw_list: *DrawList, viewport_w: u32, viewport_h: u32) {
+    current_texture: GLuint = 0;
 
     glUseProgram(g_shader.handle);
     defer glUseProgram(0);
@@ -386,8 +386,8 @@ SendDrawCommands :: (draw_list : *DrawList, viewport_w : u32, viewport_h : u32) 
     }
 }
 
-CreateR8Texture :: (name : string, data : *void, width : u32, height : u32) -> TextureHandle {
-    result : GLuint;
+CreateR8Texture :: (name: string, data: *void, width: u32, height: u32) -> TextureHandle {
+    result: GLuint;
     glCreateTextures(GL_TEXTURE_2D, 1, *result);
     glTextureStorage2D(result, 1, GL_R8, width, height);
 
@@ -405,8 +405,8 @@ CreateR8Texture :: (name : string, data : *void, width : u32, height : u32) -> T
     return result;
 }
 
-CreateRGBA8Texture :: (name : string, data : *void, width : u32, height : u32) -> TextureHandle {
-    result : GLuint;
+CreateRGBA8Texture :: (name: string, data: *void, width: u32, height: u32) -> TextureHandle {
+    result: GLuint;
     glCreateTextures(GL_TEXTURE_2D, 1, *result);
     glTextureStorage2D(result, 1, GL_RGBA8, width, height);
     glTextureSubImage2D(result, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
@@ -421,7 +421,7 @@ CreateRGBA8Texture :: (name : string, data : *void, width : u32, height : u32) -
     return result;
 }
 
-DestroyTexture :: (texture : TextureHandle) {
-    gl_texture : GLuint = xx texture;
+DestroyTexture :: (texture: TextureHandle) {
+    gl_texture: GLuint = xx texture;
     glDeleteTextures(1, *gl_texture);
 }

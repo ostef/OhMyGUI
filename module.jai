@@ -21,52 +21,52 @@ using,only(.["for_expansion"]) HT;
  * @brief Global OhMyGUI context.
  */
 Context :: struct {
-    frame_index : u64;
-    delta_time : float;
-    layout_time_last_frame : float; ///> Time taken for the layout last frame.
-    draw_time_last_frame : float;   ///> Time taken for drawing on the CPU last frame.
-    total_time_last_frame : float;  ///> Time taken to render (layout, drawing, bookkeeping) last frame.
-    num_vertices_last_frame : int;  ///> Number of vertices drawn last frame.
-    num_indices_last_frame : int;   ///> Number of indices drawn last frame.
+    frame_index: u64;
+    delta_time: float;
+    layout_time_last_frame: float; ///> Time taken for the layout last frame.
+    draw_time_last_frame: float;   ///> Time taken for drawing on the CPU last frame.
+    total_time_last_frame: float;  ///> Time taken to render (layout, drawing, bookkeeping) last frame.
+    num_vertices_last_frame: int;  ///> Number of vertices drawn last frame.
+    num_indices_last_frame: int;   ///> Number of indices drawn last frame.
 
-    platform_funcs : PlatformFunctions;
-    renderer_funcs : RendererFunctions;
-    default_draw_node : type_of(Node.draw) = DrawNodeDefault; ///> Global default Node draw function.
+    platform_funcs: PlatformFunctions;
+    renderer_funcs: RendererFunctions;
+    default_draw_node: type_of(Node.draw) = DrawNodeDefault; ///> Global default Node draw function.
 
-    general_purpose_allocator : Allocator; ///> Allocator used for non temporary things. Initialized to the context's allocator.
+    general_purpose_allocator: Allocator; ///> Allocator used for non temporary things. Initialized to the context's allocator.
 
     mouse_wheel_multiplier := 10.0; ///> Multiplier value for the mouse wheel.
 
-    input : InputContext;
-    cursor_this_frame : PlatformCursorHandle;
+    input: InputContext;
+    cursor_this_frame: PlatformCursorHandle;
 
-    windows : *Window; ///> Linked list of windows.
-    hovered_window : *Window; ///> Window under the mouse in the current frame.
-    fonts : *Font;     ///> Linked list of loaded fonts.
-    node_pool : Bucket_Array(Node, 300);
-    nodes_by_id : HT.Table(ID, *Node);
-    user_data : *NodeUserData; ///> Global attached user data list.
+    windows: *Window; ///> Linked list of windows.
+    hovered_window: *Window; ///> Window under the mouse in the current frame.
+    fonts: *Font;     ///> Linked list of loaded fonts.
+    node_pool: Bucket_Array(Node, 300);
+    nodes_by_id: HT.Table(ID, *Node);
+    user_data: *NodeUserData; ///> Global attached user data list.
 
-    theme : *Theme; ///> Active theme.
+    theme: *Theme; ///> Active theme.
 
-    id_stack : [..]ID; ///> Stack of IDs. The top of the stack is used as a seed for `GetID`.
-    disabled_stack : [..]bool;
+    id_stack: [..]ID; ///> Stack of IDs. The top of the stack is used as a seed for `GetID`.
+    disabled_stack: [..]bool;
 
     global_polygon_resolution := 1.0; ///> Global polygon resolution multiplier.
 
-    mouse_hovered_nodes : [..]*Node; ///> All the nodes under the mouse in the current frame.
-    mouse_hovered_node : *Node; ///> Node directly under the mouse in the current frame.
-    mouse_hover_time : float;
-    mouse_focus_time : float;
-    mouse_focused_node : *Node;
-    mouse_capturing_node : *Node;
-    mouse_captured_this_frame : bool;
-    mouse_captured_at : Vec2f = .{FLOAT32_NAN, FLOAT32_NAN};
-    mouse_captured_node_value : Vec4f = .{FLOAT32_NAN, FLOAT32_NAN, FLOAT32_NAN, FLOAT32_NAN}; ///> Value that nodes can specify upon capturing the mouse.
-    scroll_focused_node : *Node;
+    mouse_hovered_nodes: [..]*Node; ///> All the nodes under the mouse in the current frame.
+    mouse_hovered_node: *Node; ///> Node directly under the mouse in the current frame.
+    mouse_hover_time: float;
+    mouse_focus_time: float;
+    mouse_focused_node: *Node;
+    mouse_capturing_node: *Node;
+    mouse_captured_this_frame: bool;
+    mouse_captured_at: Vec2f = .{FLOAT32_NAN, FLOAT32_NAN};
+    mouse_captured_node_value: Vec4f = .{FLOAT32_NAN, FLOAT32_NAN, FLOAT32_NAN, FLOAT32_NAN}; ///> Value that nodes can specify upon capturing the mouse.
+    scroll_focused_node: *Node;
 }
 
-#add_context omg : *Context;
+#add_context omg: *Context;
 
 PlatformWindowHandle :: *void;
 PlatformCursorHandle :: *void;
@@ -79,47 +79,47 @@ PlatformWindowFlags :: enum_flags {
 }
 
 PlatformFunctions :: struct {
-    DestroyWindowData : (window : *Window);
-    GetWindowTitle : (handle : PlatformWindowHandle) -> string;
-    SetWindowTitle : (handle : PlatformWindowHandle, title : string);
-    GetWindowPosition : (handle : PlatformWindowHandle) -> int, int;
-    SetWindowPosition : (handle : PlatformWindowHandle, x : int, y : int);
-    GetWindowSize : (handle : PlatformWindowHandle) -> int, int;
-    SetWindowSize : (handle : PlatformWindowHandle, width : int, height : int);
-    GetWindowFlags : (handle : PlatformWindowHandle) -> PlatformWindowFlags;
-    GetMousePosition : () -> int, int;
-    CaptureMouse : (capture : bool);
-    SetCursor : (handle : PlatformCursorHandle);
-    CreateRGBA8Cursor : (pixels : *void, width : u32, height : u32, hot_x_01 : float, hot_y_01 : float) -> PlatformCursorHandle;
-    CreateSystemCursor : (system_cursor : SystemCursor) -> PlatformCursorHandle;
-    DestroyCursor : (cursor : PlatformCursorHandle);
-    GetClipboardText : () -> string;
-    SetClipboardText : (text : string);
-    HasClipboardText : () -> bool;
-    EnableCustomWindowDecorations : (window : *Window) -> bool;
-    DisableCustomWindowDecorations : (window : *Window);
+    DestroyWindowData: (window: *Window);
+    GetWindowTitle: (handle: PlatformWindowHandle) -> string;
+    SetWindowTitle: (handle: PlatformWindowHandle, title: string);
+    GetWindowPosition: (handle: PlatformWindowHandle) -> int, int;
+    SetWindowPosition: (handle: PlatformWindowHandle, x: int, y: int);
+    GetWindowSize: (handle: PlatformWindowHandle) -> int, int;
+    SetWindowSize: (handle: PlatformWindowHandle, width: int, height: int);
+    GetWindowFlags: (handle: PlatformWindowHandle) -> PlatformWindowFlags;
+    GetMousePosition: () -> int, int;
+    CaptureMouse: (capture: bool);
+    SetCursor: (handle: PlatformCursorHandle);
+    CreateRGBA8Cursor: (pixels: *void, width: u32, height: u32, hot_x_01: float, hot_y_01: float) -> PlatformCursorHandle;
+    CreateSystemCursor: (system_cursor: SystemCursor) -> PlatformCursorHandle;
+    DestroyCursor: (cursor: PlatformCursorHandle);
+    GetClipboardText: () -> string;
+    SetClipboardText: (text: string);
+    HasClipboardText: () -> bool;
+    EnableCustomWindowDecorations: (window: *Window) -> bool;
+    DisableCustomWindowDecorations: (window: *Window);
 }
 
-PlatformDestroyWindowData :: inline (window : *Window) {
+PlatformDestroyWindowData :: inline (window: *Window) {
     if context.omg.platform_funcs.DestroyWindowData {
         context.omg.platform_funcs.DestroyWindowData(window);
     }
 }
 
-PlatformGetWindowTitle :: inline (handle : PlatformWindowHandle) -> string {
+PlatformGetWindowTitle :: inline (handle: PlatformWindowHandle) -> string {
     if context.omg.platform_funcs.GetWindowTitle {
         return context.omg.platform_funcs.GetWindowTitle(handle);
     }
     return "";
 }
 
-PlatformSetWindowTitle :: inline (handle : PlatformWindowHandle, title : string) {
+PlatformSetWindowTitle :: inline (handle: PlatformWindowHandle, title: string) {
     if context.omg.platform_funcs.SetWindowTitle {
         context.omg.platform_funcs.SetWindowTitle(handle, title);
     }
 }
 
-PlatformGetWindowPosition :: inline (handle : PlatformWindowHandle) -> int, int {
+PlatformGetWindowPosition :: inline (handle: PlatformWindowHandle) -> int, int {
     if context.omg.platform_funcs.GetWindowPosition {
         x, y := context.omg.platform_funcs.GetWindowPosition(handle);
         return x, y;
@@ -128,13 +128,13 @@ PlatformGetWindowPosition :: inline (handle : PlatformWindowHandle) -> int, int 
     return 0, 0;
 }
 
-PlatformSetWindowPosition :: inline (handle : PlatformWindowHandle, x : int, y : int) {
+PlatformSetWindowPosition :: inline (handle: PlatformWindowHandle, x: int, y: int) {
     if context.omg.platform_funcs.SetWindowPosition {
         context.omg.platform_funcs.SetWindowPosition(handle, x, y);
     }
 }
 
-PlatformGetWindowSize :: inline (handle : PlatformWindowHandle) -> int, int {
+PlatformGetWindowSize :: inline (handle: PlatformWindowHandle) -> int, int {
     if context.omg.platform_funcs.GetWindowSize {
         w, h := context.omg.platform_funcs.GetWindowSize(handle);
         return w, h;
@@ -143,13 +143,13 @@ PlatformGetWindowSize :: inline (handle : PlatformWindowHandle) -> int, int {
     return 0, 0;
 }
 
-PlatformSetWindowSize :: inline (handle : PlatformWindowHandle, width : int, height : int) {
+PlatformSetWindowSize :: inline (handle: PlatformWindowHandle, width: int, height: int) {
     if context.omg.platform_funcs.SetWindowSize {
         context.omg.platform_funcs.SetWindowSize(handle, width, height);
     }
 }
 
-PlatformGetWindowFlags :: inline (handle : PlatformWindowHandle) -> PlatformWindowFlags {
+PlatformGetWindowFlags :: inline (handle: PlatformWindowHandle) -> PlatformWindowFlags {
     if context.omg.platform_funcs.GetWindowFlags {
         return context.omg.platform_funcs.GetWindowFlags(handle);
     }
@@ -166,33 +166,33 @@ PlatformGetMousePosition :: inline () -> int, int {
     return 0, 0;
 }
 
-PlatformCaptureMouse :: inline (capture : bool) {
+PlatformCaptureMouse :: inline (capture: bool) {
     if context.omg.platform_funcs.CaptureMouse {
         context.omg.platform_funcs.CaptureMouse(capture);
     }
 }
 
-PlatformSetCursor :: inline (handle : PlatformCursorHandle) {
+PlatformSetCursor :: inline (handle: PlatformCursorHandle) {
     if context.omg.platform_funcs.SetCursor {
         context.omg.platform_funcs.SetCursor(handle);
     }
 }
 
-PlatformCreateSystemCursor :: inline (system_cursor : SystemCursor) -> PlatformCursorHandle {
+PlatformCreateSystemCursor :: inline (system_cursor: SystemCursor) -> PlatformCursorHandle {
     if context.omg.platform_funcs.CreateSystemCursor {
         return context.omg.platform_funcs.CreateSystemCursor(system_cursor);
     }
     return null;
 }
 
-PlatformCreateRGBA8Cursor :: inline (pixels : *void, width : u32, height : u32, hot_x_01 : float, hot_y_01 : float) -> PlatformCursorHandle {
+PlatformCreateRGBA8Cursor :: inline (pixels: *void, width: u32, height: u32, hot_x_01: float, hot_y_01: float) -> PlatformCursorHandle {
     if context.omg.platform_funcs.CreateRGBA8Cursor {
         return context.omg.platform_funcs.CreateRGBA8Cursor(pixels, width, height, hot_x_01, hot_y_01);
     }
     return null;
 }
 
-PlatformDestroyCursor :: inline (cursor : PlatformCursorHandle) {
+PlatformDestroyCursor :: inline (cursor: PlatformCursorHandle) {
     if context.omg.platform_funcs.DestroyCursor {
         context.omg.platform_funcs.DestroyCursor(cursor);
     }
@@ -205,7 +205,7 @@ PlatformGetClipboardText :: inline () -> string {
     return "";
 }
 
-PlatformSetClipboardText :: inline (text : string) {
+PlatformSetClipboardText :: inline (text: string) {
     if context.omg.platform_funcs.SetClipboardText {
         context.omg.platform_funcs.SetClipboardText(text);
     }
@@ -218,7 +218,7 @@ PlatformHasClipboardText :: inline () -> bool {
     return false;
 }
 
-EnableCustomWindowDecorations :: inline (window : *Window) -> bool {
+EnableCustomWindowDecorations :: inline (window: *Window) -> bool {
     if window.has_custom_decorations {
         return true;
     }
@@ -230,7 +230,7 @@ EnableCustomWindowDecorations :: inline (window : *Window) -> bool {
     return false;
 }
 
-DisableCustomWindowDecorations :: inline (window : *Window) {
+DisableCustomWindowDecorations :: inline (window: *Window) {
     if !window.has_custom_decorations {
         return;
     }
@@ -243,33 +243,33 @@ DisableCustomWindowDecorations :: inline (window : *Window) {
 }
 
 RendererFunctions :: struct {
-    CreateR8Texture : (name : string, data : *void, width : u32, height : u32) -> TextureHandle;
-    CreateRGBA8Texture : (name : string, data : *void, width : u32, height : u32) -> TextureHandle;
-    DestroyTexture : (texture : TextureHandle);
-    DestroyWindowData : (window : *Window);
+    CreateR8Texture: (name: string, data: *void, width: u32, height: u32) -> TextureHandle;
+    CreateRGBA8Texture: (name: string, data: *void, width: u32, height: u32) -> TextureHandle;
+    DestroyTexture: (texture: TextureHandle);
+    DestroyWindowData: (window: *Window);
 }
 
-RendererCreateR8Texture :: inline (name : string, data : *void, width : u32, height : u32) -> TextureHandle {
+RendererCreateR8Texture :: inline (name: string, data: *void, width: u32, height: u32) -> TextureHandle {
     if context.omg.renderer_funcs.CreateR8Texture {
         return context.omg.renderer_funcs.CreateR8Texture(name, data, width, height);
     }
     return 0;
 }
 
-RendererCreateRGBA8Texture :: inline (name : string, data : *void, width : u32, height : u32) -> TextureHandle {
+RendererCreateRGBA8Texture :: inline (name: string, data: *void, width: u32, height: u32) -> TextureHandle {
     if context.omg.renderer_funcs.CreateRGBA8Texture {
         return context.omg.renderer_funcs.CreateRGBA8Texture(name, data, width, height);
     }
     return 0;
 }
 
-RendererDestroyTexture :: inline (texture : TextureHandle) {
+RendererDestroyTexture :: inline (texture: TextureHandle) {
     if context.omg.renderer_funcs.DestroyTexture {
         context.omg.renderer_funcs.DestroyTexture(texture);
     }
 }
 
-RendererDestroyWindowData :: inline (window : *Window) {
+RendererDestroyWindowData :: inline (window: *Window) {
     if context.omg.renderer_funcs.DestroyWindowData {
         context.omg.renderer_funcs.DestroyWindowData(window);
     }
@@ -279,7 +279,7 @@ GetTheme :: inline () -> *Theme {
     return context.omg.theme;
 }
 
-SetTheme :: inline (theme : *Theme) {
+SetTheme :: inline (theme: *Theme) {
     context.omg.theme = theme;
 }
 
@@ -289,23 +289,23 @@ WindowArea :: enum {
 }
 
 Window :: struct {
-    platform_handle : PlatformWindowHandle;
-    prev : *Window;
-    next : *Window;
+    platform_handle: PlatformWindowHandle;
+    prev: *Window;
+    next: *Window;
 
-    has_custom_decorations : bool;
-    hovered_area : WindowArea; ///> What part of the OS window is hovered. Only when custom window decorations are enabled.
+    has_custom_decorations: bool;
+    hovered_area: WindowArea; ///> What part of the OS window is hovered. Only when custom window decorations are enabled.
 
-    root_node : *Node;
-    popup_root_node : *Node;
-    draw_list : DrawList;
-    renderer_data : *void;
+    root_node: *Node;
+    popup_root_node: *Node;
+    draw_list: DrawList;
+    renderer_data: *void;
 }
 
 /**
  * @brief Iterate over the Windows.
  */
-Windows :: (ctx : *Context, body : Code, flags : For_Flags) #expand {
+Windows :: (ctx: *Context, body: Code, flags: For_Flags) #expand {
     `it := ctx.windows;
     `it_index := 0;
     while it {
@@ -335,7 +335,7 @@ GetMouseFocusedWindow :: () -> *Window {
 /**
  * @brief Get or create a Window from a platform window handle.
  */
-GetWindow :: (handle : PlatformWindowHandle, create := true) -> *Window {
+GetWindow :: (handle: PlatformWindowHandle, create := true) -> *Window {
     for :Windows context.omg {
         if it.platform_handle == handle {
             return it;
@@ -358,7 +358,7 @@ GetWindow :: (handle : PlatformWindowHandle, create := true) -> *Window {
     return w;
 }
 
-DestroyWindow :: (window : *Window) {
+DestroyWindow :: (window: *Window) {
     if window.prev {
         window.prev.next = window.next;
     }
@@ -393,7 +393,7 @@ DestroyWindow :: (window : *Window) {
 /**
  * @brief Convert a point from screen-space to window-space.
  */
-ScreenToWindow :: (window : *Window, point : Vec2f) -> Vec2f {
+ScreenToWindow :: (window: *Window, point: Vec2f) -> Vec2f {
     wx, wy := PlatformGetWindowPosition(window.platform_handle);
 
     return point - Vec2f.{xx wx, xx wy};
@@ -402,7 +402,7 @@ ScreenToWindow :: (window : *Window, point : Vec2f) -> Vec2f {
 /**
  * @brief Convert a rectangle from screen-space to window-space.
  */
-ScreenToWindow :: (window : *Window, rect : Vec4f) -> Vec4f {
+ScreenToWindow :: (window: *Window, rect: Vec4f) -> Vec4f {
     wx, wy := PlatformGetWindowPosition(window.platform_handle);
 
     return .{
@@ -414,7 +414,7 @@ ScreenToWindow :: (window : *Window, rect : Vec4f) -> Vec4f {
 /**
  * @brief Convert a point from window-space to screen-space.
  */
-WindowToScreen :: (window : *Window, point : Vec2f) -> Vec2f {
+WindowToScreen :: (window: *Window, point: Vec2f) -> Vec2f {
     wx, wy := PlatformGetWindowPosition(window.platform_handle);
 
     return point + Vec2f.{xx wx, xx wy};
@@ -423,7 +423,7 @@ WindowToScreen :: (window : *Window, point : Vec2f) -> Vec2f {
 /**
  * @brief Convert a rectangle from window-space to screen-space.
  */
-WindowToScreen :: (window : *Window, rect : Vec4f) -> Vec4f {
+WindowToScreen :: (window: *Window, rect: Vec4f) -> Vec4f {
     wx, wy := PlatformGetWindowPosition(window.platform_handle);
 
     return .{
@@ -435,7 +435,7 @@ WindowToScreen :: (window : *Window, rect : Vec4f) -> Vec4f {
 /**
  * @brief Iterate over the user data attached to the context.
  */
-UserData :: (ctx : *Context, body : Code, flags : For_Flags) #expand {
+UserData :: (ctx: *Context, body: Code, flags: For_Flags) #expand {
     `it := ctx.user_data;
     `it_index := 0;
 
@@ -447,7 +447,7 @@ UserData :: (ctx : *Context, body : Code, flags : For_Flags) #expand {
     }
 }
 
-AddGlobalUserData :: inline ($T : Type) -> *T, is_new : bool, *NodeUserData {
+AddGlobalUserData :: inline ($T: Type) -> *T, is_new: bool, *NodeUserData {
     ptr, is_new, data := GetGlobalUserData(T, true);
     #if #exists(T.Destroy) {
         data.destroy = T.Destroy;
@@ -455,7 +455,7 @@ AddGlobalUserData :: inline ($T : Type) -> *T, is_new : bool, *NodeUserData {
     return ptr, is_new, data;
 }
 
-AddGlobalUserData :: inline (str_id : string, $T : Type) -> *T, is_new : bool, *NodeUserData {
+AddGlobalUserData :: inline (str_id: string, $T: Type) -> *T, is_new: bool, *NodeUserData {
     ptr, is_new, data := GetGlobalUserData(str_id, T, true);
     #if #exists(T.Destroy) {
         data.destroy = T.Destroy;
@@ -463,7 +463,7 @@ AddGlobalUserData :: inline (str_id : string, $T : Type) -> *T, is_new : bool, *
     return ptr, is_new, data;
 }
 
-AddGlobalUserData :: inline (id : ID, $T : Type) -> *T, is_new : bool, *NodeUserData {
+AddGlobalUserData :: inline (id: ID, $T: Type) -> *T, is_new: bool, *NodeUserData {
     ptr, is_new, data := GetGlobalUserData(id, T, true);
     #if #exists(T.Destroy) {
         data.destroy = T.Destroy;
@@ -471,23 +471,23 @@ AddGlobalUserData :: inline (id : ID, $T : Type) -> *T, is_new : bool, *NodeUser
     return ptr, is_new, data;
 }
 
-AddGlobalUserData :: (id : ID, size : int, destroy : type_of(NodeUserData.destroy) = null) -> *void, is_new : bool, *NodeUserData {
+AddGlobalUserData :: (id: ID, size: int, destroy: type_of(NodeUserData.destroy) = null) -> *void, is_new: bool, *NodeUserData {
     ptr, is_new, data := GetGlobalUserData(id, size, true);
     data.destroy = destroy;
     return ptr, is_new, data;
 }
 
-GetGlobalUserData :: inline ($T : Type, create := false) -> *T, is_new : bool, *NodeUserData {
+GetGlobalUserData :: inline ($T: Type, create := false) -> *T, is_new: bool, *NodeUserData {
     ptr, is_new, data := GetGlobalUserData(cast(ID, type_info(T)), T, create);
     return ptr, is_new, data;
 }
 
-GetGlobalUserData :: inline (str_id : string, $T : Type, create := false) -> *T, is_new : bool, *NodeUserData {
+GetGlobalUserData :: inline (str_id: string, $T: Type, create := false) -> *T, is_new: bool, *NodeUserData {
     ptr, is_new, data := GetGlobalUserData(GetID(str_id, false), T, create);
     return ptr, is_new, data;
 }
 
-GetGlobalUserData :: inline (id : ID, $T : Type, create := false) -> *T, is_new : bool, *NodeUserData {
+GetGlobalUserData :: inline (id: ID, $T: Type, create := false) -> *T, is_new: bool, *NodeUserData {
     ptr, is_new, data := GetGlobalUserData(id, size_of(T), create);
     if is_new {
         Initialize(cast(*T, ptr));
@@ -496,7 +496,7 @@ GetGlobalUserData :: inline (id : ID, $T : Type, create := false) -> *T, is_new 
     return xx ptr, is_new, data;
 }
 
-GetGlobalUserData :: (id : ID, size : int, create := false) -> *void, is_new : bool, *NodeUserData {
+GetGlobalUserData :: (id: ID, size: int, create := false) -> *void, is_new: bool, *NodeUserData {
     for :UserData context.omg {
         if it.id == id {
             return cast(*void, it + 1), false, it;
@@ -518,7 +518,7 @@ GetGlobalUserData :: (id : ID, size : int, create := false) -> *void, is_new : b
     return cast(*void, list_node + 1), true, list_node;
 }
 
-Init :: (platform_funcs : PlatformFunctions, renderer_funcs : RendererFunctions) {
+Init :: (platform_funcs: PlatformFunctions, renderer_funcs: RendererFunctions) {
     context.omg = New(Context);
     context.omg.general_purpose_allocator = context.allocator;
     context.omg.node_pool.allocator = context.allocator;
@@ -564,7 +564,7 @@ Terminate :: () {
         free(it ,, context.omg.general_purpose_allocator);
     }
 
-    for * node : context.omg.node_pool {
+    for * node: context.omg.node_pool {
         for :UserData node {
             if it.destroy {
                 it.destroy(node, cast(*void, it + 1));
@@ -586,7 +586,7 @@ Terminate :: () {
     context.omg = null;
 } @Profile
 
-SetMouseFocus :: inline (node : *Node) {
+SetMouseFocus :: inline (node: *Node) {
     if context.omg.mouse_focused_node {
         context.omg.mouse_focused_node.state_flags &= ~.Focused;
     }
@@ -598,19 +598,19 @@ SetMouseFocus :: inline (node : *Node) {
     }
 }
 
-HasMouseFocus :: inline (node : *Node) -> bool {
+HasMouseFocus :: inline (node: *Node) -> bool {
     return context.omg.mouse_focused_node == node;
 }
 
-SetScrollFocus :: inline (node : *Node) {
+SetScrollFocus :: inline (node: *Node) {
     context.omg.scroll_focused_node = node;
 }
 
-SetMouseCapture :: inline (node : *Node) {
+SetMouseCapture :: inline (node: *Node) {
     SetMouseCapture(node, .{});
 }
 
-SetMouseCapture :: inline (node : *Node, node_value : Vec4f) {
+SetMouseCapture :: inline (node: *Node, node_value: Vec4f) {
     if context.omg.mouse_capturing_node != node {
         context.omg.mouse_captured_at = GetMousePosition();
         context.omg.mouse_captured_node_value = node_value;
@@ -620,12 +620,12 @@ SetMouseCapture :: inline (node : *Node, node_value : Vec4f) {
     context.omg.mouse_captured_this_frame = true;
 }
 
-IsCapturingMouse :: inline (node : *Node) -> bool {
+IsCapturingMouse :: inline (node: *Node) -> bool {
     return context.omg.mouse_capturing_node == node;
 }
 
-NewFrame :: (delta_time : float) {
-    FindMouseFocus :: (node : *Node) {
+NewFrame :: (delta_time: float) {
+    FindMouseFocus :: (node: *Node) {
         omg := context.omg;
 
         if node.parent && IsHovered(node) {
@@ -811,7 +811,7 @@ Render :: () {
     omg.total_time_last_frame += xx to_float64_seconds(total_end - total_start);
 } @Profile
 
-LoadImageFromFile :: (filename : string) -> TextureHandle, width : u32, height : u32 {
+LoadImageFromFile :: (filename: string) -> TextureHandle, width: u32, height: u32 {
     contents, ok := read_entire_file(filename);
     if !ok {
         return 0, 0, 0;
@@ -822,8 +822,8 @@ LoadImageFromFile :: (filename : string) -> TextureHandle, width : u32, height :
     return handle, width, height;
 } @Profile
 
-LoadImageFromFileContents :: (filename : string, contents : string) -> TextureHandle, width : u32, height : u32 {
-    w, h : s32;
+LoadImageFromFileContents :: (filename: string, contents: string) -> TextureHandle, width: u32, height: u32 {
+    w, h: s32;
     stbi_set_flip_vertically_on_load(0);
     data := stbi_load_from_memory(contents.data, xx contents.count, *w, *h, null, 4);
     if !data {
@@ -838,7 +838,7 @@ LoadImageFromFileContents :: (filename : string, contents : string) -> TextureHa
     return handle, xx w, xx h;
 } @Profile
 
-EmbedFileContents :: (filename : string, location := #caller_location) -> string {
+EmbedFileContents :: (filename: string, location := #caller_location) -> string {
     #import "File";
     absolute_filename := sprint("%/%", #filepath, filename);
     contents, ok := read_entire_file(absolute_filename);

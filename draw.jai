@@ -9,8 +9,8 @@ TextureHandle :: u64;
  * Rounded clip box. Clipping is done on the GPU in the fragment shader.
  */
 ClipBox :: struct {
-    bounds : Vec4f;
-    corner_radiuses : Vec4f;
+    bounds: Vec4f;
+    corner_radiuses: Vec4f;
 }
 
 /**
@@ -21,22 +21,22 @@ ClipBox :: struct {
  */
 DrawCall :: struct {
     Texture :: struct {
-        handle : TextureHandle;
-        has_white_px : bool;
+        handle: TextureHandle;
+        has_white_px: bool;
     }
 
-    texture : Texture;
-    index_offset : u32;
-    num_indices : u32;
+    texture: Texture;
+    index_offset: u32;
+    num_indices: u32;
 }
 
 Vertex :: struct {
-    position : Vec2f;
-    tex_coords : Vec2f;
-    color : RGBA8;
-    sdf_texture_blur : float;
-    sdf_texture_range : float;
-    clip_box_index : s32;
+    position: Vec2f;
+    tex_coords: Vec2f;
+    color: RGBA8;
+    sdf_texture_blur: float;
+    sdf_texture_range: float;
+    clip_box_index: s32;
 }
 
 /**
@@ -45,16 +45,16 @@ Vertex :: struct {
  * List of vertices, indices, clip boxes and GPU draw calls. Indices must form triangles.
  */
 DrawList :: struct {
-    draw_calls : [..]DrawCall;
-    clip_boxes : [..]ClipBox;
-    clip_box_stack : [..]s32; ///> Indices into the clip_boxes array. The top of the stack is the current clip box.
-    vertices : [..]Vertex;
-    indices : [..]u32;        ///> List of indices into the vertices array. Must form triangles.
-    path : [..]PathPoint;     ///> Local PathPoint array provided for convenience and performance, recycled for each drawing.
+    draw_calls: [..]DrawCall;
+    clip_boxes: [..]ClipBox;
+    clip_box_stack: [..]s32; ///> Indices into the clip_boxes array. The top of the stack is the current clip box.
+    vertices: [..]Vertex;
+    indices: [..]u32;        ///> List of indices into the vertices array. Must form triangles.
+    path: [..]PathPoint;     ///> Local PathPoint array provided for convenience and performance, recycled for each drawing.
     anti_alias_margin := 1.0; ///> Margin used for anti-aliasing. Drawings are anti-aliased with additional polygons at the edges of shapes.
 }
 
-InitDrawList :: (draw_list : *DrawList) {
+InitDrawList :: (draw_list: *DrawList) {
     draw_list.draw_calls.allocator = context.allocator;
     draw_list.clip_boxes.allocator = context.allocator;
     draw_list.clip_box_stack.allocator = context.allocator;
@@ -63,7 +63,7 @@ InitDrawList :: (draw_list : *DrawList) {
     draw_list.path.allocator = context.allocator;
 }
 
-DestroyDrawList :: (draw_list : *DrawList) {
+DestroyDrawList :: (draw_list: *DrawList) {
     array_reset(*draw_list.draw_calls);
     array_reset(*draw_list.clip_boxes);
     array_reset(*draw_list.clip_box_stack);
@@ -73,7 +73,7 @@ DestroyDrawList :: (draw_list : *DrawList) {
     draw_list.* = .{};
 }
 
-ClearDrawList :: (draw_list : *DrawList) {
+ClearDrawList :: (draw_list: *DrawList) {
     array_reset_keeping_memory(*draw_list.draw_calls);
     array_reset_keeping_memory(*draw_list.clip_boxes);
     array_reset_keeping_memory(*draw_list.clip_box_stack);
@@ -82,14 +82,14 @@ ClearDrawList :: (draw_list : *DrawList) {
     array_reset_keeping_memory(*draw_list.path);
 }
 
-GetCurrentDrawCall :: (draw_list : *DrawList) -> *DrawCall {
+GetCurrentDrawCall :: (draw_list: *DrawList) -> *DrawCall {
     if draw_list.draw_calls.count <= 0 {
         return null;
     }
     return *draw_list.draw_calls[draw_list.draw_calls.count - 1];
 }
 
-GetCurrentClipBoxIndex :: (draw_list : *DrawList) -> s32 #no_abc {
+GetCurrentClipBoxIndex :: (draw_list: *DrawList) -> s32 #no_abc {
     if draw_list.clip_box_stack.count <= 0 {
         return -1;
     }
@@ -105,7 +105,7 @@ GetCurrentClipBoxIndex :: (draw_list : *DrawList) -> s32 #no_abc {
  *
  * This is not perfect and can be worked on some more.
  */
-ClipBoxAgainstBox :: (a : ClipBox, b : ClipBox) -> ClipBox {
+ClipBoxAgainstBox :: (a: ClipBox, b: ClipBox) -> ClipBox {
     a_corners := Vec2f.[
         .{a.bounds.x, a.bounds.y},
         .{a.bounds.z, a.bounds.y},
@@ -134,7 +134,7 @@ ClipBoxAgainstBox :: (a : ClipBox, b : ClipBox) -> ClipBox {
 
     clipped_bounds := ClipRect(a.bounds, b.bounds);
 
-    for i : 0..3 {
+    for i: 0..3 {
         b_corner_rect := Vec4f.{
             xy=min(b_corners[i], b_inner_corners[i]),
             zw=max(b_corners[i], b_inner_corners[i])
@@ -151,7 +151,7 @@ ClipBoxAgainstBox :: (a : ClipBox, b : ClipBox) -> ClipBox {
 /**
  * @brief Preallocate a number of vertices.
  */
-ReserveVertices :: (draw_list : *DrawList, count : int) {
+ReserveVertices :: (draw_list: *DrawList, count: int) {
     if draw_list.vertices.count + count <= draw_list.vertices.allocated {
         return;
     }
@@ -165,7 +165,7 @@ ReserveVertices :: (draw_list : *DrawList, count : int) {
  * Push a new vertex into the DrawList. Warning: this can invalidate pointers returned by previous calls to
  * PushVertex. Make sure to reserve enough vertices using ReserveVertices when you need to manipulate multiple consecutive vertices.
  */
-PushVertex :: inline (draw_list : *DrawList) -> *Vertex {
+PushVertex :: inline (draw_list: *DrawList) -> *Vertex {
     vertex := array_add(*draw_list.vertices);
     vertex.clip_box_index = GetCurrentClipBoxIndex(draw_list);
     return vertex;
@@ -174,7 +174,7 @@ PushVertex :: inline (draw_list : *DrawList) -> *Vertex {
 /**
  * @brief Get the index of the last pushed vertex.
  */
-GetCurrentIndex :: inline (draw_list : *DrawList) -> u32 {
+GetCurrentIndex :: inline (draw_list: *DrawList) -> u32 {
     return xx draw_list.vertices.count;
 }
 
@@ -185,7 +185,7 @@ GetCurrentIndex :: inline (draw_list : *DrawList) -> u32 {
  *
  * @see PushIndices
  */
-PushIndex :: inline (draw_list : *DrawList, value : u32) {
+PushIndex :: inline (draw_list: *DrawList, value: u32) {
     draw_call := GetCurrentDrawCall(draw_list);
     if !draw_call {
         draw_call = array_add(*draw_list.draw_calls);
@@ -201,7 +201,7 @@ PushIndex :: inline (draw_list : *DrawList, value : u32) {
  *
  * @returns An array of indices to be modified. Can be invalidated by later calls to PushIndex and PushIndices.
  */
-PushIndices :: (draw_list : *DrawList, count : u32) -> []u32 {
+PushIndices :: (draw_list: *DrawList, count: u32) -> []u32 {
     draw_call := GetCurrentDrawCall(draw_list);
     if !draw_call {
         draw_call = array_add(*draw_list.draw_calls);
@@ -224,7 +224,7 @@ PushIndices :: (draw_list : *DrawList, count : u32) -> []u32 {
  *
  * Push a new clip box index that disables clipping.
  */
-PushDisableClipBox :: inline (draw_list : *DrawList) {
+PushDisableClipBox :: inline (draw_list: *DrawList) {
     array_add(*draw_list.clip_box_stack, -1);
 }
 
@@ -233,7 +233,7 @@ PushDisableClipBox :: inline (draw_list : *DrawList) {
  *
  * @param global If true the new clip box is not clipped against the current clip box and is pushed as-is.
  */
-PushClipBox :: (draw_list : *DrawList, bounds : Vec4f, corner_radiuses : Vec4f = .{}, global := false) {
+PushClipBox :: (draw_list: *DrawList, bounds: Vec4f, corner_radiuses: Vec4f = .{}, global := false) {
     box := array_add(*draw_list.clip_boxes);
     box.bounds = bounds;
     box.corner_radiuses = corner_radiuses;
@@ -252,14 +252,14 @@ PushClipBox :: (draw_list : *DrawList, bounds : Vec4f, corner_radiuses : Vec4f =
 /**
  * @brief Pop the current clip box.
  */
-PopClipBox :: (draw_list : *DrawList) {
+PopClipBox :: (draw_list: *DrawList) {
     pop(*draw_list.clip_box_stack);
 }
 
 /**
  * @brief Test if the rectangle is clipped by the current clip box.
  */
-IsClipped :: (draw_list : *DrawList, bounds : Vec4f) -> bool {
+IsClipped :: (draw_list: *DrawList, bounds: Vec4f) -> bool {
     index := GetCurrentClipBoxIndex(draw_list);
     if index < 0 {
         return false;
@@ -276,8 +276,8 @@ IsClipped :: (draw_list : *DrawList, bounds : Vec4f) -> bool {
  *
  * @returns The new draw call
  */
-PushDrawCall :: (draw_list : *DrawList) -> *DrawCall {
-    new : *DrawCall;
+PushDrawCall :: (draw_list: *DrawList) -> *DrawCall {
+    new: *DrawCall;
     if draw_list.draw_calls.count > 0 {
         current := GetCurrentDrawCall(draw_list).*;
         new = array_add(*draw_list.draw_calls);
@@ -300,7 +300,7 @@ PushDrawCall :: (draw_list : *DrawList) -> *DrawCall {
  *
  * @param has_white_px Does the texture have a white pixel at (0,0) ?
  */
-SetTexture :: (draw_list : *DrawList, texture : TextureHandle, has_white_px : bool = false) -> previous : DrawCall.Texture {
+SetTexture :: (draw_list: *DrawList, texture: TextureHandle, has_white_px: bool = false) -> previous: DrawCall.Texture {
     return SetTexture(draw_list, .{texture, has_white_px});
 }
 
@@ -312,7 +312,7 @@ SetTexture :: (draw_list : *DrawList, texture : TextureHandle, has_white_px : bo
  *
  * @param has_white_px Does the texture have a white pixel at (0,0) ?
  */
-SetTexture :: (draw_list : *DrawList, texture : DrawCall.Texture) -> previous : DrawCall.Texture {
+SetTexture :: (draw_list: *DrawList, texture: DrawCall.Texture) -> previous: DrawCall.Texture {
     draw_call := GetCurrentDrawCall(draw_list);
     previous := ifx draw_call then draw_call.texture;
 
@@ -334,43 +334,43 @@ SetTexture :: (draw_list : *DrawList, texture : DrawCall.Texture) -> previous : 
 }
 
 DrawRect :: inline (
-    draw_list : *DrawList,
-    bounds : Vec4f,
-    color : RGBA8,
-    corner_radiuses : Vec4f = .{0,0,0,0},
-    uv_bounds : Vec4f = .{0,0,0,0},
+    draw_list: *DrawList,
+    bounds: Vec4f,
+    color: RGBA8,
+    corner_radiuses: Vec4f = .{0,0,0,0},
+    uv_bounds: Vec4f = .{0,0,0,0},
     blur_size := 0.0
 ) {
     DrawRect(draw_list, bounds, color, color, color, color, corner_radiuses, uv_bounds, blur_size);
 }
 
 DrawRect :: inline (
-    draw_list : *DrawList,
-    bounds : Vec4f,
-    colors : BoxColors,
-    corner_radiuses : Vec4f = .{0,0,0,0},
-    uv_bounds : Vec4f = .{0,0,0,0},
+    draw_list: *DrawList,
+    bounds: Vec4f,
+    colors: BoxColors,
+    corner_radiuses: Vec4f = .{0,0,0,0},
+    uv_bounds: Vec4f = .{0,0,0,0},
     blur_size := 0.0
 ) {
     DrawRect(draw_list, bounds, colors.top_left, colors.top_right, colors.bottom_left, colors.bottom_right, corner_radiuses, uv_bounds, blur_size);
 }
 
 DrawRect :: (
-    draw_list : *DrawList,
-    bounds : Vec4f,
-    color_top_left : RGBA8,
-    color_top_right : RGBA8,
-    color_bottom_left : RGBA8,
-    color_bottom_right : RGBA8,
-    corner_radiuses : Vec4f = .{0,0,0,0},
-    uv_bounds : Vec4f = .{0,0,0,0},
+    draw_list: *DrawList,
+    bounds: Vec4f,
+    color_top_left: RGBA8,
+    color_top_right: RGBA8,
+    color_bottom_left: RGBA8,
+    color_bottom_right: RGBA8,
+    corner_radiuses: Vec4f = .{0,0,0,0},
+    uv_bounds: Vec4f = .{0,0,0,0},
     blur_size := 0.0
 ) #no_abc {
     // We don't use path + DrawConvexPolygon here because this produces geometry
     // that does not work well with gradients
     // What we do instead is create stacked horizontal strips from top to bottom that follow the rect's outline
 
-    PushVertex :: (draw_list : *DrawList, position : Vec2f) -> *Vertex #expand {
+    PushVertex :: (draw_list: *DrawList, position: Vec2f) -> *Vertex #expand {
         tx := InverseLerp(`bounds.x, `bounds.z, position.x);
         ty := InverseLerp(`bounds.y, `bounds.w, position.y);
         tx = clamp(tx, 0, 1);
@@ -431,7 +431,7 @@ DrawRect :: (
     bottom_right.x -= min(radiuses.w + blur_size * 0.5, max_radius);
     bottom_right.y -= min(radiuses.w + blur_size * 0.5, max_radius);
 
-    PushCornerVertices :: (draw_list : *DrawList, left : Vec2f, right : Vec2f, left_radius : float, right_radius : float, bottom : bool) -> num_segments : int #expand {
+    PushCornerVertices :: (draw_list: *DrawList, left: Vec2f, right: Vec2f, left_radius: float, right_radius: float, bottom: bool) -> num_segments: int #expand {
         #if #exists(context._Tracy) {
             context._Tracy.ZoneScoped("PushCornerVertices");
         }
@@ -456,17 +456,17 @@ DrawRect :: (
             return 0;
         }
 
-        num_segments : int = xx max(
+        num_segments: int = xx max(
             (left_radius * 0.25 + blur_size) * context.omg.global_polygon_resolution,
             (right_radius * 0.25 + blur_size) * context.omg.global_polygon_resolution,
             3
         );
 
         left_dominant := left_radius > right_radius;
-        start_angle : float = ---;
-        dominant_angle_sign : float = ---;
-        dominant_radius, non_dominant_radius : float = ---;
-        dominant_center, non_dominant_center : Vec2f = ---;
+        start_angle: float = ---;
+        dominant_angle_sign: float = ---;
+        dominant_radius, non_dominant_radius: float = ---;
+        dominant_center, non_dominant_center: Vec2f = ---;
         if left_dominant {
             start_angle = ifx bottom then PI else PI * 0.5;
             dominant_angle_sign = 1;
@@ -483,7 +483,7 @@ DrawRect :: (
             non_dominant_center = left;
         }
 
-        for i : 0..num_segments {
+        for i: 0..num_segments {
             #if #exists(context._Tracy) {
                 context._Tracy.ZoneScoped("Iterate");
             }
@@ -493,8 +493,8 @@ DrawRect :: (
             dominant_p := SampleCosSinTable(-angle);
 
             dominant_position := dominant_center + dominant_p * dominant_radius;
-            non_dominant_p : Vec2f = ---;
-            non_dominant_position : Vec2f = ---;
+            non_dominant_p: Vec2f = ---;
+            non_dominant_position: Vec2f = ---;
 
             if non_dominant_radius <= 0 {
                 non_dominant_position = .{
@@ -597,7 +597,7 @@ DrawRect :: (
 
     if num_top_segments > 0 {
         indices := PushIndices(draw_list, cast(u32, num_top_segments) * 18 + 6);
-        for i : 0..cast(u32, num_top_segments - 1) {
+        for i: 0..cast(u32, num_top_segments - 1) {
             outer_left := first_top_vertex + i * 4;
             inner_left := outer_left + 1;
             inner_right := inner_left + 1;
@@ -690,7 +690,7 @@ DrawRect :: (
 
     if num_bottom_segments > 0 {
         indices := PushIndices(draw_list, cast(u32, num_bottom_segments) * 18 + 6);
-        for i : 0..cast(u32, num_bottom_segments - 1) {
+        for i: 0..cast(u32, num_bottom_segments - 1) {
             outer_left := first_bottom_vertex + i * 4;
             inner_left := outer_left + 1;
             inner_right := inner_left + 1;
@@ -745,12 +745,12 @@ DrawRect :: (
 } @Profile
 
 DrawRectOutline :: inline (
-    draw_list : *DrawList,
-    bounds : Vec4f,
-    color : RGBA8,
-    thickness : float,
-    corner_radiuses : Vec4f = .{0,0,0,0},
-    uv_bounds : Vec4f = .{0,0,0,0},
+    draw_list: *DrawList,
+    bounds: Vec4f,
+    color: RGBA8,
+    thickness: float,
+    corner_radiuses: Vec4f = .{0,0,0,0},
+    uv_bounds: Vec4f = .{0,0,0,0},
     blur_size := 0.0,
     blur_sides := LineSides.All
 ) {
@@ -758,12 +758,12 @@ DrawRectOutline :: inline (
 }
 
 DrawRectOutline :: inline (
-    draw_list : *DrawList,
-    bounds : Vec4f,
-    colors : BoxColors,
-    thickness : float,
-    corner_radiuses : Vec4f = .{0,0,0,0},
-    uv_bounds : Vec4f = .{0,0,0,0},
+    draw_list: *DrawList,
+    bounds: Vec4f,
+    colors: BoxColors,
+    thickness: float,
+    corner_radiuses: Vec4f = .{0,0,0,0},
+    uv_bounds: Vec4f = .{0,0,0,0},
     blur_size := 0.0,
     blur_sides := LineSides.All
 ) {
@@ -771,22 +771,22 @@ DrawRectOutline :: inline (
 }
 
 DrawRectOutline :: (
-    draw_list : *DrawList,
-    bounds : Vec4f,
-    color_top_left : RGBA8,
-    color_top_right : RGBA8,
-    color_bottom_left : RGBA8,
-    color_bottom_right : RGBA8,
-    thickness : float,
-    corner_radiuses : Vec4f = .{0,0,0,0},
-    uv_bounds : Vec4f = .{0,0,0,0},
+    draw_list: *DrawList,
+    bounds: Vec4f,
+    color_top_left: RGBA8,
+    color_top_right: RGBA8,
+    color_bottom_left: RGBA8,
+    color_bottom_right: RGBA8,
+    thickness: float,
+    corner_radiuses: Vec4f = .{0,0,0,0},
+    uv_bounds: Vec4f = .{0,0,0,0},
     blur_size := 0.0,
     blur_sides := LineSides.All
 ) {
     // We don't use path + DrawPolygonLine here because this produces geometry
     // that can overlap when a corner radius is smaller than the thickness
 
-    PushVertex :: (draw_list : *DrawList, position : Vec2f) -> *Vertex #expand {
+    PushVertex :: (draw_list: *DrawList, position: Vec2f) -> *Vertex #expand {
         tx := InverseLerp(`bounds.x, `bounds.z, position.x);
         ty := InverseLerp(`bounds.y, `bounds.w, position.y);
         tx = clamp(tx, 0, 1);
@@ -1090,22 +1090,22 @@ DrawRectOutline :: (
 } @Profile
 
 BoxDrawing :: struct {
-    bounds : Vec4f;
-    uv_bounds : Vec4f;
-    corner_radiuses : Vec4f;
-    background_colors : BoxColors;
-    border_colors : BoxColors;
-    border_size : float;
-    border_inset : float;
-    outer_shadow_color : RGBA8;
-    outer_shadow_offset : Vec2f;
-    outer_shadow_size : float;
-    inner_shadow_color : RGBA8;
-    inner_shadow_size : float;
-    clip_box_index : s32;
+    bounds: Vec4f;
+    uv_bounds: Vec4f;
+    corner_radiuses: Vec4f;
+    background_colors: BoxColors;
+    border_colors: BoxColors;
+    border_size: float;
+    border_inset: float;
+    outer_shadow_color: RGBA8;
+    outer_shadow_offset: Vec2f;
+    outer_shadow_size: float;
+    inner_shadow_color: RGBA8;
+    inner_shadow_size: float;
+    clip_box_index: s32;
 }
 
-DrawBox :: inline (draw_list : *DrawList, box : BoxDrawing, texture : TextureHandle = 0) {
+DrawBox :: inline (draw_list: *DrawList, box: BoxDrawing, texture: TextureHandle = 0) {
     // Outer shadow
     DrawRect(
         draw_list,
@@ -1153,10 +1153,10 @@ DrawBox :: inline (draw_list : *DrawList, box : BoxDrawing, texture : TextureHan
 } @Profile
 
 DrawCircle :: (
-    draw_list : *DrawList,
-    center : Vec2f,
-    radius : float,
-    color : RGBA8,
+    draw_list: *DrawList,
+    center: Vec2f,
+    radius: float,
+    color: RGBA8,
     blur_size := 0.0,
 ) {
     if IsClipped(draw_list, Vec4f.{center.x - radius, center.y - radius, center.x + radius, center.y + radius}) {
@@ -1173,11 +1173,11 @@ DrawCircle :: (
 } @Profile
 
 DrawCircleOutline :: (
-    draw_list : *DrawList,
-    center : Vec2f,
-    radius : float,
-    color : RGBA8,
-    thickness : float,
+    draw_list: *DrawList,
+    center: Vec2f,
+    radius: float,
+    color: RGBA8,
+    thickness: float,
     blur_size := 0.0,
     blur_sides := LineSides.All
 ) {
@@ -1195,23 +1195,23 @@ DrawCircleOutline :: (
 } @Profile
 
 DrawLine :: inline (
-    draw_list : *DrawList,
-    start : Vec2f,
-    end : Vec2f,
-    thickness : float,
-    color : RGBA8,
+    draw_list: *DrawList,
+    start: Vec2f,
+    end: Vec2f,
+    thickness: float,
+    color: RGBA8,
     blur_size := 0.0
 ) {
     DrawLine(draw_list, start, end, thickness, color, color, blur_size);
 }
 
 DrawLine :: (
-    draw_list : *DrawList,
-    start : Vec2f,
-    end : Vec2f,
-    thickness : float,
-    start_color : RGBA8,
-    end_color : RGBA8,
+    draw_list: *DrawList,
+    start: Vec2f,
+    end: Vec2f,
+    thickness: float,
+    start_color: RGBA8,
+    end_color: RGBA8,
     blur_size := 0.0
 ) {
     if (start_color & 0xff) == 0 && (end_color & 0xff) == 0 {
@@ -1225,12 +1225,12 @@ DrawLine :: (
     array_add(*draw_list.path, .{start, normal});
     array_add(*draw_list.path, .{end, normal});
 
-    get_color_data : struct {
-        start : RGBA8;
-        end : RGBA8;
+    get_color_data: struct {
+        start: RGBA8;
+        end: RGBA8;
     } = .{start_color, end_color};
 
-    GetColor :: (index : int, data : *void) -> RGBA8 {
+    GetColor :: (index: int, data: *void) -> RGBA8 {
         using _ := cast(*type_of(get_color_data), data);
         return ifx index == 0 then start else end;
     }
@@ -1240,25 +1240,25 @@ DrawLine :: (
 } @Profile
 
 DrawSDFGlyph :: (
-    draw_list : *DrawList,
-    bounds : Vec4f,
-    color : RGBA8,
-    uv_bounds : Vec4f,
-    sdf_range : float,
+    draw_list: *DrawList,
+    bounds: Vec4f,
+    color: RGBA8,
+    uv_bounds: Vec4f,
+    sdf_range: float,
     blur_amount := 0.0
 ) {
     DrawSDFGlyph(draw_list, bounds, color, color, color, color, uv_bounds, sdf_range, blur_amount);
 }
 
 DrawSDFGlyph :: (
-    draw_list : *DrawList,
-    bounds : Vec4f,
-    color_top_left : RGBA8,
-    color_top_right : RGBA8,
-    color_bottom_left : RGBA8,
-    color_bottom_right : RGBA8,
-    uv_bounds : Vec4f,
-    sdf_range : float,
+    draw_list: *DrawList,
+    bounds: Vec4f,
+    color_top_left: RGBA8,
+    color_top_right: RGBA8,
+    color_bottom_left: RGBA8,
+    color_bottom_right: RGBA8,
+    uv_bounds: Vec4f,
+    sdf_range: float,
     blur_amount := 0.0
 ) {
     if IsClipped(draw_list, bounds) {
@@ -1314,13 +1314,13 @@ DrawSDFGlyph :: (
 }
 
 DrawText :: inline (
-    draw_list : *DrawList,
-    font : *Font,
-    position : Vec2f,
-    size : float,
-    text : string,
-    color : RGBA8,
-    effects : TextEffects = 0,
+    draw_list: *DrawList,
+    font: *Font,
+    position: Vec2f,
+    size: float,
+    text: string,
+    color: RGBA8,
+    effects: TextEffects = 0,
     blur_amount := 0.0
 ) {
     DrawWrappedText(
@@ -1337,14 +1337,14 @@ DrawText :: inline (
 }
 
 DrawWrappedText :: (
-    draw_list : *DrawList,
-    font : *Font,
-    position : Vec2f,
-    size : float,
-    text : string,
-    bounds : Vec2f,
-    color : RGBA8,
-    effects : TextEffects = 0,
+    draw_list: *DrawList,
+    font: *Font,
+    position: Vec2f,
+    size: float,
+    text: string,
+    bounds: Vec2f,
+    color: RGBA8,
+    effects: TextEffects = 0,
     blur_amount := 0.0,
     justify := false
 ) {
@@ -1356,7 +1356,7 @@ DrawWrappedText :: (
 
     sdf_range := font.sdf_range * size;
 
-    iter : TextGlyphIterator;
+    iter: TextGlyphIterator;
     iter.font = font;
     iter.font_size = size;
     iter.text = text;
@@ -1409,7 +1409,7 @@ DrawWrappedText :: (
     }
 } @Profile
 
-DrawNodeDefault :: (draw_list : *DrawList, node : *Node) -> bool {
+DrawNodeDefault :: (draw_list: *DrawList, node: *Node) -> bool {
     if IsClipped(draw_list, node.rect) {
         return false;
     }
@@ -1454,7 +1454,7 @@ DrawNodeDefault :: (draw_list : *DrawList, node : *Node) -> bool {
     return true;
 } @Profile
 
-DrawNodes :: (draw_list : *DrawList, node : *Node) {
+DrawNodes :: (draw_list: *DrawList, node: *Node) {
     draw_children := true;
     if node.draw {
         draw_children = node.draw(draw_list, node);
@@ -1486,7 +1486,7 @@ DrawNodes :: (draw_list : *DrawList, node : *Node) {
     }
 } @Profile
 
-DrawCheckerboard :: (draw_list : *DrawList, rect : Vec4f, checker_size : float, white : RGBA8, black : RGBA8) {
+DrawCheckerboard :: (draw_list: *DrawList, rect: Vec4f, checker_size: float, white: RGBA8, black: RGBA8) {
     if (white & 0xff) == 0 && (black & 0xff) == 0 {
         return;
     }
@@ -1514,11 +1514,11 @@ DrawCheckerboard :: (draw_list : *DrawList, rect : Vec4f, checker_size : float, 
 } @Profile
 
 DrawPolygonLine :: inline (
-    draw_list : *DrawList,
-    points : []PathPoint,
-    closed : bool,
-    thickness : float,
-    color : RGBA8,
+    draw_list: *DrawList,
+    points: []PathPoint,
+    closed: bool,
+    thickness: float,
+    color: RGBA8,
     blur_size := 0.0,
     blur_sides := LineSides.All
 ) {
@@ -1537,12 +1537,12 @@ DrawPolygonLine :: inline (
 }
 
 DrawPolygonLine :: (
-    draw_list : *DrawList,
-    points : []PathPoint,
-    closed : bool,
-    thickness : float,
-    color_start : RGBA8,
-    color_end : RGBA8,
+    draw_list: *DrawList,
+    points: []PathPoint,
+    closed: bool,
+    thickness: float,
+    color_start: RGBA8,
+    color_end: RGBA8,
     blur_size := 0.0,
     blur_sides := LineSides.All
 ) {
@@ -1550,13 +1550,13 @@ DrawPolygonLine :: (
         return;
     }
 
-    get_color_data : struct {
-        points : []PathPoint;
-        color_start : RGBA8;
-        color_end : RGBA8;
+    get_color_data: struct {
+        points: []PathPoint;
+        color_start: RGBA8;
+        color_end: RGBA8;
     } = .{points, color_start, color_end};
 
-    GetColor :: (index : int, data : *void) -> RGBA8 {
+    GetColor :: (index: int, data: *void) -> RGBA8 {
         using _ := cast(*type_of(get_color_data), data);
 
         t := index / cast(float, points.count - 1);
@@ -1581,12 +1581,12 @@ LineSides :: enum_flags {
 }
 
 DrawPolygonLine :: (
-    draw_list : *DrawList,
-    points : []PathPoint,
-    closed : bool,
-    thickness : float,
-    $get_color : #type (index : int, data : *void) -> RGBA8,
-    get_color_data : *void,
+    draw_list: *DrawList,
+    points: []PathPoint,
+    closed: bool,
+    thickness: float,
+    $get_color: #type (index: int, data: *void) -> RGBA8,
+    get_color_data: *void,
     blur_size := 0.0,
     blur_sides := LineSides.All
 ) #no_abc {
@@ -1606,7 +1606,7 @@ DrawPolygonLine :: (
 
     first := GetCurrentIndex(draw_list);
 
-    num_indices_per_point : u32;
+    num_indices_per_point: u32;
     if has_middle_part {
         num_indices_per_point += 6;
     }
@@ -1617,7 +1617,7 @@ DrawPolygonLine :: (
         num_indices_per_point += 6;
     }
 
-    num_indices : u32;
+    num_indices: u32;
     if closed {
         num_indices = xx points.count * num_indices_per_point;
     } else {
@@ -1627,7 +1627,7 @@ DrawPolygonLine :: (
     indices := PushIndices(draw_list, xx num_indices);
     indices_index := 0;
 
-    num_vertices_per_point : u32;
+    num_vertices_per_point: u32;
     if has_middle_part {
         num_vertices_per_point += 2;
     } else {
@@ -1645,9 +1645,9 @@ DrawPolygonLine :: (
 
     half_inner_thickness := (thickness - max(blur_size, aa)) * 0.5;
 
-    i0 : u32 = xx (points.count - 1);
-    i1 : u32 = 0;
-    i2 : u32 = 1;
+    i0: u32 = xx (points.count - 1);
+    i1: u32 = 0;
+    i2: u32 = 1;
     while i1 < xx points.count {
         defer {
             i0 = i1;
@@ -1664,7 +1664,7 @@ DrawPolygonLine :: (
 
         p1 := points[i1];
 
-        n : Vec2f = ---;
+        n: Vec2f = ---;
         if p1.normal != .{0,0} {
             n = p1.normal;
         } else if !closed && (i1 == 0 || i1 == points.count - 1) {
@@ -1875,9 +1875,9 @@ DrawPolygonLine :: (
 } @Profile
 
 DrawConvexPolygon :: inline (
-    draw_list : *DrawList,
-    points : []PathPoint,
-    color : RGBA8,
+    draw_list: *DrawList,
+    points: []PathPoint,
+    color: RGBA8,
     blur_size := 0.0
 ) #no_abc {
     if (color & 0xff) == 0 {
@@ -1894,12 +1894,12 @@ DrawConvexPolygon :: inline (
 }
 
 DrawConvexPolygon :: (
-    draw_list : *DrawList,
-    points : []PathPoint,
-    $get_color : (index : int, data : *void) -> RGBA8,
-    get_color_data : *void,
-    $get_tex_coords : (index : int, data : *void) -> Vec2f,
-    get_tex_coords_data : *void,
+    draw_list: *DrawList,
+    points: []PathPoint,
+    $get_color: (index: int, data: *void) -> RGBA8,
+    get_color_data: *void,
+    $get_tex_coords: (index: int, data: *void) -> Vec2f,
+    get_tex_coords_data: *void,
     blur_size := 0.0
 ) #no_abc {
     if points.count < 3 {
@@ -1918,7 +1918,7 @@ DrawConvexPolygon :: (
 
     indices := PushIndices(draw_list, num_indices);
     indices_index := 0;
-    for i : 2..cast(u32, points.count - 1) {
+    for i: 2..cast(u32, points.count - 1) {
         indices[indices_index] = first_inner;
         indices_index += 1;
 
@@ -1936,9 +1936,9 @@ DrawConvexPolygon :: (
 
     ReserveVertices(draw_list, num_vertices);
 
-    i0 : u32 = xx (points.count - 1);
-    i1 : u32 = 0;
-    i2 : u32 = 1;
+    i0: u32 = xx (points.count - 1);
+    i1: u32 = 0;
+    i2: u32 = 1;
     while i1 < points.count {
         defer {
             i0 = i1;
@@ -1953,7 +1953,7 @@ DrawConvexPolygon :: (
 
         p1 := points[i1];
 
-        n : Vec2f = ---;
+        n: Vec2f = ---;
         if p1.normal != .{0,0} {
             n = p1.normal;
         } else {
@@ -2020,11 +2020,11 @@ TriangleSides :: enum_flags {
 }
 
 DrawTriangle :: inline (
-    draw_list : *DrawList,
-    p0 : Vec2f,
-    p1 : Vec2f,
-    p2 : Vec2f,
-    color : RGBA8,
+    draw_list: *DrawList,
+    p0: Vec2f,
+    p1: Vec2f,
+    p2: Vec2f,
+    color: RGBA8,
     // A blur of 1.0 can be used for anti-aliasing
     // For blur to work the points need to be in counter clockwise order
     blur_size := 1.0,
@@ -2034,13 +2034,13 @@ DrawTriangle :: inline (
 }
 
 DrawTriangle :: (
-    draw_list : *DrawList,
-    p0 : Vec2f,
-    p1 : Vec2f,
-    p2 : Vec2f,
-    c0 : RGBA8,
-    c1 : RGBA8,
-    c2 : RGBA8,
+    draw_list: *DrawList,
+    p0: Vec2f,
+    p1: Vec2f,
+    p2: Vec2f,
+    c0: RGBA8,
+    c1: RGBA8,
+    c2: RGBA8,
     // A blur of 1.0 can be used for anti-aliasing
     // For blur to work the points need to be in counter clockwise order
     blur_size := 1.0,
@@ -2054,7 +2054,7 @@ DrawTriangle :: (
     color1_alpha0 := SetAlpha(c1, 0);
     color2_alpha0 := SetAlpha(c2, 0);
 
-    num_indices : u32 = 3;
+    num_indices: u32 = 3;
     if blur_sides & .P0P1 {
         num_indices += 6;
     }
@@ -2065,7 +2065,7 @@ DrawTriangle :: (
         num_indices += 6;
     }
 
-    num_vertices : u32 = 3;
+    num_vertices: u32 = 3;
     has_p0_blur := (blur_sides & .P0P1) != 0 || (blur_sides & .P2P0) != 0;
     has_p1_blur := (blur_sides & .P0P1) != 0 || (blur_sides & .P1P2) != 0;
     has_p2_blur := (blur_sides & .P1P2) != 0 || (blur_sides & .P2P0) != 0;
@@ -2237,12 +2237,12 @@ DrawTriangle :: (
 } @Profile
 
 PathPoint :: struct {
-    position : Vec2f;
-    normal : Vec2f;
+    position: Vec2f;
+    normal: Vec2f;
 }
 
-PathCalcNormals :: (points : []PathPoint, closed : bool) {
-    i0, i1 : u32;
+PathCalcNormals :: (points: []PathPoint, closed: bool) {
+    i0, i1: u32;
     if closed {
         i0 = 0;
         i1 = 1;
@@ -2267,7 +2267,7 @@ PathCalcNormals :: (points : []PathPoint, closed : bool) {
     }
 } @Profile
 
-PathPushRoundedRect :: (points : *[..]PathPoint, bounds : Vec4f, corner_radiuses : Vec4f) {
+PathPushRoundedRect :: (points: *[..]PathPoint, bounds: Vec4f, corner_radiuses: Vec4f) {
     half_size := (bounds.zw - bounds.xy) * 0.5;
     max_radius := min(half_size.x, half_size.y);
     radiuses := Vec4f.{
@@ -2299,12 +2299,12 @@ PathPushRoundedRect :: (points : *[..]PathPoint, bounds : Vec4f, corner_radiuses
     PathPushArc(points, top_left,     radiuses.x,  PI * 0.5, PI * 0.5, use_table=radiuses.x < 200);
 } @Profile
 
-SampleCosSinTable :: (angle : float) -> Vec2f {
+SampleCosSinTable :: (angle: float) -> Vec2f {
     Half_Circle_Points_Count :: 50;
     Half_Circle_Points :: #run () -> [Half_Circle_Points_Count + 1]Vec2f {
-        result : [Half_Circle_Points_Count + 1]Vec2f = ---;
+        result: [Half_Circle_Points_Count + 1]Vec2f = ---;
 
-        for i : 0..Half_Circle_Points_Count {
+        for i: 0..Half_Circle_Points_Count {
             theta := i / cast(float, Half_Circle_Points_Count) * PI * 0.5;
             result[i] = Vec2f.{cos(theta), sin(theta)};
         }
@@ -2349,7 +2349,7 @@ SampleCosSinTable :: (angle : float) -> Vec2f {
     return normalize(p);
 }
 
-PathPushArc :: (points : *[..]PathPoint, center : Vec2f, radius : float, start_angle : float, angle : float, num_segments := 0, use_table := true) {
+PathPushArc :: (points: *[..]PathPoint, center: Vec2f, radius: float, start_angle: float, angle: float, num_segments := 0, use_table := true) {
     if angle < 0 {
         start_angle -= angle;
         angle = -angle;
@@ -2378,13 +2378,13 @@ PathPushArc :: (points : *[..]PathPoint, center : Vec2f, radius : float, start_a
     iterations := ifx connected then num_segments - 1 else num_segments;
 
     if use_table {
-        for i : 0..iterations {
+        for i: 0..iterations {
             theta := i / cast(float, num_segments) * angle;
             p := SampleCosSinTable(-start_angle - theta);
             array_add(points, .{position=center + p * radius, normal=p});
         }
     } else {
-        for i : 0..iterations {
+        for i: 0..iterations {
             theta := i / cast(float, num_segments) * angle;
             p := Vec2f.{cos(-start_angle - theta), sin(-start_angle - theta)};
             array_add(points, .{position=center + p * radius, normal=p});
@@ -2392,7 +2392,7 @@ PathPushArc :: (points : *[..]PathPoint, center : Vec2f, radius : float, start_a
     }
 } @Profile
 
-PathPushBezierQuadratic :: (path : *[..]PathPoint, p0 : Vec2f, p1 : Vec2f, p2 : Vec2f, num_segments := 0) {
+PathPushBezierQuadratic :: (path: *[..]PathPoint, p0: Vec2f, p1: Vec2f, p2: Vec2f, num_segments := 0) {
     if num_segments <= 0 {
         a := Vec2f.{abs(p0.x - p1.x), abs(p0.y - p1.y)};
         b := Vec2f.{abs(p1.x - p2.x), abs(p1.y - p2.y)};
@@ -2401,7 +2401,7 @@ PathPushBezierQuadratic :: (path : *[..]PathPoint, p0 : Vec2f, p1 : Vec2f, p2 : 
         num_segments = xx max(max_dist / 5 * context.omg.global_polygon_resolution, 5);
     }
 
-    for i : 0..num_segments {
+    for i: 0..num_segments {
         t := i / cast(float, num_segments);
 
         point := array_add(path);
@@ -2410,7 +2410,7 @@ PathPushBezierQuadratic :: (path : *[..]PathPoint, p0 : Vec2f, p1 : Vec2f, p2 : 
     }
 } @Profile
 
-PathPushBezierCubic :: (path : *[..]PathPoint, p0 : Vec2f, p1 : Vec2f, p2 : Vec2f, p3 : Vec2f, num_segments := 0) {
+PathPushBezierCubic :: (path: *[..]PathPoint, p0: Vec2f, p1: Vec2f, p2: Vec2f, p3: Vec2f, num_segments := 0) {
     if num_segments <= 0 {
         a := Vec2f.{abs(p0.x - p1.x), abs(p0.y - p1.y)};
         b := Vec2f.{abs(p1.x - p2.x), abs(p1.y - p2.y)};
@@ -2420,7 +2420,7 @@ PathPushBezierCubic :: (path : *[..]PathPoint, p0 : Vec2f, p1 : Vec2f, p2 : Vec2
         num_segments = xx max(max_dist / 5 * context.omg.global_polygon_resolution, 5);
     }
 
-    for i : 0..num_segments {
+    for i: 0..num_segments {
         t := i / cast(float, num_segments);
 
         point := array_add(path);

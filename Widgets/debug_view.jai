@@ -1,30 +1,30 @@
 DebugViewStyle :: struct {
-    gap : s8;
-    properties : struct {
-        padding : Vec4b;
-        background_colors : BoxColors;
-        alternate_background_colors : BoxColors;
+    gap: s8;
+    properties: struct {
+        padding: Vec4b;
+        background_colors: BoxColors;
+        alternate_background_colors: BoxColors;
     };
-    selected_overlay : BoxStyle;
-    hovered_overlay : BoxStyle;
+    selected_overlay: BoxStyle;
+    hovered_overlay: BoxStyle;
 }
 
 DebugViewData :: struct {
-    selected_node_id : ID;
-    hovered_node_id : ID;
+    selected_node_id: ID;
+    hovered_node_id: ID;
 }
 
 #scope_file
 
-FormatNodeIDShort :: inline (id : ID) -> FormatInt {
+FormatNodeIDShort :: inline (id: ID) -> FormatInt {
     return FormatInt.{value=id & 0xffffffff, base=16, minimum_digits=8};
 }
 
-FormatNodeID :: inline (id : ID) -> FormatInt {
+FormatNodeID :: inline (id: ID) -> FormatInt {
     return FormatInt.{value=id, base=16, minimum_digits=16};
 }
 
-FormatSize1D :: (size : Size1D) -> string {
+FormatSize1D :: (size: Size1D) -> string {
     if #complete size.kind == {
     case .Pixels;
         return tprint("% px", size.value);
@@ -37,14 +37,14 @@ FormatSize1D :: (size : Size1D) -> string {
     }
 }
 
-FormatColor :: inline (color : RGBA8) -> string {
+FormatColor :: inline (color: RGBA8) -> string {
     return tprint("#%", FormatInt.{value=color, base=16, minimum_digits=8});
 }
 
 #scope_export
 
-DebugViewNodeTree :: (data : *DebugViewData, parent : *Node) {
-    NodeTree :: (data : *DebugViewData, parent : *Node, node : *Node, name := "") {
+DebugViewNodeTree :: (data: *DebugViewData, parent: *Node) {
+    NodeTree :: (data: *DebugViewData, parent: *Node, node: *Node, name := "") {
         PushID(node.id);
         defer PopID();
 
@@ -91,7 +91,7 @@ DebugViewNodeTree :: (data : *DebugViewData, parent : *Node) {
     }
 }
 
-DebugViewProperty :: (parent : *Node, alternate : *bool, label : string, fmt_str : string, args : ..Any, style : *DebugViewStyle = null, location := #caller_location) {
+DebugViewProperty :: (parent: *Node, alternate: *bool, label: string, fmt_str: string, args: ..Any, style: *DebugViewStyle = null, location := #caller_location) {
     label_and_content_style := GetStyle("label_and_content", LabelAndContentStyle).*;
     label_and_content_style.padding = style.properties.padding;
 
@@ -106,7 +106,7 @@ DebugViewProperty :: (parent : *Node, alternate : *bool, label : string, fmt_str
     Text(content, fmt_str, ..args);
 }
 
-DebugViewNodeProperties :: (data : *DebugViewData, parent : *Node, style : *DebugViewStyle) {
+DebugViewNodeProperties :: (data: *DebugViewData, parent: *Node, style: *DebugViewStyle) {
     if data.selected_node_id == 0 {
         container := GetNode(parent);
         SetSize(container, SizeFill(), SizeFill());
@@ -166,7 +166,7 @@ DebugViewNodeProperties :: (data : *DebugViewData, parent : *Node, style : *Debu
     DebugViewProperty(parent, *alternate, "Text", "%, %", FormatColor(selected_node.text_color), selected_node.text_effects, style=style);
 }
 
-DebugViewOverlay :: (data : *DebugViewData, style : *DebugViewStyle) {
+DebugViewOverlay :: (data: *DebugViewData, style: *DebugViewStyle) {
     selected_node := GetNodeByGlobalID(data.selected_node_id);
     if selected_node {
         overlay := GetPopupNode(selected_node.window);
@@ -194,7 +194,7 @@ DebugViewOverlay :: (data : *DebugViewData, style : *DebugViewStyle) {
     }
 }
 
-DebugView :: (parent : *Node, style : *DebugViewStyle = null, location := #caller_location) {
+DebugView :: (parent: *Node, style: *DebugViewStyle = null, location := #caller_location) {
     EnsureStyle(*style, "debug_view");
 
     parent = GetNode(parent, location);
@@ -217,7 +217,7 @@ DebugView :: (parent : *Node, style : *DebugViewStyle = null, location := #calle
     DebugViewOverlay(data, style);
 }
 
-DebugViewWindow :: (window : *Window, str_id : string, opened : *bool, style : *DebugViewStyle = null) {
+DebugViewWindow :: (window: *Window, str_id: string, opened: *bool, style: *DebugViewStyle = null) {
     subwindow := Subwindow(window, "Debug View", str_id, opened, initial_size=.{600,400});
     if !subwindow {
         return;

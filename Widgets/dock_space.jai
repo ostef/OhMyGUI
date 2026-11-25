@@ -13,34 +13,34 @@ DockNodeSplit :: enum u8 {
 }
 
 DockNode :: struct {
-    parent : *DockNode;
-    children : [2]*DockNode;
-    docked_subwindows : [..]ID;
-    split_dir : DockNodeSplitDirection;
+    parent: *DockNode;
+    children: [2]*DockNode;
+    docked_subwindows: [..]ID;
+    split_dir: DockNodeSplitDirection;
     fill_ratio := 0.5;
 
     // Was this node created by a window being docked?
     // If that's the case we want to remove the node when it becomes empty, otherwise it should stay empty
-    created_by_docking : bool;
-    split_request : DockNodeSplit;
-    split_dock_requests : [..]ID;
+    created_by_docking: bool;
+    split_request: DockNodeSplit;
+    split_dock_requests: [..]ID;
 
-    show_split_hints : bool;
-    show_target_split : bool;
-    target_split : DockNodeSplit;
+    show_split_hints: bool;
+    show_target_split: bool;
+    target_split: DockNodeSplit;
 
-    node : *Node;
-    tab_bar : *Node;
-    split_hints : struct {
-        left : *Node;
-        right : *Node;
-        top : *Node;
-        bottom : *Node;
-        center : *Node;
+    node: *Node;
+    tab_bar: *Node;
+    split_hints: struct {
+        left: *Node;
+        right: *Node;
+        top: *Node;
+        bottom: *Node;
+        center: *Node;
     };
 }
 
-CreateDockNode :: (parent : *DockNode) -> *DockNode {
+CreateDockNode :: (parent: *DockNode) -> *DockNode {
     node := New(DockNode ,, context.omg.general_purpose_allocator);
     node.parent = parent;
     node.docked_subwindows.allocator = context.omg.general_purpose_allocator;
@@ -49,14 +49,14 @@ CreateDockNode :: (parent : *DockNode) -> *DockNode {
     return node;
 }
 
-FreeDockNode :: (node : *DockNode) {
+FreeDockNode :: (node: *DockNode) {
     array_reset(*node.docked_subwindows);
     array_reset(*node.split_dock_requests);
     free(node ,, context.omg.general_purpose_allocator);
 }
 
 ProcessDockNodeSplitRequests :: () {
-    ProcessRequest :: (dock_node : *DockNode) {
+    ProcessRequest :: (dock_node: *DockNode) {
         if dock_node.split_request != .None {
             split := SplitDockNode(dock_node, dock_node.split_request);
             if split {
@@ -86,7 +86,7 @@ ProcessDockNodeSplitRequests :: () {
 }
 
 RemoveEmptyDockNodes :: () {
-    RemoveEmptyDockNodes :: (dock_node : *DockNode) -> bool {
+    RemoveEmptyDockNodes :: (dock_node: *DockNode) -> bool {
         assert(dock_node != null);
 
         while dock_node.split_dir != .None {
@@ -134,11 +134,11 @@ RemoveEmptyDockNodes :: () {
     }
 }
 
-DockSubwindow :: inline (node : *DockNode, subwindow_str_id : string, split : DockNodeSplit = .None) -> bool {
+DockSubwindow :: inline (node: *DockNode, subwindow_str_id: string, split: DockNodeSplit = .None) -> bool {
     return DockSubwindow(node, GetID(subwindow_str_id), split);
 }
 
-DockSubwindow :: (node : *DockNode, subwindow_id : ID, split : DockNodeSplit = .None) -> bool {
+DockSubwindow :: (node: *DockNode, subwindow_id: ID, split: DockNodeSplit = .None) -> bool {
     if node.split_dir != .None {
         return false;
     }
@@ -155,11 +155,11 @@ DockSubwindow :: (node : *DockNode, subwindow_id : ID, split : DockNodeSplit = .
     return true;
 }
 
-UndockSubwindow :: (node : *DockNode, subwindow_id : ID) -> bool {
+UndockSubwindow :: (node: *DockNode, subwindow_id: ID) -> bool {
     return array_ordered_remove_by_value(*node.docked_subwindows, subwindow_id);
 }
 
-SplitDockNode :: (node : *DockNode, split : DockNodeSplit) -> *DockNode {
+SplitDockNode :: (node: *DockNode, split: DockNodeSplit) -> *DockNode {
     if split == .None {
         return node;
     }
@@ -187,7 +187,7 @@ SplitDockNode :: (node : *DockNode, split : DockNodeSplit) -> *DockNode {
     return split_node;
 }
 
-RemoveDockNode :: (node : *DockNode) -> bool {
+RemoveDockNode :: (node: *DockNode) -> bool {
     if !node.parent {
         return false;
     }
@@ -203,7 +203,7 @@ RemoveDockNode :: (node : *DockNode) -> bool {
     return true;
 }
 
-MergeDockNode :: (parent : *DockNode, child_index : int) -> bool {
+MergeDockNode :: (parent: *DockNode, child_index: int) -> bool {
     if parent.split_dir == .None {
         return false;
     }
@@ -226,12 +226,12 @@ MergeDockNode :: (parent : *DockNode, child_index : int) -> bool {
 }
 
 GlobalDockSpaceData :: struct {
-    root_dock_nodes : HT.Table(ID, *DockNode);
+    root_dock_nodes: HT.Table(ID, *DockNode);
 
-    Destroy :: (_ : *Node, data : *void) {
+    Destroy :: (_: *Node, data: *void) {
         using _ := cast(*GlobalDockSpaceData, data);
 
-        FreeNodeTree :: (dock_node : *DockNode) {
+        FreeNodeTree :: (dock_node: *DockNode) {
             if !dock_node {
                 return;
             }
@@ -251,14 +251,14 @@ GlobalDockSpaceData :: struct {
     }
 }
 
-GetSubwindowDockNode :: inline (subwindow_str_id : string) -> content : *Node, dock_node : *DockNode {
+GetSubwindowDockNode :: inline (subwindow_str_id: string) -> content: *Node, dock_node: *DockNode {
     content, dock_node := GetSubwindowDockNode(GetID(subwindow_str_id));
     return content, dock_node;
 }
 
 // @Todo: make this a simple hash map lookup
-GetSubwindowDockNode :: (subwindow_id : ID) -> content : *Node, dock_node : *DockNode {
-    FindSubwindowDockNode :: (dock_node : *DockNode, subwindow_id : ID) -> *DockNode {
+GetSubwindowDockNode :: (subwindow_id: ID) -> content: *Node, dock_node: *DockNode {
+    FindSubwindowDockNode :: (dock_node: *DockNode, subwindow_id: ID) -> *DockNode {
         if dock_node.split_dir == .None {
             for dock_node.docked_subwindows {
                 if it == subwindow_id {
@@ -293,18 +293,18 @@ GetSubwindowDockNode :: (subwindow_id : ID) -> content : *Node, dock_node : *Doc
 }
 
 DockSpaceStyle :: struct {
-    tab_bar : BoxStyle;
-    tab : ButtonStyle;
+    tab_bar: BoxStyle;
+    tab: ButtonStyle;
 
-    resize_handle : StateStyle(BoxStyle);
+    resize_handle: StateStyle(BoxStyle);
     resize_handle_size := 5.0;
 
-    background : BoxStyle;
-    target_split : BoxStyle;
-    split_hint : BoxStyle;
+    background: BoxStyle;
+    target_split: BoxStyle;
+    split_hint: BoxStyle;
 }
 
-DockSpace :: (parent : *Node, str_id : string, style : *DockSpaceStyle = null) -> *Node, *DockNode {
+DockSpace :: (parent: *Node, str_id: string, style: *DockSpaceStyle = null) -> *Node, *DockNode {
     global := AddGlobalUserData(GlobalDockSpaceData);
     id := GetID(str_id);
     dock_node_ptr := HT.find_or_add(*global.root_dock_nodes, id);
@@ -318,7 +318,7 @@ DockSpace :: (parent : *Node, str_id : string, style : *DockSpaceStyle = null) -
     return DockSpace(parent, id, dock_node, style), dock_node;
 }
 
-DockSpace :: (parent : *Node, id : ID, dock_node : *DockNode, style : *DockSpaceStyle = null) -> *Node {
+DockSpace :: (parent: *Node, id: ID, dock_node: *DockNode, style: *DockSpaceStyle = null) -> *Node {
     EnsureStyle(*style, "dock_space");
 
     defer {
@@ -349,7 +349,7 @@ DockSpace :: (parent : *Node, id : ID, dock_node : *DockNode, style : *DockSpace
         dock_node.tab_bar = null;
         dock_node.split_hints = .{};
 
-        ResizeHandle :: (node : *Node, dock_node : *DockNode, axis : Axis, style : *DockSpaceStyle) -> *Node {
+        ResizeHandle :: (node: *Node, dock_node: *DockNode, axis: Axis, style: *DockSpaceStyle) -> *Node {
             cross := GetCrossAxis(axis);
 
             resize_handle := GetNode(node, "resize_handle");
@@ -491,8 +491,8 @@ DockSpace :: (parent : *Node, id : ID, dock_node : *DockNode, style : *DockSpace
     return node;
 }
 
-GetHoveredDockSpaceAndSplit :: () -> *DockNode, is_hovering_split : bool, DockNodeSplit {
-    FindHoveredDockSpaceAndSplit :: (dock_node : *DockNode, mouse_position : Vec2f) -> *DockNode, bool, DockNodeSplit {
+GetHoveredDockSpaceAndSplit :: () -> *DockNode, is_hovering_split: bool, DockNodeSplit {
+    FindHoveredDockSpaceAndSplit :: (dock_node: *DockNode, mouse_position: Vec2f) -> *DockNode, bool, DockNodeSplit {
         if dock_node.split_dir == .None {
             if IsHovered(dock_node.split_hints.left) {
                 return dock_node, true, .Left;

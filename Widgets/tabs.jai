@@ -2,9 +2,9 @@
 // @Todo: close tabs
 
 GlobalTabBarData :: struct {
-    tab_bars : HT.Table(ID, *TabBarData);
+    tab_bars: HT.Table(ID, *TabBarData);
 
-    Destroy :: (node : *Node, data : *void) {
+    Destroy :: (node: *Node, data: *void) {
         using _ := cast(*GlobalTabBarData, data);
         for tab_bars {
             free(it ,, context.omg.general_purpose_allocator);
@@ -14,7 +14,7 @@ GlobalTabBarData :: struct {
     }
 }
 
-GetTabBarData :: (id : ID) -> *TabBarData {
+GetTabBarData :: (id: ID) -> *TabBarData {
     global := AddGlobalUserData(GlobalTabBarData);
     if !global.tab_bars.allocator.proc {
         global.tab_bars.allocator = context.omg.general_purpose_allocator;
@@ -29,8 +29,8 @@ GetTabBarData :: (id : ID) -> *TabBarData {
 }
 
 TabBarData :: struct {
-    active_tab : ID;
-    next_active_tab : ID;
+    active_tab: ID;
+    next_active_tab: ID;
 }
 
 /**
@@ -38,7 +38,7 @@ TabBarData :: struct {
  *
  * @see Tab
  */
-TabBar :: inline (parent : *Node, str_id : string, style : *BoxStyle = null) -> *Node {
+TabBar :: inline (parent: *Node, str_id: string, style: *BoxStyle = null) -> *Node {
     return TabBar(parent, GetID(str_id), style);
 }
 
@@ -47,7 +47,7 @@ TabBar :: inline (parent : *Node, str_id : string, style : *BoxStyle = null) -> 
  *
  * @see Tab
  */
-TabBar :: inline (parent : *Node, style : *BoxStyle = null, location := #caller_location) -> *Node {
+TabBar :: inline (parent: *Node, style: *BoxStyle = null, location := #caller_location) -> *Node {
     return TabBar(parent, GetID(location), style);
 }
 
@@ -56,7 +56,7 @@ TabBar :: inline (parent : *Node, style : *BoxStyle = null, location := #caller_
  *
  * @see Tab
  */
-TabBar :: (parent : *Node, local_id : ID, style : *BoxStyle = null) -> *Node {
+TabBar :: (parent: *Node, local_id: ID, style: *BoxStyle = null) -> *Node {
     EnsureStyle(*style, "tab_bar");
 
     node := GetNode(parent, local_id);
@@ -79,7 +79,7 @@ TabBar :: (parent : *Node, local_id : ID, style : *BoxStyle = null) -> *Node {
  *
  * @see TabBar
  */
-Tab :: (parent : *Node, label : string, str_id : string, style : *ButtonStyle = null) -> bool, *Node {
+Tab :: (parent: *Node, label: string, str_id: string, style: *ButtonStyle = null) -> bool, *Node {
     EnsureStyle(*style, "tab");
 
     node, is_new := GetNode(parent, str_id);

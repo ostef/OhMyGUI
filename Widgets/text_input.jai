@@ -6,23 +6,23 @@ TextInputEdit :: struct {
         BatchEnd;
     }
 
-    cursor : s32;
-    edit_buffer_offset : s32;
-    length : s32;
-    kind : Kind;
+    cursor: s32;
+    edit_buffer_offset: s32;
+    length: s32;
+    kind: Kind;
 }
 
 TextInputData :: struct {
-    buffer : [..]u32;
-    selection : s32;
-    cursor : s32;
-    cursor_blink_time : float;
+    buffer: [..]u32;
+    selection: s32;
+    cursor: s32;
+    cursor_blink_time: float;
 
-    edit_history : [..]TextInputEdit;
-    edit_buffer : [..]u32;
+    edit_history: [..]TextInputEdit;
+    edit_buffer: [..]u32;
     edit_history_cursor := -1;
 
-    Destroy :: (node : *Node, data : *void) {
+    Destroy :: (node: *Node, data: *void) {
         using _ := cast(*TextInputData, data);
         array_reset(*buffer);
         array_reset(*edit_buffer);
@@ -30,7 +30,7 @@ TextInputData :: struct {
     }
 }
 
-ClearTextInputData :: (data : *TextInputData) {
+ClearTextInputData :: (data: *TextInputData) {
     data.selection = 0;
     data.cursor = 0;
     array_reset_keeping_memory(*data.edit_history);
@@ -40,7 +40,7 @@ ClearTextInputData :: (data : *TextInputData) {
     array_reset_keeping_memory(*data.buffer);
 }
 
-SetTextInputResult :: (node : *Node, str : string) {
+SetTextInputResult :: (node: *Node, str: string) {
     data := GetUserData(node, TextInputData);
     if !data {
         return;
@@ -56,7 +56,7 @@ SetTextInputResult :: (node : *Node, str : string) {
     SetText(GetNode(node, "text"), str);
 }
 
-GetTextInputResultUtf32 :: (node : *Node) -> []u32 {
+GetTextInputResultUtf32 :: (node: *Node) -> []u32 {
     data := GetUserData(node, TextInputData);
     if !data {
         return .[];
@@ -65,7 +65,7 @@ GetTextInputResultUtf32 :: (node : *Node) -> []u32 {
     return array_copy(data.buffer);
 }
 
-GetTextInputResult :: (node : *Node) -> string {
+GetTextInputResult :: (node: *Node) -> string {
     data := GetUserData(node, TextInputData);
     if !data {
         return "";
@@ -74,7 +74,7 @@ GetTextInputResult :: (node : *Node) -> string {
     return EncodeStringAsUtf8(data.buffer);
 }
 
-PushEdit :: (input : *TextInputData, kind : TextInputEdit.Kind, cursor : s32, length : s32) -> *TextInputEdit {
+PushEdit :: (input: *TextInputData, kind: TextInputEdit.Kind, cursor: s32, length: s32) -> *TextInputEdit {
     while input.edit_history.count > 0 && input.edit_history.count > input.edit_history_cursor {
         PopEdit(input);
     }
@@ -90,11 +90,11 @@ PushEdit :: (input : *TextInputData, kind : TextInputEdit.Kind, cursor : s32, le
     return edit;
 }
 
-PushEdit :: (input : *TextInputData, kind : TextInputEdit.Kind) -> *TextInputEdit {
+PushEdit :: (input: *TextInputData, kind: TextInputEdit.Kind) -> *TextInputEdit {
     return PushEdit(input, kind, 0, 0);
 }
 
-PushEdit :: (input : *TextInputData, kind : TextInputEdit.Kind, cursor : s32, text : $T) -> *TextInputEdit {
+PushEdit :: (input: *TextInputData, kind: TextInputEdit.Kind, cursor: s32, text: $T) -> *TextInputEdit {
     edit := PushEdit(input, kind, cursor, xx text.count);
     for text {
         array_add(*input.edit_buffer, it);
@@ -109,7 +109,7 @@ PushEdit :: (input : *TextInputData, kind : TextInputEdit.Kind, cursor : s32, te
     return edit;
 }
 
-PopEdit :: (input : *TextInputData) {
+PopEdit :: (input: *TextInputData) {
     edit := *input.edit_history[input.edit_history.count - 1];
     input.edit_buffer.count = max(edit.edit_buffer_offset, 0);
 
@@ -118,15 +118,15 @@ PopEdit :: (input : *TextInputData) {
     input.edit_history_cursor = min(input.edit_history_cursor, input.edit_history.count);
 }
 
-GetEditText :: (input : *TextInputData, edit : TextInputEdit) -> []u32 {
-    text : []u32;
+GetEditText :: (input: *TextInputData, edit: TextInputEdit) -> []u32 {
+    text: []u32;
     text.data = input.edit_buffer.data + clamp(edit.edit_buffer_offset, 0, xx input.edit_buffer.count);
     text.count = min(input.edit_buffer.count - edit.edit_buffer_offset, xx edit.length);
 
     return text;
 }
 
-Undo :: (input : *TextInputData) -> bool {
+Undo :: (input: *TextInputData) -> bool {
     if input.edit_history_cursor <= 0 || input.edit_history_cursor > input.edit_history.count {
         return false;
     }
@@ -138,7 +138,7 @@ Undo :: (input : *TextInputData) -> bool {
     case .Insert;
         SetCursor(input, edit.cursor);
 
-        for i : 0..edit.length - 1 {
+        for i: 0..edit.length - 1 {
             if !Delete(input, push_edit=false) {
                 break;
             }
@@ -165,7 +165,7 @@ Undo :: (input : *TextInputData) -> bool {
     return true;
 }
 
-Redo :: (input : *TextInputData) -> bool {
+Redo :: (input: *TextInputData) -> bool {
     if input.edit_history_cursor < 0 || input.edit_history_cursor >= input.edit_history.count {
         return false;
     }
@@ -181,7 +181,7 @@ Redo :: (input : *TextInputData) -> bool {
     case .Delete;
         SetCursor(input, edit.cursor);
 
-        for i : 0..edit.length - 1 {
+        for i: 0..edit.length - 1 {
             if !Delete(input, push_edit=false) {
                 break;
             }
@@ -204,19 +204,19 @@ Redo :: (input : *TextInputData) -> bool {
     return true;
 }
 
-Activate :: (input : *TextInputData) {
+Activate :: (input: *TextInputData) {
     input.cursor_blink_time = 0;
     input.cursor = xx input.buffer.count;
     input.selection = 0;
 }
 
-SelectAll :: (input : *TextInputData) {
+SelectAll :: (input: *TextInputData) {
     input.cursor_blink_time = 0;
     input.cursor = xx input.buffer.count;
     input.selection = -input.cursor;
 }
 
-Insert :: (input : *TextInputData, str : $T, push_edit := true) {
+Insert :: (input: *TextInputData, str: $T, push_edit := true) {
     input.cursor_blink_time = 0;
 
     pushed_batch := false;
@@ -249,7 +249,7 @@ Insert :: (input : *TextInputData, str : $T, push_edit := true) {
     }
 }
 
-BackspaceWord :: (input : *TextInputData) -> bool {
+BackspaceWord :: (input: *TextInputData) -> bool {
     input.cursor_blink_time = 0;
 
     if input.selection != 0 {
@@ -263,7 +263,7 @@ BackspaceWord :: (input : *TextInputData) -> bool {
     return Delete(input);
 }
 
-Backspace :: (input : *TextInputData) -> bool {
+Backspace :: (input: *TextInputData) -> bool {
     if input.selection != 0 {
         return Delete(input);
     }
@@ -275,12 +275,12 @@ Backspace :: (input : *TextInputData) -> bool {
     return Delete(input);
 }
 
-Delete :: (input : *TextInputData, push_edit := true) -> bool {
+Delete :: (input: *TextInputData, push_edit := true) -> bool {
     if input.selection != 0 {
         if push_edit {
             start := min(input.cursor, input.cursor + input.selection);
             end := max(input.cursor, input.cursor + input.selection);
-            text : []u32 = .{data=input.buffer.data + start, count=end - start};
+            text: []u32 = .{data=input.buffer.data + start, count=end - start};
             PushEdit(input, .Delete, start, text);
         }
 
@@ -310,7 +310,7 @@ Delete :: (input : *TextInputData, push_edit := true) -> bool {
     return true;
 }
 
-DeleteWord :: (input : *TextInputData) -> bool {
+DeleteWord :: (input: *TextInputData) -> bool {
     input.cursor_blink_time = 0;
 
     if input.selection != 0 {
@@ -324,7 +324,7 @@ DeleteWord :: (input : *TextInputData) -> bool {
     return Delete(input);
 }
 
-MoveCursorLeftByWord :: (input : *TextInputData, select := false) -> bool {
+MoveCursorLeftByWord :: (input: *TextInputData, select := false) -> bool {
     input.cursor_blink_time = 0;
 
     if !MoveCursorLeft(input, select) {
@@ -339,7 +339,7 @@ MoveCursorLeftByWord :: (input : *TextInputData, select := false) -> bool {
     return true;
 }
 
-MoveCursorRightByWord :: (input : *TextInputData, select := false) -> bool {
+MoveCursorRightByWord :: (input: *TextInputData, select := false) -> bool {
     input.cursor_blink_time = 0;
 
     start_char := ifx input.cursor < input.buffer.count then input.buffer[input.cursor];
@@ -354,7 +354,7 @@ MoveCursorRightByWord :: (input : *TextInputData, select := false) -> bool {
     return true;
 }
 
-MoveCursorLeft :: (input : *TextInputData, select := false) -> bool {
+MoveCursorLeft :: (input: *TextInputData, select := false) -> bool {
     input.cursor_blink_time = 0;
 
     if !select {
@@ -377,7 +377,7 @@ MoveCursorLeft :: (input : *TextInputData, select := false) -> bool {
     return true;
 }
 
-MoveCursorRight :: (input : *TextInputData, select := false) -> bool {
+MoveCursorRight :: (input: *TextInputData, select := false) -> bool {
     input.cursor_blink_time = 0;
 
     if !select {
@@ -400,7 +400,7 @@ MoveCursorRight :: (input : *TextInputData, select := false) -> bool {
     return true;
 }
 
-SetCursor :: (input : *TextInputData, cursor : s32, select := false) {
+SetCursor :: (input: *TextInputData, cursor: s32, select := false) {
     input.cursor_blink_time = 0;
 
     selection_end := input.cursor + input.selection;
@@ -421,7 +421,7 @@ SetCursor :: (input : *TextInputData, cursor : s32, select := false) {
  *
  * @see TextInputMouseSelectionBehavior
  */
-TextInputBehavior :: (node : *Node, activate_on : enum { Press; Release; } = .Press) -> *TextInputData, submitted : bool, ButtonResult {
+TextInputBehavior :: (node: *Node, activate_on: enum { Press; Release; } = .Press) -> *TextInputData, submitted: bool, ButtonResult {
     input, is_new := AddUserData(node, TextInputData);
     if is_new {
         input.buffer.allocator = context.omg.general_purpose_allocator;
@@ -508,7 +508,7 @@ TextInputBehavior :: (node : *Node, activate_on : enum { Press; Release; } = .Pr
             start := min(input.cursor, input.cursor + input.selection);
             end   := max(input.cursor, input.cursor + input.selection);
 
-            utf32 : []u32;
+            utf32: []u32;
             utf32.data = input.buffer.data + start;
             utf32.count = end - start;
 
@@ -537,9 +537,9 @@ TextInputBehavior :: (node : *Node, activate_on : enum { Press; Release; } = .Pr
  *
  * @see TextInputBehavior
  */
-TextInputMouseSelectionBehavior :: (node : *Node, text_node : *Node, input : *TextInputData, allow_select : bool) {
+TextInputMouseSelectionBehavior :: (node: *Node, text_node: *Node, input: *TextInputData, allow_select: bool) {
     if node.state_flags & .Active {
-        cursor_position : Vec2f;
+        cursor_position: Vec2f;
 
         is_selecting := IsCapturingMouse(node);
         mouse := GetMousePosition(node.window);
@@ -550,7 +550,7 @@ TextInputMouseSelectionBehavior :: (node : *Node, text_node : *Node, input : *Te
 
         iter := IterText(text_node);
         for iter {
-            glyph_rect : Vec4f;
+            glyph_rect: Vec4f;
             glyph_rect.xy = text_node.rect.xy + iter.pen - Vec2f.{0, iter.font.ascent * iter.font_size};
             glyph_rect.zw = glyph_rect.xy + Vec2f.{it.hori_advance, iter.font.ascent + iter.font.descent} * iter.font_size;
 
@@ -590,19 +590,19 @@ TextInputMouseSelectionBehavior :: (node : *Node, text_node : *Node, input : *Te
 }
 
 TextInputStateStyle :: struct {
-    background : BoxStyle;
-    text : TextStyle;
-    cursor : PlatformCursorHandle;
+    background: BoxStyle;
+    text: TextStyle;
+    cursor: PlatformCursorHandle;
 }
 
 TextInputStyle :: struct {
-    using _ : StateStyle(TextInputStateStyle);
-    cursor : BoxStyle;
-    selection : BoxStyle;
-    password_codepoint : u32 = #char "*";
+    using _: StateStyle(TextInputStateStyle);
+    cursor: BoxStyle;
+    selection: BoxStyle;
+    password_codepoint: u32 = #char "*";
 }
 
-SetColors :: (using style : *TextInputStyle, base_background_color : RGBA8, accent_color : RGBA8) {
+SetColors :: (using style: *TextInputStyle, base_background_color: RGBA8, accent_color: RGBA8) {
     text_color := ChooseTextColor(base_background_color);
 
     normal.text.text_color = text_color;
@@ -628,7 +628,7 @@ SetColors :: (using style : *TextInputStyle, base_background_color : RGBA8, acce
  *
  * Draw the text for a text input with selection and cursor.
  */
-DrawTextInputText :: (draw_list : *DrawList, node : *Node) -> bool {
+DrawTextInputText :: (draw_list: *DrawList, node: *Node) -> bool {
     if IsClipped(draw_list, node.rect) {
         return false;
     }
@@ -738,7 +738,7 @@ TextInputFlags :: enum_flags {
     ActivateOnReleased;
 }
 
-ParseIntInput :: (str : string, $T : Type) -> bool, T {
+ParseIntInput :: (str: string, $T: Type) -> bool, T {
     _s := str;
     base := 10;
     if begins_with(_s, "0x") {
@@ -759,26 +759,26 @@ NumberInputFlags :: enum_flags {
  * @brief Float text input widget.
  */
 FloatInput :: (
-    parent : *Node,
-    value : *$T/.[float32, float64],
-    min : T, max : T, step : T,
+    parent: *Node,
+    value: *$T/.[float32, float64],
+    min: T, max: T, step: T,
     trailing_digits := 3,
-    flags : NumberInputFlags = 0,
-    style : *TextInputStyle = null,
+    flags: NumberInputFlags = 0,
+    style: *TextInputStyle = null,
     location := #caller_location
-) -> submitted : bool, *Node {
-    user : struct {
-        trailing_digits : int;
+) -> submitted: bool, *Node {
+    user: struct {
+        trailing_digits: int;
     } = .{trailing_digits};
 
-    FromString :: (str : string, node : *Node, user_data : *void) -> bool, T {
+    FromString :: (str: string, node: *Node, user_data: *void) -> bool, T {
         using _ := cast(*type_of(user), user_data);
 
         v, ok, remainder := string_to_float64(str);
         return ok && remainder.count == 0, xx v;
     }
 
-    ToString :: (value : T, node : *Node, user_data : *void) -> string {
+    ToString :: (value: T, node: *Node, user_data: *void) -> string {
         using _ := cast(*type_of(user), user_data);
         return trim(tprint("%", FormatFloat.{value=value, trailing_width=trailing_digits}));
     }
@@ -792,27 +792,27 @@ FloatInput :: (
  * @brief Integer text input widget.
  */
 IntInput :: (
-    parent : *Node,
-    value : *$T/.[u8,s8,u16,s16,u32,s32,u64,s64],
-    min : T, max : T, step : T = 1,
+    parent: *Node,
+    value: *$T/.[u8,s8,u16,s16,u32,s32,u64,s64],
+    min: T, max: T, step: T = 1,
     base := 10,
     min_digits := 1,
-    flags : NumberInputFlags = 0,
-    style : *TextInputStyle = null,
+    flags: NumberInputFlags = 0,
+    style: *TextInputStyle = null,
     location := #caller_location
-) -> submitted : bool, *Node {
-    user : struct {
-        base : int;
-        min_digits : int;
+) -> submitted: bool, *Node {
+    user: struct {
+        base: int;
+        min_digits: int;
     } = .{base, min_digits};
 
-    FromString :: (str : string, node : *Node, user_data : *void) -> bool, T {
+    FromString :: (str: string, node: *Node, user_data: *void) -> bool, T {
         using _ := cast(*type_of(user), user_data);
         v, ok, remainder := string_to_int(str, base=base, T=T);
         return ok && remainder.count == 0, v;
     }
 
-    ToString :: (value : T, node : *Node, user_data : *void) -> string {
+    ToString :: (value: T, node: *Node, user_data: *void) -> string {
         using _ := cast(*type_of(user), user_data);
         return tprint("%", FormatInt.{value=value, base=base, minimum_digits=min_digits});
     }
@@ -826,20 +826,20 @@ IntInput :: (
  * @brief Number text input widget.
  */
 NumberInput :: (
-    parent : *Node,
-    value : *$T/.[u8,s8,u16,s16,u32,s32,u64,s64,float32,float64],
-    min : T, max : T, step: T,
-    flags : NumberInputFlags = 0,
+    parent: *Node,
+    value: *$T/.[u8,s8,u16,s16,u32,s32,u64,s64,float32,float64],
+    min: T, max: T, step: T,
+    flags: NumberInputFlags = 0,
     user_data := null,
-    from_string : (str : string, node : *Node, user_data : *void) -> (bool, T) = null,
-    to_string : (value : T, node : *Node, user_data : *void) -> string = null,
-    style : *TextInputStyle = null,
+    from_string: (str: string, node: *Node, user_data: *void) -> (bool, T) = null,
+    to_string: (value: T, node: *Node, user_data: *void) -> string = null,
+    style: *TextInputStyle = null,
     location := #caller_location
-) -> modified : bool, *Node {
+) -> modified: bool, *Node {
     EnsureStyle(*style, "text_input");
 
-    modified : bool;
-    submitted : bool;
+    modified: bool;
+    submitted: bool;
 
     allow_dragging := (flags & .NoDragging) == 0;
 
@@ -857,7 +857,7 @@ NumberInput :: (
             context.omg.mouse_captured_node_value = .{x=cast(float, value.*)}; // @Todo: loss of precision
         }
 
-        disable_text_input : bool;
+        disable_text_input: bool;
         if drag_button.down {
             mouse := GetMousePosition().x;
             delta := mouse - context.omg.mouse_captured_at.x;
@@ -879,7 +879,7 @@ NumberInput :: (
             input.buffer.allocator = context.omg.general_purpose_allocator;
         }
 
-        input_button : ButtonResult;
+        input_button: ButtonResult;
         if !disable_text_input {
             input, submitted, input_button = TextInputBehavior(node, ifx allow_dragging then .Release else .Press);
         }
@@ -917,7 +917,7 @@ NumberInput :: (
 
         #if T == float32 {
             f := ifx from_string then from_string
-                else (str : string, node : *Node, user_data : *void) -> (bool, T) {
+                else (str: string, node: *Node, user_data: *void) -> (bool, T) {
                     v, ok, remainder := string_to_float(str);
                     return ok && remainder.count == 0, v;
                 };
@@ -928,7 +928,7 @@ NumberInput :: (
             }
         } else #if T == float64 {
             f := ifx from_string then from_string
-                else (str : string, node : *Node, user_data : *void) -> (bool, T) {
+                else (str: string, node: *Node, user_data: *void) -> (bool, T) {
                     v, ok, remainder := string_to_float64(str);
                     return ok && remainder.count == 0, v;
                 };
@@ -939,7 +939,7 @@ NumberInput :: (
             }
         } else {
             f := ifx from_string then from_string
-                else (str : string, node : *Node, user_data : *void) -> (bool, T) {
+                else (str: string, node: *Node, user_data: *void) -> (bool, T) {
                     v, ok, remainder := string_to_int(str, T=T);
                     return ok && remainder.count == 0, v;
                 };
@@ -962,7 +962,7 @@ NumberInput :: (
 /**
  * @brief Single line text input widget.
  */
-TextInput :: (parent : *Node, flags : TextInputFlags = 0, style : *TextInputStyle = null, location := #caller_location) -> submitted : bool, *Node, input_button : ButtonResult {
+TextInput :: (parent: *Node, flags: TextInputFlags = 0, style: *TextInputStyle = null, location := #caller_location) -> submitted: bool, *Node, input_button: ButtonResult {
     EnsureStyle(*style, "text_input");
 
     input_field := GetNode(parent, location=location);
@@ -989,7 +989,7 @@ TextInput :: (parent : *Node, flags : TextInputFlags = 0, style : *TextInputStyl
             }
 
             if flags & .Password {
-                password_codepoint : u32 = style.password_codepoint;
+                password_codepoint: u32 = style.password_codepoint;
                 password_glyph := GetGlyph(text_node.font, password_codepoint);
                 if !password_glyph {
                     password_codepoint = #char "*";
@@ -998,7 +998,7 @@ TextInput :: (parent : *Node, flags : TextInputFlags = 0, style : *TextInputStyl
                 encoding_size := GetUtf8EncodingSize(password_codepoint);
                 text := alloc_string(input.buffer.count * encoding_size ,, temp);
                 byte_offset := 0;
-                for i : 0..input.buffer.count - 1 {
+                for i: 0..input.buffer.count - 1 {
                     size := EncodeCharacterAsUtf8(password_codepoint, xx text, byte_offset);
                     byte_offset += size;
                 }

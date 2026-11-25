@@ -40,7 +40,7 @@ Each frame, the user calls `GetNode` with an ID to declare a UI element or get a
 UI widgets are simply a function or set of functions that encapsulate declaring the appropriate UI nodes, settings their properties as well as performing UI logic. For example, this the `Button` widget's function:
 
 ```jai
-Button :: (parent : *Node, width : Size1D, height : Size1D, style : *ButtonStyle = null, location := #caller_location) -> clicked : bool, *Node {
+Button :: (parent: *Node, width: Size1D, height: Size1D, style: *ButtonStyle = null, location := #caller_location) -> clicked: bool, *Node {
     EnsureStyle(*style, "button"); // Make sure style is not null by retrieving the default style named 'button'
 
     node := GetNode(parent, location);
@@ -57,7 +57,7 @@ Button :: (parent : *Node, width : Size1D, height : Size1D, style : *ButtonStyle
     }
 }
 
-Button :: (parent : *Node, text : string, style : *ButtonStyle = null, location := #caller_location) -> clicked : bool, *Node {
+Button :: (parent: *Node, text: string, style: *ButtonStyle = null, location := #caller_location) -> clicked: bool, *Node {
     EnsureStyle(*style, "button");
 
     clicked, node := Button(parent, SizeFit(), SizeFit(), style, location);
@@ -73,12 +73,12 @@ Button :: (parent : *Node, text : string, style : *ButtonStyle = null, location 
 }
 
 ButtonResult :: struct {
-    pressed : bool;
-    down : bool;
-    released : bool;
+    pressed: bool;
+    down: bool;
+    released: bool;
 }
 
-ButtonBehavior :: (node : *Node) -> ButtonResult {
+ButtonBehavior :: (node: *Node) -> ButtonResult {
     node.flags |= .Focusable;
 
     if (IsMouseButtonReleased(.Left) || IsMouseButtonDown(.Left)) && context.omg.mouse_capturing_node == node {
@@ -92,7 +92,7 @@ ButtonBehavior :: (node : *Node) -> ButtonResult {
         node.state_flags |= .Hot;
     }
 
-    result : ButtonResult;
+    result: ButtonResult;
     if node.state_flags & .Hot {
         result.down = true;
         result.pressed = IsHovered(node) && IsMouseButtonPressed(.Left);

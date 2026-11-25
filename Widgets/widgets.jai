@@ -13,17 +13,17 @@
 #load "grid_view.jai";
 
 LabelAndContentStyle :: struct {
-    padding : Vec4b;
-    child_gap : Vec2b;
+    padding: Vec4b;
+    child_gap: Vec2b;
     child_align := Vec2f.{0,0.5};
-    text : TextStyle;
+    text: TextStyle;
     text_fill := 0.35;
 }
 
 /**
  * @brief Container widget for label followed by content.
  */
-LabelAndContent :: (parent : *Node, label : string, style : *LabelAndContentStyle = null, location := #caller_location) -> *Node, container : *Node {
+LabelAndContent :: (parent: *Node, label: string, style: *LabelAndContentStyle = null, location := #caller_location) -> *Node, container: *Node {
     EnsureStyle(*style, "label_and_content");
 
     node := GetNode(parent, location);
@@ -47,7 +47,7 @@ LabelAndContent :: (parent : *Node, label : string, style : *LabelAndContentStyl
 /**
  * @brief Image widget.
  */
-Image :: (parent : *Node, image : TextureHandle, width : u32, height : u32, uv_bounds : Vec4f = .{0,0,1,1}, location := #caller_location) -> *Node {
+Image :: (parent: *Node, image: TextureHandle, width: u32, height: u32, uv_bounds: Vec4f = .{0,0,1,1}, location := #caller_location) -> *Node {
     node := GetNode(parent, location);
     SetImage(node, image, uv_bounds);
     SetSize(node, SizePx(xx width), SizePx(xx height));
@@ -59,7 +59,7 @@ Image :: (parent : *Node, image : TextureHandle, width : u32, height : u32, uv_b
 /**
  * @brief Text widget with string formatting.
  */
-Text :: (parent : *Node, fmt_str : string, args : ..Any, style : *TextStyle = null, location := #caller_location) -> *Node {
+Text :: (parent: *Node, fmt_str: string, args: ..Any, style: *TextStyle = null, location := #caller_location) -> *Node {
     EnsureStyle(*style, "text");
 
     node := GetNode(parent, location);
@@ -72,8 +72,8 @@ Text :: (parent : *Node, fmt_str : string, args : ..Any, style : *TextStyle = nu
 }
 
 ClickableTextStateStyle :: struct {
-    text : TextStyle;
-    cursor : PlatformCursorHandle;
+    text: TextStyle;
+    cursor: PlatformCursorHandle;
 }
 
 ClickableTextStyle :: StateStyle(ClickableTextStateStyle);
@@ -81,7 +81,7 @@ ClickableTextStyle :: StateStyle(ClickableTextStateStyle);
 /**
  * @brief Clickable text widget with string formatting.
  */
-ClickableText :: (parent : *Node, fmt_str : string, args : ..Any, style : *ClickableTextStyle = null, location := #caller_location) -> clicked : bool, double_clicked : bool, *Node {
+ClickableText :: (parent: *Node, fmt_str: string, args: ..Any, style: *ClickableTextStyle = null, location := #caller_location) -> clicked: bool, double_clicked: bool, *Node {
     EnsureStyle(*style, "clickable_text");
 
     node := GetNode(parent, location);
@@ -100,22 +100,22 @@ ClickableText :: (parent : *Node, fmt_str : string, args : ..Any, style : *Click
 }
 
 SeparatorStyle :: struct {
-    color_start : RGBA8;
-    color_end : RGBA8;
+    color_start: RGBA8;
+    color_end: RGBA8;
     thickness := 1.0;
     spacing := 20.0;
-    padding : Vec4b;
-    text_gap : s8 = 8;
+    padding: Vec4b;
+    text_gap: s8 = 8;
     text_padding := 12.0;
     text_offset := 10.0;
     text_align := 0.0;
-    text : TextStyle;
+    text: TextStyle;
 }
 
 /**
  * @brief Separator line. Horizontal or vertical depending on the parent layout.
  */
-Separator :: (parent : *Node, style : *SeparatorStyle = null, location := #caller_location) -> *Node {
+Separator :: (parent: *Node, style: *SeparatorStyle = null, location := #caller_location) -> *Node {
     if parent.child_layout_mode == .TopToBottom || parent.child_layout_mode == .BottomToTop {
         return HorizontalSeparator(parent, style, location);
     } else {
@@ -126,7 +126,7 @@ Separator :: (parent : *Node, style : *SeparatorStyle = null, location := #calle
 /**
  * @brief Horizontal separator line.
  */
-HorizontalSeparator :: (parent : *Node, style : *SeparatorStyle = null, location := #caller_location) -> *Node {
+HorizontalSeparator :: (parent: *Node, style: *SeparatorStyle = null, location := #caller_location) -> *Node {
     EnsureStyle(*style, "separator");
 
     node := GetNode(parent, location);
@@ -144,7 +144,7 @@ HorizontalSeparator :: (parent : *Node, style : *SeparatorStyle = null, location
 /**
  * @brief Horizontal separator line with formatted text.
  */
-HorizontalSeparatorText :: (parent : *Node, fmt_str : string, args : ..Any, style : *SeparatorStyle = null, location := #caller_location) -> *Node {
+HorizontalSeparatorText :: (parent: *Node, fmt_str: string, args: ..Any, style: *SeparatorStyle = null, location := #caller_location) -> *Node {
     EnsureStyle(*style, "separator");
 
     node := GetNode(parent, location);
@@ -175,7 +175,7 @@ HorizontalSeparatorText :: (parent : *Node, fmt_str : string, args : ..Any, styl
 /**
  * @brief Vertical separator line.
  */
-VerticalSeparator :: (parent : *Node, style : *SeparatorStyle = null, location := #caller_location) -> *Node {
+VerticalSeparator :: (parent: *Node, style: *SeparatorStyle = null, location := #caller_location) -> *Node {
     EnsureStyle(*style, "separator");
 
     node := GetNode(parent, location);
@@ -193,7 +193,7 @@ VerticalSeparator :: (parent : *Node, style : *SeparatorStyle = null, location :
 /**
  * @brief Tooltip widget over all the other elements.
  */
-Tooltip :: (window : *Window = null) -> *Node {
+Tooltip :: (window: *Window = null) -> *Node {
     if !window {
         window = GetMouseFocusedWindow();
         if !window {
@@ -218,14 +218,14 @@ Tooltip :: (window : *Window = null) -> *Node {
 }
 
 TooltipStyle :: struct {
-    background : BoxStyle;
-    text : TextStyle;
+    background: BoxStyle;
+    text: TextStyle;
 }
 
 /**
  * @brief Tooltip widget with text contents.
  */
-Tooltip :: (fmt_str : string, args : ..Any, window : *Window = null) -> *Node {
+Tooltip :: (fmt_str: string, args: ..Any, window: *Window = null) -> *Node {
     tooltip := Tooltip(window);
     if !tooltip {
         return null;
@@ -240,7 +240,7 @@ Tooltip :: (fmt_str : string, args : ..Any, window : *Window = null) -> *Node {
 /**
  * @brief Show a tooltip widget when the Node has been hovered for a certain amount of time.
  */
-FocusTooltip :: (node : *Node, min_focus_time := 0.5) -> *Node {
+FocusTooltip :: (node: *Node, min_focus_time := 0.5) -> *Node {
     if IsAnyMouseButtonDown() {
         return null;
     }
@@ -255,7 +255,7 @@ FocusTooltip :: (node : *Node, min_focus_time := 0.5) -> *Node {
 /**
  * @brief Show a tooltip widget with text when the Node has been hovered for a certain amount of time.
  */
-FocusTooltip :: (node : *Node, fmt_str : string, args : ..Any, min_focus_time := 0.5) -> *Node {
+FocusTooltip :: (node: *Node, fmt_str: string, args: ..Any, min_focus_time := 0.5) -> *Node {
     tooltip := FocusTooltip(node, min_focus_time);
     if !tooltip {
         return null;
@@ -270,7 +270,7 @@ FocusTooltip :: (node : *Node, fmt_str : string, args : ..Any, min_focus_time :=
 /**
  * @brief Capture mouse wheel for a Node.
  */
-ScrollBehavior :: (node : *Node) -> Vec2f {
+ScrollBehavior :: (node: *Node) -> Vec2f {
     node.flags |= .Scrollable;
 
     if IsDisabled() {
@@ -287,14 +287,14 @@ ScrollBehavior :: (node : *Node) -> Vec2f {
 /**
  * @brief Perform mouse wheel scroll interaction logic for a Node.
  */
-ScrollViewBehavior :: (node : *Node, axis : AxisFlags) {
+ScrollViewBehavior :: (node: *Node, axis: AxisFlags) {
     ScrollViewBehavior(node, node, axis);
 }
 
 /**
  * @brief Perform mouse wheel scroll interaction logic for a Node.
  */
-ScrollViewBehavior :: (node : *Node, target : *Node, axis : AxisFlags) {
+ScrollViewBehavior :: (node: *Node, target: *Node, axis: AxisFlags) {
     scroll := ScrollBehavior(node);
 
     if axis & .X {
@@ -309,7 +309,7 @@ ScrollViewBehavior :: (node : *Node, target : *Node, axis : AxisFlags) {
 /**
  * @brief Set scroll value, clamped by the content size
  */
-SetContentScroll :: inline (node : *Node, axis : Axis, value : float) {
+SetContentScroll :: inline (node: *Node, axis: Axis, value: float) {
     if axis == .X {
         SetContentScrollX(node, value);
     } else {
@@ -320,7 +320,7 @@ SetContentScroll :: inline (node : *Node, axis : Axis, value : float) {
 /**
  * @brief Set scroll value, clamped by the content size
  */
-SetContentScrollX :: inline (node : *Node, value : float) {
+SetContentScrollX :: inline (node: *Node, value: float) {
     avail_scroll := node.size.x - node.padding.x - node.padding.z - node.children_size.x;
     node.scroll.x = clamp(value, avail_scroll, 0);
 }
@@ -328,15 +328,15 @@ SetContentScrollX :: inline (node : *Node, value : float) {
 /**
  * @brief Set scroll value, clamped by the content size
  */
-SetContentScrollY :: inline (node : *Node, value : float) {
+SetContentScrollY :: inline (node: *Node, value: float) {
     avail_scroll := node.size.y - node.padding.y - node.padding.w - node.children_size.y;
     node.scroll.y = clamp(value, avail_scroll, 0);
 }
 
 ScrollViewStyle :: struct {
-    background : BoxStyle;
-    horizontal_scrollbar : ScrollbarStyle;
-    vertical_scrollbar : ScrollbarStyle;
+    background: BoxStyle;
+    horizontal_scrollbar: ScrollbarStyle;
+    vertical_scrollbar: ScrollbarStyle;
 }
 
 ScrollViewFlags :: enum_flags {
@@ -347,7 +347,7 @@ ScrollViewFlags :: enum_flags {
     NoScrollbar :: NoScrollbarX | NoScrollbarY;
 }
 
-ScrollView :: (parent : *Node, flags : ScrollViewFlags = 0, style : *ScrollViewStyle = null, location := #caller_location) -> *Node, container : *Node {
+ScrollView :: (parent: *Node, flags: ScrollViewFlags = 0, style: *ScrollViewStyle = null, location := #caller_location) -> *Node, container: *Node {
     EnsureStyle(*style, "scroll_view");
 
     node := GetNode(parent, location);
@@ -357,7 +357,7 @@ ScrollView :: (parent : *Node, flags : ScrollViewFlags = 0, style : *ScrollViewS
 
         Apply(node, style.background);
 
-        content_and_hscrollbar, content_and_vscrollbar : *Node;
+        content_and_hscrollbar, content_and_vscrollbar: *Node;
         content_parent := node;
 
         if !(flags & .NoScrollbarX) {
@@ -380,7 +380,7 @@ ScrollView :: (parent : *Node, flags : ScrollViewFlags = 0, style : *ScrollViewS
         SetLayout(content, parent.child_layout_mode);
         SetChildGap(content, parent.child_gap);
 
-        scroll_view_axes : AxisFlags;
+        scroll_view_axes: AxisFlags;
         if !(flags & .NoScrollX) {
             scroll_view_axes |= .X;
         }
@@ -407,7 +407,7 @@ ScrollView :: (parent : *Node, flags : ScrollViewFlags = 0, style : *ScrollViewS
 /**
  * @brief Perform mouse drag interaction logic for a Node.
  */
-DragBehavior :: (subwindow : *Node, node : *Node, avail_area := Vec4f.{-FLOAT32_INFINITY,-FLOAT32_INFINITY,FLOAT32_INFINITY,FLOAT32_INFINITY}) -> ButtonResult {
+DragBehavior :: (subwindow: *Node, node: *Node, avail_area := Vec4f.{-FLOAT32_INFINITY,-FLOAT32_INFINITY,FLOAT32_INFINITY,FLOAT32_INFINITY}) -> ButtonResult {
     interaction := ButtonBehavior(node);
 
     if interaction.pressed {
@@ -426,15 +426,15 @@ DragBehavior :: (subwindow : *Node, node : *Node, avail_area := Vec4f.{-FLOAT32_
 }
 
 ProgressBarStyle :: struct {
-    height : float;
-    background : BoxStyle;
-    fill : BoxStyle;
+    height: float;
+    background: BoxStyle;
+    fill: BoxStyle;
 }
 
 /**
  * @brief Progress bar widget.
  */
-ProgressBar :: (parent : *Node, value : float, style : *ProgressBarStyle = null, location := #caller_location) -> *Node {
+ProgressBar :: (parent: *Node, value: float, style: *ProgressBarStyle = null, location := #caller_location) -> *Node {
     EnsureStyle(*style, "progress_bar");
 
     node := GetNode(parent, location);
@@ -460,7 +460,7 @@ ArrowDirection :: enum {
     Right;
 }
 
-DrawArrow :: (draw_list : *DrawList, node : *Node, rotation : float) -> bool {
+DrawArrow :: (draw_list: *DrawList, node: *Node, rotation: float) -> bool {
     if IsClipped(draw_list, node.rect) {
         return false;
     }
@@ -482,7 +482,7 @@ DrawArrow :: (draw_list : *DrawList, node : *Node, rotation : float) -> bool {
     return true;
 }
 
-Arrow :: (parent : *Node, width : Size1D, height : Size1D, direction : ArrowDirection, color : RGBA8, location := #caller_location) -> *Node {
+Arrow :: (parent: *Node, width: Size1D, height: Size1D, direction: ArrowDirection, color: RGBA8, location := #caller_location) -> *Node {
     node := GetNode(parent, location);
     SetSize(node, width, height);
     SetTextColor(node, color);
@@ -501,7 +501,7 @@ Arrow :: (parent : *Node, width : Size1D, height : Size1D, direction : ArrowDire
     return node;
 }
 
-DrawChevron :: (draw_list : *DrawList, node : *Node, rotation : float) -> bool {
+DrawChevron :: (draw_list: *DrawList, node: *Node, rotation: float) -> bool {
     if IsClipped(draw_list, node.rect) {
         return false;
     }
@@ -529,7 +529,7 @@ DrawChevron :: (draw_list : *DrawList, node : *Node, rotation : float) -> bool {
     return true;
 }
 
-Chevron :: (parent : *Node, width : Size1D, height : Size1D, direction : ArrowDirection, color : RGBA8, location := #caller_location) -> *Node {
+Chevron :: (parent: *Node, width: Size1D, height: Size1D, direction: ArrowDirection, color: RGBA8, location := #caller_location) -> *Node {
     node := GetNode(parent, location);
     SetSize(node, width, height);
     SetTextColor(node, color);

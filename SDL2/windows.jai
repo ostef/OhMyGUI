@@ -3,10 +3,10 @@
 Win32 :: #import "Windows";
 
 CustomWindowDecorations :: struct {
-    window : *Window;
+    window: *Window;
     hwnd: Win32.HWND;
     event_context: *#Context;
-    prev_window_proc : *void;
+    prev_window_proc: *void;
 }
 
 WindowHitTestResult :: enum {
@@ -23,10 +23,10 @@ WindowHitTestResult :: enum {
     ResizeBottomRight;
 }
 
-g_custom_window_decorations : [..]*CustomWindowDecorations;
+g_custom_window_decorations: [..]*CustomWindowDecorations;
 
-InitCustomWindowDecorations :: (window : *Window) -> bool {
-    info : SDL_SysWMinfo;
+InitCustomWindowDecorations :: (window: *Window) -> bool {
+    info: SDL_SysWMinfo;
     SDL_VERSION(*info.version);
     if !SDL_GetWindowWMInfo(window.platform_handle, *info) {
         log_error("SDL_GetWindowWMInfo failed: %", to_string(SDL_GetError()));

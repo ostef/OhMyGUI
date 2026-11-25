@@ -1,9 +1,9 @@
 ComboStyle :: struct {
-    button : ButtonStyle;
-    popup : MenuStyle;
-    item : MenuItemStyle;
+    button: ButtonStyle;
+    popup: MenuStyle;
+    item: MenuItemStyle;
     arrow_size := Vec2f.{10, 6};
-    arrow_style : enum {
+    arrow_style: enum {
         Arrow;
         Chevron;
     };
@@ -13,11 +13,11 @@ ComboStyle :: struct {
  * @brief Combo box widget for enum values.
  */
 EnumCombo :: inline (
-    parent : *Node,
-    value : *$T,
-    style : *ComboStyle = null,
+    parent: *Node,
+    value: *$T,
+    style: *ComboStyle = null,
     location := #caller_location
-) -> modified : bool, *Node
+) -> modified: bool, *Node
 #modify { return cast(*Type_Info, T).type == .ENUM; } {
     values := type_info(T).values;
     names := type_info(T).names;
@@ -35,12 +35,12 @@ EnumCombo :: inline (
  * @brief Combo box widget with string values.
  */
 Combo :: inline (
-    parent : *Node,
-    selected : *int,
-    items : []string,
-    style : *ComboStyle = null,
+    parent: *Node,
+    selected: *int,
+    items: []string,
+    style: *ComboStyle = null,
     location := #caller_location
-) -> modified : bool, *Node {
+) -> modified: bool, *Node {
     modified, node := Combo(parent, selected, items.count, (i, data) => cast(*string, data)[i], items.data, style, location);
     return modified, node;
 }
@@ -49,17 +49,17 @@ Combo :: inline (
  * @brief Combo box widget with callback.
  */
 Combo :: (
-    parent : *Node,
-    selected : *int,
-    num_items : int,
-    get_item : (index : int, user_data : *void) -> string,
-    user_data : *void = null,
-    style : *ComboStyle = null,
+    parent: *Node,
+    selected: *int,
+    num_items: int,
+    get_item: (index: int, user_data: *void) -> string,
+    user_data: *void = null,
+    style: *ComboStyle = null,
     location := #caller_location
-) -> modified : bool, *Node {
+) -> modified: bool, *Node {
     EnsureStyle(*style, "combo");
 
-    dummy_selected : int;
+    dummy_selected: int;
     if !selected {
         selected = *dummy_selected;
     }
@@ -149,7 +149,7 @@ Combo :: (
 
             ScrollViewBehavior(popup, .Y);
 
-            for i : 0..num_items - 1 {
+            for i: 0..num_items - 1 {
                 item := get_item(i, user_data);
                 PushID(GetID(i));
                 defer PopID();

@@ -3,37 +3,37 @@ Vec3f :: Vector3;
 Vec4f :: Vector4;
 
 Vec2b :: struct {
-    x, y : s8;
+    x, y: s8;
 
     #overlay(x)
-    component : [2]s8;
+    component: [2]s8;
 }
 
-ToVec2f :: inline (v : Vec2b) -> Vec2f {
+ToVec2f :: inline (v: Vec2b) -> Vec2f {
     return .{xx v.x, xx v.y};
 }
 
 Vec4b :: struct {
-    x, y, z, w : s8;
+    x, y, z, w: s8;
 
     #overlay(x)
-    xy : Vec2b;
+    xy: Vec2b;
 
     #overlay(y)
-    yz : Vec2b;
+    yz: Vec2b;
 
     #overlay(z)
-    zw : Vec2b;
+    zw: Vec2b;
 
     #overlay(x)
-    component : [4]s8;
+    component: [4]s8;
 }
 
-ToVec4f :: inline (v : Vec4b) -> Vec4f {
+ToVec4f :: inline (v: Vec4b) -> Vec4f {
     return .{xx v.x, xx v.y, xx v.z, xx v.w};
 }
 
-operator*[] :: inline (v : Vec2f, $$index : int) -> *float {
+operator*[] :: inline (v: Vec2f, $$index: int) -> *float {
     #if is_constant(index) {
         #assert index >= 0 && index < 2;
     } else {
@@ -42,11 +42,11 @@ operator*[] :: inline (v : Vec2f, $$index : int) -> *float {
     return *v.component[index];
 }
 
-operator*[] :: inline (v : Vec2f, axis : Axis) -> *float {
+operator*[] :: inline (v: Vec2f, axis: Axis) -> *float {
     return *v.component[axis];
 }
 
-operator*[] :: inline (v : Vec3f, $$index : int) -> *float {
+operator*[] :: inline (v: Vec3f, $$index: int) -> *float {
     #if is_constant(index) {
         #assert index >= 0 && index < 3;
     } else {
@@ -55,7 +55,7 @@ operator*[] :: inline (v : Vec3f, $$index : int) -> *float {
     return *v.component[index];
 }
 
-operator*[] :: inline (v : Vec4f, $$index : int) -> *float {
+operator*[] :: inline (v: Vec4f, $$index: int) -> *float {
     #if is_constant(index) {
         #assert index >= 0 && index < 4;
     } else {
@@ -64,7 +64,7 @@ operator*[] :: inline (v : Vec4f, $$index : int) -> *float {
     return *v.component[index];
 }
 
-operator*[] :: inline (v : Vec2b, $$index : int) -> *s8 {
+operator*[] :: inline (v: Vec2b, $$index: int) -> *s8 {
     #if is_constant(index) {
         #assert index >= 0 && index < 2;
     } else {
@@ -73,11 +73,11 @@ operator*[] :: inline (v : Vec2b, $$index : int) -> *s8 {
     return *v.component[index];
 }
 
-operator*[] :: inline (v : Vec2b, axis : Axis) -> *s8 {
+operator*[] :: inline (v: Vec2b, axis: Axis) -> *s8 {
     return *v.component[axis];
 }
 
-operator*[] :: inline (v : Vec4b, $$index : int) -> *s8 {
+operator*[] :: inline (v: Vec4b, $$index: int) -> *s8 {
     #if is_constant(index) {
         #assert index >= 0 && index < 4;
     } else {
@@ -86,7 +86,7 @@ operator*[] :: inline (v : Vec4b, $$index : int) -> *s8 {
     return *v.component[index];
 }
 
-SignedAngle :: inline (a : Vec2f, b : Vec2f) -> float {
+SignedAngle :: inline (a: Vec2f, b: Vec2f) -> float {
     denominator := sqrt(dot(a, a) * dot(b, b));
     if abs(denominator) < 0.00001 {
         return 0;
@@ -98,53 +98,53 @@ SignedAngle :: inline (a : Vec2f, b : Vec2f) -> float {
     return s * acos(d);
 }
 
-Scale :: inline (a : Vec2f, b : Vec2f) -> Vec2f {
+Scale :: inline (a: Vec2f, b: Vec2f) -> Vec2f {
     return .{
         a.x * b.x,
         a.y * b.y,
     };
 }
 
-sign :: inline (x : $T/.[float, float64]) -> T {
+sign :: inline (x: $T/.[float, float64]) -> T {
     return ifx x < 0 then -1.0 else 1.0;
 }
 
-sign :: inline (v : Vec2f) -> Vec2f {
+sign :: inline (v: Vec2f) -> Vec2f {
     return .{sign(v.x), sign(v.y)};
 }
 
-sign :: inline (v : Vec3f) -> Vec3f {
+sign :: inline (v: Vec3f) -> Vec3f {
     return .{sign(v.x), sign(v.y), sign(v.z)};
 }
 
-sign :: inline (v : Vec4f) -> Vec4f {
+sign :: inline (v: Vec4f) -> Vec4f {
     return .{sign(v.x), sign(v.y), sign(v.z), sign(v.w)};
 }
 
-clamp :: inline (v : Vec2f, a : Vec2f, b : Vec2f) -> Vec2f {
+clamp :: inline (v: Vec2f, a: Vec2f, b: Vec2f) -> Vec2f {
     return .{clamp(v.x, a.x, b.x), clamp(v.y, a.y, b.y)};
 }
 
-clamp :: inline (v : Vec3f, a : Vec3f, b : Vec3f) -> Vec3f {
+clamp :: inline (v: Vec3f, a: Vec3f, b: Vec3f) -> Vec3f {
     return .{clamp(v.x, a.x, b.x), clamp(v.y, a.y, b.y), clamp(v.z, a.z, b.z)};
 }
 
-clamp :: inline (v : Vec4f, a : Vec4f, b : Vec4f) -> Vec4f {
+clamp :: inline (v: Vec4f, a: Vec4f, b: Vec4f) -> Vec4f {
     return .{clamp(v.x, a.x, b.x), clamp(v.y, a.y, b.y), clamp(v.z, a.z, b.z), clamp(v.w, a.w, b.w)};
 }
 
-fract :: inline (x : float) -> float {
+fract :: inline (x: float) -> float {
     return x - floor(x);
 }
 
-MoveRect :: inline (rect : Vec4f, amount : Vec2f) -> Vec4f {
+MoveRect :: inline (rect: Vec4f, amount: Vec2f) -> Vec4f {
     return .{
         xy=rect.xy + amount,
         zw=rect.zw + amount,
     };
 }
 
-InflateRect :: inline (rect : Vec4f, amount : float) -> Vec4f {
+InflateRect :: inline (rect: Vec4f, amount: float) -> Vec4f {
     return .{
         rect.x - amount,
         rect.y - amount,
@@ -153,14 +153,14 @@ InflateRect :: inline (rect : Vec4f, amount : float) -> Vec4f {
     };
 }
 
-InflateRect :: inline (rect : Vec4f, amount : Vec4f) -> Vec4f {
+InflateRect :: inline (rect: Vec4f, amount: Vec4f) -> Vec4f {
     return .{
         xy=rect.xy - amount.xy,
         zw=rect.zw + amount.zw,
     };
 }
 
-BarycentricCoords :: (p : Vec2f, p0 : Vec2f, p1 : Vec2f, p2 : Vec2f) -> float, float, float {
+BarycentricCoords :: (p: Vec2f, p0: Vec2f, p1: Vec2f, p2: Vec2f) -> float, float, float {
     denom := (p1.y - p2.y) * (p0.x - p2.x) + (p2.x - p1.x) * (p0.y - p2.y);
     w0 := ((p1.y - p2.y) * (p.x - p2.x) + (p2.x - p1.x) * (p.y - p2.y)) / denom;
     w1 := ((p2.y - p0.y) * (p.x - p2.x) + (p0.x - p2.x) * (p.y - p2.y)) / denom;
@@ -169,7 +169,7 @@ BarycentricCoords :: (p : Vec2f, p0 : Vec2f, p1 : Vec2f, p2 : Vec2f) -> float, f
     return w0, w1, w2;
 }
 
-ClampToTriangle :: (p : Vec2f, p0 : Vec2f, p1 : Vec2f, p2 : Vec2f) -> Vec2f {
+ClampToTriangle :: (p: Vec2f, p0: Vec2f, p1: Vec2f, p2: Vec2f) -> Vec2f {
     w0, w1, w2 := BarycentricCoords(p, p0, p1, p2);
 
     w0 = max(w0, 0);
@@ -187,8 +187,8 @@ ClampToTriangle :: (p : Vec2f, p0 : Vec2f, p1 : Vec2f, p2 : Vec2f) -> Vec2f {
     };
 }
 
-IsInsideTriangle :: inline (p : Vec2f, p0 : Vec2f, p1 : Vec2f, p2 : Vec2f) -> bool {
-    Sign :: (p : Vec2f, p0 : Vec2f, p1 : Vec2f) -> float {
+IsInsideTriangle :: inline (p: Vec2f, p0: Vec2f, p1: Vec2f, p2: Vec2f) -> bool {
+    Sign :: (p: Vec2f, p0: Vec2f, p1: Vec2f) -> float {
         return (p.x - p1.x) * (p0.y - p1.y) - (p0.x - p1.x) * (p.y - p1.y);
     }
 
@@ -202,26 +202,26 @@ IsInsideTriangle :: inline (p : Vec2f, p0 : Vec2f, p1 : Vec2f, p2 : Vec2f) -> bo
     return !(has_neg && has_pos);
 }
 
-IsInsideRect :: inline (p : Vec2f, rect : Vec4f) -> bool {
+IsInsideRect :: inline (p: Vec2f, rect: Vec4f) -> bool {
     return p.x >= rect.x && p.x < rect.z && p.y >= rect.y && p.y < rect.w;
 }
 
-IsInsideRing :: inline (p : Vec2f, center : Vec2f, inner_radius : float, outer_radius : float) -> bool {
+IsInsideRing :: inline (p: Vec2f, center: Vec2f, inner_radius: float, outer_radius: float) -> bool {
     sq_dist := length_squared(p - center);
     return sq_dist > inner_radius * inner_radius && sq_dist < outer_radius * outer_radius;
 }
 
-IsInsideCircle :: inline (p : Vec2f, center : Vec2f, radius : float) -> bool {
+IsInsideCircle :: inline (p: Vec2f, center: Vec2f, radius: float) -> bool {
     sq_dist := length_squared(p - center);
     return sq_dist < radius * radius;
 }
 
-RectIntersectsRect :: inline (a : Vec4f, b : Vec4f) -> bool {
+RectIntersectsRect :: inline (a: Vec4f, b: Vec4f) -> bool {
     return (a.x <= b.x && b.x <= a.z || a.x <= b.z && b.z <= a.z)
         && (a.y <= b.y && b.y <= a.w || a.y <= b.w && b.w <= a.w);
 }
 
-ClipRect :: inline (rect : Vec4f, clip_by : Vec4f) -> Vec4f {
+ClipRect :: inline (rect: Vec4f, clip_by: Vec4f) -> Vec4f {
     return .{
         xy=max(rect.xy, clip_by.xy),
         zw=min(rect.zw, clip_by.zw),
@@ -230,17 +230,17 @@ ClipRect :: inline (rect : Vec4f, clip_by : Vec4f) -> Vec4f {
 
 // Basically a 2x3 matrix
 Transform2D :: struct {
-    a : float = 1;
-    b : float;
-    tx : float;
+    a: float = 1;
+    b: float;
+    tx: float;
 
-    c : float;
-    d : float = 1;
-    ty : float;
+    c: float;
+    d: float = 1;
+    ty: float;
 }
 
-Mul :: inline (a : Transform2D, b : Transform2D) -> Transform2D {
-    result : Transform2D = ---;
+Mul :: inline (a: Transform2D, b: Transform2D) -> Transform2D {
+    result: Transform2D = ---;
     result.a  = a.a * b.a  + a.b * b.c;
     result.b  = a.a * b.b  + a.b * b.d;
     result.tx = a.a * b.tx + a.b * b.ty + a.tx;
@@ -252,17 +252,17 @@ Mul :: inline (a : Transform2D, b : Transform2D) -> Transform2D {
     return result;
 }
 
-operator* :: inline (a : Transform2D, b : Transform2D) -> Transform2D {
+operator* :: inline (a: Transform2D, b: Transform2D) -> Transform2D {
     return Mul(a, b);
 }
 
 // Creates a translation matrix
-Translate2D :: inline (x : float, y : float) -> Transform2D {
+Translate2D :: inline (x: float, y: float) -> Transform2D {
     return Translate2D(.{x, y});
 }
 
 // Creates a translation matrix
-Translate2D :: inline (translation : Vec2f) -> Transform2D {
+Translate2D :: inline (translation: Vec2f) -> Transform2D {
     return .{
         1, 0, translation.x,
         0, 1, translation.y,
@@ -270,7 +270,7 @@ Translate2D :: inline (translation : Vec2f) -> Transform2D {
 }
 
 // Creates a counter-clockwise rotation matrix
-Rotate2D :: inline (angle_in_radians : float) -> Transform2D {
+Rotate2D :: inline (angle_in_radians: float) -> Transform2D {
     cost := cos(angle_in_radians);
     sint := sin(angle_in_radians);
 
@@ -281,24 +281,24 @@ Rotate2D :: inline (angle_in_radians : float) -> Transform2D {
 }
 
 // Creates a uniform scale matrix
-Scale2D :: inline (uniform_scale : float) -> Transform2D {
+Scale2D :: inline (uniform_scale: float) -> Transform2D {
     return Scale2D(.{uniform_scale, uniform_scale});
 }
 
 // Creates a scale matrix
-Scale2D :: inline (x : float, y : float) -> Transform2D {
+Scale2D :: inline (x: float, y: float) -> Transform2D {
     return Scale2D(.{x, y});
 }
 
 // Creates a scale matrix
-Scale2D :: inline (scale : Vec2f) -> Transform2D {
+Scale2D :: inline (scale: Vec2f) -> Transform2D {
     return .{
         scale.x, 0, 0,
         0, scale.y, 0,
     };
 }
 
-Invert :: (using transform : Transform2D, epsilon := 0.00001) -> Transform2D {
+Invert :: (using transform: Transform2D, epsilon := 0.00001) -> Transform2D {
     det := a * d - b * c;
     if abs(det) < epsilon {
         return .{};
@@ -322,29 +322,29 @@ Invert :: (using transform : Transform2D, epsilon := 0.00001) -> Transform2D {
     };
 }
 
-TransformVector :: inline (p : Vec2f, t : Transform2D) -> Vec2f {
+TransformVector :: inline (p: Vec2f, t: Transform2D) -> Vec2f {
     return .{
         t.a * p.x + t.b * p.y,
         t.c * p.x + t.d * p.y,
     };
 }
 
-TransformPoint :: inline (p : Vec2f, t : Transform2D) -> Vec2f {
+TransformPoint :: inline (p: Vec2f, t: Transform2D) -> Vec2f {
     return .{
         t.a * p.x + t.b * p.y + t.tx,
         t.c * p.x + t.d * p.y + t.ty,
     };
 }
 
-PerpendicularCW :: inline (v : Vec2f) -> Vec2f {
+PerpendicularCW :: inline (v: Vec2f) -> Vec2f {
     return .{v.y, -v.x};
 }
 
-PerpendicularCCW :: inline (v : Vec2f) -> Vec2f {
+PerpendicularCCW :: inline (v: Vec2f) -> Vec2f {
     return .{-v.y, v.x};
 }
 
-Rotate :: inline (v : Vec2f, angle : float) -> Vec2f {
+Rotate :: inline (v: Vec2f, angle: float) -> Vec2f {
     ct := cos(angle);
     st := sin(angle);
 
@@ -354,15 +354,15 @@ Rotate :: inline (v : Vec2f, angle : float) -> Vec2f {
     };
 }
 
-floor :: inline (value : Vec2f) -> Vec2f {
+floor :: inline (value: Vec2f) -> Vec2f {
     return .{floor(value.x), floor(value.y)};
 }
 
-ceil :: inline (value : Vec2f) -> Vec2f {
+ceil :: inline (value: Vec2f) -> Vec2f {
     return .{ceil(value.x), ceil(value.y)};
 }
 
-Round :: inline (value : float64) -> float64 {
+Round :: inline (value: float64) -> float64 {
     if value < 0 {
         return cast(float64, cast(int, value - 0.5));
     }
@@ -370,7 +370,7 @@ Round :: inline (value : float64) -> float64 {
     return cast(float64, cast(int, value + 0.5));
 }
 
-Round :: inline (value : float) -> float {
+Round :: inline (value: float) -> float {
     if value < 0 {
         return cast(float, cast(int, value - 0.5));
     }
@@ -378,14 +378,14 @@ Round :: inline (value : float) -> float {
     return cast(float, cast(int, value + 0.5));
 }
 
-Round :: inline (value : Vec2f) -> Vec2f {
+Round :: inline (value: Vec2f) -> Vec2f {
     return .{
         ifx value.x < 0 then cast(float, cast(int, value.x - 0.5)) else cast(float, cast(int, value.x + 0.5)),
         ifx value.y < 0 then cast(float, cast(int, value.y - 0.5)) else cast(float, cast(int, value.y + 0.5)),
     };
 }
 
-SnapDown :: inline (value : $T/.[float, float64, s8, s16, s32, s64, u8, u16, u32, u64], grid_size : T) -> T {
+SnapDown :: inline (value: $T/.[float, float64, s8, s16, s32, s64, u8, u16, u32, u64], grid_size: T) -> T {
     if grid_size == 0 {
         return value;
     }
@@ -396,7 +396,7 @@ SnapDown :: inline (value : $T/.[float, float64, s8, s16, s32, s64, u8, u16, u32
     }
 }
 
-Snap :: (value : $T/.[float, float64, s8, s16, s32, s64, u8, u16, u32, u64], grid_size : T) -> T {
+Snap :: (value: $T/.[float, float64, s8, s16, s32, s64, u8, u16, u32, u64], grid_size: T) -> T {
     if grid_size == 0 {
         return value;
     }
@@ -413,26 +413,26 @@ Snap :: (value : $T/.[float, float64, s8, s16, s32, s64, u8, u16, u32, u64], gri
     }
 }
 
-SnapUp :: (value : $T/.[float, float64, s8, s16, s32, s64, u8, u16, u32, u64], grid_size : T) -> T {
+SnapUp :: (value: $T/.[float, float64, s8, s16, s32, s64, u8, u16, u32, u64], grid_size: T) -> T {
     if grid_size == 0 {
         return value;
     }
     return ceil(value / grid_size) * grid_size;
 }
 
-ToRads :: inline (angle_in_degrees : $T/.[float, float64]) -> T {
+ToRads :: inline (angle_in_degrees: $T/.[float, float64]) -> T {
     return angle_in_degrees * PI / 180.0;
 }
 
-ToDegs :: inline (angle_in_radians : $T/.[float, float64]) -> T {
+ToDegs :: inline (angle_in_radians: $T/.[float, float64]) -> T {
     return angle_in_radians * 180.0 / PI;
 }
 
-InverseLerp :: inline (a : $T/.[float, float64], b : T, t : T) -> T {
+InverseLerp :: inline (a: $T/.[float, float64], b: T, t: T) -> T {
     return (t - a) / (b - a);
 }
 
-ClosestPointOnLine :: (p0 : Vec2f, p1 : Vec2f, point : Vec2f) -> Vec2f {
+ClosestPointOnLine :: (p0: Vec2f, p1: Vec2f, point: Vec2f) -> Vec2f {
     p0_point := point - p0;
     dir := p1 - p0;
     d := dot(p0_point, dir);
@@ -448,7 +448,7 @@ ClosestPointOnLine :: (p0 : Vec2f, p1 : Vec2f, point : Vec2f) -> Vec2f {
     return p0 + dir * d / sq_length;
 }
 
-LineIntersection :: (a_p0 : Vec2f, a_p1 : Vec2f, b_p0 : Vec2f, b_p1 : Vec2f) -> bool, Vec2f {
+LineIntersection :: (a_p0: Vec2f, a_p1: Vec2f, b_p0: Vec2f, b_p1: Vec2f) -> bool, Vec2f {
     ax := a_p1.x - a_p0.x;
     ay := a_p1.y - a_p0.y;
     bx := b_p1.x - b_p0.x;
@@ -469,7 +469,7 @@ LineIntersection :: (a_p0 : Vec2f, a_p1 : Vec2f, b_p0 : Vec2f, b_p1 : Vec2f) -> 
     return true, a_p0 + t * Vec2f.{ax, ay};
 }
 
-BezierQuadratic :: inline (p0 : Vec2f, p1 : Vec2f, p2 : Vec2f, t : float) -> Vec2f {
+BezierQuadratic :: inline (p0: Vec2f, p1: Vec2f, p2: Vec2f, t: float) -> Vec2f {
     u := 1 - t;
     w0 := u * u;
     w1 := 2 * u * t;
@@ -481,15 +481,15 @@ BezierQuadratic :: inline (p0 : Vec2f, p1 : Vec2f, p2 : Vec2f, t : float) -> Vec
     };
 }
 
-BezierQuadraticTangent :: inline (p0 : Vec2f, p1 : Vec2f, p2 : Vec2f, t : float) -> Vec2f {
+BezierQuadraticTangent :: inline (p0: Vec2f, p1: Vec2f, p2: Vec2f, t: float) -> Vec2f {
     return normalize(2 * (1 - t) * (p1 - p0) + 2 * t * (p2 - p1));
 }
 
-BezierQuadraticNormal :: inline (p0 : Vec2f, p1 : Vec2f, p2 : Vec2f, t : float) -> Vec2f {
+BezierQuadraticNormal :: inline (p0: Vec2f, p1: Vec2f, p2: Vec2f, t: float) -> Vec2f {
     return PerpendicularCW(BezierQuadraticTangent(p0, p1, p2, t));
 }
 
-ClosestPointOnBezierQuadratic :: (p0 : Vec2f, p1 : Vec2f, p2 : Vec2f, point : Vec2f, num_segments := 0) -> Vec2f {
+ClosestPointOnBezierQuadratic :: (p0: Vec2f, p1: Vec2f, p2: Vec2f, point: Vec2f, num_segments := 0) -> Vec2f {
     if num_segments <= 0 {
         a := Vec2f.{abs(p0.x - p1.x), abs(p0.y - p1.y)};
         b := Vec2f.{abs(p1.x - p2.x), abs(p1.y - p2.y)};
@@ -501,7 +501,7 @@ ClosestPointOnBezierQuadratic :: (p0 : Vec2f, p1 : Vec2f, p2 : Vec2f, point : Ve
     current_p := p0;
     closest_point := p0;
     closest_sq_dist := FLOAT32_INFINITY;
-    for i : 1..num_segments {
+    for i: 1..num_segments {
         t := i / cast(float, num_segments);
         next_p := BezierQuadratic(p0, p1, p2, t);
         point_on_line := ClosestPointOnLine(current_p, next_p, point);
@@ -518,7 +518,7 @@ ClosestPointOnBezierQuadratic :: (p0 : Vec2f, p1 : Vec2f, p2 : Vec2f, point : Ve
 }
 
 // https://iquilezles.org/articles/bezierbbox/
-BezierQuadraticBounds :: (p0 : Vec2f, p1 : Vec2f, p2 : Vec2f) -> Vec4f {
+BezierQuadraticBounds :: (p0: Vec2f, p1: Vec2f, p2: Vec2f) -> Vec4f {
     min_ := min(p0, p2);
     max_ := max(p0, p2);
 
@@ -540,7 +540,7 @@ BezierQuadraticBounds :: (p0 : Vec2f, p1 : Vec2f, p2 : Vec2f) -> Vec4f {
     return .{xy=min_, zw=max_};
 }
 
-BezierCubic :: inline (p0 : Vec2f, p1 : Vec2f, p2 : Vec2f, p3 : Vec2f, t : float) -> Vec2f {
+BezierCubic :: inline (p0: Vec2f, p1: Vec2f, p2: Vec2f, p3: Vec2f, t: float) -> Vec2f {
     u := 1 - t;
     w0 := u * u * u;
     w1 := 3 * u * u * t;
@@ -553,17 +553,17 @@ BezierCubic :: inline (p0 : Vec2f, p1 : Vec2f, p2 : Vec2f, p3 : Vec2f, t : float
     };
 }
 
-BezierCubicTangent :: inline (p0 : Vec2f, p1 : Vec2f, p2 : Vec2f, p3 : Vec2f, t : float) -> Vec2f {
+BezierCubicTangent :: inline (p0: Vec2f, p1: Vec2f, p2: Vec2f, p3: Vec2f, t: float) -> Vec2f {
     u := 1 - t;
 
     return normalize(3 * u * u * (p1 - p0) + 6 * u * t * (p2 - p1) + 3 * t * t * (p3 - p2));
 }
 
-BezierCubicNormal :: inline (p0 : Vec2f, p1 : Vec2f, p2 : Vec2f, p3 : Vec2f, t : float) -> Vec2f {
+BezierCubicNormal :: inline (p0: Vec2f, p1: Vec2f, p2: Vec2f, p3: Vec2f, t: float) -> Vec2f {
     return PerpendicularCW(BezierCubicTangent(p0, p1, p2, p3, t));
 }
 
-ClosestPointOnBezierCubic :: (p0 : Vec2f, p1 : Vec2f, p2 : Vec2f, p3 : Vec2f, point : Vec2f, num_segments := 0) -> Vec2f {
+ClosestPointOnBezierCubic :: (p0: Vec2f, p1: Vec2f, p2: Vec2f, p3: Vec2f, point: Vec2f, num_segments := 0) -> Vec2f {
     if num_segments <= 0 {
         a := Vec2f.{abs(p0.x - p1.x), abs(p0.y - p1.y)};
         b := Vec2f.{abs(p1.x - p2.x), abs(p1.y - p2.y)};
@@ -576,7 +576,7 @@ ClosestPointOnBezierCubic :: (p0 : Vec2f, p1 : Vec2f, p2 : Vec2f, p3 : Vec2f, po
     current_p := p0;
     closest_point := p0;
     closest_sq_dist := FLOAT32_INFINITY;
-    for i : 1..num_segments {
+    for i: 1..num_segments {
         t := i / cast(float, num_segments);
         next_p := BezierCubic(p0, p1, p2, p3, t);
         point_on_line := ClosestPointOnLine(current_p, next_p, point);
@@ -593,7 +593,7 @@ ClosestPointOnBezierCubic :: (p0 : Vec2f, p1 : Vec2f, p2 : Vec2f, p3 : Vec2f, po
 }
 
 // https://iquilezles.org/articles/bezierbbox/
-BezierCubicBounds :: (p0 : Vec2f, p1 : Vec2f, p2 : Vec2f, p3 : Vec2f) -> Vec4f {
+BezierCubicBounds :: (p0: Vec2f, p1: Vec2f, p2: Vec2f, p3: Vec2f) -> Vec4f {
     min_ := min(p0, p3);
     max_ := max(p0, p3);
 

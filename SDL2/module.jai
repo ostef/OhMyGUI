@@ -9,35 +9,35 @@
 }
 
 GetPlatformFuncs :: () -> PlatformFunctions {
-    using funcs : PlatformFunctions;
+    using funcs: PlatformFunctions;
 
-    GetWindowTitle = (handle : PlatformWindowHandle) -> string {
+    GetWindowTitle = (handle: PlatformWindowHandle) -> string {
         title := SDL_GetWindowTitle(handle);
         return copy_string(to_string(title));
     }
 
-    SetWindowTitle = (handle : PlatformWindowHandle, title : string) {
+    SetWindowTitle = (handle: PlatformWindowHandle, title: string) {
         ctitle := to_c_string(title ,, temp);
         SDL_SetWindowTitle(handle, ctitle);
     }
 
-    GetWindowPosition = (handle : PlatformWindowHandle) -> int, int {
-        x, y : s32;
+    GetWindowPosition = (handle: PlatformWindowHandle) -> int, int {
+        x, y: s32;
         SDL_GetWindowPosition(handle, *x, *y);
         return x, y;
     }
 
-    SetWindowPosition = (handle : PlatformWindowHandle, x : int, y : int) {
+    SetWindowPosition = (handle: PlatformWindowHandle, x: int, y: int) {
         SDL_SetWindowPosition(handle, xx x, xx y);
     }
 
-    GetWindowSize = (handle : PlatformWindowHandle) -> int, int {
-        w, h : s32;
+    GetWindowSize = (handle: PlatformWindowHandle) -> int, int {
+        w, h: s32;
         SDL_GetWindowSize(handle, *w, *h);
         return w, h;
     }
 
-    SetWindowSize = (handle : PlatformWindowHandle, width : int, height : int) {
+    SetWindowSize = (handle: PlatformWindowHandle, width: int, height: int) {
         #if OS == .WINDOWS {
             if SetCustomWindowDecorationsSize(handle, xx width, xx height) {
                 return;
@@ -47,10 +47,10 @@ GetPlatformFuncs :: () -> PlatformFunctions {
         SDL_SetWindowSize(handle, xx width, xx height);
     }
 
-    GetWindowFlags = (handle : PlatformWindowHandle) -> PlatformWindowFlags {
+    GetWindowFlags = (handle: PlatformWindowHandle) -> PlatformWindowFlags {
         flags := SDL_GetWindowFlags(handle);
 
-        result : PlatformWindowFlags;
+        result: PlatformWindowFlags;
         if flags & SDL_WINDOW_MINIMIZED {
             result |= .Minimized;
         }
@@ -68,20 +68,20 @@ GetPlatformFuncs :: () -> PlatformFunctions {
     }
 
     GetMousePosition = () -> int, int {
-        mx, my : s32;
+        mx, my: s32;
         SDL_GetGlobalMouseState(*mx, *my);
         return mx, my;
     }
 
-    CaptureMouse = (capture : bool) {
+    CaptureMouse = (capture: bool) {
         SDL_CaptureMouse(xx capture);
     }
 
-    SetCursor = (handle : PlatformCursorHandle) {
+    SetCursor = (handle: PlatformCursorHandle) {
         SDL_SetCursor(handle);
     }
 
-    CreateRGBA8Cursor = (pixels : *void, width : u32, height : u32, hot_x_01 : float, hot_y_01 : float) -> PlatformCursorHandle {
+    CreateRGBA8Cursor = (pixels: *void, width: u32, height: u32, hot_x_01: float, hot_y_01: float) -> PlatformCursorHandle {
         SDL_PIXELFORMAT_RGBA8888 :: 0x16462004;
         SDL_PIXELFORMAT_ABGR8888 :: 0x16762004;
 
@@ -105,7 +105,7 @@ GetPlatformFuncs :: () -> PlatformFunctions {
         return result;
     }
 
-    CreateSystemCursor = (system_cursor : SystemCursor) -> PlatformCursorHandle {
+    CreateSystemCursor = (system_cursor: SystemCursor) -> PlatformCursorHandle {
         SDL_Cursors :: SDL_SystemCursor.[
             ARROW,
             IBEAM,
@@ -123,12 +123,12 @@ GetPlatformFuncs :: () -> PlatformFunctions {
         return xx SDL_CreateSystemCursor(SDL_Cursors[system_cursor]);
     }
 
-    DestroyCursor = (cursor : PlatformCursorHandle) {
+    DestroyCursor = (cursor: PlatformCursorHandle) {
         SDL_FreeCursor(xx cursor);
     }
 
     GetClipboardText = () -> string {
-        SDL_free :: (ptr : *void) #foreign SDL2;
+        SDL_free :: (ptr: *void) #foreign SDL2;
 
         ctext := SDL_GetClipboardText();
         defer SDL_free(ctext);
@@ -136,7 +136,7 @@ GetPlatformFuncs :: () -> PlatformFunctions {
         return copy_string(to_string(ctext));
     }
 
-    SetClipboardText = (text : string) {
+    SetClipboardText = (text: string) {
         ctext := to_c_string(text ,, temp);
         SDL_SetClipboardText(ctext);
     }
@@ -145,7 +145,7 @@ GetPlatformFuncs :: () -> PlatformFunctions {
         return xx SDL_HasClipboardText();
     }
 
-    EnableCustomWindowDecorations = (window : *Window) -> bool {
+    EnableCustomWindowDecorations = (window: *Window) -> bool {
         #if OS == .WINDOWS {
             return InitCustomWindowDecorations(window);
         } else {
@@ -156,7 +156,7 @@ GetPlatformFuncs :: () -> PlatformFunctions {
     return funcs;
 }
 
-HandleEvent :: (event : SDL_Event) {
+HandleEvent :: (event: SDL_Event) {
     if event.type == SDL_WINDOWEVENT {
         if event.window.event == SDL_WINDOWEVENT_CLOSE {
             sdl_window := SDL_GetWindowFromID(event.window.windowID);
@@ -170,7 +170,7 @@ HandleEvent :: (event : SDL_Event) {
     HandleInputEvent(event);
 }
 
-HandleInputEvent :: (event : SDL_Event) {
+HandleInputEvent :: (event: SDL_Event) {
     omg := context.omg;
 
     if event.type == {
@@ -246,7 +246,7 @@ HandleInputEvent :: (event : SDL_Event) {
     }
 }
 
-SDLMouseButtonToMouseButton :: (button : u8) -> MouseButton, bool {
+SDLMouseButtonToMouseButton :: (button: u8) -> MouseButton, bool {
     if button == {
     case SDL_BUTTON_LEFT; return .Left, true;
     case SDL_BUTTON_MIDDLE; return .Middle, true;
@@ -258,7 +258,7 @@ SDLMouseButtonToMouseButton :: (button : u8) -> MouseButton, bool {
     return .Left, false;
 }
 
-SDLScancodeToKeyCode :: (scancode : SDL_Scancode) -> KeyCode {
+SDLScancodeToKeyCode :: (scancode: SDL_Scancode) -> KeyCode {
     if scancode == {
     case .SDL_SCANCODE_UNKNOWN; return .Invalid;
     case .SDL_SCANCODE_A; return .A;

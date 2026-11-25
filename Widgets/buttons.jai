@@ -2,10 +2,10 @@
  * @brief Button interaction result.
  */
 ButtonResult :: struct {
-    down : bool;           ///> Was the mouse button down while the node was focused?
-    pressed : bool;        ///> Was the mouse button pressed while the node was focused and hovered?
-    double_clicked : bool; ///> Was the mouse button double clicked while the node was focused and hovered?
-    released : bool;       ///> Was the mouse button released while the node was focused and hovered?
+    down: bool;           ///> Was the mouse button down while the node was focused?
+    pressed: bool;        ///> Was the mouse button pressed while the node was focused and hovered?
+    double_clicked: bool; ///> Was the mouse button double clicked while the node was focused and hovered?
+    released: bool;       ///> Was the mouse button released while the node was focused and hovered?
 }
 
 /**
@@ -14,7 +14,7 @@ ButtonResult :: struct {
  * Perform button interaction logic for a Node if the node is not being interacted with by another mouse button.
  * This function is idempotent, so calling ButtonBehavior multiple times for the same mouse button yields the same result.
  */
-ButtonBehavior :: (node : *Node, mouse_button := MouseButton.Left) -> ButtonResult {
+ButtonBehavior :: (node: *Node, mouse_button := MouseButton.Left) -> ButtonResult {
     if IsDisabled() {
         node.state_flags |= .Disabled;
     }
@@ -40,7 +40,7 @@ ButtonBehavior :: (node : *Node, mouse_button := MouseButton.Left) -> ButtonResu
         active_from_button = true;
     }
 
-    result : ButtonResult;
+    result: ButtonResult;
     if active_from_button {
         node.interacting_mouse_buttons |= button_flags;
         node.state_flags |= .Hot;
@@ -62,9 +62,9 @@ ButtonBehavior :: (node : *Node, mouse_button := MouseButton.Left) -> ButtonResu
  * @brief Button style for one state (background, text and cursor).
  */
 ButtonStateStyle :: struct {
-    background : BoxStyle;
-    text : TextStyle;
-    cursor : PlatformCursorHandle;
+    background: BoxStyle;
+    text: TextStyle;
+    cursor: PlatformCursorHandle;
 }
 
 ButtonStyle :: StateStyle(ButtonStateStyle);
@@ -74,14 +74,14 @@ ButtonStyle :: StateStyle(ButtonStateStyle);
  *
  * Set all ButtonStyle's state colors using a base background color. Text color is chosen based on the background.
  */
-SetColors :: (style : *ButtonStyle, base_background_color : RGBA8) {
+SetColors :: (style: *ButtonStyle, base_background_color: RGBA8) {
     SetColors(style, base_background_color, ChooseTextColor(base_background_color));
 }
 
 /**
  * @brief Set all ButtonStyle's state colors using a base background color and text color.
  */
-SetColors :: (using style : *ButtonStyle, base_background_color : RGBA8, text_color : RGBA8) {
+SetColors :: (using style: *ButtonStyle, base_background_color: RGBA8, text_color: RGBA8) {
     SetColors(*normal.background.background_colors, base_background_color);
     SetColors(*focused.background.background_colors, Whiten(base_background_color, 0.05));
     SetColors(*hot.background.background_colors, Darken(base_background_color, 0.05));
@@ -98,7 +98,7 @@ SetColors :: (using style : *ButtonStyle, base_background_color : RGBA8, text_co
 /**
  * @brief Empty button widget.
  */
-Button :: (parent : *Node, width : Size1D, height : Size1D, style : *ButtonStyle = null, location := #caller_location) -> clicked : bool, *Node {
+Button :: (parent: *Node, width: Size1D, height: Size1D, style: *ButtonStyle = null, location := #caller_location) -> clicked: bool, *Node {
     EnsureStyle(*style, "button");
 
     node := GetNode(parent, location);
@@ -122,7 +122,7 @@ Button :: (parent : *Node, width : Size1D, height : Size1D, style : *ButtonStyle
 /**
  * @brief Button widget with text.
  */
-Button :: (parent : *Node, text : string, style : *ButtonStyle = null, location := #caller_location) -> clicked : bool, *Node {
+Button :: (parent: *Node, text: string, style: *ButtonStyle = null, location := #caller_location) -> clicked: bool, *Node {
     EnsureStyle(*style, "button");
 
     clicked, node := Button(parent, SizeFit(), SizeFit(), style, location);
@@ -140,7 +140,7 @@ Button :: (parent : *Node, text : string, style : *ButtonStyle = null, location 
 /**
  * @brief Button widget with icon and text.
  */
-Button :: (parent : *Node, icon : TextureHandle, icon_size : float, text : string, style : *ButtonStyle = null, location := #caller_location) -> clicked : bool, *Node {
+Button :: (parent: *Node, icon: TextureHandle, icon_size: float, text: string, style: *ButtonStyle = null, location := #caller_location) -> clicked: bool, *Node {
     EnsureStyle(*style, "button");
 
     clicked, node := Button(parent, SizeFit(), SizeFit(), style, location);
@@ -166,10 +166,10 @@ Button :: (parent : *Node, icon : TextureHandle, icon_size : float, text : strin
 /**
  * @brief Empty toggle button widget.
  */
-Toggle :: (parent : *Node, width : Size1D, height : Size1D, value : *bool, style : *ButtonStyle = null, location := #caller_location) -> clicked : bool, *Node {
+Toggle :: (parent: *Node, width: Size1D, height: Size1D, value: *bool, style: *ButtonStyle = null, location := #caller_location) -> clicked: bool, *Node {
     EnsureStyle(*style, "toggle");
 
-    dummy_value : bool;
+    dummy_value: bool;
     if !value {
         value = *dummy_value;
     }
@@ -202,7 +202,7 @@ Toggle :: (parent : *Node, width : Size1D, height : Size1D, value : *bool, style
 /**
  * @brief Toggle button widget with text.
  */
-Toggle :: (parent : *Node, text : string, value : *bool, style : *ButtonStyle = null, location := #caller_location) -> clicked : bool, *Node {
+Toggle :: (parent: *Node, text: string, value: *bool, style: *ButtonStyle = null, location := #caller_location) -> clicked: bool, *Node {
     EnsureStyle(*style, "toggle");
 
     clicked, node := Toggle(parent, SizeFit(), SizeFit(), value, style, location);
@@ -229,13 +229,13 @@ CheckmarkStyle :: struct {
     right_size := 0.9;
     angle := PI * 0.17;
 
-    background_color : RGBA8;
-    outer_shadow_size : float;
-    outer_shadow_offset : Vec2f;
-    outer_shadow_color : RGBA8;
+    background_color: RGBA8;
+    outer_shadow_size: float;
+    outer_shadow_offset: Vec2f;
+    outer_shadow_color: RGBA8;
 }
 
-Apply :: inline (node : *Node, style : CheckmarkStyle) {
+Apply :: inline (node: *Node, style: CheckmarkStyle) {
     SetColors(*node.background_colors, style.background_color);
     node.outer_shadow_size = style.outer_shadow_size;
     node.outer_shadow_offset = style.outer_shadow_offset;
@@ -243,13 +243,13 @@ Apply :: inline (node : *Node, style : CheckmarkStyle) {
 }
 
 CheckboxStateStyle :: struct {
-    background : BoxStyle;
-    checkmark : CheckmarkStyle;
+    background: BoxStyle;
+    checkmark: CheckmarkStyle;
 }
 
 CheckboxStyle :: StateStyle(CheckboxStateStyle);
 
-SetColors :: (using style : *CheckboxStyle, base_background_color : RGBA8, checkmark_color : RGBA8) {
+SetColors :: (using style: *CheckboxStyle, base_background_color: RGBA8, checkmark_color: RGBA8) {
     SetColors(*normal.background.background_colors, base_background_color);
     SetColors(*focused.background.background_colors, Whiten(base_background_color, 0.05));
     SetColors(*hot.background.background_colors, Darken(base_background_color, 0.05));
@@ -270,12 +270,12 @@ SetColors :: (using style : *CheckboxStyle, base_background_color : RGBA8, check
  *
  * @see CheckmarkStyle
  */
-DrawCheckmark :: (draw_list : *DrawList, node : *Node) -> bool {
+DrawCheckmark :: (draw_list: *DrawList, node: *Node) -> bool {
     if IsClipped(draw_list, node.rect) {
         return false;
     }
 
-    checkmark : *CheckmarkStyle;
+    checkmark: *CheckmarkStyle;
 
     checkmark_styles := GetUserData(node, StateStyle(CheckmarkStyle));
     if checkmark_styles {
@@ -337,7 +337,7 @@ DrawCheckmark :: (draw_list : *DrawList, node : *Node) -> bool {
  *
  * @param size Size of the checkbox. If size <= 0 it is calculated based on the text size of the "text" style.
  */
-Checkbox :: (parent : *Node, value : *bool, size := 0.0, style : *CheckboxStyle = null, location := #caller_location) -> modified : bool, *Node {
+Checkbox :: (parent: *Node, value: *bool, size := 0.0, style: *CheckboxStyle = null, location := #caller_location) -> modified: bool, *Node {
     EnsureStyle(*style, "checkbox");
 
     if size <= 0 {
@@ -362,7 +362,7 @@ Checkbox :: (parent : *Node, value : *bool, size := 0.0, style : *CheckboxStyle 
             SetDraw(checkmark, DrawCheckmark);
             SetSize(checkmark, SizeFill(), SizeFill());
 
-            checkmark_styles : StateStyle(CheckmarkStyle);
+            checkmark_styles: StateStyle(CheckmarkStyle);
             for * checkmark_styles.states {
                 it.* = style.states[it_index].checkmark;
             }
@@ -378,13 +378,13 @@ Checkbox :: (parent : *Node, value : *bool, size := 0.0, style : *CheckboxStyle 
 }
 
 RadioButtonStateStyle :: struct {
-    background : BoxStyle;
-    active_mark : BoxStyle;
+    background: BoxStyle;
+    active_mark: BoxStyle;
 }
 
 RadioButtonStyle :: StateStyle(RadioButtonStateStyle);
 
-SetColors :: (using style : *RadioButtonStyle, base_background_color : RGBA8, active_mark_color : RGBA8) {
+SetColors :: (using style: *RadioButtonStyle, base_background_color: RGBA8, active_mark_color: RGBA8) {
     SetColors(*normal.background.background_colors, base_background_color);
     SetColors(*focused.background.background_colors, Whiten(base_background_color, 0.05));
     SetColors(*hot.background.background_colors, Darken(base_background_color, 0.05));
@@ -403,7 +403,7 @@ SetColors :: (using style : *RadioButtonStyle, base_background_color : RGBA8, ac
  *
  * @param size Size of the button. If size <= 0 it is calculated based on the text size of the "text" style.
  */
-RadioButton :: (parent : *Node, value : *$T, for_value : T, size := 0.0, style : *RadioButtonStyle = null, location := #caller_location) -> clicked : bool, *Node {
+RadioButton :: (parent: *Node, value: *$T, for_value: T, size := 0.0, style: *RadioButtonStyle = null, location := #caller_location) -> clicked: bool, *Node {
     clicked, node := RadioButton(parent, value.* == for_value, size, style, location);
     if clicked {
         value.* = for_value;
@@ -417,7 +417,7 @@ RadioButton :: (parent : *Node, value : *$T, for_value : T, size := 0.0, style :
  *
  * @param size Size of the button. If size <= 0 it is calculated based on the text size of the "text" style.
  */
-RadioButton :: (parent : *Node, active : bool, size := 0.0, style : *RadioButtonStyle = null, location := #caller_location) -> clicked : bool, *Node {
+RadioButton :: (parent: *Node, active: bool, size := 0.0, style: *RadioButtonStyle = null, location := #caller_location) -> clicked: bool, *Node {
     EnsureStyle(*style, "radio_button");
 
     if size <= 0 {
@@ -457,7 +457,7 @@ RadioButton :: (parent : *Node, active : bool, size := 0.0, style : *RadioButton
     }
 }
 
-CollapseButton :: (parent: *Node, width : Size1D, height : Size1D, icon_size : float, style : *ButtonStyle = null, location := #caller_location) -> bool, *Node {
+CollapseButton :: (parent: *Node, width: Size1D, height: Size1D, icon_size: float, style: *ButtonStyle = null, location := #caller_location) -> bool, *Node {
     EnsureStyle(*style, "button_small");
 
     clicked, button := Button(parent, width, height, style, location);
@@ -465,7 +465,7 @@ CollapseButton :: (parent: *Node, width : Size1D, height : Size1D, icon_size : f
 
     icon := GetNode(button);
     SetSize(icon, SizePx(icon_size), SizePx(icon_size));
-    SetDraw(icon, (draw_list : *DrawList, node : *Node) -> bool {
+    SetDraw(icon, (draw_list: *DrawList, node: *Node) -> bool {
         if IsClipped(draw_list, node.rect) {
             return false;
         }
@@ -487,12 +487,12 @@ CollapseButton :: (parent: *Node, width : Size1D, height : Size1D, icon_size : f
     return clicked, button;
 }
 
-CollapseButton :: (parent: *Node, size : float, style : *ButtonStyle = null, location := #caller_location) -> bool, *Node {
+CollapseButton :: (parent: *Node, size: float, style: *ButtonStyle = null, location := #caller_location) -> bool, *Node {
     clicked, button := CollapseButton(parent, SizePx(size), SizePx(size), size * 0.4, style, location);
     return clicked, button;
 }
 
-MaximizeButton :: (parent: *Node, width : Size1D, height : Size1D, icon_size : float, style : *ButtonStyle = null, location := #caller_location) -> bool, *Node {
+MaximizeButton :: (parent: *Node, width: Size1D, height: Size1D, icon_size: float, style: *ButtonStyle = null, location := #caller_location) -> bool, *Node {
     EnsureStyle(*style, "button_small");
 
     clicked, button := Button(parent, width, height, style, location);
@@ -506,12 +506,12 @@ MaximizeButton :: (parent: *Node, width : Size1D, height : Size1D, icon_size : f
     return clicked, button;
 }
 
-MaximizeButton :: (parent: *Node, size : float, style : *ButtonStyle = null, location := #caller_location) -> bool, *Node {
+MaximizeButton :: (parent: *Node, size: float, style: *ButtonStyle = null, location := #caller_location) -> bool, *Node {
     clicked, button := MaximizeButton(parent, SizePx(size), SizePx(size), size * 0.4, style, location);
     return clicked, button;
 }
 
-UnmaximizeButton :: (parent: *Node, width : Size1D, height : Size1D, icon_size : float, style : *ButtonStyle = null, location := #caller_location) -> bool, *Node {
+UnmaximizeButton :: (parent: *Node, width: Size1D, height: Size1D, icon_size: float, style: *ButtonStyle = null, location := #caller_location) -> bool, *Node {
     EnsureStyle(*style, "button_small");
 
     clicked, button := Button(parent, width, height, style, location);
@@ -521,7 +521,7 @@ UnmaximizeButton :: (parent: *Node, width : Size1D, height : Size1D, icon_size :
     SetSize(icon, SizePx(icon_size), SizePx(icon_size));
     SetBorderColor(icon, style.states[GetState(button)].text.text_color);
     SetBorderSize(icon, 1);
-    SetDraw(icon, (draw_list : *DrawList, node : *Node) -> bool {
+    SetDraw(icon, (draw_list: *DrawList, node: *Node) -> bool {
         if IsClipped(draw_list, node.rect) {
             return false;
         }
@@ -554,12 +554,12 @@ UnmaximizeButton :: (parent: *Node, width : Size1D, height : Size1D, icon_size :
     return clicked, button;
 }
 
-UnmaximizeButton :: (parent: *Node, size : float, style : *ButtonStyle = null, location := #caller_location) -> bool, *Node {
+UnmaximizeButton :: (parent: *Node, size: float, style: *ButtonStyle = null, location := #caller_location) -> bool, *Node {
     clicked, button := UnmaximizeButton(parent, SizePx(size), SizePx(size), size * 0.4, style, location);
     return clicked, button;
 }
 
-CloseButton :: (parent : *Node, width : Size1D, height : Size1D, icon_size : float, style : *ButtonStyle = null, location := #caller_location) -> bool, *Node {
+CloseButton :: (parent: *Node, width: Size1D, height: Size1D, icon_size: float, style: *ButtonStyle = null, location := #caller_location) -> bool, *Node {
     EnsureStyle(*style, "button_small");
 
     clicked, button := Button(parent, width, height, style, location);
@@ -567,7 +567,7 @@ CloseButton :: (parent : *Node, width : Size1D, height : Size1D, icon_size : flo
 
     icon := GetNode(button);
     SetSize(icon, SizePx(icon_size), SizePx(icon_size));
-    SetDraw(icon, (draw_list : *DrawList, node : *Node) -> bool {
+    SetDraw(icon, (draw_list: *DrawList, node: *Node) -> bool {
         if IsClipped(draw_list, node.rect) {
             return false;
         }
@@ -592,12 +592,12 @@ CloseButton :: (parent : *Node, width : Size1D, height : Size1D, icon_size : flo
     return clicked, button;
 }
 
-CloseButton :: (parent : *Node, size : float, style : *ButtonStyle = null, location := #caller_location) -> bool, *Node {
+CloseButton :: (parent: *Node, size: float, style: *ButtonStyle = null, location := #caller_location) -> bool, *Node {
     clicked, button := CloseButton(parent, SizePx(size), SizePx(size), size * 0.4, style, location);
     return clicked, button;
 }
 
-ChevronButton :: (parent : *Node, size : float, direction : ArrowDirection, style : *ButtonStyle = null, location := #caller_location) -> bool, *Node {
+ChevronButton :: (parent: *Node, size: float, direction: ArrowDirection, style: *ButtonStyle = null, location := #caller_location) -> bool, *Node {
     EnsureStyle(*style, "button_small");
 
     clicked, button := Button(parent, SizePx(size), SizePx(size), style, location);

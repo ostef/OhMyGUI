@@ -1,20 +1,20 @@
-g_pose_empty_icon : OMG.TextureHandle;
-g_pose_filled_icon : OMG.TextureHandle;
+g_pose_empty_icon: OMG.TextureHandle;
+g_pose_filled_icon: OMG.TextureHandle;
 
-g_graph : Graph;
+g_graph: Graph;
 
 Graph :: struct {
-    nodes : [..]*GraphNode;
-    nodes_to_destroy : [..]*GraphNode;
+    nodes: [..]*GraphNode;
+    nodes_to_destroy: [..]*GraphNode;
 }
 
 GraphNode :: struct {
-    id : u64;
-    title : string;
-    description : string;
-    color : OMG.RGBA8;
-    inputs : [..]*GraphNodePort;
-    outputs : [..]*GraphNodePort;
+    id: u64;
+    title: string;
+    description: string;
+    color: OMG.RGBA8;
+    inputs: [..]*GraphNodePort;
+    outputs: [..]*GraphNodePort;
 }
 
 GraphNodePort :: struct {
@@ -23,15 +23,15 @@ GraphNodePort :: struct {
         Output;
     }
 
-    owning_node : *GraphNode;
-    name : string;
-    description : string;
-    direction : Direction;
-    type : *Type_Info;
-    connections : [..]*GraphNodePort;
+    owning_node: *GraphNode;
+    name: string;
+    description: string;
+    direction: Direction;
+    type: *Type_Info;
+    connections: [..]*GraphNodePort;
 }
 
-CreateNode :: (graph : *Graph) -> *GraphNode {
+CreateNode :: (graph: *Graph) -> *GraphNode {
     #import "Random";
 
     node := New(GraphNode);
@@ -41,8 +41,8 @@ CreateNode :: (graph : *Graph) -> *GraphNode {
     return node;
 }
 
-DestroyNode :: (graph : *Graph, node : *GraphNode) {
-    for port : node.inputs {
+DestroyNode :: (graph: *Graph, node: *GraphNode) {
+    for port: node.inputs {
         while port.connections {
             Disconnect(port, 0);
         }
@@ -51,7 +51,7 @@ DestroyNode :: (graph : *Graph, node : *GraphNode) {
     }
     array_reset(*node.inputs);
 
-    for port : node.outputs {
+    for port: node.outputs {
         while port.connections {
             Disconnect(port, 0);
         }
@@ -70,7 +70,7 @@ DestroyNode :: (graph : *Graph, node : *GraphNode) {
     free(node);
 }
 
-AddInputPort :: (node : *GraphNode, name : string, type : Type) -> *GraphNodePort {
+AddInputPort :: (node: *GraphNode, name: string, type: Type) -> *GraphNodePort {
     port := New(GraphNodePort);
     port.owning_node = node;
     port.name = name;
@@ -81,7 +81,7 @@ AddInputPort :: (node : *GraphNode, name : string, type : Type) -> *GraphNodePor
     return port;
 }
 
-AddOutputPort :: (node : *GraphNode, name : string, type : Type) -> *GraphNodePort {
+AddOutputPort :: (node: *GraphNode, name: string, type: Type) -> *GraphNodePort {
     port := New(GraphNodePort);
     port.owning_node = node;
     port.name = name;
@@ -92,7 +92,7 @@ AddOutputPort :: (node : *GraphNode, name : string, type : Type) -> *GraphNodePo
     return port;
 }
 
-GetInputPort :: (node : *GraphNode, name : string) -> *GraphNodePort {
+GetInputPort :: (node: *GraphNode, name: string) -> *GraphNodePort {
     for node.inputs {
         if it.name == name {
             return it;
@@ -102,7 +102,7 @@ GetInputPort :: (node : *GraphNode, name : string) -> *GraphNodePort {
     return null;
 }
 
-GetOutputPort :: (node : *GraphNode, name : string) -> *GraphNodePort {
+GetOutputPort :: (node: *GraphNode, name: string) -> *GraphNodePort {
     for node.outputs {
         if it.name == name {
             return it;
@@ -112,7 +112,7 @@ GetOutputPort :: (node : *GraphNode, name : string) -> *GraphNodePort {
     return null;
 }
 
-CanPortTypesConnect :: (a : *Type_Info, b : *Type_Info) -> bool {
+CanPortTypesConnect :: (a: *Type_Info, b: *Type_Info) -> bool {
     if a.type == {
     case .INTEGER;
         return a.type == b.type;
@@ -131,7 +131,7 @@ CanPortTypesConnect :: (a : *Type_Info, b : *Type_Info) -> bool {
     }
 }
 
-CanPortsConnect :: (a : *GraphNodePort, b : *GraphNodePort) -> bool {
+CanPortsConnect :: (a: *GraphNodePort, b: *GraphNodePort) -> bool {
     if !a || !b {
         return false;
     }
@@ -147,7 +147,7 @@ CanPortsConnect :: (a : *GraphNodePort, b : *GraphNodePort) -> bool {
     return true;
 }
 
-Disconnect :: (port : *GraphNodePort, other : *GraphNodePort) -> bool {
+Disconnect :: (port: *GraphNodePort, other: *GraphNodePort) -> bool {
     for port.connections {
         if it == other {
             Disconnect(port, it_index);
@@ -158,7 +158,7 @@ Disconnect :: (port : *GraphNodePort, other : *GraphNodePort) -> bool {
     return false;
 }
 
-Disconnect :: (port : *GraphNodePort, index : int) {
+Disconnect :: (port: *GraphNodePort, index: int) {
     connected := port.connections[index];
     for connected.connections {
         if it == port {
@@ -170,7 +170,7 @@ Disconnect :: (port : *GraphNodePort, index : int) {
     array_unordered_remove_by_index(*port.connections, index);
 }
 
-Connect :: (a : *GraphNodePort, b : *GraphNodePort) -> bool {
+Connect :: (a: *GraphNodePort, b: *GraphNodePort) -> bool {
     if !a || !b {
         return false;
     }
@@ -203,7 +203,7 @@ Connect :: (a : *GraphNodePort, b : *GraphNodePort) -> bool {
     return true;
 }
 
-NodeGraphNode :: (parent : *OMG.Node, id : OMG.ID) -> *OMG.Node {
+NodeGraphNode :: (parent: *OMG.Node, id: OMG.ID) -> *OMG.Node {
     node, is_new := OMG.GetNode(parent, id);
     if is_new {
         mouse := OMG.GetMousePosition(parent.window);
@@ -259,7 +259,7 @@ NodeGraphNode :: (parent : *OMG.Node, id : OMG.ID) -> *OMG.Node {
     return node;
 }
 
-NodeGraphTitleBar :: (parent : *OMG.Node, title : string, color : OMG.RGBA8) -> *OMG.Node {
+NodeGraphTitleBar :: (parent: *OMG.Node, title: string, color: OMG.RGBA8) -> *OMG.Node {
     node := OMG.GetNode(parent, "title_bar");
     OMG.SetBackgroundColors(node, color, OMG.Darken(color, 0.15), OMG.Darken(color, 0.3), OMG.Darken(color, 0.5));
     OMG.SetBorderColors(node, OMG.MakeRGBA8(1, 1, 1, 0.6), OMG.MakeRGBA8(1, 1, 1, 0.6), 0, 0);
@@ -281,7 +281,7 @@ NodeGraphTitleBar :: (parent : *OMG.Node, title : string, color : OMG.RGBA8) -> 
     return node;
 }
 
-NodeGraphBody :: (parent : *OMG.Node) -> body : *OMG.Node {
+NodeGraphBody :: (parent: *OMG.Node) -> body: *OMG.Node {
     body := OMG.GetNode(parent, "body");
     OMG.SetLayout(body, .LeftToRight);
     OMG.SetSize(body, OMG.SizeFill(), OMG.SizeFit());
@@ -307,11 +307,11 @@ NodeGraphBody :: (parent : *OMG.Node) -> body : *OMG.Node {
 }
 
 NodeGraphPortData :: struct {
-    port : *GraphNodePort;
+    port: *GraphNodePort;
 }
 
-NodeGraphPort :: (parent : *OMG.Node, port : *GraphNodePort) -> *OMG.Node {
-    Draw :: (draw_list : *OMG.DrawList, node : *OMG.Node, $direction : GraphNodePort.Direction) -> bool {
+NodeGraphPort :: (parent: *OMG.Node, port: *GraphNodePort) -> *OMG.Node {
+    Draw :: (draw_list: *OMG.DrawList, node: *OMG.Node, $direction: GraphNodePort.Direction) -> bool {
         if OMG.IsClipped(draw_list, node.rect) {
             return false;
         }
@@ -413,7 +413,7 @@ NodeGraphPort :: (parent : *OMG.Node, port : *GraphNodePort) -> *OMG.Node {
     }
 
     focused := container.state_flags & (.Focused | .Hot) != 0;
-    dragging_port : *GraphNodePort;
+    dragging_port: *GraphNodePort;
     if context.omg.mouse_capturing_node != null && context.omg.mouse_capturing_node != container {
         dragging_port_data := OMG.GetUserData(context.omg.mouse_capturing_node, NodeGraphPortData);
         if dragging_port_data {
@@ -443,7 +443,7 @@ NodeGraphPort :: (parent : *OMG.Node, port : *GraphNodePort) -> *OMG.Node {
     return container;
 }
 
-FindNodePortNode :: (parent : *OMG.Node, port : *GraphNodePort) -> *OMG.Node {
+FindNodePortNode :: (parent: *OMG.Node, port: *GraphNodePort) -> *OMG.Node {
     node := OMG.FindPrevFrameNode(parent, cast(OMG.ID, port.owning_node));
     if !node {
         return null;
@@ -468,11 +468,11 @@ FindNodePortNode :: (parent : *OMG.Node, port : *GraphNodePort) -> *OMG.Node {
 }
 
 NodeGraphConnectionData :: struct {
-    a_node : *OMG.Node;
-    b_node : *OMG.Node;
+    a_node: *OMG.Node;
+    b_node: *OMG.Node;
 }
 
-NodeGraphConnection :: (parent : *OMG.Node, a : *GraphNodePort, b : *GraphNodePort) {
+NodeGraphConnection :: (parent: *OMG.Node, a: *GraphNodePort, b: *GraphNodePort) {
     assert(a.direction == .Input);
     assert(b.direction == .Output);
 
@@ -520,7 +520,7 @@ NodeGraphConnection :: (parent : *OMG.Node, a : *GraphNodePort, b : *GraphNodePo
         }
     }
 
-    OMG.SetHitTest(node, (node : *OMG.Node, point : OMG.Vec2f) -> bool {
+    OMG.SetHitTest(node, (node: *OMG.Node, point: OMG.Vec2f) -> bool {
         data := OMG.GetUserData(node, NodeGraphConnectionData);
         if !data || !data.a_node || !data.b_node {
             return false;
@@ -541,7 +541,7 @@ NodeGraphConnection :: (parent : *OMG.Node, a : *GraphNodePort, b : *GraphNodePo
         return length(mouse - closest_point) < 4;
     });
 
-    OMG.SetDraw(node, (draw_list : *OMG.DrawList, node : *OMG.Node) -> bool {
+    OMG.SetDraw(node, (draw_list: *OMG.DrawList, node: *OMG.Node) -> bool {
         if OMG.IsClipped(draw_list, node.rect) {
             return false;
         }
@@ -569,7 +569,7 @@ NodeGraphConnection :: (parent : *OMG.Node, a : *GraphNodePort, b : *GraphNodePo
     });
 }
 
-ShowGraphNode :: (parent : *OMG.Node, graph : *Graph, graph_node : *GraphNode) {
+ShowGraphNode :: (parent: *OMG.Node, graph: *Graph, graph_node: *GraphNode) {
     node := NodeGraphNode(parent, cast(OMG.ID, graph_node));
     if graph_node.description {
         OMG.FocusTooltip(node, "%", graph_node.description);
@@ -601,7 +601,7 @@ ShowGraphNode :: (parent : *OMG.Node, graph : *Graph, graph_node : *GraphNode) {
 AnimPose :: struct {}
 AnimAdditivePose :: struct {}
 
-SetPortStyle :: (port : *GraphNodePort, node : *OMG.Node) {
+SetPortStyle :: (port: *GraphNodePort, node: *OMG.Node) {
     if port.type.type == {
     case .FLOAT;
         OMG.SetBackgroundColor(node, OMG.MakeRGBA8(0.0435, 0.870, 0.209, 1));
@@ -635,7 +635,7 @@ SetPortStyle :: (port : *GraphNodePort, node : *OMG.Node) {
     }
 }
 
-CreateBlendSpacePlayerNode :: (graph : *Graph) -> *GraphNode {
+CreateBlendSpacePlayerNode :: (graph: *Graph) -> *GraphNode {
     node := CreateNode(graph);
     node.title = "Blend Space Player";
     node.description = "Play a blend space";
@@ -647,7 +647,7 @@ CreateBlendSpacePlayerNode :: (graph : *Graph) -> *GraphNode {
     return node;
 }
 
-CreateAnimationPlayerNode :: (graph : *Graph) -> *GraphNode {
+CreateAnimationPlayerNode :: (graph: *Graph) -> *GraphNode {
     node := CreateNode(graph);
     node.title = "Animation Player";
     node.description = "Play an animation clip";
@@ -658,7 +658,7 @@ CreateAnimationPlayerNode :: (graph : *Graph) -> *GraphNode {
     return node;
 }
 
-CreateBlendPosesNode :: (graph : *Graph) -> *GraphNode {
+CreateBlendPosesNode :: (graph: *Graph) -> *GraphNode {
     node := CreateNode(graph);
     node.title = "Blend Poses";
     node.description = "Blend two poses together";
@@ -671,7 +671,7 @@ CreateBlendPosesNode :: (graph : *Graph) -> *GraphNode {
     return node;
 }
 
-CreateMakeAdditivePoseNode :: (graph : *Graph) -> *GraphNode {
+CreateMakeAdditivePoseNode :: (graph: *Graph) -> *GraphNode {
     node := CreateNode(graph);
     node.title = "Make Additive";
     node.description = "Create an additive pose from two poses";
@@ -683,7 +683,7 @@ CreateMakeAdditivePoseNode :: (graph : *Graph) -> *GraphNode {
     return node;
 }
 
-CreateApplyAdditivePoseNode :: (graph : *Graph) -> *GraphNode {
+CreateApplyAdditivePoseNode :: (graph: *Graph) -> *GraphNode {
     node := CreateNode(graph);
     node.title = "Apply Additive";
     node.description = "Apply an additive pose onto another";
@@ -695,7 +695,7 @@ CreateApplyAdditivePoseNode :: (graph : *Graph) -> *GraphNode {
     return node;
 }
 
-Canvas :: (parent : *OMG.Node, location := #caller_location) -> *OMG.Node {
+Canvas :: (parent: *OMG.Node, location := #caller_location) -> *OMG.Node {
     node := OMG.GetNode(parent, location);
     OMG.SetLayout(node, .None);
     OMG.SetSize(node, OMG.SizeFill(), OMG.SizeFill());
@@ -720,7 +720,7 @@ Canvas :: (parent : *OMG.Node, location := #caller_location) -> *OMG.Node {
         node.scroll = original_offset + mouse_delta;
     }
 
-    OMG.SetDraw(node, (draw_list : *OMG.DrawList, node : *OMG.Node) -> bool {
+    OMG.SetDraw(node, (draw_list: *OMG.DrawList, node: *OMG.Node) -> bool {
         if OMG.IsClipped(draw_list, node.rect) {
             return false;
         }
@@ -793,7 +793,7 @@ Canvas :: (parent : *OMG.Node, location := #caller_location) -> *OMG.Node {
     return node;
 }
 
-ShowNodeGraphWindow :: (window : *OMG.Window) {
+ShowNodeGraphWindow :: (window: *OMG.Window) {
     if !g_pose_empty_icon {
         g_pose_empty_icon = OMG.LoadImageFromFile("pose_empty_icon.png");
     }
@@ -829,8 +829,8 @@ ShowNodeGraphWindow :: (window : *OMG.Window) {
     OMG.Text(stats, "Num indices: %", context.omg.num_indices_last_frame);
 
     for g_graph.nodes {
-        for port : it.inputs {
-            for other_port : port.connections {
+        for port: it.inputs {
+            for other_port: port.connections {
                 NodeGraphConnection(background, port, other_port);
             }
         }

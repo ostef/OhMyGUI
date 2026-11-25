@@ -1,19 +1,19 @@
 SliderStateStyle :: struct {
-    background : BoxStyle;
-    fill : BoxStyle;
-    handle : BoxStyle;
-    text : TextStyle;
+    background: BoxStyle;
+    fill: BoxStyle;
+    handle: BoxStyle;
+    text: TextStyle;
 }
 
 SliderStyle :: struct {
-    using _ : StateStyle(SliderStateStyle);
-    background_size : float;
-    handle_outside_background : bool;
-    handle_size : Vec2f;
+    using _: StateStyle(SliderStateStyle);
+    background_size: float;
+    handle_outside_background: bool;
+    handle_size: Vec2f;
     text_align := Vec2f.{0.5,0.5};
 }
 
-SetColors :: (using style : *SliderStyle, base_background_color : RGBA8, base_fill_color : RGBA8, base_handle_color : RGBA8) {
+SetColors :: (using style: *SliderStyle, base_background_color: RGBA8, base_fill_color: RGBA8, base_handle_color: RGBA8) {
     SetColors(*normal.background.background_colors, base_background_color);
     SetColors(*focused.background.background_colors, base_background_color);
     SetColors(*hot.background.background_colors, base_background_color);
@@ -43,15 +43,15 @@ SliderFlags :: enum_flags {
  * @brief Slider widget using the "knob_slider" style.
  */
 KnobSlider :: (
-    parent : *Node,
-    value : *$T,
-    min : T, max : T, step : T,
+    parent: *Node,
+    value: *$T,
+    min: T, max: T, step: T,
     axis := Axis.X,
-    to_string : (T) -> string = null,
-    style : *SliderStyle = null,
-    flags : SliderFlags = 0,
+    to_string: (T) -> string = null,
+    style: *SliderStyle = null,
+    flags: SliderFlags = 0,
     location := #caller_location
-) -> bool, slider : *Node, background : *Node, handle : *Node {
+) -> bool, slider: *Node, background: *Node, handle: *Node {
     EnsureStyle(*style, "knob_slider");
     ok, slider, background, handle := Slider(parent, value, min, max, step, axis, to_string, style, flags, location);
 
@@ -62,15 +62,15 @@ KnobSlider :: (
  * @brief Slider widget using the "fill_slider" style.
  */
 FillSlider :: (
-    parent : *Node,
-    value : *$T,
-    min : T, max : T, step : T,
+    parent: *Node,
+    value: *$T,
+    min: T, max: T, step: T,
     axis := Axis.X,
-    to_string : (T) -> string = null,
-    style : *SliderStyle = null,
-    flags : SliderFlags = 0,
+    to_string: (T) -> string = null,
+    style: *SliderStyle = null,
+    flags: SliderFlags = 0,
     location := #caller_location
-) -> bool, slider : *Node, background : *Node, handle : *Node {
+) -> bool, slider: *Node, background: *Node, handle: *Node {
     EnsureStyle(*style, "fill_slider");
     ok, slider, background, handle := Slider(parent, value, min, max, step, axis, to_string, style, flags, location);
 
@@ -81,15 +81,15 @@ FillSlider :: (
  * @brief Slider widget.
  */
 Slider :: (
-    parent : *Node,
-    value : *$T,
-    min : T, max : T, step : T,
+    parent: *Node,
+    value: *$T,
+    min: T, max: T, step: T,
     axis := Axis.X,
-    to_string : (T) -> string = null,
-    style : *SliderStyle = null,
-    flags : SliderFlags = 0,
+    to_string: (T) -> string = null,
+    style: *SliderStyle = null,
+    flags: SliderFlags = 0,
     location := #caller_location
-) -> bool, slider : *Node, background : *Node, handle : *Node {
+) -> bool, slider: *Node, background: *Node, handle: *Node {
     EnsureStyle(*style, "slider");
 
     cross := GetCrossAxis(axis);
@@ -107,7 +107,7 @@ Slider :: (
         value.* = xx fvalue;
     }
 
-    slider, background, fill, handle, text : *Node;
+    slider, background, fill, handle, text: *Node;
     interacting := false;
 
     slider = GetNode(parent, location=location);
@@ -229,17 +229,17 @@ Slider :: (
 }
 
 ScrollbarStateStyle :: struct {
-    background : BoxStyle;
-    handle : BoxStyle;
+    background: BoxStyle;
+    handle: BoxStyle;
 }
 
 ScrollbarStyle :: struct {
-    using _ : StateStyle(ScrollbarStateStyle);
-    background_size : float;
-    handle_size : Vec2f;
+    using _: StateStyle(ScrollbarStateStyle);
+    background_size: float;
+    handle_size: Vec2f;
 }
 
-SetColors :: (using style : *ScrollbarStyle, base_background_color : RGBA8, base_handle_color : RGBA8) {
+SetColors :: (using style: *ScrollbarStyle, base_background_color: RGBA8, base_handle_color: RGBA8) {
     SetColors(*normal.background.background_colors, base_background_color);
     SetColors(*focused.background.background_colors, base_background_color);
     SetColors(*hot.background.background_colors, base_background_color);
@@ -256,10 +256,10 @@ SetColors :: (using style : *ScrollbarStyle, base_background_color : RGBA8, base
 /**
  * @brief Scrollbar widget.
  */
-Scrollbar :: (parent : *Node, target : *Node, axis : Axis, style : *ScrollbarStyle = null, location := #caller_location) -> background : *Node, handle : *Node {
+Scrollbar :: (parent: *Node, target: *Node, axis: Axis, style: *ScrollbarStyle = null, location := #caller_location) -> background: *Node, handle: *Node {
     EnsureStyle(*style, "scrollbar");
 
-    background, handle : *Node;
+    background, handle: *Node;
 
     size := target.size[axis];
     children_size := target.children_size[axis] + target.padding.xy[axis] + target.padding.zw[axis];

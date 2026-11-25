@@ -3,79 +3,79 @@ ColorPickerFlags :: enum_flags {
 }
 
 HSVTriangleWheelStyle :: struct {
-    padding : Vec4b;
+    padding: Vec4b;
 
     wheel_thickness := 20.0;
     triangle_inset := 10.0;
     border_size := 2.0;
-    border_color : RGBA8;
-    outer_shadow_color : RGBA8;
-    outer_shadow_size : float;
-    outer_shadow_offset : Vec2f;
+    border_color: RGBA8;
+    outer_shadow_color: RGBA8;
+    outer_shadow_size: float;
+    outer_shadow_offset: Vec2f;
 
     CursorStateStyle :: struct {
         radius := 10.0;
-        border_colors : BoxColors;
+        border_colors: BoxColors;
         border_size := 2.0;
-        outer_shadow_color : RGBA8;
-        outer_shadow_size : float;
-        outer_shadow_offset : Vec2f;
+        outer_shadow_color: RGBA8;
+        outer_shadow_size: float;
+        outer_shadow_offset: Vec2f;
     }
 
-    wheel_cursor : StateStyle(CursorStateStyle);
-    triangle_cursor : StateStyle(CursorStateStyle);
+    wheel_cursor: StateStyle(CursorStateStyle);
+    triangle_cursor: StateStyle(CursorStateStyle);
 }
 
 ColorPickerStyle :: struct {
-    wheel : HSVTriangleWheelStyle;
+    wheel: HSVTriangleWheelStyle;
 
-    label_and_slider : LabelAndContentStyle;
+    label_and_slider: LabelAndContentStyle;
 
-    red_slider : SliderStyle;
-    green_slider : SliderStyle;
-    blue_slider : SliderStyle;
+    red_slider: SliderStyle;
+    green_slider: SliderStyle;
+    blue_slider: SliderStyle;
     dynamic_rgb_slider_color := true;
 
-    hue_slider : SliderStyle;
-    saturation_slider : SliderStyle;
-    value_slider : SliderStyle;
+    hue_slider: SliderStyle;
+    saturation_slider: SliderStyle;
+    value_slider: SliderStyle;
     dynamic_hsv_slider_color := true;
 
-    opacity_slider : SliderStyle;
+    opacity_slider: SliderStyle;
     dynamic_opacity_slider_color := true;
-    opacity_checkerboard_white : RGBA8;
-    opacity_checkerboard_black : RGBA8;
+    opacity_checkerboard_white: RGBA8;
+    opacity_checkerboard_black: RGBA8;
 
-    preview : ColorPreviewStyle;
+    preview: ColorPreviewStyle;
 }
 
 ColorPickerData :: struct {
-    mode : enum {
+    mode: enum {
         HSVWheel;
         Sliders;
         Inputs;
     } = .Sliders;
 
-    hsv : HSV;
-    modifying_hsv : bool;
-    color_before_picking : Vec4f;
-    picking_color : bool;
+    hsv: HSV;
+    modifying_hsv: bool;
+    color_before_picking: Vec4f;
+    picking_color: bool;
 }
 
-g_pick_icon_image : TextureHandle;
+g_pick_icon_image: TextureHandle;
 
 LoadPickIconImage :: () {
     g_pick_icon_image = LoadImageFromFileContents("eyedropper", Eyedropper_Contents);
     assert(g_pick_icon_image != 0, "Could not load pick icon");
 }
 
-GetHSVWheelGeometricData :: (style : *HSVTriangleWheelStyle, rect : Vec4f, hsv : HSV) -> struct {
-    center : Vec2f;
-    inner_radius : float;
-    outer_radius : float;
-    hue_point : Vec2f;
-    white_point : Vec2f;
-    black_point : Vec2f;
+GetHSVWheelGeometricData :: (style: *HSVTriangleWheelStyle, rect: Vec4f, hsv: HSV) -> struct {
+    center: Vec2f;
+    inner_radius: float;
+    outer_radius: float;
+    hue_point: Vec2f;
+    white_point: Vec2f;
+    black_point: Vec2f;
 } {
     center := (rect.xy + rect.zw) * 0.5;
     outer_radius := min(rect.z - rect.x, rect.w - rect.y) * 0.5 - style.border_size;
@@ -97,8 +97,8 @@ GetHSVWheelGeometricData :: (style : *HSVTriangleWheelStyle, rect : Vec4f, hsv :
     };
 }
 
-HSVTriangleWheel :: (parent : *Node, using data : *ColorPickerData, style : *HSVTriangleWheelStyle, location := #caller_location) -> bool, *Node {
-    Draw :: (draw_list : *DrawList, node : *Node) -> bool {
+HSVTriangleWheel :: (parent: *Node, using data: *ColorPickerData, style: *HSVTriangleWheelStyle, location := #caller_location) -> bool, *Node {
+    Draw :: (draw_list: *DrawList, node: *Node) -> bool {
         if IsClipped(draw_list, node.rect) {
             return false;
         }
@@ -159,8 +159,8 @@ HSVTriangleWheel :: (parent : *Node, using data : *ColorPickerData, style : *HSV
     return modified, node;
 }
 
-SaturationValueTriangle :: (parent : *Node, using data : *ColorPickerData, style : *HSVTriangleWheelStyle, location := #caller_location) -> bool {
-    HitTest :: (node : *Node, point : Vec2f) -> bool {
+SaturationValueTriangle :: (parent: *Node, using data: *ColorPickerData, style: *HSVTriangleWheelStyle, location := #caller_location) -> bool {
+    HitTest :: (node: *Node, point: Vec2f) -> bool {
         if !IsInsideRect(point, node.clipped_rect) {
             return false;
         }
@@ -190,7 +190,7 @@ SaturationValueTriangle :: (parent : *Node, using data : *ColorPickerData, style
             || IsInsideCircle(point, cursor, cursor_style.radius);
     }
 
-    Draw :: (draw_list : *DrawList, node : *Node) -> bool {
+    Draw :: (draw_list: *DrawList, node: *Node) -> bool {
         if IsClipped(draw_list, node.rect) {
             return false;
         }
@@ -260,8 +260,8 @@ SaturationValueTriangle :: (parent : *Node, using data : *ColorPickerData, style
     return button.down;
 }
 
-HueWheel :: (parent : *Node, using data : *ColorPickerData, style : *HSVTriangleWheelStyle, location := #caller_location) -> bool {
-    HitTest :: (node : *Node, point : Vec2f) -> bool {
+HueWheel :: (parent: *Node, using data: *ColorPickerData, style: *HSVTriangleWheelStyle, location := #caller_location) -> bool {
+    HitTest :: (node: *Node, point: Vec2f) -> bool {
         if !IsInsideRect(point, node.clipped_rect) {
             return false;
         }
@@ -291,7 +291,7 @@ HueWheel :: (parent : *Node, using data : *ColorPickerData, style : *HSVTriangle
             || IsInsideCircle(point, cursor, cursor_style.radius);
     }
 
-    Draw :: (draw_list : *DrawList, node : *Node) -> bool {
+    Draw :: (draw_list: *DrawList, node: *Node) -> bool {
         if IsClipped(draw_list, node.rect) {
             return false;
         }
@@ -313,7 +313,7 @@ HueWheel :: (parent : *Node, using data : *ColorPickerData, style : *HSVTriangle
         using _ := data.*;
         using _ := GetHSVWheelGeometricData(style, node.rect, hsv);
 
-        GetColor :: (index : int, data : *void) -> RGBA8 {
+        GetColor :: (index: int, data: *void) -> RGBA8 {
             points := cast(*[]PathPoint, data);
             hue := 360 - index / cast(float, points.count) * 360;
             return MakeRGBA8(HSVToRGB(.{hue, 1, 1}), 1);
@@ -365,16 +365,16 @@ HueWheel :: (parent : *Node, using data : *ColorPickerData, style : *HSVTriangle
 }
 
 ColoredSliderData :: struct {
-    hue : bool;
-    hsv : HSV;
-    checkerboard_white : RGBA8;
-    checkerboard_black : RGBA8;
-    start_color : RGBA8;
-    end_color : RGBA8;
+    hue: bool;
+    hsv: HSV;
+    checkerboard_white: RGBA8;
+    checkerboard_black: RGBA8;
+    start_color: RGBA8;
+    end_color: RGBA8;
 }
 
-ColoredSlider :: (parent : *Node, value : *float, min : float, max : float, step : float, style : *SliderStyle, dynamic_color : bool, location := #caller_location) -> bool, slider : *Node, background : *Node, handle : *Node {
-    DrawTriangularCursor :: (draw_list : *DrawList, node : *Node) -> bool {
+ColoredSlider :: (parent: *Node, value: *float, min: float, max: float, step: float, style: *SliderStyle, dynamic_color: bool, location := #caller_location) -> bool, slider: *Node, background: *Node, handle: *Node {
+    DrawTriangularCursor :: (draw_list: *DrawList, node: *Node) -> bool {
         if IsClipped(draw_list, node.rect) {
             return false;
         }
@@ -409,7 +409,7 @@ ColoredSlider :: (parent : *Node, value : *float, min : float, max : float, step
         return true;
     }
 
-    DrawBackground :: (draw_list : *DrawList, node : *Node) -> bool {
+    DrawBackground :: (draw_list: *DrawList, node: *Node) -> bool {
         if IsClipped(draw_list, node.rect) {
             return false;
         }
@@ -435,7 +435,7 @@ ColoredSlider :: (parent : *Node, value : *float, min : float, max : float, step
             resolution := cast(int, Max(node.size.x / 5.0, 30));
 
             t := 0.0;
-            for i : 0..resolution - 1 {
+            for i: 0..resolution - 1 {
                 t0 := node.rect.xy[axis] + t * node.size[axis];
                 h0 := ifx axis == .X then t * 360 else 360 - t * 360;
                 c0 := MakeRGBA8(HSVToRGB(.{h0, hsv.saturation, hsv.value}), 1);
@@ -446,15 +446,15 @@ ColoredSlider :: (parent : *Node, value : *float, min : float, max : float, step
                 h1 := ifx axis == .X then t * 360 else 360 - t * 360;
                 c1 := MakeRGBA8(HSVToRGB(.{h1, hsv.saturation, hsv.value}), 1);
 
-                p0 : Vec2f;
+                p0: Vec2f;
                 p0[axis] = t0;
                 p0[cross] = node.rect.zw[cross];
 
-                p1 : Vec2f;
+                p1: Vec2f;
                 p1[axis] = t0;
                 p1[cross] = node.rect.xy[cross];
 
-                p2 : Vec2f;
+                p2: Vec2f;
                 p2[axis] = t1;
                 p2[cross] = node.rect.xy[cross];
 
@@ -507,13 +507,13 @@ ColoredSlider :: (parent : *Node, value : *float, min : float, max : float, step
 }
 
 ColorPreviewStyle :: struct {
-    using box : BoxStyle;
-    opacity_checkerboard_white : RGBA8;
-    opacity_checkerboard_black : RGBA8;
+    using box: BoxStyle;
+    opacity_checkerboard_white: RGBA8;
+    opacity_checkerboard_black: RGBA8;
 }
 
-ColorPreview :: (parent : *Node, color : RGBA8, style : *ColorPreviewStyle, location := #caller_location) -> *Node {
-    Draw :: (draw_list : *DrawList, node : *Node) -> bool {
+ColorPreview :: (parent: *Node, color: RGBA8, style: *ColorPreviewStyle, location := #caller_location) -> *Node {
+    Draw :: (draw_list: *DrawList, node: *Node) -> bool {
         if IsClipped(draw_list, node.rect) {
             return false;
         }
@@ -588,7 +588,7 @@ ColorPreview :: (parent : *Node, color : RGBA8, style : *ColorPreviewStyle, loca
     return node;
 }
 
-PickColorButton :: (parent : *Node, color : *Vec4f, previous_color : Vec4f, data : *ColorPickerData, location := #caller_location) -> *Node {
+PickColorButton :: (parent: *Node, color: *Vec4f, previous_color: Vec4f, data: *ColorPickerData, location := #caller_location) -> *Node {
     clicked, pick_button := Toggle(parent, SizePx(32), SizePx(32), *data.picking_color, location=location);
     pick_button.flags |= .NoPaddedClip;
     pick_button.padding = .{7,7,7,7};
@@ -642,13 +642,13 @@ GetColorAtMousePosition :: inline () -> RGBA8 {
 
 #if OS == .WINDOWS {
 
-GetColorFromScreen :: (x : int, y : int) -> RGBA8 {
+GetColorFromScreen :: (x: int, y: int) -> RGBA8 {
     User32 :: #library,system "User32";
     Gdi32 :: #library,system "Gdi32";
 
-    GetDC :: (hwnd : *void) -> *void #foreign User32;
-    ReleaseDC :: (hwnd : *void, hdc : *void) -> s32 #foreign User32;
-    GetPixel :: (hdc : *void, x : s32, y : s32) -> u32 #foreign Gdi32;
+    GetDC :: (hwnd: *void) -> *void #foreign User32;
+    ReleaseDC :: (hwnd: *void, hdc: *void) -> s32 #foreign User32;
+    GetPixel :: (hdc: *void, x: s32, y: s32) -> u32 #foreign Gdi32;
 
     monitor := GetDC(null);
     defer ReleaseDC(null, monitor);
@@ -665,13 +665,13 @@ GetColorFromScreen :: (x : int, y : int) -> RGBA8 {
 
 } else {
 
-GetColorFromScreen :: (x : int, y : int) -> RGBA8 {
+GetColorFromScreen :: (x: int, y: int) -> RGBA8 {
     return 0;
 }
 
 }
 
-RGBToHSVPreserving :: (rgb : Vec3f, current : HSV) -> HSV {
+RGBToHSVPreserving :: (rgb: Vec3f, current: HSV) -> HSV {
     hsv := RGBToHSV(rgb);
     if hsv.saturation == 0 || hsv.value == 0 {
         hsv.hue = current.hue;
@@ -684,20 +684,20 @@ RGBToHSVPreserving :: (rgb : Vec3f, current : HSV) -> HSV {
 }
 
 ColorPicker :: (
-    parent : *Node,
-    color : *Vec4f,
+    parent: *Node,
+    color: *Vec4f,
     previous_color := Vec4f.{0,0,0,0},
-    flags : ColorPickerFlags = 0,
-    style : *ColorPickerStyle = null,
+    flags: ColorPickerFlags = 0,
+    style: *ColorPickerStyle = null,
     location := #caller_location
-) -> ok : bool, cancel : bool, *Node {
+) -> ok: bool, cancel: bool, *Node {
     LabelSlider :: (
-        parent : *Node,
-        label : string,
-        value : *float, min : float, max : float, step : float,
-        label_and_content_style : *LabelAndContentStyle, style : *SliderStyle, dynamic_color : bool,
+        parent: *Node,
+        label: string,
+        value: *float, min: float, max: float, step: float,
+        label_and_content_style: *LabelAndContentStyle, style: *SliderStyle, dynamic_color: bool,
         location := #caller_location
-    ) -> bool, slider : *Node {
+    ) -> bool, slider: *Node {
         node := GetNode(parent, location);
         SetSize(node, SizeFill(), SizeFit());
         SetChildAlign(node, label_and_content_style.child_align);
@@ -786,7 +786,7 @@ ColorPicker :: (
 
         if data.mode == {
         case .HSVWheel;
-            hsv_wheel : *Node;
+            hsv_wheel: *Node;
             data.modifying_hsv, hsv_wheel = HSVTriangleWheel(bottom, data, *style.wheel);
             SetMinSize(hsv_wheel, 200, 200);
 
@@ -948,14 +948,14 @@ ColorPicker :: (
 }
 
 ColorPickerWindow :: struct {
-    bring_forward : bool;
-    opened : bool;
-    opened_in_window : *Window;
-    color : *Vec4f;
-    previous_color : Vec4f;
+    bring_forward: bool;
+    opened: bool;
+    opened_in_window: *Window;
+    color: *Vec4f;
+    previous_color: Vec4f;
 }
 
-OpenGlobalColorPicker :: (window : *Window, color : *Vec4f) {
+OpenGlobalColorPicker :: (window: *Window, color: *Vec4f) {
     data := AddGlobalUserData("color_picker", ColorPickerWindow);
 
     data.opened_in_window = window;
@@ -999,20 +999,20 @@ ColorInputFlags :: enum_flags {
 }
 
 ColorInputStyle :: struct {
-    label_and_content : LabelAndContentStyle;
-    number_input : TextInputStyle;
-    preview : ColorPreviewStyle;
-    number_input_gap : s8;
-    preview_gap : s8;
+    label_and_content: LabelAndContentStyle;
+    number_input: TextInputStyle;
+    preview: ColorPreviewStyle;
+    number_input_gap: s8;
+    preview_gap: s8;
 }
 
 ColorInput :: (
-    parent : *Node,
-    value : *RGBA8,
-    flags : ColorInputFlags = 0,
-    style : *ColorInputStyle = null,
+    parent: *Node,
+    value: *RGBA8,
+    flags: ColorInputFlags = 0,
+    style: *ColorInputStyle = null,
     location := #caller_location
-) -> modified : bool {
+) -> modified: bool {
     rgba := ToVec4f(value.*);
 
     modified := ColorInput(parent, *rgba, flags, style, location);
@@ -1025,12 +1025,12 @@ ColorInput :: (
 }
 
 ColorInput :: (
-    parent : *Node,
-    value : *Vec3f,
-    flags : ColorInputFlags = 0,
-    style : *ColorInputStyle = null,
+    parent: *Node,
+    value: *Vec3f,
+    flags: ColorInputFlags = 0,
+    style: *ColorInputStyle = null,
     location := #caller_location
-) -> modified : bool {
+) -> modified: bool {
     rgba := Vec4f.{xyz=value.*, w=1};
 
     modified := ColorInput(parent, *rgba, flags | .NoAlpha, style, location);
@@ -1043,12 +1043,12 @@ ColorInput :: (
 }
 
 ColorInput :: (
-    parent : *Node,
-    value : *Vec4f,
-    flags : ColorInputFlags = 0,
-    style : *ColorInputStyle = null,
+    parent: *Node,
+    value: *Vec4f,
+    flags: ColorInputFlags = 0,
+    style: *ColorInputStyle = null,
     location := #caller_location
-) -> modified : bool {
+) -> modified: bool {
     EnsureStyle(*style, "color_input");
 
     modified := false;

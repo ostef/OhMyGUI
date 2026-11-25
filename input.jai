@@ -1,12 +1,12 @@
 InputContext :: struct {
-    mouse_position : Vec2f;
-    mouse_delta : Vec2f;
-    mouse_wheel : Vec2f;
+    mouse_position: Vec2f;
+    mouse_delta: Vec2f;
+    mouse_wheel: Vec2f;
 
-    mouse_button_states : [Num_Mouse_Buttons]KeyState;
-    key_states : []KeyState;
+    mouse_button_states: [Num_Mouse_Buttons]KeyState;
+    key_states: []KeyState;
 
-    text : [..]u32;
+    text: [..]u32;
 }
 
 KeyState :: enum_flags u8 {
@@ -34,18 +34,18 @@ MouseButtonFlags :: enum_flags u8 {
     Extra2;
 }
 
-InitInput :: (using input : *InputContext) {
+InitInput :: (using input: *InputContext) {
     text.allocator = context.allocator;
     key_states = NewArray(xx KeyCode.Count, KeyState);
 }
 
-DestroyInput :: (using input : *InputContext) {
+DestroyInput :: (using input: *InputContext) {
     array_reset(*text);
     free(key_states.data);
     input.* = .{};
 }
 
-ResetInput :: (using input : *InputContext) {
+ResetInput :: (using input: *InputContext) {
     array_reset_keeping_memory(*text);
 
     mouse_wheel = .{};
@@ -60,7 +60,7 @@ ResetInput :: (using input : *InputContext) {
     }
 }
 
-InputNewFrame :: (using input : *InputContext) {
+InputNewFrame :: (using input: *InputContext) {
     old_mouse_pos := mouse_position;
 
     mx, my := PlatformGetMousePosition();
@@ -73,7 +73,7 @@ GetMousePosition :: inline () -> Vec2f {
     return context.omg.input.mouse_position;
 }
 
-GetMousePosition :: inline (window : *Window) -> Vec2f {
+GetMousePosition :: inline (window: *Window) -> Vec2f {
     wx, wy := PlatformGetWindowPosition(window.platform_handle);
 
     return context.omg.input.mouse_position - Vec2f.{xx wx, xx wy};
@@ -91,7 +91,7 @@ IsAnyMouseButtonDown :: inline () -> bool {
     return IsMouseButtonDown(.Left) || IsMouseButtonDown(.Middle) || IsMouseButtonDown(.Right);
 }
 
-IsMouseButtonDown :: inline (button : MouseButton) -> bool {
+IsMouseButtonDown :: inline (button: MouseButton) -> bool {
     return context.omg.input.mouse_button_states[button] & .Down != 0;
 }
 
@@ -99,11 +99,11 @@ IsAnyMouseButtonPressed :: inline (repeated := true) -> bool {
     return IsMouseButtonPressed(.Left, repeated) || IsMouseButtonPressed(.Middle, repeated) || IsMouseButtonPressed(.Right, repeated);
 }
 
-IsMouseButtonPressed :: inline (button : MouseButton, repeated := true) -> bool {
+IsMouseButtonPressed :: inline (button: MouseButton, repeated := true) -> bool {
     return context.omg.input.mouse_button_states[button] & .Pressed != 0 || (repeated && context.omg.input.mouse_button_states[button] & .Repeated != 0);
 }
 
-IsMouseButtonDoubleClicked :: inline (button : MouseButton) -> bool {
+IsMouseButtonDoubleClicked :: inline (button: MouseButton) -> bool {
     return context.omg.input.mouse_button_states[button] & .Repeated != 0;
 }
 
@@ -111,7 +111,7 @@ IsAnyMouseButtonReleased :: inline () -> bool {
     return IsMouseButtonReleased(.Left) || IsMouseButtonReleased(.Middle) || IsMouseButtonReleased(.Right);
 }
 
-IsMouseButtonReleased :: inline (button : MouseButton) -> bool {
+IsMouseButtonReleased :: inline (button: MouseButton) -> bool {
     return context.omg.input.mouse_button_states[button] & .Released != 0;
 }
 
@@ -187,7 +187,7 @@ KeyCode :: enum u8 {
     Count;
 }
 
-IsKeyDown :: inline (key : KeyCode) -> bool {
+IsKeyDown :: inline (key: KeyCode) -> bool {
     if key < 0 || cast(int, key) >= context.omg.input.key_states.count {
         return false;
     }
@@ -195,7 +195,7 @@ IsKeyDown :: inline (key : KeyCode) -> bool {
     return context.omg.input.key_states[key] & .Down != 0;
 }
 
-IsKeyPressed :: inline (key : KeyCode, repeated := true) -> bool {
+IsKeyPressed :: inline (key: KeyCode, repeated := true) -> bool {
     if key < 0 || cast(int, key) >= context.omg.input.key_states.count {
         return false;
     }
@@ -203,7 +203,7 @@ IsKeyPressed :: inline (key : KeyCode, repeated := true) -> bool {
     return context.omg.input.key_states[key] & .Pressed != 0 || (repeated && context.omg.input.key_states[key] & .Repeated != 0);
 }
 
-IsKeyRepeated :: inline (key : KeyCode) -> bool {
+IsKeyRepeated :: inline (key: KeyCode) -> bool {
     if key < 0 || cast(int, key) >= context.omg.input.key_states.count {
         return false;
     }
@@ -211,7 +211,7 @@ IsKeyRepeated :: inline (key : KeyCode) -> bool {
     return context.omg.input.key_states[key] & .Repeated != 0;
 }
 
-IsKeyReleased :: inline (key : KeyCode) -> bool {
+IsKeyReleased :: inline (key: KeyCode) -> bool {
     if key < 0 || cast(int, key) >= context.omg.input.key_states.count {
         return false;
     }
@@ -226,7 +226,7 @@ ModState :: enum_flags {
 }
 
 GetModState :: inline () -> ModState {
-    state : ModState;
+    state: ModState;
     if IsKeyDown(.Shift) {
         state |= .Shift;
     }

@@ -8,7 +8,7 @@ AxisFlags :: enum_flags u8 {
     Y;
 }
 
-GetCrossAxis :: inline (axis : Axis) -> Axis {
+GetCrossAxis :: inline (axis: Axis) -> Axis {
     return ifx axis == .X then .Y else .X;
 }
 
@@ -28,15 +28,15 @@ Size1D :: struct {
         FitChildren;   ///> Size is the sum of the children's size, plus padding and child gap.
     }
 
-    kind : Kind;
-    value : float;
+    kind: Kind;
+    value: float;
 }
 
-SizePx :: inline (value : float) -> Size1D {
+SizePx :: inline (value: float) -> Size1D {
     return .{kind=.Pixels, value=value};
 }
 
-SizePercent :: inline (value : float) -> Size1D {
+SizePercent :: inline (value: float) -> Size1D {
     return .{kind=.ParentPercent, value=value};
 }
 
@@ -58,18 +58,18 @@ SizeFit :: inline () -> Size1D {
  * @brief Layout size description on the X and Y axes.
  */
 Size2D :: struct {
-    x : Size1D;
-    y : Size1D;
+    x: Size1D;
+    y: Size1D;
 
     #overlay(x)
-    axes : [2]Size1D;
+    axes: [2]Size1D;
 }
 
-operator*[] :: inline (size : Size2D, index : int) -> *Size1D #no_abc {
+operator*[] :: inline (size: Size2D, index: int) -> *Size1D #no_abc {
     return *size.axes[index];
 }
 
-operator*[] :: inline (size : Size2D, axis : Axis) -> *Size1D #no_abc {
+operator*[] :: inline (size: Size2D, axis: Axis) -> *Size1D #no_abc {
     return *size.axes[axis];
 }
 
@@ -86,11 +86,11 @@ LayoutMode :: enum u8 {
     BottomToTop; ///> Position children from bottom-to-top. Children declared first appear bottommost. Child alignment goes from bottom to top.
 }
 
-GetLayoutAxis :: inline (node : *Node) -> Axis {
+GetLayoutAxis :: inline (node: *Node) -> Axis {
     return GetLayoutAxis(node.child_layout_mode);
 }
 
-GetLayoutAxis :: inline (mode : LayoutMode) -> Axis {
+GetLayoutAxis :: inline (mode: LayoutMode) -> Axis {
     if mode == .TopToBottom || mode == .BottomToTop {
         return .Y;
     } else {
@@ -98,17 +98,17 @@ GetLayoutAxis :: inline (mode : LayoutMode) -> Axis {
     }
 }
 
-IsLayoutReverseDirection :: inline (node : *Node) -> bool, float {
+IsLayoutReverseDirection :: inline (node: *Node) -> bool, float {
     reverse, sign := IsLayoutReverseDirection(node.child_layout_mode);
     return reverse, sign;
 }
 
-IsLayoutReverseDirection :: inline (mode : LayoutMode) -> bool, float {
+IsLayoutReverseDirection :: inline (mode: LayoutMode) -> bool, float {
     return mode == .RightToLeft || mode == .BottomToTop, cast(float, mode == .RightToLeft || mode == .BottomToTop) * 2 - 1;
 }
 
-MergeSort :: (first : *Node) -> *Node {
-    Split :: (first : *Node) -> *Node {
+MergeSort :: (first: *Node) -> *Node {
+    Split :: (first: *Node) -> *Node {
         fast := first;
         slow := first;
 
@@ -128,7 +128,7 @@ MergeSort :: (first : *Node) -> *Node {
         return tmp;
     }
 
-    Merge :: (first : *Node, second : *Node) -> *Node {
+    Merge :: (first: *Node, second: *Node) -> *Node {
         if !first {
             return second;
         }
@@ -167,11 +167,11 @@ MergeSort :: (first : *Node) -> *Node {
     return Merge(first, second);
 }
 
-SortChildren :: (node : *Node) {
+SortChildren :: (node: *Node) {
     if node.flags & .SortChildren {
         node.first_child = MergeSort(node.first_child);
 
-        index : s32 = 0;
+        index: s32 = 0;
         node.last_child = node.first_child;
         while node.last_child && node.last_child.next_sibling {
             node.last_child.z_index = index;
@@ -190,7 +190,7 @@ SortChildren :: (node : *Node) {
     }
 } @Profile
 
-LayoutNodes :: (root : *Node) #no_abc {
+LayoutNodes :: (root: *Node) #no_abc {
     assert(root.parent == null);
     assert(root.desired_size.x.kind == .Pixels);
     assert(root.desired_size.y.kind == .Pixels);
@@ -213,7 +213,7 @@ LayoutNodes :: (root : *Node) #no_abc {
     LayoutPosition(root);
 } @Profile
 
-LayoutFixedAndFitSizing :: (node : *Node, axis : Axis) #no_abc {
+LayoutFixedAndFitSizing :: (node: *Node, axis: Axis) #no_abc {
     layout_axis := GetLayoutAxis(node);
 
     for :Children node {
@@ -229,7 +229,7 @@ LayoutFixedAndFitSizing :: (node : *Node, axis : Axis) #no_abc {
     min_should_fit := node.min_max_size_fit & xx (node.min_max_size_fit.MinFitWidth << axis) != 0;
     max_should_fit := node.min_max_size_fit & xx (node.min_max_size_fit.MaxFitWidth << axis) != 0;
 
-    text_size : Vec2f;
+    text_size: Vec2f;
     if (node.flags & .TextNode) && (axis == .X || !(node.flags & .WrapText)) && (node.desired_size[axis].kind == .FitChildren || min_should_fit || max_should_fit) {
         text_size = CalculateTextSize(node.font, node.text_size, node.text);
     }
@@ -274,7 +274,7 @@ LayoutFixedAndFitSizing :: (node : *Node, axis : Axis) #no_abc {
     }
 } @Profile
 
-LayoutFillAndPercentSizing :: (node : *Node, axis : Axis) #no_abc {
+LayoutFillAndPercentSizing :: (node: *Node, axis: Axis) #no_abc {
     layout_axis := GetLayoutAxis(node);
 
     for :Children node {
@@ -394,7 +394,7 @@ LayoutFillAndPercentSizing :: (node : *Node, axis : Axis) #no_abc {
     }
 } @Profile
 
-LayoutPosition :: (node : *Node) #no_abc {
+LayoutPosition :: (node: *Node) #no_abc {
     if node.child_layout_mode == .None {
         remaining_size := node.size - ToVec2f(node.padding.xy) - ToVec2f(node.padding.zw) - node.children_size;
 
@@ -456,9 +456,9 @@ LayoutPosition :: (node : *Node) #no_abc {
     }
 } @Profile
 
-LayoutWrapText :: (node : *Node) #no_abc {
+LayoutWrapText :: (node: *Node) #no_abc {
     if (node.flags & .TextNode) && (node.flags & .WrapText) && node.desired_size.y.kind == .FitChildren {
-        iter : TextGlyphIterator;
+        iter: TextGlyphIterator;
         iter.font = node.font;
         iter.font_size = node.text_size;
         iter.text = node.text;

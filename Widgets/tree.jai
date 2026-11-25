@@ -1,13 +1,13 @@
 GlobalTreeNodeData :: struct {
-    tree_node_open_states : HT.Table(ID, bool);
+    tree_node_open_states: HT.Table(ID, bool);
 
-    Destroy :: (node : *Node, data : *void) {
+    Destroy :: (node: *Node, data: *void) {
         using _ := cast(*GlobalTreeNodeData, data);
         HT.table_reset(*tree_node_open_states);
     }
 }
 
-IsTreeNodeOpened :: (id : ID) -> bool {
+IsTreeNodeOpened :: (id: ID) -> bool {
     global := GetGlobalUserData(GlobalTreeNodeData);
     if !global {
         return false;
@@ -21,12 +21,12 @@ IsTreeNodeOpened :: (id : ID) -> bool {
     return result;
 }
 
-SetTreeNodeOpened :: (id : ID, opened : bool) {
+SetTreeNodeOpened :: (id: ID, opened: bool) {
     global := AddGlobalUserData(GlobalTreeNodeData);
     HT.table_set(*global.tree_node_open_states, id, opened);
 }
 
-AddTreeNodeState :: (id : ID, default_value : bool) -> opened : bool {
+AddTreeNodeState :: (id: ID, default_value: bool) -> opened: bool {
     global := AddGlobalUserData(GlobalTreeNodeData);
     entry, new := HT.find_or_add(*global.tree_node_open_states, id);
     if new {
@@ -37,13 +37,13 @@ AddTreeNodeState :: (id : ID, default_value : bool) -> opened : bool {
 }
 
 TreeNodeStyle :: struct {
-    tree_item : ButtonStyle;
-    arrow_size : float;
-    arrow_style : enum {
+    tree_item: ButtonStyle;
+    arrow_size: float;
+    arrow_style: enum {
         Arrow;
         Chevron;
     };
-    indent : s8;
+    indent: s8;
 }
 
 TreeNodeFlags :: enum_flags {
@@ -59,7 +59,7 @@ TreeNodeFlags :: enum_flags {
 /**
  * @brief Collapsible tree node widget.
  */
-TreeNode :: (parent : *Node, text : string, flags : TreeNodeFlags = 0, style : *TreeNodeStyle = null, location := #caller_location) -> contents : *Node, tree_item : *Node, tree_node : *Node {
+TreeNode :: (parent: *Node, text: string, flags: TreeNodeFlags = 0, style: *TreeNodeStyle = null, location := #caller_location) -> contents: *Node, tree_item: *Node, tree_node: *Node {
     EnsureStyle(*style, "tree_node");
 
     node, is_new := GetNode(parent, location);
@@ -68,7 +68,7 @@ TreeNode :: (parent : *Node, text : string, flags : TreeNodeFlags = 0, style : *
         SetLayout(node, .TopToBottom);
         SetChildGap(node, parent.child_gap);
 
-        opened : bool;
+        opened: bool;
         if !(flags & .Leaf) {
             opened = AddTreeNodeState(node.id, (flags & .OpenByDefault) != 0);
 
@@ -123,7 +123,7 @@ TreeNode :: (parent : *Node, text : string, flags : TreeNodeFlags = 0, style : *
                 SetDraw(icon, null);
             } else if #complete style.arrow_style == {
             case .Arrow;
-                SetDraw(icon, (draw_list : *DrawList, node : *Node) -> bool {
+                SetDraw(icon, (draw_list: *DrawList, node: *Node) -> bool {
                     if IsClipped(draw_list, node.rect) {
                         return false;
                     }
@@ -135,7 +135,7 @@ TreeNode :: (parent : *Node, text : string, flags : TreeNodeFlags = 0, style : *
                 });
 
             case .Chevron;
-                SetDraw(icon, (draw_list : *DrawList, node : *Node) -> bool {
+                SetDraw(icon, (draw_list: *DrawList, node: *Node) -> bool {
                     if IsClipped(draw_list, node.rect) {
                         return false;
                     }
@@ -156,7 +156,7 @@ TreeNode :: (parent : *Node, text : string, flags : TreeNodeFlags = 0, style : *
             Apply(text_node, style.tree_item.states[state].text);
         }
 
-        contents : *Node;
+        contents: *Node;
         if opened {
             contents = GetNode(node);
             SetSize(contents, SizeFill(), SizeFit());
@@ -175,11 +175,11 @@ TreeNode :: (parent : *Node, text : string, flags : TreeNodeFlags = 0, style : *
     }
 }
 
-IsTreeNodeOpened :: inline (node : *Node) -> bool {
+IsTreeNodeOpened :: inline (node: *Node) -> bool {
     return IsTreeNodeOpened(node.id);
 }
 
-SetTreeNodeOpened :: (node : *Node, opened : bool) {
+SetTreeNodeOpened :: (node: *Node, opened: bool) {
     SetTreeNodeOpened(node.id, opened);
 
     if opened {
@@ -192,7 +192,7 @@ SetTreeNodeOpened :: (node : *Node, opened : bool) {
 /**
  * @brief Collapsible header widget.
  */
-CollapsingHeader :: (parent : *Node, text : string, flags : TreeNodeFlags = 0, style : *TreeNodeStyle = null, location := #caller_location) -> contents : *Node, tree_item : *Node, tree_node : *Node {
+CollapsingHeader :: (parent: *Node, text: string, flags: TreeNodeFlags = 0, style: *TreeNodeStyle = null, location := #caller_location) -> contents: *Node, tree_item: *Node, tree_node: *Node {
     EnsureStyle(*style, "collapsing_header");
 
     contents, tree_item, tree_node := TreeNode(parent, text, flags, style, location);

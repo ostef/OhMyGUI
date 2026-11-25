@@ -21,23 +21,23 @@ OMG_GL :: #import "OhMyGUI/GL";
 #load "node_editor.jai";
 
 g_quit := false;
-g_window : *SDL_Window;
-g_gl_context : SDL_GLContext;
-g_node_graph_window : *SDL_Window;
-g_node_graph_gl_context : SDL_GLContext;
-g_time : float;
-g_delta_time : float;
-g_gpu_time : float;
-g_user_time : float;
-g_slow_down : bool;
+g_window: *SDL_Window;
+g_gl_context: SDL_GLContext;
+g_node_graph_window: *SDL_Window;
+g_node_graph_gl_context: SDL_GLContext;
+g_time: float;
+g_delta_time: float;
+g_gpu_time: float;
+g_user_time: float;
+g_slow_down: bool;
 
 g_rect_corner_radiuses: OMG.Vec4f;
 g_rect_blur := 0.0;
 g_rect_blur_sides := OMG.LineSides.All;
 g_rect_thickness := 10.0;
 
-g_current_timestamp_query : int;
-g_timestamp_queries : [2][2]GLuint;
+g_current_timestamp_query: int;
+g_timestamp_queries: [2][2]GLuint;
 
 main :: () {
     #if Enable_Memory_Debugger {
@@ -94,7 +94,7 @@ main :: () {
     defer glDeleteQueries(xx (g_timestamp_queries.count * 2), xx g_timestamp_queries.data);
 
     // Make first query result not cause an error
-    for queries, query_backbuffer_index : g_timestamp_queries {
+    for queries, query_backbuffer_index: g_timestamp_queries {
         for queries {
             glQueryCounter(it, GL_TIMESTAMP);
 
@@ -125,7 +125,7 @@ main :: () {
 
         user_start := current_time_monotonic();
 
-        event : SDL_Event;
+        event: SDL_Event;
         while SDL_PollEvent(*event) {
             if event.type == SDL_QUIT {
                 g_quit = true;
@@ -209,7 +209,7 @@ main :: () {
 
         SDL_GL_MakeCurrent(g_window, g_gl_context);
 
-        w, h : s32;
+        w, h: s32;
         SDL_GetWindowSize(g_window, *w, *h);
 
         glViewport(0, 0, xx w, xx h);
@@ -221,7 +221,7 @@ main :: () {
             last_query_index += g_timestamp_queries.count;
         }
 
-        start_time, end_time : s64;
+        start_time, end_time: s64;
         glGetQueryObjecti64v(g_timestamp_queries[last_query_index][0], GL_QUERY_RESULT, *start_time);
         glGetQueryObjecti64v(g_timestamp_queries[last_query_index][1], GL_QUERY_RESULT, *end_time);
         elapsed := end_time - start_time;

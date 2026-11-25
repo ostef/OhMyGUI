@@ -1,41 +1,41 @@
 // Table API heavily inspired by Dear ImGui
 
 TableStyle :: struct {
-    corner_radiuses : Vec4f;
-    padding : Vec4b;
+    corner_radiuses: Vec4f;
+    padding: Vec4b;
 
-    border_colors : BoxColors;
-    border_size : float;
+    border_colors: BoxColors;
+    border_size: float;
 
-    vertical_inner_border_colors : BoxColors;
-    vertical_inner_border_size : float;
+    vertical_inner_border_colors: BoxColors;
+    vertical_inner_border_size: float;
 
-    rows : TableRowStyle;
-    header_row : TableRowStyle;
-    header_text : TextStyle;
-    header_sort_icon_size : float;
-    header_sort_icon_style : enum {
+    rows: TableRowStyle;
+    header_row: TableRowStyle;
+    header_text: TextStyle;
+    header_sort_icon_size: float;
+    header_sort_icon_style: enum {
         Arrow;
         Chevron;
     };
 }
 
 TableRowStyle :: struct {
-    height : float;
+    height: float;
 
-    border_color : RGBA8;
-    border_size : float;
+    border_color: RGBA8;
+    border_size: float;
 
-    cell_padding : Vec4b;
-    cell_child_align : Vec2f;
+    cell_padding: Vec4b;
+    cell_child_align: Vec2f;
 
-    background_colors : BoxColors;
-    alternate_background_colors : BoxColors;
-    inner_shadow_size : float;
-    inner_shadow_color : RGBA8;
+    background_colors: BoxColors;
+    alternate_background_colors: BoxColors;
+    inner_shadow_size: float;
+    inner_shadow_color: RGBA8;
 }
 
-Apply :: inline (node : *Node, style : TableRowStyle, alternate : bool) {
+Apply :: inline (node: *Node, style: TableRowStyle, alternate: bool) {
     node.padding = style.cell_padding;
     node.child_align = style.cell_child_align;
 
@@ -61,24 +61,24 @@ TableColumnFlags :: enum_flags {
 
 TableData :: struct {
     Column :: struct {
-        label : string;
-        str_id : string;
-        flags : TableColumnFlags;
-        node_is_new : bool;
-        node : *Node;
-        rows : [..]*Node;
+        label: string;
+        str_id: string;
+        flags: TableColumnFlags;
+        node_is_new: bool;
+        node: *Node;
+        rows: [..]*Node;
 
-        previous_row_border_color : RGBA8;
-        previous_row_border_size : float;
+        previous_row_border_color: RGBA8;
+        previous_row_border_size: float;
     }
 
-    content : *Node;
-    sort_params : TableSortParams;
-    columns : [..]Column;
-    current_column : int;
-    flags : TableFlags;
+    content: *Node;
+    sort_params: TableSortParams;
+    columns: [..]Column;
+    current_column: int;
+    flags: TableFlags;
 
-    Destroy :: (node : *Node, data : *void) {
+    Destroy :: (node: *Node, data: *void) {
         using _ := cast(*TableData, data);
 
         for columns {
@@ -90,7 +90,7 @@ TableData :: struct {
 }
 
 TableSortParams :: struct {
-    column_params : [..]TableColumnSortParams;
+    column_params: [..]TableColumnSortParams;
     modified := true;
 }
 
@@ -101,11 +101,11 @@ TableSortDirection :: enum u8 {
 }
 
 TableColumnSortParams :: struct {
-    str_id : string;
-    direction : TableSortDirection;
+    str_id: string;
+    direction: TableSortDirection;
 }
 
-GetTableSortParams :: (table : *Node) -> *TableSortParams {
+GetTableSortParams :: (table: *Node) -> *TableSortParams {
     data := GetUserData(table, TableData);
     if !data {
         return null;
@@ -114,7 +114,7 @@ GetTableSortParams :: (table : *Node) -> *TableSortParams {
     return *data.sort_params;
 }
 
-GetColumnSortDirection :: (params : *TableSortParams, str_id : string) -> TableSortDirection, order : int {
+GetColumnSortDirection :: (params: *TableSortParams, str_id: string) -> TableSortDirection, order: int {
     for params.column_params {
         if it.str_id == str_id {
             // Order is reversed, because when we sort it's the last index that has
@@ -127,7 +127,7 @@ GetColumnSortDirection :: (params : *TableSortParams, str_id : string) -> TableS
     return .None, 0;
 }
 
-SetColumnSortDirection :: (params : *TableSortParams, str_id : string, dir : TableSortDirection) {
+SetColumnSortDirection :: (params: *TableSortParams, str_id: string, dir: TableSortDirection) {
     index := -1;
     for * params.column_params {
         if it.str_id == str_id {
@@ -150,7 +150,7 @@ SetColumnSortDirection :: (params : *TableSortParams, str_id : string, dir : Tab
     }
 }
 
-ClearTableData :: (data : *TableData) {
+ClearTableData :: (data: *TableData) {
     for data.columns {
         array_reset(*it.rows);
     }
@@ -162,7 +162,7 @@ ClearTableData :: (data : *TableData) {
     data.content = null;
 }
 
-Table :: (parent : *Node, flags : TableFlags = 0, style : *TableStyle = null, location := #caller_location) -> *Node {
+Table :: (parent: *Node, flags: TableFlags = 0, style: *TableStyle = null, location := #caller_location) -> *Node {
     EnsureStyle(*style, "table");
 
     table := GetNode(parent, location);
@@ -208,13 +208,13 @@ Table :: (parent : *Node, flags : TableFlags = 0, style : *TableStyle = null, lo
     }
 }
 
-TableAddColumn :: (table : *Node, label : string, str_id : string, initial_size : Size1D = .{kind=.FillParent, value=1}, flags : TableColumnFlags = 0) {
+TableAddColumn :: (table: *Node, label: string, str_id: string, initial_size: Size1D = .{kind=.FillParent, value=1}, flags: TableColumnFlags = 0) {
     data := GetUserData(table, TableData);
     assert(data != null, "Node is not a table");
 
     style := GetUserData(table, TableStyle);
 
-    border : *Node;
+    border: *Node;
 
     first := data.columns.count == 0;
     if !first && style.vertical_inner_border_size > 0 {
@@ -282,7 +282,7 @@ TableAddColumn :: (table : *Node, label : string, str_id : string, initial_size 
     }
 }
 
-TableAddRow :: (table : *Node, style : *TableRowStyle) {
+TableAddRow :: (table: *Node, style: *TableRowStyle) {
     data := GetUserData(table, TableData);
     assert(data != null, "Node is not a table");
 
@@ -312,7 +312,7 @@ TableAddRow :: (table : *Node, style : *TableRowStyle) {
     }
 }
 
-TableHeadersRow :: (table : *Node) {
+TableHeadersRow :: (table: *Node) {
     data := GetUserData(table, TableData);
     assert(data != null, "Node is not a table");
 
@@ -379,7 +379,7 @@ TableHeadersRow :: (table : *Node) {
     }
 }
 
-TableNextRow :: (table : *Node, style : *TableRowStyle = null) -> cell : *Node {
+TableNextRow :: (table: *Node, style: *TableRowStyle = null) -> cell: *Node {
     data := GetUserData(table, TableData);
     assert(data != null, "Node is not a table");
 
@@ -394,7 +394,7 @@ TableNextRow :: (table : *Node, style : *TableRowStyle = null) -> cell : *Node {
     return TableGetCell(table);
 }
 
-TableNextColumn :: (table : *Node) -> cell : *Node {
+TableNextColumn :: (table: *Node) -> cell: *Node {
     data := GetUserData(table, TableData);
     assert(data != null, "Node is not a table");
 
@@ -403,7 +403,7 @@ TableNextColumn :: (table : *Node) -> cell : *Node {
     return TableGetCell(table);
 }
 
-TableSetColumn :: (table : *Node, index : int) -> cell : *Node {
+TableSetColumn :: (table: *Node, index: int) -> cell: *Node {
     data := GetUserData(table, TableData);
     assert(data != null, "Node is not a table");
 
@@ -412,7 +412,7 @@ TableSetColumn :: (table : *Node, index : int) -> cell : *Node {
     return TableGetCell(table);
 }
 
-TableSetColumn :: (table : *Node, str_id : string) -> cell : *Node {
+TableSetColumn :: (table: *Node, str_id: string) -> cell: *Node {
     data := GetUserData(table, TableData);
     assert(data != null, "Node is not a table");
 
@@ -426,7 +426,7 @@ TableSetColumn :: (table : *Node, str_id : string) -> cell : *Node {
     return TableGetCell(table);
 }
 
-TableGetCell :: (table : *Node) -> *Node {
+TableGetCell :: (table: *Node) -> *Node {
     data := GetUserData(table, TableData);
     assert(data != null, "Node is not a table");
 

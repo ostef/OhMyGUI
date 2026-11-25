@@ -1,20 +1,20 @@
 // This file is more of a sandbox than real example code
 // @Todo: better demo
 
-g_frame_index : int;
+g_frame_index: int;
 g_slider_value := 0.5;
 g_show_password := true;
-g_toggle_value : bool;
+g_toggle_value: bool;
 g_color := OMG.Vec4f.{0,0,0,1};
-g_selected_fruit : enum {
+g_selected_fruit: enum {
     Apple;
     Strawberry;
     Cherry;
     Banana;
 };
 
-g_justify_text : bool;
-g_animate_text : bool;
+g_justify_text: bool;
+g_animate_text: bool;
 g_text_size := 20.0;
 
 g_content_browser_opened := true;
@@ -23,14 +23,14 @@ g_entity_inspector_opened := true;
 g_debug_view_opened := true;
 
 Entity :: struct {
-    id : int;
-    name : string;
-    type : string;
+    id: int;
+    name: string;
+    type: string;
 }
 
-g_entities : [..]Entity;
+g_entities: [..]Entity;
 
-SortEntities :: (params : *OMG.TableSortParams) {
+SortEntities :: (params: *OMG.TableSortParams) {
     #import "Sort";
     #import "String";
 
@@ -100,7 +100,7 @@ FillEntities :: () {
         return Types[index];
     }
 
-    for i : 0..100 {
+    for i: 0..100 {
         e := array_add(*g_entities);
         e.id = i + 1;
         e.name = RandomName();
@@ -108,7 +108,7 @@ FillEntities :: () {
     }
 }
 
-g_wants_switch_theme : bool;
+g_wants_switch_theme: bool;
 
 EditorFrame :: () {
     defer g_frame_index += 1;
@@ -451,7 +451,7 @@ END
                 OMG.TreeNode(tree2, "2.2", .Leaf);
             }
 
-            InfiniteTreeNode :: (parent : *OMG.Node) {
+            InfiniteTreeNode :: (parent: *OMG.Node) {
                 tree := OMG.TreeNode(parent, "Infinity Tree");
                 if tree {
                     InfiniteTreeNode(tree);

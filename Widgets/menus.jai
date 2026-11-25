@@ -1,13 +1,13 @@
 MenuItemStyle :: struct {
-    button : ButtonStyle;
-    checkmark : CheckmarkStyle;
+    button: ButtonStyle;
+    checkmark: CheckmarkStyle;
     checkmark_size := 0.9;
 }
 
 /**
  * @brief Horizontal menu bar widget.
  */
-MenuBar :: (parent : *Node, str_id : string, act_as_title_bar : bool = false, style : *BoxStyle = null) -> *Node {
+MenuBar :: (parent: *Node, str_id: string, act_as_title_bar: bool = false, style: *BoxStyle = null) -> *Node {
     EnsureStyle(*style, "menu_bar");
 
     node := GetNode(parent, str_id);
@@ -33,7 +33,7 @@ MenuBar :: (parent : *Node, str_id : string, act_as_title_bar : bool = false, st
 /**
  * @brief Button widget used inside menus and menu bars.
  */
-MenuItem :: (parent : *Node, icon : TextureHandle, icon_size : float, text : string, selected := false, style : *MenuItemStyle = null, location := #caller_location) -> clicked : bool, *Node {
+MenuItem :: (parent: *Node, icon: TextureHandle, icon_size: float, text: string, selected := false, style: *MenuItemStyle = null, location := #caller_location) -> clicked: bool, *Node {
     EnsureStyle(*style, "menu_item");
 
     node := GetNode(parent, location);
@@ -95,23 +95,23 @@ MenuItem :: (parent : *Node, icon : TextureHandle, icon_size : float, text : str
 /**
  * @brief Button widget used inside menus and menu bars.
  */
-MenuItem :: (parent : *Node, text : string, selected := false, style : *MenuItemStyle = null, location := #caller_location) -> clicked : bool, *Node {
+MenuItem :: (parent: *Node, text: string, selected := false, style: *MenuItemStyle = null, location := #caller_location) -> clicked: bool, *Node {
     clicked, node := MenuItem(parent, 0, 0, text, selected, style, location);
     return clicked, node;
 }
 
 MenuData :: struct {
-    wants_close : bool;
-    parent_menu : *Node;
-    submenus : [..]*Node;
+    wants_close: bool;
+    parent_menu: *Node;
+    submenus: [..]*Node;
 
-    Destroy :: (node : *Node, data : *void) {
+    Destroy :: (node: *Node, data: *void) {
         using _ := cast(*MenuData, data);
         array_reset(*submenus);
     }
 }
 
-CloseMenu :: (node : *Node) {
+CloseMenu :: (node: *Node) {
     data := GetUserData(node, MenuData);
     while data {
         data.wants_close = true;
@@ -122,13 +122,13 @@ CloseMenu :: (node : *Node) {
 }
 
 MenuStyle :: struct {
-    using background : BoxStyle;
+    using background: BoxStyle;
     min_width_px := 50.0;
     max_width_px := 150.0;
     max_height_px := FLOAT32_INFINITY;
 }
 
-Apply :: inline (node : *Node, style : MenuStyle) {
+Apply :: inline (node: *Node, style: MenuStyle) {
     Apply(node, style.background);
 
     SetMinWidth(node, style.min_width_px);
@@ -162,14 +162,14 @@ IsInMenuOrSubmenus :: (node: *Node, of: *Node) -> bool {
  * @brief Menu item widget that opens a menu.
  */
 Menu :: (
-    parent : *Node,
-    icon : TextureHandle,
-    icon_size : float,
-    text : string,
-    menu_item_style : *MenuItemStyle = null,
-    menu_style : *MenuStyle = null,
+    parent: *Node,
+    icon: TextureHandle,
+    icon_size: float,
+    text: string,
+    menu_item_style: *MenuItemStyle = null,
+    menu_style: *MenuStyle = null,
     location := #caller_location
-) -> menu : *Node, menu_item : *Node {
+) -> menu: *Node, menu_item: *Node {
     EnsureStyle(*menu_item_style, "menu_item");
     EnsureStyle(*menu_style, "menu");
 
@@ -234,7 +234,7 @@ Menu :: (
         }
     }
 
-    menu : *Node;
+    menu: *Node;
     if menu_item.state_flags & .Active {
         menu = GetNode(popup_root, menu_id);
         assert(prev_frame_menu == null || menu == prev_frame_menu);
@@ -267,24 +267,24 @@ Menu :: (
  * @brief Menu item widget that opens a menu.
  */
 Menu :: (
-    parent : *Node,
-    text : string,
-    menu_item_style : *MenuItemStyle = null,
-    menu_style : *MenuStyle = null,
+    parent: *Node,
+    text: string,
+    menu_item_style: *MenuItemStyle = null,
+    menu_style: *MenuStyle = null,
     location := #caller_location
-) -> menu : *Node, menu_item : *Node {
+) -> menu: *Node, menu_item: *Node {
     menu, menu_item := Menu(parent, 0, 0, text, menu_item_style, menu_style, location);
     return menu, menu_item;
 }
 
 ContextMenuData :: struct {
-    opened : bool;
+    opened: bool;
 }
 
 /**
  * @brief Open a menu when right clicking on the Node.
  */
-ContextMenu :: (parent : *Node, style : *MenuStyle = null, location := #caller_location) -> *Node {
+ContextMenu :: (parent: *Node, style: *MenuStyle = null, location := #caller_location) -> *Node {
     EnsureStyle(*style, "menu");
 
     using _ := AddUserData(parent, ContextMenuData);
@@ -309,7 +309,7 @@ ContextMenu :: (parent : *Node, style : *MenuStyle = null, location := #caller_l
         opened = false;
     }
 
-    menu : *Node;
+    menu: *Node;
     if opened {
         menu = GetNode(popup_root, menu_id);
         assert(prev_frame_menu == null || menu == prev_frame_menu);

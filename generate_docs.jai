@@ -6,12 +6,12 @@
 #import "Sort";
 
 DocElement :: struct {
-    parent : *DocElement;
+    parent: *DocElement;
 
-    node : *Code_Node;
-    full_name : string;
-    name : string;
-    kind : enum {
+    node: *Code_Node;
+    full_name: string;
+    name: string;
+    kind: enum {
         File;
         Struct;
         StructMember;
@@ -20,29 +20,29 @@ DocElement :: struct {
         Function;
     };
 
-    raw_comment : string;
-    brief : string;
-    description : string;
-    params : [..]string;
-    returns : string;
-    see_also : [..]string;
+    raw_comment: string;
+    brief: string;
+    description: string;
+    params: [..]string;
+    returns: string;
+    see_also: [..]string;
 }
 
 DocFile :: struct {
-    #as using base : DocElement;
+    #as using base: DocElement;
     base.kind = .File;
 
-    filename : string;
-    short_filename : string;
-    contents : string;
-    line_offsets : [..]int;
+    filename: string;
+    short_filename: string;
+    contents: string;
+    line_offsets: [..]int;
 
-    structs : [..]*DocStruct;
-    enums : [..]*DocEnum;
-    functions : [..]*DocFunction;
+    structs: [..]*DocStruct;
+    enums: [..]*DocEnum;
+    functions: [..]*DocFunction;
 }
 
-GetFile :: (doc : *DocElement) -> *DocFile {
+GetFile :: (doc: *DocElement) -> *DocFile {
     while doc && doc.kind != .File {
         doc = doc.parent;
     }
@@ -51,49 +51,49 @@ GetFile :: (doc : *DocElement) -> *DocFile {
 }
 
 DocStructMember :: struct {
-    #as using base : DocElement;
+    #as using base: DocElement;
     base.kind = .StructMember;
 
-    type : *Type_Info;
-    anonymous_type_documentation : *DocElement;
+    type: *Type_Info;
+    anonymous_type_documentation: *DocElement;
 }
 
 DocStruct :: struct {
-    #as using base : DocElement;
+    #as using base: DocElement;
     base.kind = .Struct;
 
-    members : [..]DocStructMember;
-    sub_structs : [..]*DocStruct;
-    sub_enums : [..]*DocEnum;
-    sub_functions : [..]*DocFunction;
+    members: [..]DocStructMember;
+    sub_structs: [..]*DocStruct;
+    sub_enums: [..]*DocEnum;
+    sub_functions: [..]*DocFunction;
 
-    related_functions : [..]*DocFunction;
+    related_functions: [..]*DocFunction;
 }
 
 DocEnumValue :: struct {
-    #as using base : DocElement;
+    #as using base: DocElement;
     base.kind = .EnumValue;
 }
 
 DocEnum :: struct {
-    #as using base : DocElement;
+    #as using base: DocElement;
     base.kind = .Enum;
 
-    values : [..]DocEnumValue;
+    values: [..]DocEnumValue;
 
-    related_functions : [..]*DocFunction;
+    related_functions: [..]*DocFunction;
 }
 
 DocFunction :: struct {
-    #as using base : DocElement;
+    #as using base: DocElement;
     base.kind = .Function;
 }
 
-g_files : [..]*DocFile;
-g_all_docs : Table(*Code_Node, *DocElement);
-g_all_docs_by_name : Table(string, *DocElement);
+g_files: [..]*DocFile;
+g_all_docs: Table(*Code_Node, *DocElement);
+g_all_docs_by_name: Table(string, *DocElement);
 
-CreateDoc :: ($T : Type, parent : *DocElement, node : *Code_Node) -> *T {
+CreateDoc :: ($T: Type, parent: *DocElement, node: *Code_Node) -> *T {
     doc := New(T);
     doc.parent = parent;
     doc.node = node;
@@ -102,7 +102,7 @@ CreateDoc :: ($T : Type, parent : *DocElement, node : *Code_Node) -> *T {
     return doc;
 }
 
-SetName :: (doc : *DocElement, name : string) {
+SetName :: (doc: *DocElement, name: string) {
     doc.name = name;
     if doc.parent && doc.parent.kind != .File {
         if !doc.parent.full_name {
@@ -117,7 +117,7 @@ SetName :: (doc : *DocElement, name : string) {
     table_set(*g_all_docs_by_name, doc.full_name, doc);
 }
 
-LoadFile :: (filename : string) -> *DocFile {
+LoadFile :: (filename: string) -> *DocFile {
     for g_files {
         if it.filename == filename {
             return it;
@@ -133,7 +133,7 @@ LoadFile :: (filename : string) -> *DocFile {
         file.short_filename = advance(filename, #filepath.count);
 
         file.name = copy_string(file.short_filename);
-        for i : 0..file.name.count - 1 {
+        for i: 0..file.name.count - 1 {
             if !is_alnum(file.name[i]) {
                 file.name[i] = #char "_";
             }
@@ -164,7 +164,7 @@ LoadFile :: (filename : string) -> *DocFile {
     return null;
 }
 
-GetDeclarationRange :: (decl : *Code_Declaration) -> line_start : int, line_end : int, char_start : int, char_end : int {
+GetDeclarationRange :: (decl: *Code_Declaration) -> line_start: int, line_end: int, char_start: int, char_end: int {
     if !decl.expression {
         return decl.l0, decl.l1, decl.c0, decl.c1;
     }
@@ -185,7 +185,7 @@ GetDeclarationRange :: (decl : *Code_Declaration) -> line_start : int, line_end 
     }
 }
 
-GetNodeText :: (node : *Code_Node) -> string {
+GetNodeText :: (node: *Code_Node) -> string {
     if !node.enclosing_load {
         return "";
     }
@@ -195,7 +195,7 @@ GetNodeText :: (node : *Code_Node) -> string {
         return "";
     }
 
-    l0, c0, l1, c1 : int;
+    l0, c0, l1, c1: int;
     if node.kind == .DECLARATION {
         l0, l1, c0, c1 = GetDeclarationRange(xx node);
     } else {
@@ -211,7 +211,7 @@ GetNodeText :: (node : *Code_Node) -> string {
     return .{data=file.contents.data + line_start, count=line_end - line_start};
 }
 
-GetFollowingComment :: (decl : *Code_Declaration) -> string {
+GetFollowingComment :: (decl: *Code_Declaration) -> string {
     if !decl.enclosing_load {
         return "";
     }
@@ -237,8 +237,8 @@ GetFollowingComment :: (decl : *Code_Declaration) -> string {
     return line_str;
 }
 
-GetLeadingComment :: (node : *Code_Node) -> string, indentation : int {
-    EndsWith :: (str : string, with : string, offset_from_end : int) -> bool {
+GetLeadingComment :: (node: *Code_Node) -> string, indentation: int {
+    EndsWith :: (str: string, with: string, offset_from_end: int) -> bool {
         if str.count - offset_from_end < with.count {
             return false;
         }
@@ -315,7 +315,7 @@ GetLeadingComment :: (node : *Code_Node) -> string, indentation : int {
     return "", 0;
 }
 
-ParseDocumentation :: (doc : *DocElement, indentation : int) {
+ParseDocumentation :: (doc: *DocElement, indentation: int) {
     str := doc.raw_comment;
     if begins_with(str, "///>") {
         str = advance(str, "///>".count);
@@ -336,7 +336,7 @@ ParseDocumentation :: (doc : *DocElement, indentation : int) {
     for lines {
         s := it;
 
-        for i : 0..indentation - 1 {
+        for i: 0..indentation - 1 {
             if s.count <= 0 {
                 break;
             }
@@ -381,7 +381,7 @@ ParseDocumentation :: (doc : *DocElement, indentation : int) {
     }
 }
 
-HandleStructMember :: (doc : *DocStruct, node : *Code_Node) {
+HandleStructMember :: (doc: *DocStruct, node: *Code_Node) {
     original_node := node;
 
     if node.kind == .USING {
@@ -444,13 +444,13 @@ HandleStructMember :: (doc : *DocStruct, node : *Code_Node) {
     }
 }
 
-HandleStruct :: (doc : *DocStruct, struct_node : *Code_Struct) {
+HandleStruct :: (doc: *DocStruct, struct_node: *Code_Struct) {
     for struct_node.block.statements {
         HandleStructMember(doc, it);
     }
 }
 
-HandleEnum :: (doc : *DocEnum, enum_node : *Code_Enum) {
+HandleEnum :: (doc: *DocEnum, enum_node: *Code_Enum) {
     for enum_node.block.members {
         if it.kind != .DECLARATION {
             continue;
@@ -476,7 +476,7 @@ HandleEnum :: (doc : *DocEnum, enum_node : *Code_Enum) {
     }
 }
 
-HandleDeclaration :: (decl : *Code_Declaration) -> *DocElement {
+HandleDeclaration :: (decl: *Code_Declaration) -> *DocElement {
     if !decl.expression {
         return null;
     }
@@ -487,7 +487,7 @@ HandleDeclaration :: (decl : *Code_Declaration) -> *DocElement {
         }
     }
 
-    doc : *DocElement;
+    doc: *DocElement;
     file := LoadFile(decl.enclosing_load.fully_pathed_filename);
     if !file {
         return null;
@@ -534,7 +534,7 @@ HandleDeclaration :: (decl : *Code_Declaration) -> *DocElement {
     return doc;
 }
 
-HandleCompilerMessage :: (msg : *Message) {
+HandleCompilerMessage :: (msg: *Message) {
     if msg.kind == {
     case .TYPECHECKED;
         typechecked := cast(*Message_Typechecked, msg);
@@ -556,8 +556,8 @@ HandleCompilerMessage :: (msg : *Message) {
     }
 }
 
-AppendRef :: (builder : *String_Builder, doc : *DocElement) {
-    AppendPath :: (builder : *String_Builder, doc : *DocElement) {
+AppendRef :: (builder: *String_Builder, doc: *DocElement) {
+    AppendPath :: (builder: *String_Builder, doc: *DocElement) {
         root := doc;
         while root.parent {
             root = root.parent;
@@ -571,8 +571,8 @@ AppendRef :: (builder : *String_Builder, doc : *DocElement) {
     print_to_builder(builder, ")");
 }
 
-AppendFileHeader :: (builder : *String_Builder, file : *DocFile) {
-    AppendIndex :: (builder : *String_Builder, file : *DocFile, name : string, docs : []*$T) {
+AppendFileHeader :: (builder: *String_Builder, file: *DocFile) {
+    AppendIndex :: (builder: *String_Builder, file: *DocFile, name: string, docs: []*$T) {
         if docs.count <= 0 {
             return;
         }
@@ -602,7 +602,7 @@ AppendFileHeader :: (builder : *String_Builder, file : *DocFile) {
     print_to_builder(builder, "\n");
 }
 
-AppendDocStructMembers :: (builder : *String_Builder, doc : *DocStruct) {
+AppendDocStructMembers :: (builder: *String_Builder, doc: *DocStruct) {
     print_to_builder(builder, "| Name | Type | Description |\n");
     print_to_builder(builder, "| - | -: | - |\n");
 
@@ -648,11 +648,11 @@ AppendDocStructMembers :: (builder : *String_Builder, doc : *DocStruct) {
     print_to_builder(builder, "\n");
 }
 
-AppendAnchor :: (builder : *String_Builder, doc : *DocElement) {
+AppendAnchor :: (builder: *String_Builder, doc: *DocElement) {
     print_to_builder(builder, "{#%_%}", to_lower_copy(doc.full_name), cast(u64, doc));
 }
 
-AppendDocStruct :: (builder : *String_Builder, doc : *DocStruct) {
+AppendDocStruct :: (builder: *String_Builder, doc: *DocStruct) {
     print_to_builder(builder, "### %1 ", doc.full_name);
     AppendAnchor(builder, doc);
     print_to_builder(builder, "\n");
@@ -669,7 +669,7 @@ AppendDocStruct :: (builder : *String_Builder, doc : *DocStruct) {
     AppendDocStructMembers(builder, doc);
 }
 
-AppendDocEnumValues :: (builder : *String_Builder, doc : *DocEnum) {
+AppendDocEnumValues :: (builder: *String_Builder, doc: *DocEnum) {
     print_to_builder(builder, "| Name | Description |\n");
     print_to_builder(builder, "| - | - |\n");
 
@@ -681,7 +681,7 @@ AppendDocEnumValues :: (builder : *String_Builder, doc : *DocEnum) {
     print_to_builder(builder, "\n");
 }
 
-AppendDocEnum :: (builder : *String_Builder, doc : *DocEnum) {
+AppendDocEnum :: (builder: *String_Builder, doc: *DocEnum) {
     print_to_builder(builder, "### %1 ", doc.full_name);
     AppendAnchor(builder, doc);
     print_to_builder(builder, "\n");
@@ -698,7 +698,7 @@ AppendDocEnum :: (builder : *String_Builder, doc : *DocEnum) {
     AppendDocEnumValues(builder, doc);
 }
 
-AppendDocFunction :: (builder : *String_Builder, doc : *DocFunction) {
+AppendDocFunction :: (builder: *String_Builder, doc: *DocFunction) {
     print_to_builder(builder, "### %1 ", doc.full_name);
     AppendAnchor(builder, doc);
     print_to_builder(builder, "\n");
@@ -747,7 +747,7 @@ AppendDocFunction :: (builder : *String_Builder, doc : *DocFunction) {
 
     compiler_end_intercept(w);
 
-    builder : String_Builder;
+    builder: String_Builder;
 
     make_directory_if_it_does_not_exist("Docs");
 
@@ -761,21 +761,21 @@ AppendDocFunction :: (builder : *String_Builder, doc : *DocFunction) {
         if it.structs {
             print_to_builder(*builder, "## Structs\n");
         }
-        for doc : it.structs {
+        for doc: it.structs {
             AppendDocStruct(*builder, doc);
         }
 
         if it.enums {
             print_to_builder(*builder, "## Enums\n");
         }
-        for doc : it.enums {
+        for doc: it.enums {
             AppendDocEnum(*builder, doc);
         }
 
         if it.functions {
             print_to_builder(*builder, "## Functions\n");
         }
-        for doc : it.functions {
+        for doc: it.functions {
             AppendDocFunction(*builder, doc);
         }
 
