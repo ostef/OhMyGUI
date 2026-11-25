@@ -1,10 +1,10 @@
 GlobalTreeNodeData :: struct {
     tree_node_open_states : HT.Table(ID, bool);
-}
 
-DestroyGlobalTreeNodeData :: (node : *Node, data : *void) {
-    using _ := cast(*GlobalTreeNodeData, data);
-    HT.table_reset(*tree_node_open_states);
+    Destroy :: (node : *Node, data : *void) {
+        using _ := cast(*GlobalTreeNodeData, data);
+        HT.table_reset(*tree_node_open_states);
+    }
 }
 
 IsTreeNodeOpened :: (id : ID) -> bool {
@@ -22,12 +22,12 @@ IsTreeNodeOpened :: (id : ID) -> bool {
 }
 
 SetTreeNodeOpened :: (id : ID, opened : bool) {
-    global := AddGlobalUserData(GlobalTreeNodeData, DestroyGlobalTreeNodeData);
+    global := AddGlobalUserData(GlobalTreeNodeData);
     HT.table_set(*global.tree_node_open_states, id, opened);
 }
 
 AddTreeNodeState :: (id : ID, default_value : bool) -> opened : bool {
-    global := AddGlobalUserData(GlobalTreeNodeData, DestroyGlobalTreeNodeData);
+    global := AddGlobalUserData(GlobalTreeNodeData);
     entry, new := HT.find_or_add(*global.tree_node_open_states, id);
     if new {
         entry.* = default_value;

@@ -447,21 +447,27 @@ UserData :: (ctx : *Context, body : Code, flags : For_Flags) #expand {
     }
 }
 
-AddGlobalUserData :: inline ($T : Type, destroy : type_of(NodeUserData.destroy) = null) -> *T, is_new : bool, *NodeUserData {
+AddGlobalUserData :: inline ($T : Type) -> *T, is_new : bool, *NodeUserData {
     ptr, is_new, data := GetGlobalUserData(T, true);
-    data.destroy = destroy;
+    #if #exists(T.Destroy) {
+        data.destroy = T.Destroy;
+    }
     return ptr, is_new, data;
 }
 
-AddGlobalUserData :: inline (str_id : string, $T : Type, destroy : type_of(NodeUserData.destroy) = null) -> *T, is_new : bool, *NodeUserData {
+AddGlobalUserData :: inline (str_id : string, $T : Type) -> *T, is_new : bool, *NodeUserData {
     ptr, is_new, data := GetGlobalUserData(str_id, T, true);
-    data.destroy = destroy;
+    #if #exists(T.Destroy) {
+        data.destroy = T.Destroy;
+    }
     return ptr, is_new, data;
 }
 
-AddGlobalUserData :: inline (id : ID, $T : Type, destroy : type_of(NodeUserData.destroy) = null) -> *T, is_new : bool, *NodeUserData {
+AddGlobalUserData :: inline (id : ID, $T : Type) -> *T, is_new : bool, *NodeUserData {
     ptr, is_new, data := GetGlobalUserData(id, T, true);
-    data.destroy = destroy;
+    #if #exists(T.Destroy) {
+        data.destroy = T.Destroy;
+    }
     return ptr, is_new, data;
 }
 

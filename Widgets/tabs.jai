@@ -3,19 +3,19 @@
 
 GlobalTabBarData :: struct {
     tab_bars : HT.Table(ID, *TabBarData);
-}
 
-DestroyGlobalTabBarData :: (node : *Node, data : *void) {
-    using _ := cast(*GlobalTabBarData, data);
-    for tab_bars {
-        free(it ,, context.omg.general_purpose_allocator);
+    Destroy :: (node : *Node, data : *void) {
+        using _ := cast(*GlobalTabBarData, data);
+        for tab_bars {
+            free(it ,, context.omg.general_purpose_allocator);
+        }
+
+        HT.table_reset(*tab_bars);
     }
-
-    HT.table_reset(*tab_bars);
 }
 
 GetTabBarData :: (id : ID) -> *TabBarData {
-    global := AddGlobalUserData(GlobalTabBarData, DestroyGlobalTabBarData);
+    global := AddGlobalUserData(GlobalTabBarData);
     if !global.tab_bars.allocator.proc {
         global.tab_bars.allocator = context.omg.general_purpose_allocator;
     }

@@ -77,6 +77,16 @@ TableData :: struct {
     columns : [..]Column;
     current_column : int;
     flags : TableFlags;
+
+    Destroy :: (node : *Node, data : *void) {
+        using _ := cast(*TableData, data);
+
+        for columns {
+            array_reset(*it.rows);
+        }
+
+        array_reset(*columns);
+    }
 }
 
 TableSortParams :: struct {
@@ -152,22 +162,12 @@ ClearTableData :: (data : *TableData) {
     data.content = null;
 }
 
-DestroyTableData :: (node : *Node, data : *void) {
-    using _ := cast(*TableData, data);
-
-    for columns {
-        array_reset(*it.rows);
-    }
-
-    array_reset(*columns);
-}
-
 Table :: (parent : *Node, flags : TableFlags = 0, style : *TableStyle = null, location := #caller_location) -> *Node {
     EnsureStyle(*style, "table");
 
     table := GetNode(parent, location);
     {
-        data := AddUserData(table, TableData, DestroyTableData);
+        data := AddUserData(table, TableData);
         ClearTableData(data);
         data.flags = flags;
 

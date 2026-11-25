@@ -357,21 +357,33 @@ UserData :: (node : *Node, body : Code, flags : For_Flags) #expand {
     }
 }
 
-AddUserData :: inline (node : *Node, $T : Type, destroy : type_of(NodeUserData.destroy) = null) -> *T, is_new : bool, *NodeUserData {
+AddUserData :: inline (node : *Node, $T : Type) -> *T, is_new : bool, *NodeUserData {
     ptr, is_new, data := GetUserData(node, T, true);
-    data.destroy = destroy;
+    #if type_info(T).type == .STRUCT {
+        #if #exists(T.Destroy) {
+            data.destroy = T.Destroy;
+        }
+    }
     return ptr, is_new, data;
 }
 
-AddUserData :: inline (node : *Node, str_id : string, $T : Type, destroy : type_of(NodeUserData.destroy) = null) -> *T, is_new : bool, *NodeUserData {
+AddUserData :: inline (node : *Node, str_id : string, $T : Type) -> *T, is_new : bool, *NodeUserData {
     ptr, is_new, data := GetUserData(node, str_id, T, true);
-    data.destroy = destroy;
+    #if type_info(T).type == .STRUCT {
+        #if #exists(T.Destroy) {
+            data.destroy = T.Destroy;
+        }
+    }
     return ptr, is_new, data;
 }
 
-AddUserData :: inline (node : *Node, id : ID, $T : Type, destroy : type_of(NodeUserData.destroy) = null) -> *T, is_new : bool, *NodeUserData {
+AddUserData :: inline (node : *Node, id : ID, $T : Type) -> *T, is_new : bool, *NodeUserData {
     ptr, is_new, data := GetUserData(node, id, T, true);
-    data.destroy = destroy;
+    #if type_info(T).type == .STRUCT {
+        #if #exists(T.Destroy) {
+            data.destroy = T.Destroy;
+        }
+    }
     return ptr, is_new, data;
 }
 
@@ -381,24 +393,36 @@ AddUserData :: (node : *Node, id : ID, size : int, destroy : type_of(NodeUserDat
     return ptr, is_new, data;
 }
 
-SetUserData :: inline (node : *Node, value : $T, destroy : type_of(NodeUserData.destroy) = null) -> *T, is_new : bool, *NodeUserData {
+SetUserData :: inline (node : *Node, value : $T) -> *T, is_new : bool, *NodeUserData {
     ptr, is_new, data := GetUserData(node, T, true);
     ptr.* = value;
-    data.destroy = destroy;
+    #if type_info(T).type == .STRUCT {
+        #if #exists(T.Destroy) {
+            data.destroy = T.Destroy;
+        }
+    }
     return ptr, is_new, data;
 }
 
-SetUserData :: inline (node : *Node, str_id : string, value : $T, destroy : type_of(NodeUserData.destroy) = null) -> *T, is_new : bool, *NodeUserData {
+SetUserData :: inline (node : *Node, str_id : string, value : $T) -> *T, is_new : bool, *NodeUserData {
     ptr, is_new, data := GetUserData(node, str_id, T, true);
     ptr.* = value;
-    data.destroy = destroy;
+    #if type_info(T).type == .STRUCT {
+        #if #exists(T.Destroy) {
+            data.destroy = T.Destroy;
+        }
+    }
     return ptr, is_new, data;
 }
 
-SetUserData :: inline (node : *Node, id : ID, value : $T, destroy : type_of(NodeUserData.destroy) = null) -> *T, is_new : bool, *NodeUserData {
+SetUserData :: inline (node : *Node, id : ID, value : $T) -> *T, is_new : bool, *NodeUserData {
     ptr, is_new, data := GetUserData(node, id, T, true);
     ptr.* = value;
-    data.destroy = destroy;
+    #if type_info(T).type == .STRUCT {
+        #if #exists(T.Destroy) {
+            data.destroy = T.Destroy;
+        }
+    }
     return ptr, is_new, data;
 }
 

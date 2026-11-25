@@ -21,13 +21,13 @@ TextInputData :: struct {
     edit_history : [..]TextInputEdit;
     edit_buffer : [..]u32;
     edit_history_cursor := -1;
-}
 
-DestroyTextInputData :: (node : *Node, data : *void) {
-    using _ := cast(*TextInputData, data);
-    array_reset(*buffer);
-    array_reset(*edit_buffer);
-    array_reset(*edit_history);
+    Destroy :: (node : *Node, data : *void) {
+        using _ := cast(*TextInputData, data);
+        array_reset(*buffer);
+        array_reset(*edit_buffer);
+        array_reset(*edit_history);
+    }
 }
 
 ClearTextInputData :: (data : *TextInputData) {
@@ -422,7 +422,7 @@ SetCursor :: (input : *TextInputData, cursor : s32, select := false) {
  * @see TextInputMouseSelectionBehavior
  */
 TextInputBehavior :: (node : *Node, activate_on : enum { Press; Release; } = .Press) -> *TextInputData, submitted : bool, ButtonResult {
-    input, is_new := AddUserData(node, TextInputData, DestroyTextInputData);
+    input, is_new := AddUserData(node, TextInputData);
     if is_new {
         input.buffer.allocator = context.omg.general_purpose_allocator;
     }
@@ -874,7 +874,7 @@ NumberInput :: (
             modified |= value.* != prev_value;
         }
 
-        input, is_new := AddUserData(node, TextInputData, DestroyTextInputData);
+        input, is_new := AddUserData(node, TextInputData);
         if is_new {
             input.buffer.allocator = context.omg.general_purpose_allocator;
         }

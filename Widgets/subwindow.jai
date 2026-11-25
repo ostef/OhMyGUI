@@ -12,10 +12,15 @@ SubwindowData :: struct {
 
 GlobalSubwindowsData :: struct {
     entries : [..]SubwindowData;
+
+    Destroy :: (node : *Node, data : *void) {
+        using _ := cast(*GlobalSubwindowsData, data);
+        array_reset(*entries);
+    }
 }
 
 GetSubwindowData :: (id : ID) -> *SubwindowData, is_new : bool {
-    storage, new := AddGlobalUserData(GlobalSubwindowsData, DestroyGlobalSubwindowsData);
+    storage, new := AddGlobalUserData(GlobalSubwindowsData);
     if new {
         storage.entries.allocator = context.omg.general_purpose_allocator;
     }
@@ -30,11 +35,6 @@ GetSubwindowData :: (id : ID) -> *SubwindowData, is_new : bool {
     result.id = id;
 
     return result, true;
-}
-
-DestroyGlobalSubwindowsData :: (node : *Node, data : *void) {
-    using _ := cast(*GlobalSubwindowsData, data);
-    array_reset(*entries);
 }
 
 SubwindowFlags :: enum_flags {

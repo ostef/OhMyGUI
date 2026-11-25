@@ -139,7 +139,7 @@ Combo :: (
 
             BringForward(popup);
 
-            menu_data = AddUserData(popup, MenuData, DestroyMenuData);
+            menu_data = AddUserData(popup, MenuData);
             array_reset_keeping_memory(*menu_data.submenus);
 
             menu_data.parent_menu = null;

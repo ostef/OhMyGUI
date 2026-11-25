@@ -227,28 +227,28 @@ MergeDockNode :: (parent : *DockNode, child_index : int) -> bool {
 
 GlobalDockSpaceData :: struct {
     root_dock_nodes : HT.Table(ID, *DockNode);
-}
 
-DestroyGlobalDockSpaceData :: (_ : *Node, data : *void) {
-    using _ := cast(*GlobalDockSpaceData, data);
+    Destroy :: (_ : *Node, data : *void) {
+        using _ := cast(*GlobalDockSpaceData, data);
 
-    FreeNodeTree :: (dock_node : *DockNode) {
-        if !dock_node {
-            return;
+        FreeNodeTree :: (dock_node : *DockNode) {
+            if !dock_node {
+                return;
+            }
+
+            for dock_node.children {
+                FreeNodeTree(it);
+            }
+
+            FreeDockNode(dock_node);
         }
 
-        for dock_node.children {
+        for root_dock_nodes {
             FreeNodeTree(it);
         }
 
-        FreeDockNode(dock_node);
+        HT.table_reset(*root_dock_nodes);
     }
-
-    for root_dock_nodes {
-        FreeNodeTree(it);
-    }
-
-    HT.table_reset(*root_dock_nodes);
 }
 
 GetSubwindowDockNode :: inline (subwindow_str_id : string) -> content : *Node, dock_node : *DockNode {
@@ -305,7 +305,7 @@ DockSpaceStyle :: struct {
 }
 
 DockSpace :: (parent : *Node, str_id : string, style : *DockSpaceStyle = null) -> *Node, *DockNode {
-    global := AddGlobalUserData(GlobalDockSpaceData, DestroyGlobalDockSpaceData);
+    global := AddGlobalUserData(GlobalDockSpaceData);
     id := GetID(str_id);
     dock_node_ptr := HT.find_or_add(*global.root_dock_nodes, id);
 

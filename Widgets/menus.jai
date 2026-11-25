@@ -104,11 +104,11 @@ MenuData :: struct {
     wants_close : bool;
     parent_menu : *Node;
     submenus : [..]*Node;
-}
 
-DestroyMenuData :: (node : *Node, data : *void) {
-    using _ := cast(*MenuData, data);
-    array_reset(*submenus);
+    Destroy :: (node : *Node, data : *void) {
+        using _ := cast(*MenuData, data);
+        array_reset(*submenus);
+    }
 }
 
 CloseMenu :: (node : *Node) {
@@ -244,7 +244,7 @@ Menu :: (
 
             BringForward(menu);
 
-            menu_data = AddUserData(menu, MenuData, DestroyMenuData);
+            menu_data = AddUserData(menu, MenuData);
             array_reset_keeping_memory(*menu_data.submenus);
 
             if parent_menu_data {
@@ -321,7 +321,7 @@ ContextMenu :: (parent : *Node, style : *MenuStyle = null, location := #caller_l
 
             BringForward(menu);
 
-            menu_data = AddUserData(menu, MenuData, DestroyMenuData);
+            menu_data = AddUserData(menu, MenuData);
             array_reset_keeping_memory(*menu_data.submenus);
 
             if button.released {
