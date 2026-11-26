@@ -534,7 +534,6 @@ UnmaximizeButton :: (parent: *Node, width: Size1D, height: Size1D, icon_size: fl
 
         fg_center := center + Vec2f.{-node.size.x * Offset,  node.size.y * Offset};
         fg_bounds := Vec4f.{xy=ceil(fg_center - half_size), zw=floor(fg_center + half_size)};
-        fg_bounds = InflateRect(fg_bounds, -node.border_size * 0.5);
 
         DrawRectOutline(draw_list, fg_bounds, node.border_colors, node.border_size);
 
