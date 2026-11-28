@@ -24,6 +24,7 @@ g_sliders_data_type: enum {
     UInt32;
     UInt64;
 } = .Int8;
+g_sliders_axis := OMG.Axis.X;
 
 SliderValues :: struct(T: Type) {
     min := #run OMG.MinValue(T);
@@ -99,14 +100,48 @@ SlidersGallery :: (parent: *OMG.Node, value: *$T, min: *T, max: *T, step: *T) {
     OMG.NumberInput(min_max_step_container, max, OMG.MinValue(T), OMG.MaxValue(T), OMG.DefaultStep(T));
     OMG.NumberInput(min_max_step_container, step, OMG.MinValue(T), OMG.MaxValue(T), OMG.DefaultStep(T));
 
-    OMG.HorizontalSeparatorText(parent, "Normal Style");
-    OMG.Slider(parent, value, min.*, max.*, step.*);
+    container := OMG.GetNode(parent);
+    OMG.SetChildGap(container, parent.child_gap);
+    if g_sliders_axis == .X {
+        OMG.SetLayout(container, .TopToBottom);
+        OMG.SetSize(container, OMG.SizeFill(), OMG.SizeFit());
 
-    OMG.HorizontalSeparatorText(parent, "Knob Style");
-    OMG.KnobSlider(parent, value, min.*, max.*, step.*);
+        OMG.HorizontalSeparatorText(container, "Normal");
+        OMG.Slider(container, value, min.*, max.*, step.*, axis=g_sliders_axis);
 
-    OMG.HorizontalSeparatorText(parent, "Fill Style");
-    OMG.FillSlider(parent, value, min.*, max.*, step.*);
+        OMG.HorizontalSeparatorText(container, "Knob style");
+        OMG.KnobSlider(container, value, min.*, max.*, step.*, axis=g_sliders_axis);
+
+        OMG.HorizontalSeparatorText(container, "Fill style");
+        OMG.FillSlider(container, value, min.*, max.*, step.*, axis=g_sliders_axis);
+    } else {
+        OMG.SetLayout(container, .LeftToRight);
+        OMG.SetSize(container, OMG.SizeFill(), OMG.SizePx(300));
+
+        normal := OMG.GetNode(container);
+        OMG.SetLayout(normal, .TopToBottom);
+        OMG.SetSize(normal, OMG.SizeFill(), OMG.SizeFill());
+        OMG.SetChildAlign(normal, 0.5, 0);
+
+        OMG.HorizontalSeparatorText(normal, "Normal");
+        OMG.Slider(normal, value, min.*, max.*, step.*, axis=g_sliders_axis);
+
+        knob := OMG.GetNode(container);
+        OMG.SetLayout(knob, .TopToBottom);
+        OMG.SetSize(knob, OMG.SizeFill(), OMG.SizeFill());
+        OMG.SetChildAlign(knob, 0.5, 0);
+
+        OMG.HorizontalSeparatorText(knob, "Knob style");
+        OMG.KnobSlider(knob, value, min.*, max.*, step.*, axis=g_sliders_axis);
+
+        fill := OMG.GetNode(container);
+        OMG.SetLayout(fill, .TopToBottom);
+        OMG.SetSize(fill, OMG.SizeFill(), OMG.SizeFill());
+        OMG.SetChildAlign(fill, 0.5, 0);
+
+        OMG.HorizontalSeparatorText(fill, "Fill style");
+        OMG.FillSlider(fill, value, min.*, max.*, step.*, axis=g_sliders_axis);
+    }
 }
 
 WidgetsGallery :: (parent: *OMG.Node) {
@@ -217,6 +252,9 @@ WidgetsGallery :: (parent: *OMG.Node) {
 
         data_type_container := OMG.LabelAndContent(sliders, "Type");
         OMG.EnumCombo(data_type_container, *g_sliders_data_type);
+
+        axis := OMG.LabelAndContent(sliders, "Axis");
+        OMG.EnumCombo(axis, *g_sliders_axis);
 
         if #complete g_sliders_data_type == {
         case .Float32;

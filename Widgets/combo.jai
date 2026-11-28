@@ -194,10 +194,9 @@ ComboMenu :: (
             BringForward(menu);
 
             menu_data = AddUserData(menu, MenuData);
-            array_reset_keeping_memory(*menu_data.submenus);
-
             menu_data.parent_menu = null;
             menu.offset = .{combo.rect.x, combo.rect.w};
+            array_reset_keeping_memory(*menu_data.submenus);
 
             Apply(menu, style.menu);
 
