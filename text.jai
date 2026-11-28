@@ -62,11 +62,11 @@ GetLineHeight :: inline (font: *Font, size: float) -> float {
     return (font.descent + font.ascent) * size;
 }
 
-LoadDefaultFonts :: () {
-    Roboto_Regular :: #run EmbedFileContents("Roboto-Regular.ttf");
-    Roboto_Medium :: #run EmbedFileContents("Roboto-Medium.ttf");
-    Roboto_Bold :: #run EmbedFileContents("Roboto-Bold.ttf");
+Roboto_Regular :: #run EmbedFileContents("Roboto-Regular.ttf");
+Roboto_Medium :: #run EmbedFileContents("Roboto-Medium.ttf");
+Roboto_Bold :: #run EmbedFileContents("Roboto-Bold.ttf");
 
+LoadDefaultFonts :: () {
     config: FontConfig;
     config.glyph_ranges = .[
         .{0x20, 0x7f}, // ASCII

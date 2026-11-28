@@ -1,10 +1,15 @@
 g_disabled: bool;
 
 ButtonsGallery :: (parent: *OMG.Node) {
-    OMG.Button(parent, "Press Me!");
-    OMG.Button(parent, "Accent Button", style=OMG.GetStyle("button_accent", OMG.ButtonStyle));
-    OMG.Button(parent, "Positive Button", style=OMG.GetStyle("button_positive", OMG.ButtonStyle));
-    OMG.Button(parent, "Negative Button", style=OMG.GetStyle("button_negative", OMG.ButtonStyle));
+    buttons := OMG.GetNode(parent);
+    OMG.SetSize(buttons, OMG.SizeFill(), OMG.SizeFit());
+    OMG.SetLayout(buttons, .LeftToRight);
+    OMG.SetChildGap(buttons, 6);
+
+    OMG.Button(buttons, "Press Me!");
+    OMG.Button(buttons, "Accent Button", style=OMG.GetStyle("button_accent", OMG.ButtonStyle));
+    OMG.Button(buttons, "Positive Button", style=OMG.GetStyle("button_positive", OMG.ButtonStyle));
+    OMG.Button(buttons, "Negative Button", style=OMG.GetStyle("button_negative", OMG.ButtonStyle));
 }
 
 g_sliders_data_type: enum {
@@ -38,6 +43,47 @@ g_slider_u16: SliderValues(u16);
 g_slider_u32: SliderValues(u32);
 g_slider_u64: SliderValues(u64);
 
+TextFlags :: enum_flags u32 {
+    WrapText :: OMG.NodeFlags.WrapText;
+    JustifyText :: OMG.NodeFlags.JustifyText;
+}
+
+g_roboto_extended_font: *OMG.Font;
+g_text_font: *OMG.Font;
+g_text_effects: OMG.TextEffects;
+g_text_flags: TextFlags;
+g_text_language: enum {
+    English;
+    French;
+    Spanish;
+    Italian;
+    German;
+    Russian;
+    Arabic;
+    Greek;
+}
+
+Pangrams :: string.[
+    // English
+    "Pack my box with five dozen liquor jugs.",
+    // French
+    "Les naïfs ægithales hâtifs d'Aÿ pondant à Noël où il gèle sont sûrs d'être déçus en voyant leurs drôles d'œufs abîmés.",
+    // Spanish
+    "El veloz murciélago hindú comía feliz cardillo y kiwi. La cigüeña tocaba el saxofón detrás del palenque de paja.",
+    // Italian
+    "Quel vituperabile xenofobo zelante assaggia il whisky ed esclama: alleluja!",
+    // German
+    "Victor jagt zwölf Boxkämpfer quer über den großen Sylter Deich.",
+    // Russian
+    "Съешь ещё этих мягких французских булок, да выпей же чаю", // 0x400 - 0x4ff
+    // Arabic
+    "نص حكيم له سر قاطع وذو شأن عظيم مكتوب على ثوب أخضر ومغلف بجلد أزرق", // 0x600 - 0x6ff
+    // Greek
+    "Ξεσκεπάζω την ψυχοφθόρα σας βδελυγμία",
+];
+
+Lorem_Ipsum :: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
+
 g_text_input_flags: OMG.TextInputFlags;
 
 SlidersGallery :: (parent: *OMG.Node, values: *SliderValues) {
@@ -45,14 +91,10 @@ SlidersGallery :: (parent: *OMG.Node, values: *SliderValues) {
 }
 
 SlidersGallery :: (parent: *OMG.Node, value: *$T, min: *T, max: *T, step: *T) {
-    min_container := OMG.LabelAndContent(parent, "Min");
-    OMG.NumberInput(min_container, min, OMG.MinValue(T), OMG.MaxValue(T), OMG.DefaultStep(T));
-
-    max_container := OMG.LabelAndContent(parent, "Max");
-    OMG.NumberInput(max_container, max, OMG.MinValue(T), OMG.MaxValue(T), OMG.DefaultStep(T));
-
-    step_container := OMG.LabelAndContent(parent, "Step");
-    OMG.NumberInput(step_container, step, OMG.MinValue(T), OMG.MaxValue(T), OMG.DefaultStep(T));
+    min_max_step_container := OMG.LabelAndContent(parent, "Min, Max, Step");
+    OMG.NumberInput(min_max_step_container, min, OMG.MinValue(T), OMG.MaxValue(T), OMG.DefaultStep(T));
+    OMG.NumberInput(min_max_step_container, max, OMG.MinValue(T), OMG.MaxValue(T), OMG.DefaultStep(T));
+    OMG.NumberInput(min_max_step_container, step, OMG.MinValue(T), OMG.MaxValue(T), OMG.DefaultStep(T));
 
     OMG.HorizontalSeparatorText(parent, "Normal Style");
     OMG.Slider(parent, value, min.*, max.*, step.*);
@@ -82,6 +124,73 @@ WidgetsGallery :: (parent: *OMG.Node) {
         buttons.padding.z += 4;
 
         ButtonsGallery(buttons);
+    }
+
+    text := OMG.CollapsingHeader(scroll_view, "Text");
+    if text {
+        language := OMG.LabelAndContent(text, "Language");
+        OMG.EnumCombo(language, *g_text_language);
+
+        if !g_roboto_extended_font {
+            config: OMG.FontConfig;
+            config.glyph_ranges = .[
+                .{0x20, 0x7f}, // ASCII
+                .{0xa0, 0x24f}, // Latin
+                .{0x20A0, 0x20CF}, // Currency symbols
+                .{0x400, 0x4ff}, // Russian
+                .{0x600, 0x6ff}, // Arabic
+                .{0x370, 0x3ff}, // Greek
+                .{0x1f00, 0x1fff}, // Greek extended
+            ];
+            config.atlas_width = 2048;
+            config.atlas_height = 2048;
+
+            g_roboto_extended_font = OMG.LoadFontFromMemory("Roboto-Regular", OMG.Roboto_Regular, config);
+            g_text_font = g_roboto_extended_font;
+        }
+
+        if !g_text_font {
+            g_text_font = OMG.GetStyle("text", OMG.TextStyle).font;
+        }
+
+        font := OMG.LabelAndContent(text, "Font");
+        fonts_menu := OMG.ComboMenu(font, ifx g_text_font then g_text_font.name else "None");
+        if fonts_menu {
+            menu_style := OMG.GetStyle("combo", OMG.ComboStyle);
+            selected: *OMG.Font;
+            for :OMG.Fonts context.omg {
+                OMG.PushID(OMG.GetID(it_index));
+                defer OMG.PopID();
+
+                if OMG.MenuItem(fonts_menu, it.name, selected=it == g_text_font, style=*menu_style.item) {
+                    selected = it;
+                }
+            }
+
+            if selected {
+                g_text_font = selected;
+            }
+        }
+
+        flags := OMG.LabelAndContent(text, "Flags & Effects");
+        OMG.EnumCombo(flags, *g_text_flags);
+        OMG.EnumCombo(flags, *g_text_effects);
+
+        OMG.Spacing(text, 10);
+
+        text_node := OMG.Text(text, "%", Pangrams[g_text_language]);
+        OMG.SetSize(text_node, OMG.SizeFill(), OMG.SizeFit());
+
+        text_node.font = g_text_font;
+        text_node.flags |= xx g_text_flags;
+        text_node.text_effects = g_text_effects;
+
+        text_node = OMG.Text(text, "%", Lorem_Ipsum);
+        OMG.SetSize(text_node, OMG.SizeFill(), OMG.SizeFit());
+
+        text_node.font = g_text_font;
+        text_node.flags |= xx g_text_flags;
+        text_node.text_effects = g_text_effects;
     }
 
     text_inputs := OMG.CollapsingHeader(scroll_view, "Text Inputs");
@@ -161,7 +270,6 @@ WidgetsGallerySubwindow :: (window: *OMG.Window) {
         OMG.PushDisabled(true);
         OMG.MenuItem(menu_bar, "Disabled");
         OMG.PopDisabled();
-
 
         WidgetsGallery(subwindow);
     }

@@ -1079,8 +1079,8 @@ SetupDefaultTheme :: (theme: *DefaultTheme, base_text_size: float, base_backgrou
         using theme.combo;
 
         button = theme.button;
-        popup = theme.menu;
-        popup.max_width_px = FLOAT32_INFINITY;
+        menu = theme.menu;
+        menu.max_width_px = FLOAT32_INFINITY;
         item = theme.menu_item;
 
         for * button.states {
@@ -1088,8 +1088,8 @@ SetupDefaultTheme :: (theme: *DefaultTheme, base_text_size: float, base_backgrou
             SetColors(*it.background.border_colors, MakeTone(button_base_background_color, 0.3));
         }
 
-        popup.corner_radiuses.xy = .{};
-        popup.corner_radiuses.zw = button.normal.background.corner_radiuses.zw;
+        menu.corner_radiuses.xy = .{};
+        menu.corner_radiuses.zw = button.normal.background.corner_radiuses.zw;
         button.active.background.corner_radiuses.zw = .{};
 
         arrow_size = .{10, 6};

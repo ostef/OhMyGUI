@@ -283,6 +283,23 @@ SetTheme :: inline (theme: *Theme) {
     context.omg.theme = theme;
 }
 
+/**
+ * @brief Iterate over the fonts.
+ */
+Fonts :: (ctx: *Context, body: Code, flags: For_Flags) #expand {
+    `it := ctx.fonts;
+    `it_index := 0;
+    while it {
+        next := it.next;
+        defer {
+            it = next;
+            it_index += 1;
+        }
+
+        #insert body;
+    }
+}
+
 WindowArea :: enum {
     None;
     Draggable;
