@@ -126,28 +126,28 @@ WidgetsGallery :: (parent: *OMG.Node) {
         ButtonsGallery(buttons);
     }
 
+    if !g_roboto_extended_font {
+        config: OMG.FontConfig;
+        config.glyph_ranges = .[
+            .{0x20, 0x7f}, // ASCII
+            .{0xa0, 0x24f}, // Latin
+            .{0x20A0, 0x20CF}, // Currency symbols
+            .{0x400, 0x4ff}, // Russian
+            .{0x600, 0x6ff}, // Arabic
+            .{0x370, 0x3ff}, // Greek
+            .{0x1f00, 0x1fff}, // Greek extended
+        ];
+        config.atlas_width = 2048;
+        config.atlas_height = 2048;
+
+        g_roboto_extended_font = OMG.LoadFontFromMemory("Roboto-Regular", OMG.Roboto_Regular, config);
+        g_text_font = g_roboto_extended_font;
+    }
+
     text := OMG.CollapsingHeader(scroll_view, "Text");
     if text {
         language := OMG.LabelAndContent(text, "Language");
         OMG.EnumCombo(language, *g_text_language);
-
-        if !g_roboto_extended_font {
-            config: OMG.FontConfig;
-            config.glyph_ranges = .[
-                .{0x20, 0x7f}, // ASCII
-                .{0xa0, 0x24f}, // Latin
-                .{0x20A0, 0x20CF}, // Currency symbols
-                .{0x400, 0x4ff}, // Russian
-                .{0x600, 0x6ff}, // Arabic
-                .{0x370, 0x3ff}, // Greek
-                .{0x1f00, 0x1fff}, // Greek extended
-            ];
-            config.atlas_width = 2048;
-            config.atlas_height = 2048;
-
-            g_roboto_extended_font = OMG.LoadFontFromMemory("Roboto-Regular", OMG.Roboto_Regular, config);
-            g_text_font = g_roboto_extended_font;
-        }
 
         if !g_text_font {
             g_text_font = OMG.GetStyle("text", OMG.TextStyle).font;
