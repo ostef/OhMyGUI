@@ -50,7 +50,7 @@ MenuItem :: (parent: *Node, icon: TextureHandle, icon_size: float, text: string,
 
         button := ButtonBehavior(node);
         if button.released {
-            CloseMenu(parent);
+            CloseAllMenus(parent);
         }
 
         state := GetState(node);
@@ -113,27 +113,22 @@ MenuData :: struct {
 
 CloseMenu :: (node: *Node) {
     data := GetUserData(node, MenuData);
+    if data {
+        data.wants_close = true;
+    }
+}
+
+/**
+ * @brief Close all of the menus in the hierarchy.
+ */
+CloseAllMenus :: (node: *Node) {
+    data := GetUserData(node, MenuData);
     while data {
         data.wants_close = true;
 
         node = data.parent_menu;
         data = ifx node then GetUserData(node, MenuData);
     }
-}
-
-MenuStyle :: struct {
-    using background: BoxStyle;
-    min_width_px := 50.0;
-    max_width_px := 150.0;
-    max_height_px := FLOAT32_INFINITY;
-}
-
-Apply :: inline (node: *Node, style: MenuStyle) {
-    Apply(node, style.background);
-
-    SetMinWidth(node, style.min_width_px);
-    SetMaxWidth(node, style.max_width_px);
-    SetMaxHeight(node, style.max_height_px);
 }
 
 /**
@@ -156,6 +151,21 @@ IsInMenuOrSubmenus :: (node: *Node, of: *Node) -> bool {
     }
 
     return false;
+}
+
+MenuStyle :: struct {
+    using background: BoxStyle;
+    min_width_px := 50.0;
+    max_width_px := 150.0;
+    max_height_px := FLOAT32_INFINITY;
+}
+
+Apply :: inline (node: *Node, style: MenuStyle) {
+    Apply(node, style.background);
+
+    SetMinWidth(node, style.min_width_px);
+    SetMaxWidth(node, style.max_width_px);
+    SetMaxHeight(node, style.max_height_px);
 }
 
 /**
@@ -206,14 +216,38 @@ Menu :: (
         button := ButtonBehavior(menu_item);
         if button.released || menu_item.state_flags & .ActiveLastFrame {
             menu_item.state_flags |= .Active;
+        } else if parent_menu_data && HasMouseFocus(menu_item) && context.omg.mouse_focus_time > 0.5 {
+            menu_item.state_flags |= .Active;
         }
 
-        // Deactivate the menu if we pressed outside the hierarchy of the menu or any submenus
+        // Deactivate the menu if we pressed escape
         should_deactivate := IsKeyPressed(.Escape);
         should_deactivate |= menu_data != null && menu_data.wants_close;
 
-        if prev_frame_menu && menu_item.state_flags & .ActiveLastFrame && !(menu_item.state_flags & .Focused) && IsAnyMouseButtonPressed() {
-            should_deactivate = !IsInMenuOrSubmenus(context.omg.mouse_hovered_node, prev_frame_menu);
+        // Deactivate the menu if we pressed outside of it, or if we hovered another menu for too long
+        if prev_frame_menu && menu_item.state_flags & .ActiveLastFrame && !(menu_item.state_flags & .Focused)
+        && (IsAnyMouseButtonPressed() || context.omg.mouse_hover_time > 0.5) {
+            is_in_menu := IsInMenuOrSubmenus(context.omg.mouse_hovered_node, prev_frame_menu);
+
+            if IsAnyMouseButtonPressed() {
+                should_deactivate |= !is_in_menu;
+            } else {
+                root_menu := menu_data.parent_menu;
+                root_menu_data := ifx root_menu then GetUserData(root_menu, MenuData);
+                while root_menu_data && root_menu_data.parent_menu {
+                    parent_data := GetUserData(root_menu_data.parent_menu, MenuData);
+                    if !parent_data {
+                        break;
+                    }
+
+                    root_menu = root_menu_data.parent_menu;
+                    root_menu_data = parent_data;
+                }
+
+                is_in_parent_menu := ifx root_menu_data then IsInMenuOrSubmenus(context.omg.mouse_hovered_node, root_menu);
+
+                should_deactivate |= is_in_parent_menu && !is_in_menu;
+            }
         }
 
         if should_deactivate {
