@@ -112,6 +112,15 @@ SeparatorStyle :: struct {
     text: TextStyle;
 }
 
+Spacing :: (parent: *Node, amount: float) {
+    node := GetNode(parent);
+    if parent.child_layout_mode == .TopToBottom || parent.child_layout_mode == .BottomToTop {
+        SetSize(node, SizeFill(), SizePx(amount));
+    } else {
+        SetSize(node, SizePx(amount), SizeFill());
+    }
+}
+
 /**
  * @brief Separator line. Horizontal or vertical depending on the parent layout.
  */
