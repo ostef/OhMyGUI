@@ -186,7 +186,8 @@ Slider :: (
 
         fill = GetNode(background, "fill");
         {
-            SetSize(fill, SizePercent(InverseLerp(fmin, fmax, fvalue)), SizeFill());
+            fill.desired_size[axis] = SizePercent(InverseLerp(fmin, fmax, fvalue));
+            fill.desired_size[cross] = SizeFill();
         }
 
         handle_parent := ifx style.handle_outside_background then slider else background;
