@@ -17,7 +17,6 @@ OMG_GL :: #import "OhMyGUI/GL";
 }
 
 #load "gallery.jai";
-#load "editor.jai";
 #load "node_editor.jai";
 
 g_quit := false;

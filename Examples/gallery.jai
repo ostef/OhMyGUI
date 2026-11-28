@@ -50,6 +50,7 @@ TextFlags :: enum_flags u32 {
 
 g_roboto_extended_font: *OMG.Font;
 g_text_font: *OMG.Font;
+g_text_size := 14.0;
 g_text_effects: OMG.TextEffects;
 g_text_flags: TextFlags;
 g_text_language: enum {
@@ -176,11 +177,15 @@ WidgetsGallery :: (parent: *OMG.Node) {
         OMG.EnumCombo(flags, *g_text_flags);
         OMG.EnumCombo(flags, *g_text_effects);
 
+        size := OMG.LabelAndContent(text, "Size");
+        OMG.FloatInput(size, *g_text_size, 3, 100, 1);
+
         OMG.Spacing(text, 10);
 
         text_node := OMG.Text(text, "%", Pangrams[g_text_language]);
         OMG.SetSize(text_node, OMG.SizeFill(), OMG.SizeFit());
 
+        text_node.text_size = g_text_size;
         text_node.font = g_text_font;
         text_node.flags |= xx g_text_flags;
         text_node.text_effects = g_text_effects;
@@ -188,6 +193,7 @@ WidgetsGallery :: (parent: *OMG.Node) {
         text_node = OMG.Text(text, "%", Lorem_Ipsum);
         OMG.SetSize(text_node, OMG.SizeFill(), OMG.SizeFit());
 
+        text_node.text_size = g_text_size;
         text_node.font = g_text_font;
         text_node.flags |= xx g_text_flags;
         text_node.text_effects = g_text_effects;
