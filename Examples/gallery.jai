@@ -82,6 +82,8 @@ WidgetsGallery :: (parent: *OMG.Node) {
         ButtonsGallery(buttons);
     }
 
+    text_inputs := OMG.CollapsingHeader(scroll_view, "Text Inputs");
+
     sliders := OMG.CollapsingHeader(scroll_view, "Sliders");
     if sliders {
         sliders.padding.x += 4;
@@ -113,11 +115,45 @@ WidgetsGallery :: (parent: *OMG.Node) {
             SlidersGallery(sliders, *g_slider_u64);
         }
     }
+
+    trees := OMG.CollapsingHeader(scroll_view, "Trees");
+    tables := OMG.CollapsingHeader(scroll_view, "Tables");
+    grids := OMG.CollapsingHeader(scroll_view, "Grids");
+    tabs := OMG.CollapsingHeader(scroll_view, "Tabs");
 }
 
 WidgetsGallerySubwindow :: (window: *OMG.Window) {
     subwindow := OMG.Subwindow(window, "Widgets Gallery", "widgets_gallery");
     if subwindow {
+        menu_bar := OMG.MenuBar(subwindow, "menu_bar");
+        file := OMG.Menu(menu_bar, "File");
+        if file {
+            new := OMG.Menu(file, "New");
+            if new {
+                OMG.MenuItem(new, "Document");
+                OMG.MenuItem(new, "Folder");
+            }
+
+            OMG.MenuItem(file, "Open");
+            OMG.MenuItem(file, "Save");
+            OMG.MenuItem(file, "Save As");
+            OMG.MenuItem(file, "Save All");
+
+            InfiniteMenu :: (parent: *OMG.Node) {
+                menu := OMG.Menu(parent, "Infinite");
+                if menu {
+                    InfiniteMenu(menu);
+                }
+            }
+
+            InfiniteMenu(file);
+        }
+
+        OMG.PushDisabled(true);
+        OMG.MenuItem(menu_bar, "Disabled");
+        OMG.PopDisabled();
+
+
         WidgetsGallery(subwindow);
     }
 }
