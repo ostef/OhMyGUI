@@ -468,25 +468,10 @@ ColoredSlider :: (parent: *Node, value: *float, min: float, max: float, step: fl
                 DrawTriangle(draw_list, p0=p0, p1=p1, p2=p2, c0=c0, c1=c1, c2=c1, blur_sides=0);
             }
         } else {
-            c0 := start_color;
             c1 := ifx axis == .X then start_color else end_color;
-            c2 := end_color;
+            c2 := ifx axis == .X then end_color else start_color;
 
-            DrawTriangle(draw_list,
-                p0=.{node.rect.x, node.rect.w}, p1=.{node.rect.x, node.rect.y}, p2=.{node.rect.z, node.rect.y},
-                c0=c0, c1=c1, c2=c2,
-                blur_sides=0
-            );
-
-            c0 = start_color;
-            c1 = end_color;
-            c2 = ifx axis == .X then end_color else start_color;
-
-            DrawTriangle(draw_list,
-                p0=.{node.rect.x, node.rect.w}, p1=.{node.rect.z, node.rect.y}, p2=.{node.rect.z, node.rect.w},
-                c0=c0, c1=c1, c2=c2,
-                blur_sides=0
-            );
+            DrawRect(draw_list, node.rect, color_top_left=c1, color_top_right=c2, color_bottom_left=c1, color_bottom_right=c2);
         }
 
         PopClipBox(draw_list);
@@ -714,6 +699,7 @@ ColorPicker :: (
 
         SetLayout(content, .LeftToRight);
         SetChildGap(content, label_and_content_style.child_gap);
+        SetChildAlign(content, label_and_content_style.child_align);
 
         _, slider := ColoredSlider(content, value, min, max, step, style, dynamic_color);
 
