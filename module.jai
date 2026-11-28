@@ -592,6 +592,8 @@ Terminate :: () {
     }
 
     array_reset(*context.omg.id_stack);
+    array_reset(*context.omg.disabled_stack);
+    array_reset(*context.omg.mouse_hovered_nodes);
 
     DestroyInput(*context.omg.input);
     DestroySystemCursors();
