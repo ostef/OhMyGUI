@@ -1,6 +1,6 @@
 ComboStyle :: struct {
     button: ButtonStyle;
-    popup: MenuStyle;
+    menu: MenuStyle;
     item: MenuItemStyle;
     arrow_size := Vec2f.{10, 6};
     arrow_style: enum {
@@ -17,7 +17,7 @@ EnumCombo :: inline (
     value: *$T,
     style: *ComboStyle = null,
     location := #caller_location
-) -> modified: bool, *Node
+) -> modified: bool, button: *Node, menu: *Node
 #modify { return cast(*Type_Info, T).type == .ENUM; } {
     GetItem :: (index: int, user_data: *void) -> string, selected: bool {
         value := cast(*T, user_data).*;
@@ -35,7 +35,7 @@ EnumCombo :: inline (
     }
 
     info := type_info(T);
-    clicked_item, node := Combo(parent, tprint("%", value.*), info.values.count, GetItem, value, style, location);
+    clicked_item, button, menu := Combo(parent, tprint("%", value.*), info.values.count, GetItem, value, style, location);
     if clicked_item >= 0 {
         if info.enum_type_flags & .FLAGS {
             item := cast,no_check(T, info.values[clicked_item]);
@@ -49,7 +49,7 @@ EnumCombo :: inline (
         }
     }
 
-    return clicked_item >= 0, node;
+    return clicked_item >= 0, button, menu;
 }
 
 /**
@@ -61,7 +61,7 @@ Combo :: inline (
     items: []string,
     style: *ComboStyle = null,
     location := #caller_location
-) -> modified: bool, *Node {
+) -> modified: bool, button: *Node, menu: *Node {
     data: struct {
         selected: *int;
         items: []string;
@@ -73,12 +73,12 @@ Combo :: inline (
         return items[index], selected.* == index;
     }
 
-    clicked_item, node := Combo(parent, items[selected.*], items.count, GetItem, *data, style, location);
+    clicked_item, button, menu := Combo(parent, items[selected.*], items.count, GetItem, *data, style, location);
     if clicked_item >= 0 {
         selected.* = clicked_item;
     }
 
-    return clicked_item >= 0, node;
+    return clicked_item >= 0, button, menu;
 }
 
 /**
@@ -92,7 +92,35 @@ Combo :: (
     user_data: *void = null,
     style: *ComboStyle = null,
     location := #caller_location
-) -> clicked_item: int, *Node {
+) -> clicked_item: int, button: *Node, menu: *Node {
+    EnsureStyle(*style, "combo");
+
+    clicked_item := -1;
+    combo_menu, combo := ComboMenu(parent, preview_text, style, location);
+    if combo_menu {
+        for i: 0..num_items - 1 {
+            item, is_selected := get_item(i, user_data);
+            PushID(GetID(i));
+            defer PopID();
+
+            if MenuItem(combo_menu, item, selected=is_selected, style=*style.item) {
+                clicked_item = i;
+            }
+        }
+    }
+
+    return clicked_item, combo, combo_menu;
+}
+
+/**
+ * @brief Combo box widget with empty menu.
+ */
+ComboMenu :: (
+    parent: *Node,
+    preview_text: string,
+    style: *ComboStyle = null,
+    location := #caller_location
+) -> menu: *Node, button: *Node {
     EnsureStyle(*style, "combo");
 
     popup_root := GetPopupRoot(parent.window);
@@ -155,36 +183,27 @@ Combo :: (
 
     clicked_item := -1;
 
-    if combo.state_flags & .Active && num_items > 0 {
-        popup := GetPopupNode(parent.window, location);
-        assert(prev_frame_menu == null || popup == prev_frame_menu);
+    menu: *Node;
+    if combo.state_flags & .Active {
+        menu = GetPopupNode(parent.window, location);
+        assert(prev_frame_menu == null || menu == prev_frame_menu);
         {
-            SetLayout(popup, .TopToBottom);
-            SetSize(popup, SizePx(combo.size.x), SizeFit());
+            SetLayout(menu, .TopToBottom);
+            SetSize(menu, SizePx(combo.size.x), SizeFit());
 
-            BringForward(popup);
+            BringForward(menu);
 
-            menu_data = AddUserData(popup, MenuData);
+            menu_data = AddUserData(menu, MenuData);
             array_reset_keeping_memory(*menu_data.submenus);
 
             menu_data.parent_menu = null;
-            popup.offset = .{combo.rect.x, combo.rect.w};
+            menu.offset = .{combo.rect.x, combo.rect.w};
 
-            Apply(popup, style.popup);
+            Apply(menu, style.menu);
 
-            ScrollViewBehavior(popup, .Y);
-
-            for i: 0..num_items - 1 {
-                item, is_selected := get_item(i, user_data);
-                PushID(GetID(i));
-                defer PopID();
-
-                if MenuItem(popup, item, selected=is_selected, style=*style.item) {
-                    clicked_item = i;
-                }
-            }
+            ScrollViewBehavior(menu, .Y);
         }
     }
 
-    return clicked_item, combo;
+    return menu, combo;
 }
