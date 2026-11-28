@@ -19,16 +19,37 @@ EnumCombo :: inline (
     location := #caller_location
 ) -> modified: bool, *Node
 #modify { return cast(*Type_Info, T).type == .ENUM; } {
-    values := type_info(T).values;
-    names := type_info(T).names;
-    _, index := array_find(values, xx,no_check value.*);
+    GetItem :: (index: int, user_data: *void) -> string, selected: bool {
+        value := cast(*T, user_data).*;
 
-    modified, node := Combo(parent, *index, names, style, location);
-    if modified {
-        value.* = xx,no_check values[index];
+        info := type_info(T);
+        if info.enum_type_flags & .FLAGS {
+            item := info.values[index];
+            selected := (value & cast,no_check(T, item)) == cast,no_check(T, item);
+
+            return info.names[index], selected;
+        } else {
+            _, value_index := array_find(info.values, xx,no_check value);
+            return info.names[index], index == value_index;
+        }
     }
 
-    return modified, node;
+    info := type_info(T);
+    clicked_item, node := Combo(parent, tprint("%", value.*), info.values.count, GetItem, value, style, location);
+    if clicked_item >= 0 {
+        if info.enum_type_flags & .FLAGS {
+            item := cast,no_check(T, info.values[clicked_item]);
+            if value.* & item == item {
+                value.* &= ~item;
+            } else {
+                value.* |= item;
+            }
+        } else {
+            value.* = xx,no_check info.values[clicked_item];
+        }
+    }
+
+    return clicked_item >= 0, node;
 }
 
 /**
@@ -41,8 +62,23 @@ Combo :: inline (
     style: *ComboStyle = null,
     location := #caller_location
 ) -> modified: bool, *Node {
-    modified, node := Combo(parent, selected, items.count, (i, data) => cast(*string, data)[i], items.data, style, location);
-    return modified, node;
+    data: struct {
+        selected: *int;
+        items: []string;
+    } = .{selected, items};
+
+    GetItem :: (index: int, user_data: *void) -> string, selected: bool {
+        using _ := cast(*type_of(data), user_data);
+
+        return items[index], selected.* == index;
+    }
+
+    clicked_item, node := Combo(parent, items[selected.*], items.count, GetItem, *data, style, location);
+    if clicked_item >= 0 {
+        selected.* = clicked_item;
+    }
+
+    return clicked_item >= 0, node;
 }
 
 /**
@@ -50,19 +86,14 @@ Combo :: inline (
  */
 Combo :: (
     parent: *Node,
-    selected: *int,
+    preview_text: string,
     num_items: int,
-    get_item: (index: int, user_data: *void) -> string,
+    get_item: (index: int, user_data: *void) -> (string, selected: bool),
     user_data: *void = null,
     style: *ComboStyle = null,
     location := #caller_location
-) -> modified: bool, *Node {
+) -> clicked_item: int, *Node {
     EnsureStyle(*style, "combo");
-
-    dummy_selected: int;
-    if !selected {
-        selected = *dummy_selected;
-    }
 
     popup_root := GetPopupRoot(parent.window);
     prev_frame_menu := FindPrevFrameNode(popup_root, GetID(location));
@@ -110,13 +141,7 @@ Combo :: (
 
         text_node := GetNode(combo, "text");
         SetSize(text_node, SizeFill(), SizeFit());
-
-        if num_items > 0 {
-            selected_index := clamp(selected.*, 0, xx num_items - 1);
-            SetText(text_node, get_item(selected_index, user_data));
-        } else {
-            SetText(text_node, "");
-        }
+        SetText(text_node, preview_text);
 
         Apply(text_node, style.button.states[state].text);
 
@@ -128,7 +153,7 @@ Combo :: (
         }
     }
 
-    modified := false;
+    clicked_item := -1;
 
     if combo.state_flags & .Active && num_items > 0 {
         popup := GetPopupNode(parent.window, location);
@@ -150,20 +175,16 @@ Combo :: (
             ScrollViewBehavior(popup, .Y);
 
             for i: 0..num_items - 1 {
-                item := get_item(i, user_data);
+                item, is_selected := get_item(i, user_data);
                 PushID(GetID(i));
                 defer PopID();
 
-                item_clicked := MenuItem(popup, item, selected=selected.* == i, style=*style.item);
-
-                if item_clicked {
-                    selected.* = i;
-                    modified = true;
-                    combo.state_flags &= ~.Active;
+                if MenuItem(popup, item, selected=is_selected, style=*style.item) {
+                    clicked_item = i;
                 }
             }
         }
     }
 
-    return modified, combo;
+    return clicked_item, combo;
 }
