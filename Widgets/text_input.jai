@@ -735,7 +735,6 @@ DrawTextInputText :: (draw_list: *DrawList, node: *Node) -> bool {
 
 TextInputFlags :: enum_flags {
     Password;
-    ActivateOnReleased;
 }
 
 ParseIntInput :: (str: string, $T: Type) -> bool, T {
