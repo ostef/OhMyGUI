@@ -43,7 +43,7 @@ MenuItem :: (parent: *Node, icon: TextureHandle, icon_size: float, text: string,
 
         if parent.child_layout_mode == .TopToBottom || parent.child_layout_mode == .BottomToTop {
             SetSize(node, SizeFill(), SizeFit());
-            SetMinWidthFit(node);
+            SetMinWidthFit(node, parent.desired_size.x.kind == .FitChildren);
         } else {
             SetSize(node, SizeFit(), SizeFit());
         }
