@@ -38,6 +38,8 @@ g_slider_u16: SliderValues(u16);
 g_slider_u32: SliderValues(u32);
 g_slider_u64: SliderValues(u64);
 
+g_text_input_flags: OMG.TextInputFlags;
+
 SlidersGallery :: (parent: *OMG.Node, values: *SliderValues) {
     SlidersGallery(parent, *values.value, *values.min, *values.max, *values.step);
 }
@@ -83,6 +85,13 @@ WidgetsGallery :: (parent: *OMG.Node) {
     }
 
     text_inputs := OMG.CollapsingHeader(scroll_view, "Text Inputs");
+    if text_inputs {
+        OMG.SetLayout(text_inputs, .LeftToRight);
+        OMG.TextInput(text_inputs, g_text_input_flags);
+
+        flags := OMG.LabelAndContent(text_inputs, "Flags");
+        OMG.EnumCombo(flags, *g_text_input_flags);
+    }
 
     sliders := OMG.CollapsingHeader(scroll_view, "Sliders");
     if sliders {
