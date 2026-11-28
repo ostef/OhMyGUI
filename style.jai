@@ -188,6 +188,56 @@ Apply :: inline (node: *Node, style: TextStyle) {
     node.outer_shadow_offset = style.outer_shadow_offset;
 }
 
+AnimationStyle :: struct {
+    property_animations: [..]PropertyAnimation;
+}
+
+PropertyAnimation :: struct {
+    id: u64;
+    duration: float;
+    func: AnimationFunc;
+    type: *Type_Info;
+    byte_offset: int;
+}
+
+/**
+ * @brief Add a property animation to a AnimationStyle.
+ */
+AnimateStylingProperty :: (style: *AnimationStyle, name: string, duration: float, func: AnimationFunc) {
+    info := type_info(type_of(Node.styling));
+    member: *Type_Info_Struct_Member;
+    for * info.members {
+        if it.name == name {
+            member = it;
+            break;
+        }
+    }
+
+    if !member {
+        log_error("AnimateStylingProperty: Node.styling does not have a member named '%'", name);
+        return;
+    }
+
+    property := array_add(*style.property_animations);
+    property.id = random_get(*context.omg.random_state);
+    property.duration = duration;
+    property.func = func;
+    property.type = member.type;
+    property.byte_offset = member.offset_in_bytes;
+}
+
+/**
+ * @brief Add a property animation to a AnimationStyle to animate the whole Node.styling.
+ */
+AnimateStylingProperties :: (style: *AnimationStyle, duration: float, func: AnimationFunc) {
+    property := array_add(*style.property_animations);
+    property.id = random_get(*context.omg.random_state);
+    property.duration = duration;
+    property.func = func;
+    property.type = type_info(type_of(Node.styling));
+    property.byte_offset = 0;
+}
+
 /**
  * @brief Styles for each state of a Node.
  */
@@ -203,7 +253,7 @@ StateStyle :: struct(T: Type) {
 }
 
 /**
- * List of cursors loaded and available by default.
+ * @brief List of cursors loaded and available by default.
  */
 SystemCursor :: enum u8 {
     Arrow;
@@ -322,155 +372,6 @@ CreateCursorFromFile :: (filename: string, hot_x_01: float, hot_y_01: float) -> 
     defer stbi_image_free(data);
 
     return PlatformCreateRGBA8Cursor(data, xx w, xx h, hot_x_01, hot_y_01);
-}
-
-AnimFunc :: enum u8 {
-    Linear;
-    CubicIn;
-    CubicOut;
-    CubicInOut;
-    ElasticIn;
-    ElasticOut;
-    ElasticInOut;
-    BackIn;
-    BackOut;
-    BackInOut;
-}
-
-Animate :: inline (a: float, b: float, t: float, func: AnimFunc) -> float {
-    if #complete func == {
-    case .Linear;
-        // t = t
-    case .CubicIn;
-        t = t * t * t;
-    case .CubicOut;
-        t = 1 - t;
-        t = 1 - (t * t * t);
-    case .CubicInOut;
-        if t < 0.5 {
-            t = 4 * t * t * t;
-        } else {
-            t = -2 * t;
-            t = 1 - (t * t * t) * 0.5;
-        }
-    case .ElasticIn;
-        if t > 0 && t < 1 {
-            t = -pow(2, 10 * t - 10) * sin(t * 10 - 10.75) * (2 * PI / 3);
-        }
-    case .ElasticOut;
-        if t > 0 && t < 1 {
-            t = 1 + pow(2, -10 * t) * sin((t * 10 - 10.75) * (2 * PI / 3));
-        }
-    case .ElasticInOut;
-        if t > 0 {
-            if t < 0.5 {
-                t = -pow(2, 20 * t - 10) * sin(t * 20 - 11.125) * (2 * PI / 4.5) / 2;
-            } else if t < 1 {
-                t = 1 + pow(2, -20 * t + 10) * sin(t * 20 - 11.125) * (2 * PI / 4.5) / 2;
-            }
-        }
-    case .BackIn;
-        C1 :: 1.70158;
-        C3 :: C1 + 1;
-        t = C3 * t * t * t - C1 * t * t;
-    case .BackOut;
-        C1 :: 1.70158;
-        C3 :: C1 + 1;
-        t -= 1;
-        t = 1 + C3 * t * t * t + C1 * t * t;
-    case .BackInOut;
-        C1 :: 1.70158;
-        C2 :: C1 * 1.525;
-        if t < 0.5 {
-            t = t * 2;
-            t = (t * t * ((C2 + 1) * t - C2)) / 2;
-        } else {
-            t = t * 2 - 2;
-            t = (t * t * ((C2 + 1) * t + C2) + 2) / 2;
-        }
-    }
-
-    return a * (1 - t) + b * t;
-}
-
-Animate :: inline (a: Vec2f, b: Vec2f, t: float, func: AnimFunc) -> Vec2f {
-    return .{
-        Animate(a.x, b.x, t, func),
-        Animate(a.y, b.y, t, func),
-    };
-}
-
-Animate :: inline (a: Vec4f, b: Vec4f, t: float, func: AnimFunc) -> Vec4f {
-    return .{
-        Animate(a.x, b.x, t, func),
-        Animate(a.y, b.y, t, func),
-        Animate(a.z, b.z, t, func),
-        Animate(a.w, b.w, t, func),
-    };
-}
-
-Animate :: inline (a: RGBA8, b: RGBA8, t: float, func: AnimFunc) -> RGBA8 {
-    a4f := ToVec4f(a);
-    b4f := ToVec4f(b);
-
-    return MakeRGBA8(
-        Animate(a4f.x, b4f.x, t, func),
-        Animate(a4f.y, b4f.y, t, func),
-        Animate(a4f.z, b4f.z, t, func),
-        Animate(a4f.w, b4f.w, t, func),
-    );
-}
-
-AnimateStyle :: (a: $T, b: T, t: float, func: AnimFunc) -> T {
-    if t < 0 {
-        return a;
-    }
-    if t > 1 {
-        return b;
-    }
-
-    result: T;
-
-    #insert -> string {
-        AppendAnimate :: (builder: *String_Builder, name: string, type: *Type_Info) {
-            if type == type_info(Vec2f) || type == type_info(Vec4f) || type == type_info(RGBA8) {
-                print_to_builder(*builder, "result.%1 = Animate(a.%1, b.%1, t, func);\n", name);
-            } else if type.kind == {
-            case .VARIANT;
-                variant := cast(*Type_Info_Variant, type);
-                AppendAnimate(builder, name, variant.variant_of);
-            case .FLOAT;
-                print_to_builder(*builder, "result.%1 = xx Animate(xx a.%1, b.%1, t, func);\n", name);
-            case .INTEGER;
-                print_to_builder(*builder, "result.%1 = xx Animate(xx a.%1, b.%1, t, func);\n", name);
-            case .STRUCT;
-                struct_type := cast(*Type_Info_Struct, type);
-                for struct_type.members {
-                    AppendAnimate(builder, tprint("%.%", name, it.name), it.type);
-                }
-            case .ARRAY;
-                array_type := cast(*Type_Info_Array, type);
-                if array_type.array_type != .FIXED {
-                    return;
-                }
-
-                print_to_builder(*builder, "for result.%1 {\n", name);
-                AppendAnimate(builder, tprint("%[it_index]", name), array_type.element_type);
-                print_to_builder(*builder, "}\n");
-            }
-        }
-
-        builder: String_Builder;
-
-        info := type_info(T);
-        for info.members {
-            AppendAnimate(*builder, it.name, it.type);
-        }
-
-        return builder_to_string(*builder);
-    }
-
-    return result;
 }
 
 /**

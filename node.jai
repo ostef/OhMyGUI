@@ -153,7 +153,8 @@ Node :: struct {
 
     draw: (*DrawList, *Node) -> draw_children: bool;          ///> Drawing function for the node. Initialized to the context's default drawing function.
     hit_test: (*Node, point: Vec2f) -> bool = DefaultHitTest; ///> Hit test function. Change this to perform custom hit test logic. Clipping test must be performed inside this function manually.
-    user_data: *NodeUserData;                                  ///> Attached user data.
+    user_data: *NodeUserData;                                 ///> Attached user data.
+    animations: *Animation;                                   ///> Active animations.
 
     window: *Window; ///> UI window the node was declared in.
     parent: *Node;

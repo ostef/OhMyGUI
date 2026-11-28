@@ -4,6 +4,7 @@
 HT :: #import "Hash_Table";
 using,only(.["for_expansion"]) HT;
 #import "String";
+#import "Random";
 
 #load "math.jai";
 #load "color.jai";
@@ -14,6 +15,7 @@ using,only(.["for_expansion"]) HT;
 #load "node.jai";
 #load "style.jai";
 #load "layout.jai";
+#load "animation.jai";
 
 #load "Widgets/widgets.jai";
 
@@ -32,6 +34,8 @@ Context :: struct {
     platform_funcs: PlatformFunctions;
     renderer_funcs: RendererFunctions;
     default_draw_node: type_of(Node.draw) = DrawNodeDefault; ///> Global default Node draw function.
+
+    random_state: Random_State = .{low=12341, high=12341};
 
     general_purpose_allocator: Allocator; ///> Allocator used for non temporary things. Initialized to the context's allocator.
 
@@ -681,6 +685,26 @@ NewFrame :: (delta_time: float) {
     for * omg.node_pool {
         it.state_flags = (it.state_flags & .CurrentFrame) << (Num_Node_States - 1);
         it.interacting_mouse_buttons = (it.interacting_mouse_buttons & .CurrentFrame) << 3;
+
+        // Advance animation times
+        for :Animations anim: it {
+            anim.current_time += delta_time;
+
+            // Destroy animation when it ends
+            if anim.current_time >= anim.duration {
+                if anim.prev {
+                    anim.prev.next = anim.next;
+                }
+                if anim.next {
+                    anim.next.prev = anim.prev;
+                }
+                if it.animations == anim {
+                    it.animations = anim.next;
+                }
+
+                free(anim);
+            }
+        }
     }
 
     for :Windows omg {
