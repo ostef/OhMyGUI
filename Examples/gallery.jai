@@ -64,6 +64,8 @@ g_text_language: enum {
     Greek;
 }
 
+g_color_value := OMG.Vec4f.{1,1,1,1};
+
 Pangrams :: string.[
     // English
     "Pack my box with five dozen liquor jugs.",
@@ -244,6 +246,14 @@ WidgetsGallery :: (parent: *OMG.Node) {
     tables := OMG.CollapsingHeader(scroll_view, "Tables");
     grids := OMG.CollapsingHeader(scroll_view, "Grids");
     tabs := OMG.CollapsingHeader(scroll_view, "Tabs");
+
+    color := OMG.CollapsingHeader(scroll_view, "Color");
+    if color {
+        container := OMG.GetNode(color);
+        OMG.SetSize(container, OMG.SizeFill(), OMG.SizePx(400));
+
+        OMG.ColorPicker(container, *g_color_value);
+    }
 }
 
 WidgetsGallerySubwindow :: (window: *OMG.Window) {
